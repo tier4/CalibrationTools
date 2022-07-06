@@ -42,13 +42,14 @@ int main(int argc, char * argv[])
     std::make_shared<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Request>();
   request->src_path = node->declare_parameter("src_path", "");
   request->dst_path = node->declare_parameter("dst_path", "");
-  auto result = client->async_send_request(request);
 
-  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  auto future = client->async_send_request(request);
+
+  if (rclcpp::spin_until_future_complete(node, future) == rclcpp::FutureReturnCode::SUCCESS) {
+    auto result = future.get();
     RCLCPP_INFO_STREAM(
       node->get_logger(),
-      "Received service message. success " << result.get()->success << " score " <<
-        result.get()->score);
+      "Received service message. success " << result->success << " score " << result->score);
   } else {
     RCLCPP_ERROR(node->get_logger(), "Problem while waiting for response.");
   }
