@@ -1,0 +1,7 @@
+<launch>
+
+  <node pkg="pitch_checker" exec="view_pitch.py" name="view_pitch" output="screen">
+    <param name="pitch_file_name" value="$(find-pkg-share pitch_checker)/pitch.csv" />
+  </node>
+
+</launch>

@@ -1,0 +1,34 @@
+<launch>
+  <!-- calibration interface -->
+  <arg name="accel_cmd" default="/calibration/vehicle/accel_cmd" />
+  <arg name="brake_cmd" default="/calibration/vehicle/brake_cmd" />
+  <arg name="steer_cmd" default="/calibration/vehicle/steer_cmd" />
+  <arg name="accel_status" default="/calibration/vehicle/accel_status" />
+  <arg name="brake_status" default="/calibration/vehicle/brake_status" />
+  <arg name="steer_status" default="/calibration/vehicle/steer_status" />
+  <arg name="input_engage_status" default="/api/autoware/get/engage" />
+  <arg name="output_engage_status" default="/calibration/vehicle/is_engage" />
+
+  <node pkg="calibration_adapter" exec="calibration_adapter" name="calibration_adapter" output="screen">
+    <param name="lowpass_cutoff_value" value="0.033" />
+    <remap from="~/input/actuation_command" to="/vehicle/command/actuation_cmd"/>
+    <remap from="~/input/actuation_status" to="/vehicle/status/actuation_status"/>
+    <remap from="~/input/is_engage" to="$(var input_engage_status)"/>
+    <remap from="~/output/accel_cmd" to="$(var accel_cmd)" />
+    <remap from="~/output/brake_cmd" to="$(var brake_cmd)" />
+    <remap from="~/output/steer_cmd" to="$(var steer_cmd)" />
+    <remap from="~/output/is_engage" to="$(var output_engage_status)" />
+    <remap from="~/output/accel_status" to="$(var accel_status)" />
+    <remap from="~/output/brake_status" to="$(var brake_status)" />
+    <remap from="~/output/steer_status" to="$(var steer_status)" />
+
+    <!-- Remap Example -->
+    <remap from="~/input/twist_status" to="/vehicle/status/velocity_status"/>
+    <remap from="~/input/steering_angle_status" to="/vehicle/status/steering_status"/>
+    <remap from="~/input/control_cmd" to="/control/command/control_cmd"/>
+    <remap from="~/output/acceleration_cmd" to="/calibration/vehicle/acceleration_cmd" />
+    <remap from="~/output/acceleration_status" to="/calibration/vehicle/acceleration_status" />
+    <remap from="~/output/steering_angle_cmd" to="/calibration/vehicle/steering_angle_cmd" />
+    <remap from="~/output/steering_angle_status" to="/calibration/vehicle/steering_angle_status" />
+  </node>
+</launch>

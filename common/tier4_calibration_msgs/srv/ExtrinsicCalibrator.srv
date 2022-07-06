@@ -1,0 +1,6 @@
+geometry_msgs/Pose initial_pose
+---
+geometry_msgs/Pose result_pose
+bool success
+float32 score
+sensor_msgs/PointCloud2 debug_pointcloud

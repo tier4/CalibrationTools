@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <test test-name="unit_test_node" pkg="estimator_utils" type="utest_node"/>
+</launch>

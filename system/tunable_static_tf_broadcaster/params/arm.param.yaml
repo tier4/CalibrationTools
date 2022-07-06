@@ -1,0 +1,8 @@
+/**:
+  ros__parameters:
+    tf_pitch: 0.0
+    tf_roll: 0.0
+    tf_x: 1.0
+    tf_y: 0.0
+    tf_yaw: 0.0
+    tf_z: 1.0

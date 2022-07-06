@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="ns" />
+  <arg name="parent_frame" />
+  <arg name="child_frame" />
+  <arg name="input_map_with_wall_topic_name" />
+  <arg name="input_map_without_wall_topic_name" />
+  <arg name="input_source_topic_name" />
+  <arg name="config_file_name" />
+
+
+  <group>
+    <push-ros-namespace namespace="$(var ns)" />
+    <node pkg="extrinsic_map_based_calibrator" exec="extrinsic_map_based_calibrator" name="extrinsic_map_based_calibrator" output="screen">
+      <param name="parent_frame" value="$(var parent_frame)" />
+      <param name="child_frame" value="$(var child_frame)" />
+      <param from="$(find-pkg-share extrinsic_map_based_calibrator)/config/$(var config_file_name)" />
+      <remap from="~/input/pointcloud_map_with_wall" to="$(var input_map_with_wall_topic_name)" />
+      <remap from="~/input/pointcloud_map_without_wall" to="$(var input_map_without_wall_topic_name)" />
+      <remap from="~/input/source_pointcloud" to="$(var input_source_topic_name)" />
+    </node>
+  </group>
+
+</launch>

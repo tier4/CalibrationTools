@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root version="2.3.8">
+    <tabbed_widget name="Main Window" parent="main_window">
+        <Tab tab_name="ParameterEstimator" containers="1">
+            <Container>
+                <DockSplitter sizes="0.500255;0.499745" count="2" orientation="-">
+                    <DockSplitter sizes="0.332236;0.335528;0.332236" count="3" orientation="|">
+                        <DockArea name="...">
+                            <plot mode="TimeSeries" style="Lines">
+                                <range bottom="-0.002279" right="86.097273" left="0.000000" top="0.001760"/>
+                                <limitY/>
+                                <curve name="/vehicle/status/steer_offset/result.0" color="#d62728"/>
+                                <curve name="/vehicle/status/steer_offset/result_mean.0" color="#1ac938"/>
+                                <curve name="/vehicle/status/steer_offset/result_stddev.0" color="#ff7f0e"/>
+                            </plot>
+                        </DockArea>
+                        <DockArea name="...">
+                            <plot mode="TimeSeries" style="Lines">
+                                <range bottom="0.001085" right="86.097291" left="0.000174" top="4.000000"/>
+                                <limitY max="4"/>
+                                <curve name="/vehicle/status/wheel_base/result.0" color="#1ac938"/>
+                                <curve name="/vehicle/status/wheel_base/result_mean.0" color="#ff7f0e"/>
+                                <curve name="/vehicle/status/wheel_base/result_stddev.0" color="#f14cc1"/>
+                            </plot>
+                        </DockArea>
+                        <DockArea name="...">
+                            <plot mode="TimeSeries" style="Lines">
+                                <range bottom="-0.491768" right="86.097307" left="0.000340" top="20.000000"/>
+                                <limitY max="20"/>
+                                <curve name="/vehicle/status/gear_ratio/result.0" color="#1f77b4"/>
+                                <curve name="/vehicle/status/gear_ratio/result.1" color="#d62728"/>
+                                <curve name="/vehicle/status/gear_ratio/result.2" color="#1ac938"/>
+                                <curve name="/vehicle/status/gear_ratio/result_mean.0" color="#ff7f0e"/>
+                                <curve name="/vehicle/status/gear_ratio/result_mean.1" color="#f14cc1"/>
+                                <curve name="/vehicle/status/gear_ratio/result_mean.2" color="#9467bd"/>
+                                <curve name="/vehicle/status/gear_ratio/result_stddev.0" color="#17becf"/>
+                                <curve name="/vehicle/status/gear_ratio/result_stddev.1" color="#bcbd22"/>
+                                <curve name="/vehicle/status/gear_ratio/result_stddev.2" color="#1f77b4"/>
+                            </plot>
+                        </DockArea>
+                    </DockSplitter>
+                    <DockSplitter sizes="0.332236;0.335528;0.332236" count="3" orientation="|">
+                        <DockArea name="...">
+                            <plot mode="TimeSeries" style="Lines">
+                                <range bottom="-0.000288" right="86.097273" left="0.000000" top="0.011811"/>
+                                <limitY/>
+                                <curve name="/vehicle/status/steer_offset/absolute_error.0" color="#f14cc1"/>
+                                <curve name="/vehicle/status/steer_offset/mean_absolute_error.0" color="#9467bd"/>
+                                <curve name="/vehicle/status/steer_offset/stddev_absolute_error.0" color="#17becf"/>
+                            </plot>
+                        </DockArea>
+                        <DockArea name="...">
+                            <plot mode="TimeSeries" style="Lines">
+                                <range bottom="-0.002062" right="86.097291" left="0.000174" top="0.085569"/>
+                                <limitY/>
+                                <curve name="/vehicle/status/wheel_base/absolute_error.0" color="#bcbd22"/>
+                                <curve name="/vehicle/status/wheel_base/mean_absolute_error.0" color="#1f77b4"/>
+                                <curve name="/vehicle/status/wheel_base/stddev_absolute_error.0" color="#d62728"/>
+                            </plot>
+                        </DockArea>
+                        <DockArea name="...">
+                            <plot mode="TimeSeries" style="Lines">
+                                <range bottom="-0.042637" right="86.097307" left="0.000340" top="1.748110"/>
+                                <limitY/>
+                                <curve name="/vehicle/status/gear_ratio/absolute_error.0" color="#d62728"/>
+                                <curve name="/vehicle/status/gear_ratio/mean_absolute_error.0" color="#1ac938"/>
+                                <curve name="/vehicle/status/gear_ratio/stddev_absolute_error.0" color="#ff7f0e"/>
+                            </plot>
+                        </DockArea>
+                    </DockSplitter>
+                </DockSplitter>
+            </Container>
+        </Tab>
+        <currentTabIndex index="0"/>
+    </tabbed_widget>
+    <use_relative_time_offset enabled="1"/>
+    <!-- - - - - - - - - - - - - - - -->
+    <!-- - - - - - - - - - - - - - - -->
+    <Plugins>
+        <plugin ID="DataLoad CSV">
+            <default time_axis=""/>
+        </plugin>
+        <plugin ID="DataLoad ROS bags">
+            <use_header_stamp value="false"/>
+            <use_renaming_rules value="false"/>
+            <discard_large_arrays value="true"/>
+            <max_array_size value="100"/>
+        </plugin>
+        <plugin ID="DataLoad ULog"/>
+        <plugin ID="MQTT Subscriber"/>
+        <plugin ID="ROS Topic Subscriber">
+            <use_header_stamp value="false"/>
+            <use_renaming_rules value="false"/>
+            <discard_large_arrays value="false"/>
+            <max_array_size value="100"/>
+            <selected_topics>
+                <topic name="/vehicle/status/steer_offset"/>
+                <topic name="/vehicle/status/wheel_base"/>
+                <topic name="/vehicle/status/gear_ratio"/>
+            </selected_topics>
+        </plugin>
+        <plugin ID="UDP Server"/>
+        <plugin ID="WebSocket Server"/>
+        <plugin ID="ZMQ Subscriber"/>
+        <plugin status="idle" ID="ROS /rosout Visualization"/>
+        <plugin status="idle" ID="ROS Topic Re-Publisher"/>
+    </Plugins>
+    <!-- - - - - - - - - - - - - - - -->
+    <previouslyLoaded_Datafiles/>
+    <previouslyLoaded_Streamer name="ROS Topic Subscriber"/>
+    <!-- - - - - - - - - - - - - - - -->
+    <customMathEquations/>
+    <snippets/>
+    <!-- - - - - - - - - - - - - - - -->
+</root>

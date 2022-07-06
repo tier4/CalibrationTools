@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>estimator_utils</name>
+  <version>0.1.0</version>
+  <description>The estimator utils</description>
+  <maintainer email="taiki.tanaka@tier4.jp">Taiki Tanaka</maintainer>
+  <license>Apache 2</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <!--ros depends-->
+  <depend>rclcpp</depend>
+  <depend>rosidl_default_runtime</depend>
+  <!--other depends-->
+  <depend>eigen</depend>
+  <!--autoware depends-->
+  <depend>tier4_calibration_msgs</depend>
+
+  <test_depend>ament_cmake_gmock</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>autoware_lint_common</test_depend>
+  <test_depend>libgmock-dev</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

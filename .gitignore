@@ -1,0 +1,11 @@
+# VSCode
+.vscode/
+*.code-workspace
+
+# colcon
+build/
+install/
+log/
+
+# Python
+*.pyc

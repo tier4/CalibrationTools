@@ -1,0 +1,8 @@
+<launch>
+  <arg name="save_dir" default="/home/$(env USER)/deviation_evaluator_sample"/>
+
+  <node pkg="deviation_evaluator" exec="deviation_evaluation_visualizer.py" name="deviation_evaluation_visualizer" output="screen">
+    <param name="save_dir" value="$(var save_dir)" />
+  </node>
+
+</launch>

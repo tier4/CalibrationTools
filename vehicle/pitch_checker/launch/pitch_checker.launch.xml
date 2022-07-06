@@ -1,0 +1,9 @@
+<launch>
+  <arg name="pitch_checker_param" default="$(find-pkg-share pitch_checker)/config/pitch_checker_param.yaml" />
+
+  <node pkg="pitch_checker" exec="pitch_checker" name="pitch_checker" output="screen">
+    <param from="$(var pitch_checker_param)"/>
+    <param name="output_file" value="$(find-pkg-share pitch_checker)/pitch.csv" />
+  </node>
+
+</launch>
