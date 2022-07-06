@@ -2,6 +2,12 @@
 
 Calibration tools used for autonomous driving
 
+## Requirement
+
+- Ubuntu20.04
+- Ros Galactic
+
+
 ## Installation procedures
 
 After cloning pilot-auto(private repository) or [autoware](https://github.com/tier4/autoware), execute the following commands:
@@ -10,7 +16,7 @@ After cloning pilot-auto(private repository) or [autoware](https://github.com/ti
 mkdir src
 vcs import src < autoware.repos
 cd src/autoware
-git clone git@github.com:tier4/calibration_tools.git
+git clone git@github.com:tier4/CalibrationTools.git
 cd ../../
 vcs import src < src/autoware/calibration_tools/calibration_tools.repos
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
