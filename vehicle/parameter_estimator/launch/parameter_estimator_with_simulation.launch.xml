@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!-- ParameterEstimatorNode -->
+    <include file="$(find-pkg-share parameter_estimator)/launch/parameter_estimator.launch.xml" />
+    <!-- Essential parameters -->
+    <arg name="map_path" doc="point cloud and lanelet2 map directory path"/>
+    <arg name="vehicle_model"/>
+    <arg name="sensor_model"/>
+    <!-- Optional parameters -->
+    <arg name="rviz" default="true" doc="launch rviz"/>
+    <arg name="lanelet2_map_file" default="lanelet2_map.osm" />
+    <arg name="pointcloud_map_file" default="pointcloud_map.pcd" />
+
+    <!-- Vehicle -->
+    <include file="$(find-pkg-share vehicle_launch)/launch/vehicle.launch.xml">
+        <arg name="vehicle_model" value="$(var vehicle_model)"/>
+        <arg name="sensor_model" value="$(var sensor_model)"/>
+        <arg name="vehicle_param_file" value="$(find-pkg-share $(var vehicle_model)_description)/config/vehicle_info.param.yaml"/>
+        <arg name="simulation" value="true"/>
+    </include>
+
+    <!-- Map -->
+    <include file="$(find-pkg-share map_launch)/launch/map.launch.py">
+        <arg name="lanelet2_map_path" value="$(var map_path)/$(var lanelet2_map_file)" />
+        <arg name="pointcloud_map_path" value="$(var map_path)/$(var pointcloud_map_file)"/>
+    </include>
+
+    <!-- Rviz -->
+    <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(find-pkg-share time_delay_estimator)/config/time_delay_estimator_viz.rviz" if="$(var rviz)" />
+
+    <!-- visualization -->
+    <include file="$(find-pkg-share dynamic_object_visualization)/launch/dynamic_object_visualizer.launch.xml">
+        <arg name="input" value="/perception/object_recognition/objects"/>
+        <arg name="with_feature" value="false"/>
+        <arg name="only_known_objects" value="true"/>
+    </include>
+
+</launch>

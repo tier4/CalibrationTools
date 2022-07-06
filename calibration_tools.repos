@@ -1,0 +1,21 @@
+repositories:
+  vendor/lidartag:
+    type: git
+    url: git@github.com:tier4/LiDARTag.git
+    version: galactic
+  vendor/lidartag_msgs:
+    type: git
+    url: git@github.com:tier4/LiDARTag_msgs.git
+    version: tier4/universe
+  vendor/apriltag_msgs:
+    type: git
+    url: git@github.com:christianrauch/apriltag_msgs.git
+    version: master
+  vendor/apriltag_ros:
+    type: git
+    url: git@github.com:christianrauch/apriltag_ros.git
+    version: master
+  vendor/ros2_numpy:
+    type: git
+    url: git@github.com:Box-Robotics/ros2_numpy.git
+    version: rolling

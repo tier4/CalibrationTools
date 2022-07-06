@@ -1,0 +1,16 @@
+general_time_delay_estimator:
+  ros__parameters:
+    data: # data size
+      sampling_hz: 30.0 # data sampling hz
+      estimation_hz: 10.0 # estimation hz
+      sampling_duration: 5.0 # sampling duration to estimate delay (range 5~20 sec)
+      validation_duration: 1.0 # to check if it's valid data or not (range  0.5~2 sec)
+      valid_peak_cross_correlation_threshold: 0.8 # above 0.8 is preferred
+      valid_delay_index_ratio: 0.1 # below 0.2 is usual
+      num_interpolation: 3 # number of interpolation to data (range 3~5)
+    filter: # filtering
+      cutoff_hz_input: 0.5 # smooth input (range 0.01~7.0)
+      cutoff_hz_output: 0.1 # smooth output (range 0.01~7.0)
+    reset_at_disengage: false # default false
+    is_showing_debug_info: true # set false to test at pubic road
+    use_weight_for_cross_correlation: false

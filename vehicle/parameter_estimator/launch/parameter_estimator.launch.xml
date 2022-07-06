@@ -1,0 +1,39 @@
+<launch>
+    <!-- essential parameters -->
+    <arg name="vehicle_model" default="lexus"/>
+    <arg name="select_gear_ratio_estimator" default="true" description="Select gear ratio estimator"/>
+    <arg name="select_steer_offset_estimator" default="true" description="Select steer offset estimator"/>
+    <arg name="select_wheel_base_estimator" default="true" description="Select wheel base estimator"/>
+
+    <!-- get wheel base from vehicle info -->
+    <include file="$(find-pkg-share global_parameter_loader)/launch/global_params.launch.py">
+        <arg name="vehicle_model" value="$(var vehicle_model)"/>
+    </include>
+
+    <!-- calibration adapter -->
+    <include file="$(find-pkg-share calibration_adapter)/launch/calibration_adapter.launch.xml"/>
+
+    <arg name="is_showing_debug_info" default="true" />
+    <arg name="parameter_estimator_param" default="$(find-pkg-share parameter_estimator)/config/parameter_estimator_param.yaml" />
+    <arg name="imu_twist" default="/sensing/imu/imu_data"/>
+    <arg name="use_auto_mode" default="false" description="Whether to consider auto mode"/>
+    <arg name="show_plot" default="false"/>
+    <!-- parameter estimator -->
+    <node pkg="parameter_estimator" exec="parameter_estimator" name="parameter_estimator" output="screen">
+        <param from="$(var parameter_estimator_param)"/>
+        <param name="is_showing_debug_info" value="$(var is_showing_debug_info)" />
+        <param name="select_gear_ratio_estimator" value="$(var select_gear_ratio_estimator)" />
+        <param name="select_steer_offset_estimator" value="$(var select_steer_offset_estimator)" />
+        <param name="select_wheel_base_estimator" value="$(var select_wheel_base_estimator)" />
+        <param name="use_auto_mode" value="$(var use_auto_mode)" />
+        <remap from="input/imu_twist" to="$(var imu_twist)" />
+        <remap from="input/vehicle_twist" to="/vehicle/status/twist" />
+        <remap from="input/control_mode" to="/vehicle/status/control_mode" />
+        <remap from="input/handle_status" to="/calibration/vehicle/handle_status" />
+        <remap from="input/steer" to="/calibration/vehicle/steering_angle_status" />
+        <remap from="output/steer_offset" to="/vehicle/status/steering_offset" />
+        <remap from="output/gear_ratio" to="/vehicle/status/gear_ratio" />
+        <remap from="output/wheel_base" to="/vehicle/status/wheel_base" />
+    </node>
+    <executable if ="$(var show_plot)" cmd="ros2 run plotjuggler plotjuggler --buffer_size 100000 -n -l $(find-pkg-share parameter_estimator)/config/plot_juggler_parameter_estimator.xml" output="screen" shell="true" />
+</launch>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="ns" />
+  <arg name="input_sensor_topic_name" />
+  <arg name="output_sensor_topic_name" />
+  <arg name="accumulate_frame_num" default="10" />
+
+  <group>
+    <push-ros-namespace namespace="$(var ns)" />
+    <node pkg="point_cloud_accumulator" exec="point_cloud_accumulator" name="point_cloud_accumulator" output="screen">
+      <remap from="~/input/default" to="$(var input_sensor_topic_name)" />
+      <remap from="~/output/default" to="$(var output_sensor_topic_name)" />
+      <param name="accumulate_frame_num" value="$(var accumulate_frame_num)" />
+    </node>
+  </group>
+
+</launch>

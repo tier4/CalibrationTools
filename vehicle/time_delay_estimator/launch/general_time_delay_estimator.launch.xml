@@ -1,0 +1,26 @@
+<launch>
+  <arg name="valid_min_velocity" default="5.0"/>
+  <arg name="detect_manual_engage" default="true"/>
+  <arg name="data_name1" default="accel" description="The data set name"/>
+  <arg name="time_delay_estimator_param" default="$(find-pkg-share time_delay_estimator)/config/general_time_delay_estimator_param.yaml" />
+
+  <!-- calibration adapter -->
+  <include file="$(find-pkg-share calibration_adapter)/launch/calibration_adapter.launch.xml"/>
+
+  <!-- time delay estimator -->
+  <node pkg="time_delay_estimator" exec="general_time_delay_estimator" name="$(var data_name1)_time_delay_estimator" output="screen" respawn="true">
+    <!-- input and response -->
+    <param from="$(var time_delay_estimator_param)"/>
+    <param name="data_name" value="$(var data_name1)" />
+    <param name="detect_manual_engage" value="$(var detect_manual_engage)" />
+    <param name="min_valid_value" value="0.05"/>
+    <param name="max_valid_value" value="1.00"/>
+    <param name="offset_value" value="0.0"/>
+    <param name="$(var data_name1)/min_stddev_threshold" value="0.005"/>
+    <remap from="~/input/control_mode" to="/vehicle/status/control_mode"/>
+    <remap from="~/input/is_engage" to="/calibration/vehicle/is_engage"/>
+    <remap from="~/input/input_cmd" to="/calibration/vehicle/accel_cmd"/>
+    <remap from="~/input/input_status" to="/calibration/vehicle/accel_status"/>
+    <remap from="~/output/time_delay" to="/vehicle/status/$(var data_name1)_time_delay"/>
+  </node>
+</launch>

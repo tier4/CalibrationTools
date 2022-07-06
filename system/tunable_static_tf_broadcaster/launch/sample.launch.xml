@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- base_link -->
+  <node name="base_link" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node" >
+    <param name="rate" value="10.0" />
+    <param name="header_frame" value="world" />
+    <param name="child_frame" value="base_link" />
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/base_link.param.yaml" />
+  </node>
+
+  <!-- arm -->
+  <node name="arm" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node" >
+    <param name="rate" value="10.0" />
+    <param name="header_frame" value="base_link" />
+    <param name="child_frame" value="arm" />
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/arm.param.yaml" />
+  </node>
+
+  <!-- rqt_reconfigure -->
+  <node name="rqt_reconfigure" pkg="rqt_reconfigure" exec="rqt_reconfigure" />
+
+</launch>

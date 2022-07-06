@@ -1,0 +1,6 @@
+string src_path
+string dst_path
+---
+bool success
+float32 score
+sensor_msgs/PointCloud2 debug_pointcloud

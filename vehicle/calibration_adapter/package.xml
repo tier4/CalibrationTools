@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>calibration_adapter</name>
+  <version>0.1.0</version>
+  <description>The calibration_adapter</description>
+  <maintainer email="tomoya.kimura@tier4.jp">Tomoya Kimura</maintainer>
+  <maintainer email="taiki.tanaka@tier4.jp">Taiki Tanaka</maintainer>
+  <license>Apache 2</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <build_depend>autoware_cmake</build_depend>
+
+  <depend>autoware_auto_vehicle_msgs</depend>
+  <depend>autoware_auto_control_msgs</depend>
+  <depend>estimator_utils</depend>
+  <depend>rclcpp</depend>
+  <depend>tf2</depend>
+  <depend>tier4_vehicle_msgs</depend>
+  <depend>tier4_calibration_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>autoware_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

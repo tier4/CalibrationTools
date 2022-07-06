@@ -1,0 +1,33 @@
+<launch>
+  <arg name="is_showing_debug_info" default="false"/>
+  <arg name="is_showing_debug_graph" default="false"/>
+  <arg name="valid_min_velocity" default="5.0"/>
+  <arg name="estimator_type" default="cc"/>
+  <arg name="detect_manual_engage" default="true"/>
+  <arg name="time_delay_estimator_param" default="$(find-pkg-share time_delay_estimator)/config/time_delay_estimator_param.yaml" />
+
+  <!-- calibration adapter -->
+  <include file="$(find-pkg-share calibration_adapter)/launch/pacmod_calibration_adapter.launch.xml"/>
+
+  <!-- time delay estimator -->
+  <node pkg="time_delay_estimator" exec="time_delay_estimator" name="time_delay_estimator" output="screen" respawn="true">
+    <!-- input and response -->
+    <param from="$(var time_delay_estimator_param)"/>
+    <param name="estimator_type" value="$(var estimator_type)" />
+    <param name="detect_manual_engage" value="$(var detect_manual_engage)" />
+    <remap from="~/input/control_mode" to="/vehicle/status/control_mode"/>
+    <remap from="~/input/steer_cmd" to="/calibration/vehicle/steer_cmd"/>
+    <remap from="~/input/accel_cmd" to="/calibration/vehicle/accel_cmd"/>
+    <remap from="~/input/brake_cmd" to="/calibration/vehicle/brake_cmd"/>
+    <remap from="~/input/accel_status" to="/calibration/vehicle/accel_status"/>
+    <remap from="~/input/brake_status" to="/calibration/vehicle/brake_status"/>
+    <remap from="~/input/steer_status" to="/calibration/vehicle/steer_status"/>
+    <remap from="~/input/is_engage" to="/calibration/vehicle/is_engage"/>
+    <remap from="~/output/accel_cmd_delay" to="/vehicle/status/accel_cmd_delay"/>
+    <remap from="~/output/brake_cmd_delay" to="/vehicle/status/brake_cmd_delay"/>
+    <remap from="~/output/steer_cmd_delay" to="/vehicle/status/steer_cmd_delay"/>
+  </node>
+
+  <node if="$(eval &quot;'$(var is_showing_debug_graph)'=='true' and '$(var estimator_type)'=='cc' &quot;)" pkg="time_delay_estimator" exec="correlation_visualizer.py" name="correlation_visualizer" output="screen"></node>
+  <executable cmd="ros2 run plotjuggler plotjuggler --buffer_size 100000 -n -l $(find-pkg-share time_delay_estimator)/config/plot_juggler_time_delay_estimator.xml" output="screen" shell="true" if="$(eval &quot;'$(var is_showing_debug_graph)'=='true'&quot;)"/>
+</launch>

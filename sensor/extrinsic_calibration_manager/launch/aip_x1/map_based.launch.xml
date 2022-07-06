@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="vehicle_id" default="default" />
+  <arg name="map_path" default="(env HOME)/map/" />
+  <arg name="map_calibration_area_file" default="map_calibration_area.pcd"/>
+
+  <let name="sensor_model" value="aip_x1" />
+
+  <group>
+    <push-ros-namespace namespace="sensor_kit" />
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/map_based_sensor_kit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)" />
+      <arg name="map_path" value="$(var map_path)" />
+      <arg name="pointcloud_map_file" value="$(var pointcloud_map_file)" />
+      <arg name="map_calibration_area_file" value="$(var map_calibration_area_file)" />
+    </include>
+  </group>
+
+</launch>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="camera_name" default="camera0" />
+
+  <node pkg="spinnaker_camera_nodes" exec="spinnaker_camera_node_exe" name="spinnaker_camera_node" output="screen">
+    <param name="cameras" value="[$(var camera_name)]" />
+    <param name="camera_settings.$(var camera_name).window_width" value="1440" />
+    <param name="camera_settings.$(var camera_name).window_height" value="1080" />
+    <param name="camera_settings.$(var camera_name).fps" value="20.0" />
+    <param name="camera_settings.$(var camera_name).pixel_format" value="bgr8" />
+    <param name="camera_settings.$(var camera_name).frame_id" value="$(var camera_name)/camera_optical_link" />
+    <param name="camera_settings.$(var camera_name).device_link_throughput_limit" value="100000000" />
+    <param name="camera_settings.$(var camera_name).use_external_trigger" value="false" />
+    <param name="camera_settings.$(var camera_name).gain_upper_limit" value="18.0" />
+  </node>
+
+</launch>

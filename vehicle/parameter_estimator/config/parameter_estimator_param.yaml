@@ -1,0 +1,9 @@
+parameter_estimator:
+  ros__parameters:
+    update_hz: 10.0 # Used for the timer
+    initial_covariance: 1.0 # Used in RLS(Recursive least squares) to get nearest estimate value
+    forgetting_factor: 0.999 # Used in RLS(Recursive least squares) to get nearest estimate value
+    valid_max_steer_rad: 0.05 # Used as steer data validation, the data should be less than this value
+    valid_min_velocity: 0.5 # Used as velocity validation, the data should be more than this value
+    valid_min_angular_velocity: 0.1 # Used in gear ratio estimator, the angular should be more than this value
+    gear_ratio: [15.7, 0.053, 0.047] # Initial estimated gear ratio

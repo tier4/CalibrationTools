@@ -1,0 +1,16 @@
+<launch>
+
+  <arg name="vehicle_cmd_analyzer_param_path"
+       default="$(find-pkg-share vehicle_cmd_analyzer)/config/vehicle_cmd_analyzer.param.yaml" />
+
+  <!-- vehicle info -->
+  <arg name="vehicle_model" default="lexus"/>
+  <include file="$(find-pkg-share global_parameter_loader)/launch/global_params.launch.py">
+  	<arg name="vehicle_model" value="$(var vehicle_model)"/>
+  </include>
+
+  <node pkg="vehicle_cmd_analyzer" exec="vehicle_cmd_analyzer"
+        name="vehicle_cmd_analyzer" output="screen">
+   <param from="$(var vehicle_cmd_analyzer_param_path)" />
+  </node>
+</launch>

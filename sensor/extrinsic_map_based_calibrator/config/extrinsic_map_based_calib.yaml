@@ -1,0 +1,31 @@
+/**:
+  ros__parameters:
+    preprocessing:
+      ransac:
+        max_iteration: 1000
+        voxel_grid_size: 0.3
+        distance_threshold: 0.01
+      clip_wall_pointcloud:
+        max_iteration: 100
+        max_correspondence_distance: 100.0
+        transformation_epsilon: 1.0e-10
+        euclidean_fitness_epsilon: 0.001
+        clipping_threshold: 0.05
+
+    grid_search:
+      x_range_max: 0.08
+      x_range_min: -0.08
+      x_range_resolution: 0.02
+      y_range_max: 0.08
+      y_range_min: -0.08
+      y_range_resolution: 0.02
+      yaw_range_max: 1.0
+      yaw_range_min: -1.0
+      yaw_range_resolution: 0.25
+      maximum_iteration: 1000
+      max_correspondence_distance: 100.0
+      transformation_epsilon: 1.0e-10
+      euclidean_fitness_epsilon: 0.001
+
+    map_based_calibrator:
+      debug_pub: true

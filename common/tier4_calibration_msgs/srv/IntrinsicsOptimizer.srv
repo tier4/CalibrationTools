@@ -1,0 +1,6 @@
+CalibrationPoints calibration_points
+sensor_msgs/CameraInfo initial_camera_info
+---
+sensor_msgs/CameraInfo optimized_camera_info
+bool success
+float64 error
