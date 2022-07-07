@@ -15,6 +15,7 @@
       <param name="marker_size" value="10.0" />
       <param name="max_inlier_distance" value="0.01" />
       <param name="min_plane_points" value="500" />
+      <param name="min_plane_points_percentage" value="20.0" />
       <param name="max_cos_distance" value="0.2" />
       <param name="max_iterations" value="500" />
       <param name="verbose" value="true" />
@@ -27,8 +28,8 @@
       <param name="angle_process_cov" value="0.1" /> <!--degrees -->
       <param name="z_measurement_cov" value="0.005" /> <!--meters -->
       <param name="z_process_cov" value="0.001" /> <!--meters -->
-      <param name="angle_convergence_threshold" value="0.01" /> <!--degrees -->
-      <param name="z_convergence_threshold" value="0.0003" /> <!--meters -->
+      <param name="angle_convergence_threshold" value="0.02" /> <!--degrees -->
+      <param name="z_convergence_threshold" value="0.0005" /> <!--meters -->
 
       <remap from="input_pointcloud" to="$(var pointcloud_topic)"/>
     </node>
