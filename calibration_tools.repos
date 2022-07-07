@@ -1,4 +1,8 @@
 repositories:
+  autoware/calibration_tools:
+    type: git
+    url: git@github.com:tier4/calibration_tools.git
+    version: tier4/universe
   vendor/lidartag:
     type: git
     url: git@github.com:tier4/LiDARTag.git
@@ -19,3 +23,7 @@ repositories:
     type: git
     url: git@github.com:Box-Robotics/ros2_numpy.git
     version: rolling
+  vendor/image_pipeline:
+    type: git
+    url: https://github.com/tier4/image_pipeline.git
+    version: 47964112293eb19f9f57254b2e6b68706954cc63
