@@ -1,55 +1,42 @@
-## PR Type
-
-<!-- Select one and remove others. If an appropriate one is not listed, please write by yourself. -->
-
-- New Feature
-- Improvement
-- Bug Fix
-
-## Related Links
-
-<!-- Please write related links to GitHub/Jira/Slack/etc. -->
-
 ## Description
 
-<!-- Describe what this PR changes. -->
+<!-- Write a brief description of this PR. -->
 
-## Review Procedure
+## Related links
 
-<!-- Explain how to review this PR. -->
+<!-- Write the links related to this PR. -->
 
-## Remarks
+## Tests performed
 
-<!-- Write remarks as you like if you need them. -->
+<!-- Describe how you have tested this PR. -->
 
-## Pre-Review Checklist for the PR Author
+## Notes for reviewers
 
-**PR Author should check the checkboxes below when creating the PR.**
+<!-- Write additional information if necessary. It should be written if there are related PRs that should be merged at the same time. -->
 
-- [ ] Code follows [coding guidelines][coding-guidelines]
-- [ ] Assign PR to reviewer
+## Pre-review checklist for the PR author
 
-## Checklist for the PR Reviewer
+The PR author **must** check the checkboxes below when creating the PR.
 
-**Reviewers should check the checkboxes below before approval.**
+- [ ] I've confirmed the [contribution guidelines].
+- [ ] The PR follows the [pull request guidelines].
 
-- [ ] Commits are properly organized and messages are according to the guideline
-- [ ] Code follows [coding guidelines][coding-guidelines]
-- [ ] (Optional) Unit tests have been written for new behavior
-- [ ] PR title describes the changes
+## In-review checklist for the PR reviewers
 
-## Post-Review Checklist for the PR Author
+The PR reviewers **must** check the checkboxes below before approval.
 
-**PR Author should check the checkboxes below before merging.**
+- [ ] The PR follows the [pull request guidelines].
+- [ ] The PR has been properly tested.
+- [ ] The PR has been reviewed by the code owners.
 
-- [ ] All open points are addressed and tracked via issues or tickets
-- [ ] Write [release notes][release-notes]
+## Post-review checklist for the PR author
 
-## CI Checks
+The PR author **must** check the checkboxes below before merging.
 
-- **Build and test for PR**: Required to pass before the merge.
-- **Check spelling**: NOT required to pass before the merge. It is up to the reviewer(s). See [here][spell-check-dict] if you want to add some words to the spell check dictionary.
+- [ ] There are no open discussions or they are tracked via tickets.
+- [ ] The PR is ready for merge.
 
-[coding-guidelines]: https://tier4.atlassian.net/wiki/spaces/AIP/pages/1194394777/T4
-[release-notes]: https://tier4.atlassian.net/l/c/X1p69s6B
-[spell-check-dict]: https://github.com/tier4/autoware-spell-check-dict#how-to-contribute
+After all checkboxes are checked, anyone who has write access can merge the PR.
+
+[contribution guidelines]: https://autowarefoundation.github.io/autoware-documentation/main/contributing/
+[pull request guidelines]: https://autowarefoundation.github.io/autoware-documentation/main/contributing/pull-request-guidelines/
