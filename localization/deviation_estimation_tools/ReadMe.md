@@ -30,6 +30,7 @@ If your are using rosbag, it should contain the following topics:
 - /localization/pose_estimator/pose_with_covariance
 - /clock
 - /tf_static (that contains transform from `base_link` to `imu_link`)
+- (/localization/twist_estimator/twist_with_covariance: required in the next step)
 - (/localization/pose_twist_fusion_filter/kinematic_state: required in the next step)
 
 Play the rosbag in a different terminal:
@@ -43,18 +44,21 @@ ros2 bag play YOUR_BAG # You can also play in a faster rate, e.g. -r 5
 
 ```sh
 Files:             localized_not_calibrated_0.db3
-Bag size:          11.1 MiB
+Bag size:          9.6 MiB
 Storage id:        sqlite3
-Duration:          151.303s
-Start:             Apr 20 2022 20:49:10.440 (1650455350.440)
-End:               Apr 20 2022 20:51:41.744 (1650455501.744)
-Messages:          53400
-Topic information: Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 9806 | Serialization Format: cdr
-                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 30260 | Serialization Format: cdr
-                   Topic: /localization/twist_estimator/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 4281 | Serialization Format: cdr
-                   Topic: /localization/pose_estimator/pose_with_covariance | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 1484 | Serialization Format: cdr
-                   Topic: /localization/pose_twist_fusion_filter/kinematic_state | Type: nav_msgs/msg/Odometry | Count: 7565 | Serialization Format: cdr
+Duration:          76.539s
+Start:             Jul  8 2022 11:21:41.220 (1657246901.220)
+End:               Jul  8 2022 11:22:57.759 (1657246977.759)
+Messages:          32855
+Topic information: Topic: /localization/twist_estimator/twist_with_covariance_raw | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 2139 | Serialization Format: cdr
+                   Topic: /localization/kinematic_state | Type: nav_msgs/msg/Odometry | Count: 3792 | Serialization Format: cdr
+                   Topic: /localization/twist_estimator/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 2139 | Serialization Format: cdr
+                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 15308 | Serialization Format: cdr
+                   Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 4950 | Serialization Format: cdr
+                   Topic: /localization/pose_twist_fusion_filter/kinematic_state | Type: nav_msgs/msg/Odometry | Count: 3792 | Serialization Format: cdr
+                   Topic: /localization/pose_estimator/pose_with_covariance | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 731 | Serialization Format: cdr
                    Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 4 | Serialization Format: cdr
+
 
 ```
 
