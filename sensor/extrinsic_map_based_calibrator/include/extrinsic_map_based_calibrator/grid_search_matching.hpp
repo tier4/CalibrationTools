@@ -79,7 +79,7 @@ private:
 
   matchingResult gridSearch(const PointCloudT::Ptr & map_pointCloud,
     const PointCloudT::Ptr & sensor_pointCloud);
-  Eigen::Matrix4d getMatrix4d(const double & x, const double & y, const double & z,
+  static Eigen::Matrix4d getMatrix4d(const double & x, const double & y, const double & z,
     const double & roll, const double & pitch, const double & yaw);
   std::vector<double> generateSearchElement(const double & range_min,
     const double & range_max,
