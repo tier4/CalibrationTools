@@ -54,7 +54,7 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
 
 void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
   const PointCloudT::Ptr & pcl_sensor,
-  PointCloudT::Ptr & pcl_filtered_sensor)
+  PointCloudT::Ptr & pcl_filtered_sensor) const
 {
   // ransac
   pcl::PointIndices::Ptr output_inliers(new pcl::PointIndices);

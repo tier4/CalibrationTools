@@ -72,7 +72,7 @@ private:
   double threshold_;
 
   void calibrationRequestCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Request>
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Request>&
     request,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Response>
     response);

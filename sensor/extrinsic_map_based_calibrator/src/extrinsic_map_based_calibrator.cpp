@@ -32,7 +32,7 @@ ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptio
   is_calibration_area_map_ = this->declare_parameter<bool>("use_calibration_area_map", "");
 
   {
-    PreprocessingConfig config;
+    PreprocessingConfig config{};
     config.ransac_config.max_iteration = this->declare_parameter<int>("preprocessing.ransac.max_iteration");
     config.ransac_config.voxel_grid_size = this->declare_parameter<double>("preprocessing.ransac.voxel_grid_size");
     config.ransac_config.distance_threshold = this->declare_parameter<double>("preprocessing.ransac.distance_threshold");
@@ -133,7 +133,13 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   if (!map_with_wall_pointcloud_msg_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } else if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
+  } if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
+RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
+return false;
+} else if (!sensor_pointcloud_msg_) {
+RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
+return false;
+}
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
   } else if (!sensor_pointcloud_msg_) {
@@ -144,7 +150,15 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   if (map_with_wall_pointcloud_msg_->height == 0) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } else if ( is_calibration_area_map_ ) {
+  } if ( is_calibration_area_map_ ) {
+if( map_without_wall_pointcloud_msg_->height == 0 ) {
+RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
+return false;
+}
+} else if (sensor_pointcloud_msg_->height == 0) {
+RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
+return false;
+}
     if( map_without_wall_pointcloud_msg_->height == 0 ) {
       RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
       return false;
@@ -328,7 +342,7 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   // execute gicp matching
   RCLCPP_DEBUG_STREAM(this->get_logger(), "--- Execute map based calibration ---");
   bool is_matching = mapBasedCalibration(tf_initial_pose);
-  if ( is_matching) {
+  response->success = is_matching;
     response->success = true;
   } else {
     response->success = false;
@@ -372,7 +386,9 @@ void ExtrinsicMapBasedCalibrator::printTransform(const tf2::Transform & tf)
     << ", " << tf.getOrigin().z());
 
   tf2::Matrix3x3 tf2_matrix(tf.getRotation());
-  double roll, pitch, yaw;
+  double roll;
+double pitch;
+double yaw;
   tf2_matrix.getRPY(roll, pitch, yaw);
   RCLCPP_INFO_STREAM(this->get_logger(), "rotate");
   RCLCPP_INFO_STREAM(this->get_logger(), roll
