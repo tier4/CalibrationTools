@@ -75,18 +75,17 @@ matchingResult GridSearchMatching::gridSearch(
   tree_map->setInputCloud(map_pointcloud);
   matchingResult min_score_result;
   min_score_result.score = DBL_MAX;
-  int num_threads = 8;
-  #pragma omp parallel for num_threads(num_threads)
+  #pragma omp parallel for
   for (const auto & x_element: x_elements) {
-    #pragma omp parallel for num_threads(num_threads)
+    #pragma omp parallel for
     for (const auto & y_element: y_elements) {
-      #pragma omp parallel for num_threads(num_threads)
+      #pragma omp parallel for
       for  (const auto & z_element: z_elements) {
-        #pragma omp parallel for num_threads(num_threads)
+        #pragma omp parallel for
         for  (const auto & roll_element: roll_elements) {
-          #pragma omp parallel for num_threads(num_threads)
+          #pragma omp parallel for
           for  (const auto & pitch_element: pitch_elements) {
-            #pragma omp parallel for num_threads(num_threads)
+            #pragma omp parallel for
             for  (const auto & yaw_element: yaw_elements) {
               Eigen::Matrix4d transformation_score_matrix = getMatrix4d(x_element, y_element, z_element, roll_element, pitch_element, yaw_element);
               PointCloudT::Ptr translated_cloud(new PointCloudT);
@@ -97,10 +96,12 @@ matchingResult GridSearchMatching::gridSearch(
               tree_sensor->setInputCloud(translated_cloud);
               double tmp_score =
                 matcher_.getFitnessScore(map_pointcloud, translated_cloud, tree_map, tree_sensor);
-
-              if (tmp_score < min_score_result.score) {
-                min_score_result.score = tmp_score;
-                min_score_result.transformation_matrix = transformation_score_matrix;
+              #pragma omp critical (score)
+              {
+                if (tmp_score < min_score_result.score) {
+                  min_score_result.score = tmp_score;
+                  min_score_result.transformation_matrix = transformation_score_matrix;
+                }
               }
             }
           }
