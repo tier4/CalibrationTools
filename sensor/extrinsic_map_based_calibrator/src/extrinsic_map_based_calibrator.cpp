@@ -342,7 +342,7 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   // execute gicp matching
   RCLCPP_DEBUG_STREAM(this->get_logger(), "--- Execute map based calibration ---");
   bool is_matching = mapBasedCalibration(tf_initial_pose);
-  if ( is_matching) {
+  response->success = is_matching;
     response->success = true;
   } else {
     response->success = false;
