@@ -102,7 +102,7 @@ public:
   void publishPointCloud(const PointCloudT::Ptr & pcl_pointcloud,
   const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & pub);
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>& request,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
   void printTransform(const tf2::Transform & tf);
 };
