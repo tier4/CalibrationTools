@@ -54,7 +54,7 @@ struct PreprocessingConfig{
 class ExtrinsicMapBasedPreprocessing
 {
 private:
-  PreprocessingConfig config_;
+  PreprocessingConfig config_{};
   PointCloudMatcher matcher_;
   matchingResult prematched_result_;
 
