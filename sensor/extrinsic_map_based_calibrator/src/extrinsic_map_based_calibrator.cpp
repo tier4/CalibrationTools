@@ -32,7 +32,7 @@ ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptio
   is_calibration_area_map_ = this->declare_parameter<bool>("use_calibration_area_map", "");
 
   {
-    PreprocessingConfig config;
+    PreprocessingConfig config{};
     config.ransac_config.max_iteration = this->declare_parameter<int>("preprocessing.ransac.max_iteration");
     config.ransac_config.voxel_grid_size = this->declare_parameter<double>("preprocessing.ransac.voxel_grid_size");
     config.ransac_config.distance_threshold = this->declare_parameter<double>("preprocessing.ransac.distance_threshold");
