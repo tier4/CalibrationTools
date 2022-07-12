@@ -133,7 +133,13 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   if (!map_with_wall_pointcloud_msg_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } else if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
+  } if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
+RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
+return false;
+} else if (!sensor_pointcloud_msg_) {
+RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
+return false;
+}
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
   } else if (!sensor_pointcloud_msg_) {
