@@ -38,6 +38,15 @@ struct GridSearchConfig{
   double y_range_min_;
   double y_range_max_;
   double y_resolution_;
+  double z_range_min_;
+  double z_range_max_;
+  double z_resolution_;
+  double roll_range_min_;
+  double roll_range_max_;
+  double roll_resolution_;
+  double pitch_range_min_;
+  double pitch_range_max_;
+  double pitch_resolution_;
   double yaw_range_min_;
   double yaw_range_max_;
   double yaw_resolution_;
@@ -70,6 +79,8 @@ private:
 
   matchingResult gridSearch(const PointCloudT::Ptr & map_pointCloud,
     const PointCloudT::Ptr & sensor_pointCloud);
+  Eigen::Matrix4d getMatrix4d(const double & x, const double & y, const double & z,
+    const double & roll, const double & pitch, const double & yaw);
   std::vector<double> generateSearchElement(const double & range_min,
     const double & range_max,
     const double & resolution);

@@ -35,6 +35,23 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
     map_pointcloud_without_wall_pcl);
 }
 
+PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
+  const PointCloudT::Ptr & map_pointcloud_with_wall,
+  const PointCloudT::Ptr & sensor_pointcloud_pcl)
+{
+  // matching of sensor cloud and map cloud
+  matcher_.setParameter(config_.clip_config.matching_config);
+  prematched_result_ = matcher_.ICPMatching(map_pointcloud_with_wall, sensor_pointcloud_pcl);
+  PointCloudT::Ptr matched_sensor_pointcloud(new PointCloudT);
+  pcl::transformPointCloud( *sensor_pointcloud_pcl, *matched_sensor_pointcloud, prematched_result_.transformation_matrix);
+
+  PointCloudT::Ptr filtered_sensor_pointcloud(new PointCloudT);
+  // downsampling on the floor
+  downsamplingOnFloor(matched_sensor_pointcloud, filtered_sensor_pointcloud);
+
+  return filtered_sensor_pointcloud;
+}
+
 void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
   const PointCloudT::Ptr & pcl_sensor,
   PointCloudT::Ptr & pcl_filtered_sensor)
@@ -83,8 +100,8 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::removeWallPointcloud(
   // matching of sensor cloud and map cloud
   matcher_.setParameter(config_.clip_config.matching_config);
   PointCloudT matched_sensor_point_cloud;
-  matchingResult result = matcher_.GICPMatching(map_point_cloud_with_wall, sensor_point_cloud);
-  pcl::transformPointCloud( *sensor_point_cloud, matched_sensor_point_cloud, result.transformation_matrix);
+  prematched_result_ = matcher_.ICPMatching(map_point_cloud_with_wall, sensor_point_cloud);
+  pcl::transformPointCloud( *sensor_point_cloud, matched_sensor_point_cloud, prematched_result_.transformation_matrix);
 
   // return matched_sensor_point_cloud.makeShared();
   // clip overlapped cloud

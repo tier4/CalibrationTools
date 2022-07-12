@@ -15,6 +15,7 @@
 #include "extrinsic_map_based_calibrator/grid_search_matching.hpp"
 
 #include "tier4_autoware_utils/math/unit_conversion.hpp"
+#include <omp.h>
 
 namespace extrinsic_map_base_calibrator
 {
@@ -57,48 +58,90 @@ bool GridSearchMatching::executeGridSearchMatching(
 matchingResult GridSearchMatching::gridSearch(
   const PointCloudT::Ptr & map_pointcloud, const PointCloudT::Ptr & sensor_pointcloud)
 {
-  std::vector<double> x_score =
+  std::vector<double> x_elements =
     generateSearchElement(config_.x_range_min_, config_.x_range_max_, config_.x_resolution_);
-  std::vector<double> y_score =
+  std::vector<double> y_elements =
     generateSearchElement(config_.y_range_min_, config_.y_range_max_, config_.y_resolution_);
-  std::vector<double> yaw_score =
+  std::vector<double> z_elements =
+    generateSearchElement(config_.z_range_min_, config_.z_range_max_, config_.z_resolution_);
+  std::vector<double> roll_elements =
+    generateSearchElement(config_.roll_range_min_, config_.roll_range_max_, config_.roll_resolution_);
+  std::vector<double> pitch_elements =
+    generateSearchElement(config_.pitch_range_min_, config_.pitch_range_max_, config_.pitch_resolution_);
+  std::vector<double> yaw_elements =
     generateSearchElement(config_.yaw_range_min_, config_.yaw_range_max_, config_.yaw_resolution_);
+
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_map(new pcl::search::KdTree<pcl::PointXYZ>);
   tree_map->setInputCloud(map_pointcloud);
   matchingResult min_score_result;
   min_score_result.score = DBL_MAX;
+  int num_threads = 8;
+  #pragma omp parallel for num_threads(num_threads)
+  for (const auto & x_element: x_elements) {
+    #pragma omp parallel for num_threads(num_threads)
+    for (const auto & y_element: y_elements) {
+      #pragma omp parallel for num_threads(num_threads)
+      for  (const auto & z_element: z_elements) {
+        #pragma omp parallel for num_threads(num_threads)
+        for  (const auto & roll_element: roll_elements) {
+          #pragma omp parallel for num_threads(num_threads)
+          for  (const auto & pitch_element: pitch_elements) {
+            #pragma omp parallel for num_threads(num_threads)
+            for  (const auto & yaw_element: yaw_elements) {
+              Eigen::Matrix4d transformation_score_matrix = getMatrix4d(x_element, y_element, z_element, roll_element, pitch_element, yaw_element);
+              PointCloudT::Ptr translated_cloud(new PointCloudT);
+              pcl::transformPointCloud(
+                *sensor_pointcloud, *translated_cloud, transformation_score_matrix);
 
-  for (size_t i = 0; i < x_score.size(); ++i) {
-    for (size_t j = 0; j < y_score.size(); ++j) {
-      for (size_t k = 0; k < yaw_score.size(); ++k) {
-        Eigen::Matrix4d transformation_score_matrix = Eigen::Matrix4d::Identity();
+              pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_sensor(new pcl::search::KdTree<pcl::PointXYZ>);
+              tree_sensor->setInputCloud(translated_cloud);
+              double tmp_score =
+                matcher_.getFitnessScore(map_pointcloud, translated_cloud, tree_map, tree_sensor);
 
-        double theta_score = tier4_autoware_utils::deg2rad(yaw_score.at(k));
-        transformation_score_matrix(0, 0) = std::cos(theta_score);
-        transformation_score_matrix(0, 1) = -sin(theta_score);
-        transformation_score_matrix(1, 0) = sin(theta_score);
-        transformation_score_matrix(1, 1) = std::cos(theta_score);
-        transformation_score_matrix(0, 3) = x_score.at(i);
-        transformation_score_matrix(1, 3) = y_score.at(j);
-        transformation_score_matrix(2, 3) = 0.0;
-
-        PointCloudT::Ptr translated_cloud(new PointCloudT);
-        pcl::transformPointCloud(
-          *sensor_pointcloud, *translated_cloud, transformation_score_matrix);
-
-        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_sensor(new pcl::search::KdTree<pcl::PointXYZ>);
-        tree_sensor->setInputCloud(translated_cloud);
-        double tmp_score =
-          matcher_.getFitnessScore(map_pointcloud, translated_cloud, tree_map, tree_sensor);
-
-        if (tmp_score < min_score_result.score) {
-          min_score_result.score = tmp_score;
-          min_score_result.transformation_matrix = transformation_score_matrix;
+              if (tmp_score < min_score_result.score) {
+                min_score_result.score = tmp_score;
+                min_score_result.transformation_matrix = transformation_score_matrix;
+              }
+            }
+          }
         }
       }
     }
   }
   return min_score_result;
+}
+
+Eigen::Matrix4d GridSearchMatching::getMatrix4d(const double & x, const double & y, const double & z,
+  const double & roll, const double & pitch, const double & yaw)
+{
+  Eigen::Matrix4d transformation_roll = Eigen::Matrix4d::Identity();
+  double phi = tier4_autoware_utils::deg2rad(roll);
+  transformation_roll(1, 1) = std::cos(phi);
+  transformation_roll(1, 2) = -sin(phi);
+  transformation_roll(2, 1) = sin(phi);
+  transformation_roll(2, 2) = std::cos(phi);
+
+  Eigen::Matrix4d transformation_pitch = Eigen::Matrix4d::Identity();
+  double theta = tier4_autoware_utils::deg2rad(pitch);
+  transformation_pitch(0, 0) = std::cos(theta);
+  transformation_pitch(0, 2) = sin(theta);
+  transformation_pitch(2, 0) = -sin(theta);
+  transformation_pitch(2, 2) = std::cos(theta);
+
+  Eigen::Matrix4d transformation_yaw = Eigen::Matrix4d::Identity();
+  double psi = tier4_autoware_utils::deg2rad(yaw);
+  transformation_yaw(0, 0) = std::cos(psi);
+  transformation_yaw(0, 1) = -sin(psi);
+  transformation_yaw(1, 0) = sin(psi);
+  transformation_yaw(1, 1) = std::cos(psi);
+
+  Eigen::Matrix4d transformation_score_matrix = Eigen::Matrix4d::Identity();
+  transformation_score_matrix = transformation_yaw * transformation_pitch * transformation_roll;
+  transformation_score_matrix(0, 3) = x;
+  transformation_score_matrix(1, 3) = y;
+  transformation_score_matrix(2, 3) = z;
+
+  return transformation_score_matrix;
 }
 
 std::vector<double> GridSearchMatching::generateSearchElement(

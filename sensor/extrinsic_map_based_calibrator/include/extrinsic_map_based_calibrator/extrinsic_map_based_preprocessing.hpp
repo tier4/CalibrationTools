@@ -56,6 +56,7 @@ class ExtrinsicMapBasedPreprocessing
 private:
   PreprocessingConfig config_;
   PointCloudMatcher matcher_;
+  matchingResult prematched_result_;
 
 public:
   explicit ExtrinsicMapBasedPreprocessing();
@@ -63,9 +64,9 @@ public:
     const PointCloudT::Ptr & map_pointcloud_with_wall_pcl,
     const PointCloudT::Ptr & map_pointcloud_without_wall_pcl,
     const PointCloudT::Ptr & sensor_pointcloud_pcl);
-  void convertFromROSMsg(
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & sensor_msg_pointcloud,
-    PointCloudT::Ptr & pcl_pointcloud);
+  PointCloudT::Ptr preprocessing(
+    const PointCloudT::Ptr & map_point_cloud_with_wall,
+    const PointCloudT::Ptr & sensor_pointcloud_pcl);
   void downsamplingOnFloor(
     const PointCloudT::Ptr & pcl_sensor,
     PointCloudT::Ptr & pcl_filtered_sensor);
@@ -74,6 +75,7 @@ public:
     const PointCloudT::Ptr & map_point_cloud_with_wall,
     const PointCloudT::Ptr & map_point_cloud_without_wall);
   void setConfig(PreprocessingConfig & config){config_ = config;};
+  matchingResult getPrematchedResult(){return prematched_result_;};
 };
 
 }  // namespace extrinsic_map_base_calibrator

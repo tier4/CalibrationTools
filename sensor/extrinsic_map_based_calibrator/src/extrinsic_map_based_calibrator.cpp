@@ -29,6 +29,7 @@ ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptio
   parent_frame_ = this->declare_parameter("parent_frame", "");
   child_frame_ = this->declare_parameter("child_frame", "");
   is_debug_pub_ = this->declare_parameter<bool>("map_based_calibrator.debug_pub");
+  is_calibration_area_map_ = this->declare_parameter<bool>("use_calibration_area_map", "");
 
   {
     PreprocessingConfig config;
@@ -55,6 +56,15 @@ ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptio
     config.y_range_max_ = this->declare_parameter<double>("grid_search.y_range_max");
     config.y_range_min_ = this->declare_parameter<double>("grid_search.y_range_min");
     config.y_resolution_ = this->declare_parameter<double>("grid_search.y_range_resolution");
+    config.z_range_max_ = this->declare_parameter<double>("grid_search.z_range_max");
+    config.z_range_min_ = this->declare_parameter<double>("grid_search.z_range_min");
+    config.z_resolution_ = this->declare_parameter<double>("grid_search.z_range_resolution");
+    config.roll_range_max_ = this->declare_parameter<double>("grid_search.roll_range_max");
+    config.roll_range_min_ = this->declare_parameter<double>("grid_search.roll_range_min");
+    config.roll_resolution_ = this->declare_parameter<double>("grid_search.roll_range_resolution");
+    config.pitch_range_max_ = this->declare_parameter<double>("grid_search.pitch_range_max");
+    config.pitch_range_min_ = this->declare_parameter<double>("grid_search.pitch_range_min");
+    config.pitch_resolution_ = this->declare_parameter<double>("grid_search.pitch_range_resolution");
     config.yaw_range_max_ = this->declare_parameter<double>("grid_search.yaw_range_max");
     config.yaw_range_min_ = this->declare_parameter<double>("grid_search.yaw_range_min");
     config.yaw_resolution_ = this->declare_parameter<double>("grid_search.yaw_range_resolution");
@@ -114,6 +124,8 @@ ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptio
     calibrated_pointcloud_pub_ =
       this->create_publisher<sensor_msgs::msg::PointCloud2>("debug/calibrated_pointcloud", map_qos);
   }
+  // wait for other node
+  rclcpp::sleep_for(10s);
 }
 
 bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_initial_pose)
@@ -121,19 +133,22 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   if (!map_with_wall_pointcloud_msg_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } else if (!map_without_wall_pointcloud_msg_) {
+  } else if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
   } else if (!sensor_pointcloud_msg_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
     return false;
   }
+
   if (map_with_wall_pointcloud_msg_->height == 0) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } else if (map_without_wall_pointcloud_msg_->height == 0) {
-    RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
-    return false;
+  } else if ( is_calibration_area_map_ ) {
+    if( map_without_wall_pointcloud_msg_->height == 0 ) {
+      RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
+      return false;
+    }
   } else if (sensor_pointcloud_msg_->height == 0) {
     RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
     return false;
@@ -142,16 +157,22 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   PointCloudT::Ptr pcl_map(new PointCloudT);
   PointCloudT::Ptr pcl_map_without_wall(new PointCloudT);
   PointCloudT::Ptr pcl_sensor(new PointCloudT);
-  if (!preprocessing(pcl_map, pcl_map_without_wall, pcl_sensor, tf_initial_pose)) {
-    return false;
+  if(is_calibration_area_map_) {
+    if (!preprocessing(pcl_map, pcl_map_without_wall, pcl_sensor, tf_initial_pose)) {
+      return false;
+    }
+    grid_search_matching_.executeGridSearchMatching(pcl_map_without_wall, pcl_sensor);
+  } else {
+    if (!preprocessing(pcl_map, pcl_sensor, tf_initial_pose)) {
+      return false;
+    }
+    grid_search_matching_.executeGridSearchMatching(pcl_map, pcl_sensor);
   }
 
-  grid_search_matching_.executeGridSearchMatching(pcl_map_without_wall, pcl_sensor);
-
-  matchingResult final_result = grid_search_matching_.getRematchedResult();
+  calibrated_sensor_result_ = grid_search_matching_.getRematchedResult();
 
   PointCloudT::Ptr calibrated_pointcloud(new PointCloudT);
-  pcl::transformPointCloud(*pcl_sensor, *calibrated_pointcloud, final_result.transformation_matrix);
+  pcl::transformPointCloud(*pcl_sensor, *calibrated_pointcloud, calibrated_sensor_result_.transformation_matrix);
 
   publishPointCloud(calibrated_pointcloud, calibrated_pointcloud_pub_);
   pcl::toROSMsg(*calibrated_pointcloud, calibrated_pointcloud_msg_);
@@ -167,7 +188,10 @@ bool ExtrinsicMapBasedCalibrator::preprocessing(
   PointCloudT::Ptr pcl_map_tmp(new PointCloudT);
   PointCloudT::Ptr pcl_map_without_wall_tmp(new PointCloudT);
   PointCloudT::Ptr pcl_sensor_tmp(new PointCloudT);
-  if (!convertFromROSMsg(pcl_map_tmp, pcl_map_without_wall_tmp, pcl_sensor_tmp)) {
+  if (!convertFromROSMsg(pcl_map_tmp, map_with_wall_pointcloud_msg_) ||
+    !convertFromROSMsg(pcl_map_without_wall_tmp, map_without_wall_pointcloud_msg_) ||
+    !convertFromROSMsg(pcl_sensor_tmp, sensor_pointcloud_msg_)) {
+    RCLCPP_ERROR(this->get_logger(), "Fault convert ros message to pcl");
     return false;
   }
   // transform each frame to parent_frame
@@ -189,34 +213,40 @@ bool ExtrinsicMapBasedCalibrator::preprocessing(
   return true;
 }
 
-bool ExtrinsicMapBasedCalibrator::convertFromROSMsg(
+bool ExtrinsicMapBasedCalibrator::preprocessing(
   PointCloudT::Ptr & pcl_map,
-  PointCloudT::Ptr & pcl_map_without_wall,
-  PointCloudT::Ptr & pcl_sensor)
+  PointCloudT::Ptr & pcl_sensor, const tf2::Transform & tf_initial_pose)
+{
+  PointCloudT::Ptr pcl_map_tmp(new PointCloudT);
+  PointCloudT::Ptr pcl_sensor_tmp(new PointCloudT);
+  if (!convertFromROSMsg(pcl_map_tmp, map_with_wall_pointcloud_msg_) ||
+    !convertFromROSMsg(pcl_sensor_tmp, sensor_pointcloud_msg_)) {
+    RCLCPP_ERROR(this->get_logger(), "Fault convert ros message to pcl");
+    return false;
+  }
+  // transform each frame to parent_frame
+  PointCloudT::Ptr transformed_sensor(new PointCloudT);
+  pcl_ros::transformPointCloud(parent_frame_, *pcl_map_tmp, *pcl_map, tf_buffer_);
+  pcl_ros::transformPointCloud(*pcl_sensor_tmp, *transformed_sensor, tf_initial_pose);
+
+  publishPointCloud(pcl_map, map_pointcloud_pub_);
+  publishPointCloud(transformed_sensor, sensor_pointcloud_pub_);
+
+  pcl_sensor = preprocessing_.preprocessing(pcl_map, transformed_sensor);
+  publishPointCloud(pcl_sensor, sensor_pointcloud_without_wall_pub_);
+  return true;
+}
+
+bool ExtrinsicMapBasedCalibrator::convertFromROSMsg(
+  PointCloudT::Ptr & pcl_pointcloud,
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg)
 {
   {
     std::lock_guard<std::mutex> message_lock(mutex_);
-    if (!map_with_wall_pointcloud_msg_) {
-      RCLCPP_ERROR(this->get_logger(), "cant get point cloud map");
+    if (!msg) {
       return false;
     }
-    pcl::fromROSMsg(*map_with_wall_pointcloud_msg_, *pcl_map);
-  }
-  {
-    std::lock_guard<std::mutex> message_lock(mutex_);
-    if (!map_without_wall_pointcloud_msg_) {
-      RCLCPP_ERROR(this->get_logger(), "cant get point cloud map without wall");
-      return false;
-    }
-    pcl::fromROSMsg(*map_without_wall_pointcloud_msg_, *pcl_map_without_wall);
-  }
-  {
-    std::lock_guard<std::mutex> message_lock(mutex_);
-    if (!sensor_pointcloud_msg_) {
-      RCLCPP_ERROR(this->get_logger(), "cant get sensor cloud");
-      return false;
-    }
-    pcl::fromROSMsg(*sensor_pointcloud_msg_, *pcl_sensor);
+    pcl::fromROSMsg(*msg, *pcl_pointcloud);
   }
   return true;
 }
@@ -277,16 +307,14 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   // Wait for subscription topic
   while (rclcpp::ok() &&
     (!sensor_pointcloud_msg_ || !map_with_wall_pointcloud_msg_ ||
-    !map_without_wall_pointcloud_msg_ ))
+    (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_)))
   {
     if (!map_with_wall_pointcloud_msg_) {
       RCLCPP_WARN_SKIPFIRST(this->get_logger(), "Can not received point cloud map topic");
-    } else if (!map_without_wall_pointcloud_msg_) {
+    } else if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
       RCLCPP_WARN_SKIPFIRST(
         this->get_logger(), "Can not received point cloud map without wall topic");
     } else if (!sensor_pointcloud_msg_) {
-      RCLCPP_WARN_SKIPFIRST(
-        this->get_logger(), "map size %ld", map_with_wall_pointcloud_msg_->data.size());
       RCLCPP_WARN_SKIPFIRST(
         this->get_logger(), "Can not received sensor point cloud topic");
     }
@@ -298,7 +326,7 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   tf2::fromMsg(request->initial_pose, tf_initial_pose);
 
   // execute gicp matching
-  RCLCPP_DEBUG_STREAM(this->get_logger(), "--- Execute gicp Matching ---");
+  RCLCPP_DEBUG_STREAM(this->get_logger(), "--- Execute map based calibration ---");
   bool is_matching = mapBasedCalibration(tf_initial_pose);
   if ( is_matching) {
     response->success = true;
@@ -307,19 +335,49 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   }
 
   // set result to response
+  // printTransform(tf_initial_pose);
   response->debug_pointcloud.header.frame_id = parent_frame_;
   response->debug_pointcloud = calibrated_pointcloud_msg_;
-  response->result_pose.position.x = calibrated_sensor_result_.transformation_matrix(0, 3);
-  response->result_pose.position.y = calibrated_sensor_result_.transformation_matrix(1, 3);
-  response->result_pose.position.z = calibrated_sensor_result_.transformation_matrix(2, 3);
+  matchingResult prematch = preprocessing_.getPrematchedResult();
+  tf2::Vector3 trans_pre( prematch.transformation_matrix(0, 3),
+    prematch.transformation_matrix(1, 3),
+    prematch.transformation_matrix(2, 3));
+  Eigen::Matrix3d R_pre = prematch.transformation_matrix.block(0, 0, 3, 3);
+  Eigen::Quaterniond q_pre(R_pre);
+
+  tf2::Quaternion Qtf_pre(q_pre.x(), q_pre.y(), q_pre.z(), q_pre.w());
+  tf2::Transform tf_prematch(Qtf_pre, trans_pre);
+
+  tf2::Vector3 trans( calibrated_sensor_result_.transformation_matrix(0, 3),
+    calibrated_sensor_result_.transformation_matrix(1, 3),
+    calibrated_sensor_result_.transformation_matrix(2, 3));
   Eigen::Matrix3d R = calibrated_sensor_result_.transformation_matrix.block(0, 0, 3, 3);
   Eigen::Quaterniond q(R);
-  response->result_pose.orientation.x = q.x();
-  response->result_pose.orientation.y = q.y();
-  response->result_pose.orientation.z = q.z();
-  response->result_pose.orientation.w = q.w();
+
+  tf2::Quaternion Qtf(q.x(), q.y(), q.z(), q.w());
+  tf2::Transform result_tf(Qtf, trans);
+  // printTransform(result_tf);
+  result_tf = result_tf * tf_prematch * tf_initial_pose;
+  // printTransform(result_tf);
+  tf2::toMsg(result_tf, response->result_pose);
 
   response->score = calibrated_sensor_result_.score;
+}
+
+void ExtrinsicMapBasedCalibrator::printTransform(const tf2::Transform & tf)
+{
+  RCLCPP_INFO_STREAM(this->get_logger(), "trans");
+  RCLCPP_INFO_STREAM(this->get_logger(), tf.getOrigin().x()
+    << ", " << tf.getOrigin().y()
+    << ", " << tf.getOrigin().z());
+
+  tf2::Matrix3x3 tf2_matrix(tf.getRotation());
+  double roll, pitch, yaw;
+  tf2_matrix.getRPY(roll, pitch, yaw);
+  RCLCPP_INFO_STREAM(this->get_logger(), "rotate");
+  RCLCPP_INFO_STREAM(this->get_logger(), roll
+    << ", " << pitch
+    << ", " << yaw);
 }
 
 }  // namespace extrinsic_map_base_calibrator

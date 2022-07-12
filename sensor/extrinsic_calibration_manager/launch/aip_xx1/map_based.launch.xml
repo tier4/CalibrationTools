@@ -5,12 +5,19 @@
   <arg name="map_path" default="(env HOME)/map/" />
   <arg name="map_calibration_area_file" default="map_calibration_area.pcd"/>
   <arg name="use_calibration_area_map" default="true" />
-
-  <let name="sensor_model" value="aip_x1" />
+  <let name="sensor_model" value="aip_xx1" />
 
   <group>
     <push-ros-namespace namespace="sensor_kit" />
     <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/map_based_sensor_kit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)" />
+      <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)" />
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="sensors" />
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/map_based_sensors.launch.xml">
       <arg name="vehicle_id" value="$(var vehicle_id)" />
       <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)" />
     </include>

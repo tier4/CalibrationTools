@@ -70,6 +70,7 @@ private:
   sensor_msgs::msg::PointCloud2 calibrated_pointcloud_msg_;
 
   bool is_debug_pub_ = true;
+  bool is_calibration_area_map_ = true;
 
   matchingResult calibrated_sensor_result_;
 
@@ -83,10 +84,12 @@ public:
     PointCloudT::Ptr & pcl_map,
     PointCloudT::Ptr & pcl_map_without_wall,
     PointCloudT::Ptr & pcl_sensor, const tf2::Transform & tf_initial_pose);
-  bool convertFromROSMsg(
+  bool preprocessing(
     PointCloudT::Ptr & pcl_map,
-    PointCloudT::Ptr & pcl_map_without_wall,
-    PointCloudT::Ptr & pcl_sensor);
+    PointCloudT::Ptr & pcl_sensor, const tf2::Transform & tf_initial_pose);
+  bool convertFromROSMsg(
+    PointCloudT::Ptr & pcl_pointcloud,
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
   void targetMapWithWallCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   void targetMapWithoutWallCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   void sourcePointcloudCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
@@ -101,6 +104,7 @@ public:
   void requestReceivedCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+  void printTransform(const tf2::Transform & tf);
 };
 
 }  // namespace extrinsic_map_base_calibrator
