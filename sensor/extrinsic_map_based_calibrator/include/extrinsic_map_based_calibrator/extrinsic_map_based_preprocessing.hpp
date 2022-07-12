@@ -69,7 +69,7 @@ public:
     const PointCloudT::Ptr & sensor_pointcloud_pcl);
   void downsamplingOnFloor(
     const PointCloudT::Ptr & pcl_sensor,
-    PointCloudT::Ptr & pcl_filtered_sensor);
+    PointCloudT::Ptr & pcl_filtered_sensor) const;
   PointCloudT::Ptr removeWallPointcloud(
     const PointCloudT::Ptr & sensor_point_cloud,
     const PointCloudT::Ptr & map_point_cloud_with_wall,
