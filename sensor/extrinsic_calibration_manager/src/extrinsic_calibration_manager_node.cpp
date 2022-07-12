@@ -114,7 +114,7 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
   bool success = true;
   double max_score = -std::numeric_limits<double>::max();
   for (auto & target_client : target_clients_) {
-    if(target_client.response.success == false){
+    if(!target_client.response.success){
       success = false;
     }
     if( target_client.response.score > threshold_ ){
