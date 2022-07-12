@@ -26,46 +26,6 @@
     [velodyne_rear_base_link]" />
   </node>
 
-  <!-- <group>
-    <include file="$(find-pkg-share point_cloud_accumulator)/launch/point_cloud_accumulator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_left_base_link" />
-      <arg name="input_sensor_topic_name" value="YYYYY/lidar" />
-      <arg name="output_sensor_topic_name" value="YYYYY/accumulated_pointcloud" />
-      <arg name="accumulate_frame_num" value="$(var accumulate_frame_num)" />
-    </include>
-    <include file="$(find-pkg-share extrinsic_map_based_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_left_base_link" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_left_base_link" />
-      <arg name="config_file_name" value="$(var config_file_name)" />
-      <arg name="input_map_with_wall_topic_name" value="$(var input_map_with_wall_topic_name)" />
-      <arg name="input_map_without_wall_topic_name" value="$(var input_map_without_wall_topic_name)" />
-      <arg name="input_source_topic_name" value="YYYYY/accumulated_pointcloud" />
-      <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)" />
-      <arg name="sensor_model" value="$(var sensor_model)" />
-    </include>
-  </group>
-
-  <group>
-    <include file="$(find-pkg-share point_cloud_accumulator)/launch/point_cloud_accumulator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_right_base_link" />
-      <arg name="input_sensor_topic_name" value="XXXXX" />
-      <arg name="output_sensor_topic_name" value="XXXXX/accumulated_pointcloud" />
-      <arg name="accumulate_frame_num" value="$(var accumulate_frame_num)" />
-    </include>
-    <include file="$(find-pkg-share extrinsic_map_based_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_right_base_link" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_right_base_link" />
-      <arg name="config_file_name" value="$(var config_file_name)" />
-      <arg name="input_map_with_wall_topic_name" value="$(var input_map_with_wall_topic_name)" />
-      <arg name="input_map_without_wall_topic_name" value="$(var input_map_without_wall_topic_name)" />
-      <arg name="input_source_topic_name" value="XXXXX/accumulated_pointcloud" />
-      <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)" />
-      <arg name="sensor_model" value="$(var sensor_model)" />
-    </include>
-  </group> -->
-
   <group>
     <include file="$(find-pkg-share point_cloud_accumulator)/launch/point_cloud_accumulator.launch.xml">
       <arg name="ns" value="$(var parent_frame)/velodyne_rear_base_link" />
