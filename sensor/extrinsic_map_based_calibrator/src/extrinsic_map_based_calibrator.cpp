@@ -150,7 +150,15 @@ return false;
   if (map_with_wall_pointcloud_msg_->height == 0) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } else if ( is_calibration_area_map_ ) {
+  } if ( is_calibration_area_map_ ) {
+if( map_without_wall_pointcloud_msg_->height == 0 ) {
+RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
+return false;
+}
+} else if (sensor_pointcloud_msg_->height == 0) {
+RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
+return false;
+}
     if( map_without_wall_pointcloud_msg_->height == 0 ) {
       RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
       return false;
