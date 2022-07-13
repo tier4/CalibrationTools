@@ -133,16 +133,12 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   if (!map_with_wall_pointcloud_msg_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
-RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
-return false;
-} else if (!sensor_pointcloud_msg_) {
-RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
-return false;
-}
+  }
+  if (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } else if (!sensor_pointcloud_msg_) {
+  }
+  if (!sensor_pointcloud_msg_) {
     RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
     return false;
   }
@@ -150,20 +146,14 @@ return false;
   if (map_with_wall_pointcloud_msg_->height == 0) {
     RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
     return false;
-  } if ( is_calibration_area_map_ ) {
-if( map_without_wall_pointcloud_msg_->height == 0 ) {
-RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
-return false;
-}
-} else if (sensor_pointcloud_msg_->height == 0) {
-RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
-return false;
-}
+  }
+  if ( is_calibration_area_map_ ) {
     if( map_without_wall_pointcloud_msg_->height == 0 ) {
       RCLCPP_ERROR(this->get_logger(), "Can not received point cloud map topic");
       return false;
     }
-  } else if (sensor_pointcloud_msg_->height == 0) {
+  }
+  if (sensor_pointcloud_msg_->height == 0) {
     RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
     return false;
   }
@@ -343,10 +333,6 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   RCLCPP_DEBUG_STREAM(this->get_logger(), "--- Execute map based calibration ---");
   bool is_matching = mapBasedCalibration(tf_initial_pose);
   response->success = is_matching;
-    response->success = true;
-  } else {
-    response->success = false;
-  }
 
   // set result to response
   // printTransform(tf_initial_pose);
