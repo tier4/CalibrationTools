@@ -24,15 +24,16 @@ ExtrinsicMapBasedPreprocessing::ExtrinsicMapBasedPreprocessing()
 PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
   const PointCloudT::Ptr & map_pointcloud_with_wall_pcl,
   const PointCloudT::Ptr & map_pointcloud_without_wall_pcl,
-  const PointCloudT::Ptr & sensor_pointcloud_pcl)
+  const PointCloudT::Ptr & sensor_pointcloud_pcl,
+  PointCloudT::Ptr & inliers_pointcloud_pcl)
 {
-  PointCloudT::Ptr filtered_sensor_pointcloud(new PointCloudT);
-  // downsampling on the floor
-  downsamplingOnFloor(sensor_pointcloud_pcl, filtered_sensor_pointcloud);
-
-  return removeWallPointcloud(
-    filtered_sensor_pointcloud, map_pointcloud_with_wall_pcl,
+  PointCloudT::Ptr remove_wall_pointcloud(new PointCloudT);
+  remove_wall_pointcloud = removeWallPointcloud(
+    sensor_pointcloud_pcl, map_pointcloud_with_wall_pcl,
     map_pointcloud_without_wall_pcl);
+  PointCloudT::Ptr filtered_sensor_pointcloud(new PointCloudT);
+  downsamplingOnFloor(remove_wall_pointcloud, filtered_sensor_pointcloud, inliers_pointcloud_pcl);
+  return filtered_sensor_pointcloud;
 }
 
 PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
@@ -46,49 +47,110 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
   pcl::transformPointCloud( *sensor_pointcloud_pcl, *matched_sensor_pointcloud, prematched_result_.transformation_matrix);
 
   PointCloudT::Ptr filtered_sensor_pointcloud(new PointCloudT);
+  PointCloudT::Ptr inliers(new PointCloudT);
   // downsampling on the floor
-  downsamplingOnFloor(matched_sensor_pointcloud, filtered_sensor_pointcloud);
+  downsamplingOnFloor(matched_sensor_pointcloud, filtered_sensor_pointcloud, inliers);
 
   return filtered_sensor_pointcloud;
 }
 
 void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
   const PointCloudT::Ptr & pcl_sensor,
-  PointCloudT::Ptr & pcl_filtered_sensor) const
+  PointCloudT::Ptr & pcl_filtered_sensor,
+  PointCloudT::Ptr & inliers_pointcloud_pcl) const
 {
-  // ransac
-  pcl::PointIndices::Ptr output_inliers(new pcl::PointIndices);
-  pcl::ModelCoefficients::Ptr output_coefficients(new pcl::ModelCoefficients);
-  pcl::SACSegmentation<pcl::PointXYZ> seg;
-  seg.setOptimizeCoefficients(true);
-  seg.setRadiusLimits(config_.ransac_config.min_radius, std::numeric_limits<double>::max());
-  seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setDistanceThreshold(config_.ransac_config.distance_threshold);
-  seg.setInputCloud(pcl_sensor);
-  seg.setMaxIterations(config_.ransac_config.max_iteration);
-  seg.setModelType(pcl::SACMODEL_PLANE);
-  seg.segment(*output_inliers, *output_coefficients);
-
-  // extract target cloud and floor cloud
-  PointCloudT::Ptr cloud_floor(new PointCloudT);
   PointCloudT::Ptr cloud_target(new PointCloudT);
-  pcl::ExtractIndices<pcl::PointXYZ> extract;
-  extract.setInputCloud(pcl_sensor);
-  extract.setIndices(output_inliers);
-  extract.setNegative(false);
-  extract.filter(*cloud_floor);
-  extract.setNegative(true);
-  extract.filter(*cloud_target);
+  Eigen::Vector4d ground_plane_model;
+  extractGroundPlane(pcl_sensor, ground_plane_model, inliers_pointcloud_pcl, cloud_target);
 
   // voxel grid filtering
   PointCloudT::Ptr cloud_voxel_filtered(new PointCloudT);
   pcl::VoxelGrid<pcl::PointXYZ> vg;
-  vg.setInputCloud(pcl::make_shared<PointCloudT>(*cloud_floor));
+  vg.setInputCloud(boost::make_shared<PointCloudT>(*inliers_pointcloud_pcl));
   vg.setLeafSize(config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size);
   vg.filter(*cloud_voxel_filtered);
 
+  pcl::VoxelGrid<pcl::PointXYZ> vg_target;
+  PointCloudT::Ptr filtered_cloud_target(new PointCloudT);
+  vg_target.setInputCloud(boost::make_shared<PointCloudT>(*cloud_target));
+  vg_target.setLeafSize(config_.ransac_config.voxel_grid_size/2, config_.ransac_config.voxel_grid_size/2, config_.ransac_config.voxel_grid_size/2);
+  vg_target.filter(*filtered_cloud_target);
+
   // merge target cloud and downsampled floor cloud
-  *pcl_filtered_sensor = *cloud_voxel_filtered + *cloud_target;
+  *pcl_filtered_sensor = *cloud_voxel_filtered + *filtered_cloud_target;
+
+}
+
+bool ExtrinsicMapBasedPreprocessing::extractGroundPlane(
+  const PointCloudT::Ptr & pointcloud, Eigen::Vector4d & model,
+  PointCloudT::Ptr & plane_pointcloud, PointCloudT::Ptr & target_pointcloud) const
+{
+  std::vector<pcl::ModelCoefficients> models;
+
+  // Obtain an idea of the ground plane using PCA
+  // under the asumption that the axis with less variance will be the ground plane normal
+  pcl::PCA<pcl::PointXYZ> pca;
+  pca.setInputCloud(pointcloud);
+  Eigen::MatrixXf vectors = pca.getEigenVectors();
+  Eigen::Vector3f rough_normal = vectors.col(2);
+
+  // Use RANSAC iteratively until we find the ground plane
+  // Since walls can have more points, we filter using the PCA-based hypothesis
+  pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+  pcl::SACSegmentation<pcl::PointXYZ> seg;
+  pcl::ExtractIndices<pcl::PointXYZ> extract;
+  seg.setOptimizeCoefficients(true);
+  seg.setModelType(pcl::SACMODEL_PLANE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setDistanceThreshold(max_inlier_distance_);
+  seg.setMaxIterations(max_iterations_);
+
+  PointCloudT::Ptr iteration_cloud = pointcloud;
+  int iteration_size = iteration_cloud->height * iteration_cloud->width;
+
+  while (iteration_size > min_plane_points_) {
+    seg.setInputCloud(iteration_cloud);
+    seg.segment(*inliers, *coefficients);
+
+    if (inliers->indices.size() == 0) {
+      break;
+    }
+
+    Eigen::Vector3f normal(
+      coefficients->values[0], coefficients->values[1], coefficients->values[2]);
+    float cos_distance = 1.0 - std::abs(rough_normal.dot(normal));
+
+    if (
+      static_cast<int>(inliers->indices.size()) > min_plane_points_ &&
+      cos_distance < max_cos_distance_) {
+      model = Eigen::Vector4d(
+        coefficients->values[0], coefficients->values[1], coefficients->values[2],
+        coefficients->values[3]);
+
+      // Extract the ground plane inliers
+      extract.setInputCloud(iteration_cloud);
+      extract.setIndices(inliers);
+      extract.setNegative(false);
+      extract.filter(*plane_pointcloud);
+      extract.setNegative(true);
+      extract.filter(*target_pointcloud);
+      return true;
+    }
+
+    // Extract the inliers from the pointcloud (the detected plane was not the ground plane)
+    extract.setInputCloud(iteration_cloud);
+    extract.setIndices(inliers);
+    extract.setNegative(true);
+
+    PointCloudT next_cloud;
+    extract.filter(next_cloud);
+
+    iteration_cloud->swap(next_cloud);
+    iteration_size = iteration_cloud->height * iteration_cloud->width;
+  }
+
+  return false;
 
 }
 
@@ -100,7 +162,7 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::removeWallPointcloud(
   // matching of sensor cloud and map cloud
   matcher_.setParameter(config_.clip_config.matching_config);
   PointCloudT matched_sensor_point_cloud;
-  prematched_result_ = matcher_.ICPMatching(map_point_cloud_with_wall, sensor_point_cloud);
+  prematched_result_ = matcher_.GICPMatching(map_point_cloud_with_wall, sensor_point_cloud);
   pcl::transformPointCloud( *sensor_point_cloud, matched_sensor_point_cloud, prematched_result_.transformation_matrix);
 
   // return matched_sensor_point_cloud.makeShared();

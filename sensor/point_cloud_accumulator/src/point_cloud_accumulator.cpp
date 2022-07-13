@@ -76,7 +76,7 @@ void PointCloudAccumulator::publishPointCloud(
 {
   sensor_msgs::msg::PointCloud2 accumulated_point_cloud_msg;
   pcl::toROSMsg(*pcl_accumulated, accumulated_point_cloud_msg);
-  accumulated_point_cloud_msg.header.frame_id = "base_link";
+  accumulated_point_cloud_msg.header.frame_id = msg->header.frame_id;
   accumulated_point_cloud_msg.header.stamp.nanosec = msg->header.stamp.nanosec;
   accumulated_point_cloud_msg.header.stamp.sec = msg->header.stamp.sec;
   accumulated_point_cloud_pub_->publish(accumulated_point_cloud_msg);

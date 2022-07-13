@@ -27,6 +27,16 @@
 #include "pcl/filters/voxel_grid.h"
 #include "pcl/segmentation/sac_segmentation.h"
 #include "pcl/filters/extract_indices.h"
+#include "pcl/filters/passthrough.h"
+#include "pcl/pcl_base.h"
+#include "pcl/common/pca.h"
+#include "pcl/point_cloud.h"
+#include "pcl/sample_consensus/method_types.h"
+#include "pcl/sample_consensus/model_types.h"
+#include "pcl/ModelCoefficients.h"
+#include "pcl_conversions/pcl_conversions.h"
+#include "tf2/utils.h"
+#include "tf2_eigen/tf2_eigen.h"
 #include "extrinsic_map_based_calibrator/pointcloud_matcher.hpp"
 
 using PointCloudT = pcl::PointCloud<pcl::PointXYZ>;
@@ -57,19 +67,30 @@ private:
   PreprocessingConfig config_{};
   PointCloudMatcher matcher_;
   matchingResult prematched_result_;
+  int min_plane_points_ = 500;
+  float max_cos_distance_ = 0.3;
+  double max_inlier_distance_ = 0.05;
+  int max_iterations_ = 1000;
 
 public:
   explicit ExtrinsicMapBasedPreprocessing();
   PointCloudT::Ptr preprocessing(
     const PointCloudT::Ptr & map_pointcloud_with_wall_pcl,
     const PointCloudT::Ptr & map_pointcloud_without_wall_pcl,
-    const PointCloudT::Ptr & sensor_pointcloud_pcl);
+    const PointCloudT::Ptr & sensor_pointcloud_pcl,
+    PointCloudT::Ptr & inliers_pointcloud_pcl);
   PointCloudT::Ptr preprocessing(
     const PointCloudT::Ptr & map_point_cloud_with_wall,
     const PointCloudT::Ptr & sensor_pointcloud_pcl);
   void downsamplingOnFloor(
     const PointCloudT::Ptr & pcl_sensor,
-    PointCloudT::Ptr & pcl_filtered_sensor) const;
+    PointCloudT::Ptr & pcl_filtered_sensor,
+    PointCloudT::Ptr & inliers_pointcloud_pcl) const;
+  bool extractGroundPlane(
+    const PointCloudT::Ptr & pointcloud,
+    Eigen::Vector4d & model,
+    PointCloudT::Ptr & plane_pointcloud,
+    PointCloudT::Ptr & target_pointcloud) const;
   PointCloudT::Ptr removeWallPointcloud(
     const PointCloudT::Ptr & sensor_point_cloud,
     const PointCloudT::Ptr & map_point_cloud_with_wall,

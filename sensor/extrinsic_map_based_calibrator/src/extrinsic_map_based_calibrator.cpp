@@ -123,6 +123,8 @@ ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptio
       this->create_publisher<sensor_msgs::msg::PointCloud2>("debug/sensor_pointcloud_without_wall", map_qos);
     calibrated_pointcloud_pub_ =
       this->create_publisher<sensor_msgs::msg::PointCloud2>("debug/calibrated_pointcloud", map_qos);
+    inliers_pointcloud_pub_ =
+      this->create_publisher<sensor_msgs::msg::PointCloud2>("debug/inliers_pointcloud", map_qos);
   }
   // wait for other node
   rclcpp::sleep_for(10s);
@@ -176,7 +178,10 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   calibrated_sensor_result_ = grid_search_matching_.getRematchedResult();
 
   PointCloudT::Ptr calibrated_pointcloud(new PointCloudT);
-  pcl::transformPointCloud(*pcl_sensor, *calibrated_pointcloud, calibrated_sensor_result_.transformation_matrix);
+  PointCloudT::Ptr searched_pointcloud(new PointCloudT);
+  matchingResult searched = grid_search_matching_.getSearchedResult();
+  pcl::transformPointCloud(*pcl_sensor, *searched_pointcloud, searched.transformation_matrix);
+  pcl::transformPointCloud(*searched_pointcloud, *calibrated_pointcloud, calibrated_sensor_result_.transformation_matrix);
 
   publishPointCloud(calibrated_pointcloud, calibrated_pointcloud_pub_);
   pcl::toROSMsg(*calibrated_pointcloud, calibrated_pointcloud_msg_);
@@ -212,8 +217,10 @@ bool ExtrinsicMapBasedCalibrator::preprocessing(
   publishPointCloud(pcl_map_without_wall, map_without_wall_pointcloud_pub_);
   publishPointCloud(transformed_sensor, sensor_pointcloud_pub_);
 
-  pcl_sensor = preprocessing_.preprocessing(pcl_map, pcl_map_without_wall, transformed_sensor);
+  PointCloudT::Ptr inliers_pointcloud(new PointCloudT);
+  pcl_sensor = preprocessing_.preprocessing(pcl_map, pcl_map_without_wall, transformed_sensor, inliers_pointcloud);
   publishPointCloud(pcl_sensor, sensor_pointcloud_without_wall_pub_);
+  publishPointCloud(inliers_pointcloud, inliers_pointcloud_pub_);
   return true;
 }
 
@@ -274,6 +281,7 @@ void ExtrinsicMapBasedCalibrator::sourcePointcloudCallback(
 {
   std::lock_guard<std::mutex> message_lock(mutex_);
   sensor_pointcloud_msg_ = msg;
+  sensor_frame_ = msg->header.frame_id;
 }
 
 void ExtrinsicMapBasedCalibrator::publishPointCloud(
@@ -348,6 +356,16 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   tf2::Quaternion Qtf_pre(q_pre.x(), q_pre.y(), q_pre.z(), q_pre.w());
   tf2::Transform tf_prematch(Qtf_pre, trans_pre);
 
+  matchingResult searched = grid_search_matching_.getSearchedResult();
+  tf2::Vector3 trans_searched( searched.transformation_matrix(0, 3),
+    searched.transformation_matrix(1, 3),
+    searched.transformation_matrix(2, 3));
+  Eigen::Matrix3d R_searched = searched.transformation_matrix.block(0, 0, 3, 3);
+  Eigen::Quaterniond q_searched(R_searched);
+
+  tf2::Quaternion Qtf_searched(q_searched.x(), q_searched.y(), q_searched.z(), q_searched.w());
+  tf2::Transform tf_searched(Qtf_searched, trans_searched);
+
   tf2::Vector3 trans( calibrated_sensor_result_.transformation_matrix(0, 3),
     calibrated_sensor_result_.transformation_matrix(1, 3),
     calibrated_sensor_result_.transformation_matrix(2, 3));
@@ -356,8 +374,14 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
 
   tf2::Quaternion Qtf(q.x(), q.y(), q.z(), q.w());
   tf2::Transform result_tf(Qtf, trans);
+
+  geometry_msgs::msg::Transform lidar_base_to_lidar_msg =
+  tf_buffer_.lookupTransform(sensor_frame_, child_frame_, rclcpp::Time(0)).transform;
+  tf2::Transform lidar_base_to_lidar_tf2;
+  tf2::fromMsg(lidar_base_to_lidar_msg, lidar_base_to_lidar_tf2);
+
   // printTransform(result_tf);
-  result_tf = result_tf * tf_prematch * tf_initial_pose;
+  result_tf = result_tf * tf_searched * tf_prematch * lidar_base_to_lidar_tf2 * tf_initial_pose;
   // printTransform(result_tf);
   tf2::toMsg(result_tf, response->result_pose);
 
