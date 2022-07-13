@@ -8,6 +8,7 @@
   <let name="input_map_without_wall_topic_name" value="/map/pointcloud_map_without_wall" />
   <arg name="use_calibration_area_map" default="true" />
   <arg name="accumulate_frame_num" default="2" />
+  <arg name="fitness_score_threshold" default="0.001" />
   <arg name="config_file_name" default="extrinsic_map_based_calib.yaml" />
 
   <!-- extrinsic_calibration_client -->
@@ -25,6 +26,7 @@
     <param name="child_frames" value="
     [velodyne_left_base_link,
     velodyne_right_base_link]" />
+    <param name="fitness_score_threshold" value="$(var fitness_score_threshold)" />
   </node>
 
   <group>
