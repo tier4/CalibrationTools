@@ -52,7 +52,7 @@ ros2 bag play <rosbag_path> --clock -l -r 0.2 \
   --remap /tf:=/null/tf /tf_static:=/null/tf_static
 ```
 
-The previous commands are nedded when performing the calibration on `rosbag` data. However, the calibration can also be performed on the actual vehicles, on which case the commands needs to be modified, since the `logging_simulator` and related functionalities are not needed. To to this, add the `logging_simulator:=false`
+The previous commands are needed when performing the calibration on `rosbag` data. However, the calibration can also be performed on the actual vehicles, on which case the commands needs to be modified, since the `logging_simulator` and related functionalities are not needed. To to this, add the `logging_simulator:=false`
 
 For example,
 
@@ -85,7 +85,7 @@ In Fig 1, a normal pre-calibration scenario can be observed, where the XY-plane 
 
 To confirm the calibration accuracy, the user can refer to several frames, and observe how the grid displayed on the XY plane of the respective frame compares against the point cloud. Following are the relevant frames and their description.
 
-- `base_link`: This frame should lie on the floor and be aligned with respect to the car. If the launcher parameter `broacast_calibration_tf` is set to `True`, it displays the calibration result, whereas if the parameter is set to `False` it displays the frame before the calibration process. It defaults to `True`
+- `base_link`: This frame should lie on the floor and be aligned with respect to the car. If the launcher parameter `broadcast_calibration_tf` is set to `True`, it displays the calibration result, whereas if the parameter is set to `False` it displays the frame before the calibration process. It defaults to `True`
 - `initial_base_link`: This frame represents the original values before the calibration process. It is used to easily switch between the before/after calibration views in order to evaluate how the calibration changed.
 - `ground_plane`: This frame lies on the detected floor, and from this frame, the `roll`, `pitch`, and `z` values are extracted for the output values. Conversely, its `x`, `y`, and `yaw` do not bear relation with the calibration output (since these values can not be estimated using this method).
 
