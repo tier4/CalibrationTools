@@ -259,7 +259,7 @@ The interactive calibrator UI, although can be used in a standalone fashion, was
 
 The `Data collection tools` implement several optional functionalities meant to help the user to both perform the calibration itself and to evaluate it.
 
-1. `Pause/Play`: Whether or not the Interactive calibration tool listens to new data from the sensor topics. It is useful for debugging, evaluation, and calibration pourposes, since it enables the user to focus on a single time step of synchronized data.
+1. `Pause/Play`: Whether or not the Interactive calibration tool listens to new data from the sensor topics. It is useful for debugging, evaluation, and calibration purposes, since it enables the user to focus on a single time step of synchronized data.
 2. `Take screenshot`: Takes a screenshot of the widget of the UI and the image with the drawings and saves them into the current folder.
 3. `Republish calibration data`: Whether or not the synchronized data that is displayed in the Interactive calibrator UI is republished. The advantange of using this feature is that used together with the `Paused/Play` button, the user can calibrate on a fixed pair of image/point cloud (in the usual case, clicking points of the point cloud may prove difficult).
 4. `Publish /tf`: Whether or not the Interactive calibrator tool publishes in the `/tf` topic the estimated extrinsics.
