@@ -284,7 +284,7 @@ void TagCalibratorVisualizer::drawCalibrationZone(
   }
 
   double min_calib_dist = 0.0;
-  double max_calib_dist = 12.0;  // this is inly for visualization pourposes
+  double max_calib_dist = 12.0;  // this is inly for visualization purposes
   double min_angle = std::atan2(v_l(0), v_l(2));
   double max_angle = std::atan2(v_r(0), v_r(2));
 

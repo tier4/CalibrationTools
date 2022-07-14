@@ -197,7 +197,7 @@ bool ExtrinsicGroundPlaneCalibrator::checkInitialTransforms()
     if (base_to_sensor_kit_rpy.x != 0.0 || base_to_sensor_kit_rpy.y != 0.0) {
       RCLCPP_ERROR_STREAM(
         this->get_logger(),
-        "This method assumes that the base and the sensor kit are paralell. RPY="
+        "This method assumes that the base and the sensor kit are parallel. RPY="
           << base_to_sensor_kit_rpy.x << ", " << base_to_sensor_kit_rpy.y << ", "
           << base_to_sensor_kit_rpy.z);
       return false;
@@ -226,7 +226,7 @@ bool ExtrinsicGroundPlaneCalibrator::extractGroundPlane(
   std::vector<pcl::ModelCoefficients> models;
 
   // Obtain an idea of the ground plane using PCA
-  // under the asumption that the axis with less variance will be the ground plane normal
+  // under the assumption that the axis with less variance will be the ground plane normal
   pcl::PCA<PointType> pca;
   pca.setInputCloud(pointcloud);
   Eigen::MatrixXf vectors = pca.getEigenVectors();
@@ -450,7 +450,7 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
   Eigen::Isometry3d raw_base_to_lidar_eigen = raw_lidar_to_base_eigen.inverse();
 
   // The ground_plane_raw tf is only assures us that it lies on the ground plane, but its yaw is
-  // arbitrrary, and the position in the plane is obtaines by projecting the lidar origin in the
+  // arbitrary, and the position in the plane is obtained by projecting the lidar origin in the
   // plane
   geometry_msgs::msg::TransformStamped raw_lidar_to_base_msg =
     tf2::eigenToTransform(raw_lidar_to_base_eigen);
@@ -511,7 +511,7 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
     estimated_z = kalman_filter_.getXelement(2);
   }
 
-  // By detecting the ground plane and fabricating a pose arbitrarely, the x, y, and yaw do not hold
+  // By detecting the ground plane and fabricating a pose arbitrarily, the x, y, and yaw do not hold
   // real meaning, so we instead just use the ones from the initial calibration
   geometry_msgs::msg::Pose output_sensor_kit_to_lidar_base_msg;
   output_sensor_kit_to_lidar_base_msg.orientation =
@@ -538,7 +538,7 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
     tf_broadcaster_.sendTransform(output_tf_msg);
   }
 
-  // We currently perform no filterging stage and instead just output to the calibration manager the
+  // We currently perform no filtering stage and instead just output to the calibration manager the
   // first valid calibration
   {
     std::unique_lock<std::mutex> lock(mutex_);
