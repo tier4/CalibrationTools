@@ -30,10 +30,15 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 #include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
 
 #include <iostream>
 #include <mutex>
@@ -86,7 +91,7 @@ protected:
   double max_cos_distance_;
   int max_iterations_;
   bool verbose_;
-  bool broacast_calibration_tf_;
+  bool broadcast_calibration_tf_;
   bool filter_estimations_;
   double initial_angle_cov_;
   double initial_z_cov_;
@@ -98,7 +103,7 @@ protected:
   double z_convergence_threshold_;
 
   // ROS Interface
-  tf2_ros::StaticTransformBroadcaster tf_broascaster_;
+  tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
@@ -124,7 +129,7 @@ protected:
   tf2::Transform initial_base_to_lidar_tf2_;
   Eigen::Isometry3d initial_base_to_lidar_eigen_;
 
-  // Other tfs to calculate the complete chain. There are constant for our pourposes
+  // Other tfs to calculate the complete chain. There are constant for our purposes
   geometry_msgs::msg::Transform base_to_sensor_kit_msg_;
   tf2::Transform base_to_sensor_kit_tf2_;
   Eigen::Isometry3d base_to_sensor_kit_eigen_;
