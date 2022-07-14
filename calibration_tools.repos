@@ -18,4 +18,4 @@ repositories:
   vendor/ros2_numpy:
     type: git
     url: git@github.com:Box-Robotics/ros2_numpy.git
-    version: rolling
+    version: humble
