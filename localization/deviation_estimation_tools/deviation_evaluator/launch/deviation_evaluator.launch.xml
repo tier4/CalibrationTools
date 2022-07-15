@@ -5,7 +5,7 @@
   <arg name="rviz" default="false" description="launch rviz"/>
   <arg name="map_path" default="" description="point cloud and lanelet2 map directory path"/>
   <arg name="save_dir" default="/home/$(env USER)/deviation_evaluator_sample"/>
-  <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.yaml"/>
+  <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.param.yaml"/>
 
   <arg name="in_twist_with_covariance" default="/localization/twist_estimator/twist_with_covariance"/>
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>

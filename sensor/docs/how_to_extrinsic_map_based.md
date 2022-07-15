@@ -99,7 +99,7 @@ For example,
 
 ```sh
 ros2 launch extrinsic_calibration_manager calibration.launch.xml \
-  mode:=manual sensor_model:=aip_xx1 vehicle_model:=jpntaxi map_path:=$HOME/map pointcloud_map_file:=0.20_map_clean.pcd lanelet2_map_file:=r1.osm
+  mode:=map_based sensor_model:=aip_xx1 vehicle_model:=jpntaxi map_path:=$HOME/map pointcloud_map_file:=0.20_map_clean.pcd lanelet2_map_file:=r1.osm
 ```
 
 Play your rosbag (on terminal 2).
