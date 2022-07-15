@@ -15,7 +15,7 @@ In our design, `base_link` corresponds to the projection on the ground of the ve
 
 Although in the diagram present in Figure 1 the TFs from the base to the sensor kits, and from each kit to its sensors are provided, these are not the calibration targets. Instead, we calibrate from the `base_link` to a particular lidar, then from said lidar to the rest of the lidars, and finally from lidars to cameras. In order to comply with the diagram from Figure 1, the final output of the calibration process becomes:
 
-$T(\text{sensor}$\_ $\text{kit}$
+$T(\text{sensor}\{_}\text{kit}$
 
 $T(\text{sensor\_kit\_base\_link}, \text{lidar1\_base\_link}) = T(\text{sensor\_kit\_base\_link}, \text{lidar0\_base\_link}) \times T(\text{lidar0\_base\_link}, \text{lidar1\_base\_link})$
 
