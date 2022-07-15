@@ -15,13 +15,13 @@ In our design, `base_link` corresponds to the projection on the ground of the ve
 
 Although in the diagram present in Figure 1 the TFs from the base to the sensor kits, and from each kit to its sensors are provided, these are not the calibration targets. Instead, we calibrate from the `base_link` to a particular lidar, then from said lidar to the rest of the lidars, and finally from lidars to cameras. In order to comply with the diagram from Figure 1, the final output of the calibration process becomes:
 
-$T(\textrm{sensor\_kit\_base\_link}, \textrm{lidar0\_base\_link}) = T(\textrm{base\_link}, \textrm{sensor\_kit\_base\_link})^{-1} \times T(\textrm{base\_link}, \textrm{lidar0\_base\_link})$
+$T(\text{sensor\_kit\_base\_link}, \text{lidar0\_base\_link}) = T(\text{base\_link}, \text{sensor\_kit\_base\_link})^{-1} \times T(\text{base\_link}, \text{lidar0\_base\_link})$
 
-$T(\textrm{sensor\_kit\_base\_link}, \textrm{lidar1\_base\_link}) = T(\textrm{sensor\_kit\_base\_link}, \textrm{lidar0\_base\_link}) \times T(\textrm{lidar0\_base\_link}, \textrm{lidar1\_base\_link})$
+$T(\text{sensor\_kit\_base\_link}, \text{lidar1\_base\_link}) = T(\text{sensor\_kit\_base\_link}, \text{lidar0\_base\_link}) \times T(\text{lidar0\_base\_link}, \text{lidar1\_base\_link})$
 
-$T(\textrm{sensor\_kit\_base\_link}, \textrm{camera0/camera\_link}) = T(\textrm{sensor\_kit\_base\_link}, \textrm{lidar0\_base\_link}) \times T(\textrm{lidar0\_base\_link}, \textrm{camera0/camera\_link})$
+$T(\text{sensor\_kit\_base\_link}, \text{camera0/camera\_link}) = T(\text{sensor\_kit\_base\_link}, \text{lidar0\_base\_link}) \times T(\text{lidar0\_base\_link}, \text{camera0/camera\_link})$
 
-where the $T(\textrm{base\_link}, \textrm{sensor\_kit\_base\_link})$ is usually provided by a CAD model or can be simply approximated since it is a convenient frame and does not affect other computations.
+where the $T(\text{base\_link}, \text{sensor\_kit\_base\_link})$ is usually provided by a CAD model or can be simply approximated since it is a convenient frame and does not affect other computations.
 
 Looking at the diagram from Figure 1, we could also directly calibrate all the sensors with respect to the `base_link`. However, we believe that sensor-sensor calibration provides more accurate and consistent results so we only use one `base_link` to sensor calibration and from then all other calibrations are performed via pairs of sensors.
 
