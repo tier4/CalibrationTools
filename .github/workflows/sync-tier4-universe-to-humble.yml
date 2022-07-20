@@ -1,4 +1,4 @@
-name: sync-develop-to-humble
+name: sync-tier4-universe-to-humble
 on:
   schedule:
     - cron: 0 0 * * *
@@ -21,7 +21,7 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
           base-branch: humble
           sync-target-repository: git@github.com:tier4/CalibrationTools.git
-          sync-target-branch: develop
-          sync-branch: sync-develop-to-humble
-          pr-title: "chore: sync develop to humble"
+          sync-target-branch: tier4/universe
+          sync-branch: sync-tier4-universe-to-humble
+          pr-title: "chore: sync tier4/universe to humble"
           auto-merge-method: merge
