@@ -117,14 +117,14 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
     if(!target_client.response.success){
       success = false;
     }
-    if( target_client.response.score > threshold_ ){
-      success = false;
-    }
     if( target_client.response.score > max_score ){
       max_score = target_client.response.score;
     }
   }
 
+  if( max_score > threshold_ ){
+    success = false;
+  }
   response->success = success;
   response->score = max_score;
 }
