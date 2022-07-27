@@ -182,7 +182,6 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
   matchingResult searched = grid_search_matching_.getSearchedResult();
   pcl::transformPointCloud(*pcl_sensor, *searched_pointcloud, searched.transformation_matrix);
   pcl::transformPointCloud(*searched_pointcloud, *calibrated_pointcloud, calibrated_sensor_result_.transformation_matrix);
-
   publishPointCloud(calibrated_pointcloud, calibrated_pointcloud_pub_);
   pcl::toROSMsg(*calibrated_pointcloud, calibrated_pointcloud_msg_);
 
@@ -356,6 +355,7 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   tf2::Quaternion Qtf_pre(q_pre.x(), q_pre.y(), q_pre.z(), q_pre.w());
   tf2::Transform tf_prematch(Qtf_pre, trans_pre);
 
+
   matchingResult searched = grid_search_matching_.getSearchedResult();
   tf2::Vector3 trans_searched( searched.transformation_matrix(0, 3),
     searched.transformation_matrix(1, 3),
@@ -382,6 +382,7 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
 
   // printTransform(result_tf);
   result_tf = result_tf * tf_searched * tf_prematch * lidar_base_to_lidar_tf2 * tf_initial_pose;
+
   // printTransform(result_tf);
   tf2::toMsg(result_tf, response->result_pose);
 

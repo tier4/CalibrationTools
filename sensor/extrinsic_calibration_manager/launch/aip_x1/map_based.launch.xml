@@ -5,8 +5,13 @@
   <arg name="map_path" default="(env HOME)/map/" />
   <arg name="map_calibration_area_file" default="map_calibration_area.pcd"/>
   <arg name="use_calibration_area_map" default="true" />
+  <arg name="calibration_rviz" default="true"/>
 
   <let name="sensor_model" value="aip_x1" />
+
+  <!-- rviz -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="
+        -d $(find-pkg-share extrinsic_map_based_calibrator)/config/$(var sensor_model)/map_based_calib.rviz" if="$(var calibration_rviz)" />
 
   <group>
     <push-ros-namespace namespace="sensor_kit" />

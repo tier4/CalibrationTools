@@ -54,10 +54,28 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
   return filtered_sensor_pointcloud;
 }
 
+PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
+  const PointCloudT::Ptr & map_pointcloud_with_wall,
+  const PointCloudT::Ptr & sensor_pointcloud_pcl)
+{
+  // matching of sensor cloud and map cloud
+  matcher_.setParameter(config_.clip_config.matching_config);
+  prematched_result_ = matcher_.ICPMatching(map_pointcloud_with_wall, sensor_pointcloud_pcl);
+  PointCloudT::Ptr matched_sensor_pointcloud(new PointCloudT);
+  pcl::transformPointCloud( *sensor_pointcloud_pcl, *matched_sensor_pointcloud, prematched_result_.transformation_matrix);
+
+  PointCloudT::Ptr filtered_sensor_pointcloud(new PointCloudT);
+  // downsampling on the floor
+  downsamplingOnFloor(matched_sensor_pointcloud, filtered_sensor_pointcloud);
+
+  return filtered_sensor_pointcloud;
+}
+
 void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
   const PointCloudT::Ptr & pcl_sensor,
   PointCloudT::Ptr & pcl_filtered_sensor,
   PointCloudT::Ptr & inliers_pointcloud_pcl) const
+
 {
   PointCloudT::Ptr cloud_target(new PointCloudT);
   Eigen::Vector4d ground_plane_model;

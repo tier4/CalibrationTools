@@ -72,6 +72,7 @@ private:
   double max_inlier_distance_ = 0.05;
   int max_iterations_ = 1000;
 
+
 public:
   explicit ExtrinsicMapBasedPreprocessing();
   PointCloudT::Ptr preprocessing(

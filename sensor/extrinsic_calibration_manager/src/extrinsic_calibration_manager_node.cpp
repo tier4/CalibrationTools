@@ -37,7 +37,7 @@ ExtrinsicCalibrationManagerNode::ExtrinsicCalibrationManagerNode(
   parent_frame_ = this->declare_parameter("parent_frame", "");
   child_frames_ = this->declare_parameter("child_frames", std::vector<std::string>());
   client_ns_ = this->declare_parameter("client_ns", "extrinsic_calibration");
-  threshold_ = this->declare_parameter("fitness_score_threshold", 0.001);
+  threshold_ = this->declare_parameter("fitness_score_threshold", 10.0);
 }
 
 void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
@@ -117,12 +117,14 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
     if(!target_client.response.success){
       success = false;
     }
-    if( target_client.response.score > threshold_ ){
-      success = false;
-    }
     if( target_client.response.score > max_score ){
       max_score = target_client.response.score;
     }
+  }
+
+
+  if( max_score > threshold_ ){
+    success = false;
   }
 
   response->success = success;
