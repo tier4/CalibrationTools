@@ -69,6 +69,7 @@ private:
   std::string parent_frame_;
   std::vector<std::string> child_frames_;
   std::string client_ns_;
+  double threshold_;
 
   void calibrationRequestCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Request>

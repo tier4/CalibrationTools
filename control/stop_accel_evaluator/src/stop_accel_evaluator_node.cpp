@@ -45,8 +45,8 @@ StopAccelEvaluatorNode::StopAccelEvaluatorNode(const rclcpp::NodeOptions & node_
   stop_valid_imu_accel_num_ = this->declare_parameter("stop_valid_imu_accel_num", 4);
 
   {  // lowpass filter
-    lpf_pitch_ = std::make_shared<LowpassFilter1d>(0.0, this->declare_parameter("lpf_pitch_gain", 0.95));
-    lpf_acc_ = std::make_shared<LowpassFilter1d>(0.0, this->declare_parameter("lpf_acc_gain", 0.2));
+    lpf_pitch_ = std::make_shared<LowpassFilter1d>(this->declare_parameter("lpf_pitch_gain", 0.95));
+    lpf_acc_ = std::make_shared<LowpassFilter1d>(this->declare_parameter("lpf_acc_gain", 0.2));
   }
 
   sub_twist_ = this->create_subscription<Odometry>(

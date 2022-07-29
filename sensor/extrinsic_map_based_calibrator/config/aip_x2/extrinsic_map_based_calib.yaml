@@ -19,15 +19,6 @@
       y_range_max: 0.08
       y_range_min: -0.08
       y_range_resolution: 0.02
-      z_range_max: 0.05
-      z_range_min: -0.05
-      z_range_resolution: 0.025
-      roll_range_max: 0.4
-      roll_range_min: -0.4
-      roll_range_resolution: 0.2
-      pitch_range_max: 0.4
-      pitch_range_min: -0.4
-      pitch_range_resolution: 0.2
       yaw_range_max: 1.0
       yaw_range_min: -1.0
       yaw_range_resolution: 0.25
