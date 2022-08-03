@@ -58,12 +58,14 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_pointcloud_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_pointcloud_without_wall_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr calibrated_pointcloud_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr inliers_pointcloud_pub_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
 
   std::mutex mutex_;
   std::string parent_frame_;
   std::string child_frame_;
+  std::string sensor_frame_;
   sensor_msgs::msg::PointCloud2::ConstSharedPtr map_with_wall_pointcloud_msg_;
   sensor_msgs::msg::PointCloud2::ConstSharedPtr map_without_wall_pointcloud_msg_;
   sensor_msgs::msg::PointCloud2::ConstSharedPtr sensor_pointcloud_msg_;
