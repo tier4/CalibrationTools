@@ -62,12 +62,14 @@ void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
 {
   PointCloudT::Ptr cloud_target(new PointCloudT);
   Eigen::Vector4d ground_plane_model;
-  extractGroundPlane(pcl_sensor, ground_plane_model, inliers_pointcloud_pcl, cloud_target);
+  extractGroundPlane(pcl_sensor, ground_plane_model, inliers_pointcloud_pcl/* , cloud_target */);
+  PointCloudT::Ptr cloud_ground_plane(new PointCloudT);
+  separatePointCloud(pcl_sensor, ground_plane_model, cloud_ground_plane, cloud_target);
 
   // voxel grid filtering
   PointCloudT::Ptr cloud_voxel_filtered(new PointCloudT);
   pcl::VoxelGrid<pcl::PointXYZ> vg;
-  vg.setInputCloud(boost::make_shared<PointCloudT>(*inliers_pointcloud_pcl));
+  vg.setInputCloud(boost::make_shared<PointCloudT>(*cloud_ground_plane));
   vg.setLeafSize(config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size);
   vg.filter(*cloud_voxel_filtered);
 
@@ -84,7 +86,7 @@ void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
 
 bool ExtrinsicMapBasedPreprocessing::extractGroundPlane(
   const PointCloudT::Ptr & pointcloud, Eigen::Vector4d & model,
-  PointCloudT::Ptr & plane_pointcloud, PointCloudT::Ptr & target_pointcloud) const
+  PointCloudT::Ptr & plane_pointcloud/* , PointCloudT::Ptr & target_pointcloud */) const
 {
   std::vector<pcl::ModelCoefficients> models;
 
@@ -134,8 +136,8 @@ bool ExtrinsicMapBasedPreprocessing::extractGroundPlane(
       extract.setIndices(inliers);
       extract.setNegative(false);
       extract.filter(*plane_pointcloud);
-      extract.setNegative(true);
-      extract.filter(*target_pointcloud);
+      // extract.setNegative(true);
+      // extract.filter(*target_pointcloud);
       return true;
     }
 
@@ -154,6 +156,23 @@ bool ExtrinsicMapBasedPreprocessing::extractGroundPlane(
   return false;
 
 }
+
+void ExtrinsicMapBasedPreprocessing::separatePointCloud(
+    const PointCloudT::Ptr & pointcloud,
+    const Eigen::Vector4d & model,
+    PointCloudT::Ptr & plane_pointcloud,
+    PointCloudT::Ptr & target_pointcloud) const
+  {
+    for(auto & p : pointcloud->points){
+      double distance = pcl::pointToPlaneDistance(p, model(0), model(1), model(2), model(3));
+      if(distance < config_.ransac_config.distance_threshold){
+        plane_pointcloud->points.push_back(p);
+      }
+      else{
+        target_pointcloud->points.push_back(p);
+      }
+    }
+  }
 
 PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::removeWallPointcloud(
   const PointCloudT::Ptr & sensor_point_cloud,

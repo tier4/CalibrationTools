@@ -33,6 +33,7 @@
 #include "pcl/point_cloud.h"
 #include "pcl/sample_consensus/method_types.h"
 #include "pcl/sample_consensus/model_types.h"
+#include "pcl/sample_consensus/sac_model_plane.h"
 #include "pcl/ModelCoefficients.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "tf2/utils.h"
@@ -90,6 +91,11 @@ public:
   bool extractGroundPlane(
     const PointCloudT::Ptr & pointcloud,
     Eigen::Vector4d & model,
+    PointCloudT::Ptr & plane_pointcloud/* ,
+    PointCloudT::Ptr & target_pointcloud */) const;
+  void separatePointCloud(
+    const PointCloudT::Ptr & pointcloud,
+    const Eigen::Vector4d & model,
     PointCloudT::Ptr & plane_pointcloud,
     PointCloudT::Ptr & target_pointcloud) const;
   PointCloudT::Ptr removeWallPointcloud(
