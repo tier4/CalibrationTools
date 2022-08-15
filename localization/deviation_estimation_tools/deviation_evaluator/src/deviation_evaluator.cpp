@@ -65,11 +65,19 @@ DeviationEvaluator::DeviationEvaluator(
   pub_twist_with_cov_ =
     create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>(
     "out_twist_with_covariance", 1);
-  pub_ndt_pose_with_cov_ =
+  pub_dr_ndt_pose_with_cov_ =
     create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
-    "out_pose_with_covariance", 1);
+    "out_dr_pose_with_covariance", 1);
+  pub_gt_ndt_pose_with_cov_ =
+    create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "out_gt_pose_with_covariance", 1);
+  pub_init_pose_with_cov_ =
+    create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "out_initial_pose_with_covariance", 1);
 
   current_ndt_pose_ptr_ = nullptr;
+  published_init_pose_ = false;
+  start_time_ = this->now().seconds();
 }
 
 /*
@@ -81,7 +89,7 @@ void DeviationEvaluator::callbackTwistWithCovariance(
   msg->twist.twist.linear.x *= coef_vx_;
   msg->twist.twist.angular.z -= bias_wz_;
 
-  msg->twist.covariance[0] = stddev_vx_ * stddev_vx_;
+  msg->twist.covariance[0 * 6 + 0] = stddev_vx_ * stddev_vx_;
   msg->twist.covariance[0 * 6 + 5] = 0.0;
   msg->twist.covariance[5 * 6 + 0] = 0.0;
   msg->twist.covariance[5 * 6 + 5] = stddev_wz_ * stddev_wz_;
@@ -94,21 +102,30 @@ void DeviationEvaluator::callbackTwistWithCovariance(
 void DeviationEvaluator::callbackNDTPoseWithCovariance(
   const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
 {
+  if (!published_init_pose_) {
+    published_init_pose_ = true;
+    pub_init_pose_with_cov_->publish(*msg);
+    return;
+  }
+
   const double msg_time = rclcpp::Time(msg->header.stamp).seconds();
 
-  // current_ndt_pose_ptr_ = msg;
-  if (msg_time - start_time_ > period_) {
+  if (msg_time - start_time_ >= period_) {
     DEBUG_INFO(
       this->get_logger(),
       "NDT cycle"
     );
-    start_time_ = msg_time;
-  } else if (msg_time - start_time_ < period_ - cut_) {
-    // Streaming NDT results
-    pub_ndt_pose_with_cov_->publish(*msg);
-  } else {
-    // Not streaming NDT results
+    start_time_ = rclcpp::Time(msg->header.stamp).seconds();
   }
+
+  if (msg_time - start_time_ <= period_ - cut_) {
+    pub_dr_ndt_pose_with_cov_->publish(*msg);
+    DEBUG_INFO(
+      this->get_logger(),
+      "Publish"
+    );
+  }
+  pub_gt_ndt_pose_with_cov_->publish(*msg);
 }
 
 /*
@@ -120,7 +137,7 @@ void DeviationEvaluator::save2YamlFile()
   file << "parameters:" << std::endl;
   file << "  stddev_vx: " << double_round(stddev_vx_, 5) << std::endl;
   file << "  stddev_wz: " << double_round(stddev_wz_, 5) << std::endl;
-  file << "  bias_rho: " << double_round(coef_vx_, 5) << std::endl;
-  file << "  bias_gyro: " << double_round(bias_wz_, 5) << std::endl;
+  file << "  coef_vx: " << double_round(coef_vx_, 5) << std::endl;
+  file << "  bias_wz: " << double_round(bias_wz_, 5) << std::endl;
   file.close();
 }

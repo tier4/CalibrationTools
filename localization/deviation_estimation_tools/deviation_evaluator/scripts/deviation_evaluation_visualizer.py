@@ -155,11 +155,11 @@ class EKFBagFileParser(BagFileParser):
 class BagFileEvaluator():
 
     def __init__(self, bagfile, use_normal_ekf=False, bagfile_base=None):
-        twist_topic = '/localization/deviation_evaluator/twist_estimator/twist_with_covariance'
-        pose_topic = '/localization/deviation_evaluator/pose_estimator/pose_with_covariance'
-        ndt_pose_topic = '/localization/pose_estimator/pose_with_covariance'
-        ekf_gt_odom_topic = '/localization/pose_twist_fusion_filter/kinematic_state'
-        ekf_odom_topic = '/localization/deviation_evaluator/ekf_localizer/kinematic_state'
+        twist_topic = '/deviation_evaluator/twist_estimator/twist_with_covariance'
+        pose_topic = '/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance'
+        ndt_pose_topic = '/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance'
+        ekf_gt_odom_topic = '/deviation_evaluator/ground_truth/kinematic_state'
+        ekf_odom_topic = '/deviation_evaluator/dead_reckoning/kinematic_state'
 
         bag_parser = EKFBagFileParser(bagfile)
 
@@ -359,9 +359,9 @@ class BagFileEvaluator():
     def plot_bag_compare(self, save_path):
         # Ignore the first 20 steps (=1 sec in 20 Hz) as this part may be noisy
         error_maximum = np.max(np.hstack([
-            self.stddev_long_2d[self.allowed_idxs][20:] * 3,
-            self.stddev_lateral_2d[self.allowed_idxs][20:] * 3,
-            self.stddev_frontal_2d[self.allowed_idxs][20:] * 3
+            self.stddev_long_2d[self.allowed_idxs][200:] * 3,
+            self.stddev_lateral_2d[self.allowed_idxs][200:] * 3,
+            self.stddev_frontal_2d[self.allowed_idxs][200:] * 3
         ]))
 
         fig = plt.figure(figsize=(12, 12))

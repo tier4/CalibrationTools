@@ -57,10 +57,16 @@ private:
     sub_twist_with_cov_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     sub_ndt_pose_with_cov_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
+    sub_gt_pose_with_cov_;
   rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
     pub_twist_with_cov_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    pub_ndt_pose_with_cov_;
+    pub_dr_ndt_pose_with_cov_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+    pub_gt_ndt_pose_with_cov_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+    pub_init_pose_with_cov_;
 
   bool show_debug_info_;
   std::string save_dir_;
@@ -71,6 +77,8 @@ private:
   double bias_wz_;
   double period_;
   double cut_;
+
+  bool published_init_pose_;
 
   geometry_msgs::msg::PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
   geometry_msgs::msg::PoseStamped::SharedPtr current_ndt_pose_ptr_;
@@ -86,6 +94,11 @@ private:
    */
   void callbackNDTPoseWithCovariance(
     const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+
+  /**
+   * @brief set GT Odometry measurement
+   */
+  void callbackGTOdom(const nav_msgs::msg::Odometry::SharedPtr msg);
 
   /**
    * @brief save to Yaml file
