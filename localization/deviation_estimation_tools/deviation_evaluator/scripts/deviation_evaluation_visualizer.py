@@ -359,9 +359,9 @@ class BagFileEvaluator():
     def plot_bag_compare(self, save_path):
         # Ignore the first 20 steps (=1 sec in 20 Hz) as this part may be noisy
         error_maximum = np.max(np.hstack([
-            self.stddev_long_2d[self.allowed_idxs][200:] * 3,
-            self.stddev_lateral_2d[self.allowed_idxs][200:] * 3,
-            self.stddev_frontal_2d[self.allowed_idxs][200:] * 3
+            self.stddev_long_2d[self.allowed_idxs][20:] * 3,
+            self.stddev_lateral_2d[self.allowed_idxs][20:] * 3,
+            self.stddev_frontal_2d[self.allowed_idxs][20:] * 3
         ]))
 
         fig = plt.figure(figsize=(12, 12))

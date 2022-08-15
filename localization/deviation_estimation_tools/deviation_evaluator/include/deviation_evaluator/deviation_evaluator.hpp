@@ -96,11 +96,6 @@ private:
     const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
   /**
-   * @brief set GT Odometry measurement
-   */
-  void callbackGTOdom(const nav_msgs::msg::Odometry::SharedPtr msg);
-
-  /**
    * @brief save to Yaml file
    */
   void save2YamlFile();
