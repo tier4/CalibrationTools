@@ -120,10 +120,6 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
 
   if (msg_time - start_time_ < period_ - cut_) {
     pub_dr_ndt_pose_with_cov_->publish(*msg);
-    DEBUG_INFO(
-      this->get_logger(),
-      "Publish"
-    );
   }
   pub_gt_ndt_pose_with_cov_->publish(*msg);
 }

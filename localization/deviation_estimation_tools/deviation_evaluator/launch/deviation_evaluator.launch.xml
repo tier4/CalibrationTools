@@ -30,7 +30,6 @@
       <remap from="out_gt_pose_with_covariance" to="$(var out_gt_pose_with_covariance)"/>
       <remap from="out_dr_pose_with_covariance" to="$(var out_dr_pose_with_covariance)"/>
       <remap from="out_initial_pose_with_covariance" to="$(var ekf_init_pose)"/>
-      <param name="show_debug_info" value="true"/>
       <param name="save_dir" value="$(var save_dir)"/>
       <param from="$(var param_path)"/>
     </node>
