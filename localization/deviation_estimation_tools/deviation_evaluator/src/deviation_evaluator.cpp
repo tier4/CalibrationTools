@@ -110,15 +110,15 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
 
   const double msg_time = rclcpp::Time(msg->header.stamp).seconds();
 
-  if (msg_time - start_time_ >= period_) {
+  if (msg_time - start_time_ > period_) {
     DEBUG_INFO(
       this->get_logger(),
       "NDT cycle"
     );
-    start_time_ = rclcpp::Time(msg->header.stamp).seconds();
+    start_time_ = msg_time;
   }
 
-  if (msg_time - start_time_ <= period_ - cut_) {
+  if (msg_time - start_time_ < period_ - cut_) {
     pub_dr_ndt_pose_with_cov_->publish(*msg);
     DEBUG_INFO(
       this->get_logger(),
