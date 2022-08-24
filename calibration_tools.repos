@@ -6,7 +6,7 @@ repositories:
   vendor/lidartag:
     type: git
     url: git@github.com:tier4/LiDARTag.git
-    version: galactic
+    version: humble
   vendor/lidartag_msgs:
     type: git
     url: git@github.com:tier4/LiDARTag_msgs.git
@@ -22,7 +22,7 @@ repositories:
   vendor/ros2_numpy:
     type: git
     url: git@github.com:Box-Robotics/ros2_numpy.git
-    version: rolling
+    version: humble
   vendor/image_pipeline:
     type: git
     url: https://github.com/tier4/image_pipeline.git
