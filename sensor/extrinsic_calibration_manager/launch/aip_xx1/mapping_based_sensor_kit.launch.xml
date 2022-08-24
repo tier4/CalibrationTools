@@ -8,6 +8,7 @@
 
 
   <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud" />
+  <let name="calibration_pointcloud" value="/sensing/lidar/left/outlier_filtered/pointcloud" />
 
   <log message="BBBBBBBBBBBBBBBBBBBBBBBB: AAAAAAAAAAAAAAAAAAAAAAAAA" />
 
@@ -41,6 +42,7 @@
     <arg name="child_frame" value="SOMELIDARFRAME" />
     <arg name="base_frame" value="$(var base_frame)" />
     <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)" />
+    <arg name="calibration_pointcloud" value="$(var calibration_pointcloud)" />
   </include>
 
 </launch>

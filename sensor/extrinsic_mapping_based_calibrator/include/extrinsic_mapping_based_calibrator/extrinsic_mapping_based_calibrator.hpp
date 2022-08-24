@@ -38,7 +38,8 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 #include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+//#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -57,6 +58,7 @@ using PointcloudType = pcl::PointCloud<PointType>;
 
 struct Frame {
   float distance_;
+  float delta_distance_;
   std_msgs::msg::Header header_;
   PointcloudType::Ptr pointcloud_raw_;
   PointcloudType::Ptr pointcloud_subsampled_;
@@ -65,6 +67,7 @@ struct Frame {
   bool processed_;
   bool is_key_frame_;
   bool stopped_;
+  int frames_since_stop_;
   Eigen::Matrix4f pose_; // map->lidar
 };
 
@@ -79,6 +82,7 @@ struct CalibrationFrame {
   double interpolated_angle_; // det(rot * inv rot) o algo asi
   double interpolated_time_;
   double estimated_speed_;
+  double estimated_accel_;
 
 };
 
@@ -131,7 +135,14 @@ protected:
   double new_frame_min_distance_;
   double frame_stopped_distance_;
   double frame_nonstopped_distance_;
+  int frames_since_stop_force_frame_;
   int calibration_skip_keyframes_;
+
+  double calibration_max_interpolated_time_;
+  double calibration_max_interpolated_distance_;
+  double calibration_max_interpolated_angle_;
+  double calibration_max_interpolated_speed_;
+  double calibration_max_interpolated_accel_;
 
   // ROS Interface
   tf2_ros::StaticTransformBroadcaster tf_broascaster_;
@@ -175,12 +186,16 @@ protected:
   std::queue<sensor_msgs::msg::PointCloud2::SharedPtr> calibration_pointclouds_queue_;
   int last_unmatched_keyframe_;
 
+  // Calibration data
+  std::vector<CalibrationFrame> calibration_frames_;
+
   // Mapping data
   int selected_keyframe_;
   int n_processed_frames_;
   std::queue<std::shared_ptr<Frame>> unprocessed_frames_;
   std::vector<std::shared_ptr<Frame>> processed_frames_;
   std::vector<std::shared_ptr<Frame>> keyframes_;
+  std::vector<std::shared_ptr<Frame>> keyframes_and_stopped_;
   pcl::PointCloud<PointType>::Ptr local_map_ptr_;
   std::vector<geometry_msgs::msg::PoseStamped> trajectory_;
 

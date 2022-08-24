@@ -20,6 +20,7 @@ if(OPENMP_FOUND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+
 ament_export_include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
@@ -36,6 +37,33 @@ target_link_libraries(extrinsic_mapping_based_calibrator
 )
 
 add_definitions(${PCL_DEFINITIONS})
+
+function(get_all_targets var)
+    set(targets)
+    get_all_targets_recursive(targets ${CMAKE_CURRENT_SOURCE_DIR})
+    set(${var} ${targets} PARENT_SCOPE)
+endfunction()
+
+macro(get_all_targets_recursive targets dir)
+    get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+    foreach(subdir ${subdirectories})
+        get_all_targets_recursive(${targets} ${subdir})
+    endforeach()
+
+    get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
+    list(APPEND ${targets} ${current_targets})
+endmacro()
+
+get_all_targets(all_targets)
+message("All targets: ${all_targets}")
+
+# Remove entry
+get_target_property(target_options extrinsic_mapping_based_calibrator COMPILE_OPTIONS)
+list(REMOVE_ITEM target_options "-pedantic")
+list(REMOVE_ITEM target_options "-error")
+list(REMOVE_ITEM target_options "-O3")
+list(REMOVE_ITEM target_options "-march=native")
+set_property(TARGET extrinsic_mapping_based_calibrator PROPERTY COMPILE_OPTIONS ${target_options})
 
 ament_auto_package(
   INSTALL_TO_SHARE

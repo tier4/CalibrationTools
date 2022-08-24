@@ -23,6 +23,7 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
@@ -34,7 +35,7 @@
   <depend>nav_msgs</depend>
   <depend>tf2_sensor_msgs</depend>
   <depend>tf2_eigen</depend>
-  <depend>ndt_omp_ros2</depend>
+  <depend>ndt_omp</depend>
   <depend>libg2o</depend>
   <depend>libpcl-all-dev</depend>
 

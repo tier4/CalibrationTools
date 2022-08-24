@@ -5,6 +5,7 @@
   <arg name="parent_frame" />
   <arg name="child_frame" />
   <arg name="mapping_pointcloud" />
+  <arg name="calibration_pointcloud" />
 
   <group>
     <push-ros-namespace namespace="$(var ns)" />
@@ -20,6 +21,7 @@
       <param name="ndt_max_iterations" value="100" />
 
       <remap from="mapping_pointcloud" to="$(var mapping_pointcloud)"/>
+      <remap from="calibration_pointcloud" to="$(var calibration_pointcloud)"/>
     </node>
   </group>
 

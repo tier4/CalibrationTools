@@ -20,7 +20,8 @@
 #include <pcl/io/pcd_io.h>
 
 #include <tf2/utils.h>
-#include <tf2_eigen/tf2_eigen.h>
+//#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 #include <iostream>
 #include <thread>
@@ -31,6 +32,8 @@
 using namespace std::chrono_literals;
 
 // Move this aux to another file
+#pragma GCC push_options
+#pragma GCC optimize("O0")
 Eigen::Matrix4f poseInterpolation(double t, double t1, double t2, Eigen::Matrix4f const& m1, Eigen::Matrix4f const& m2) {
 
   assert(t >= t1 && t <= t2);
@@ -52,9 +55,9 @@ Eigen::Matrix4f poseInterpolation(double t, double t1, double t2, Eigen::Matrix4
   result.translation() = (1.0 - alpha) * trans1 + alpha * trans2;
   result.linear() = rot1.slerp(alpha, rot2).toRotationMatrix();
 
-  return result;
+  return result.matrix();
 }
-
+#pragma GCC pop_options
 
 ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_mapping_based_calibrator_node", options),
@@ -86,7 +89,14 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
   new_frame_min_distance_ = this->declare_parameter<double>("new_frame_min_distance", 0.05);
   frame_stopped_distance_ = this->declare_parameter<double>("frame_stopped_distance", 0.02); // distance between frames to consider the car to be stopped. uses hysteresis
   frame_nonstopped_distance_ = this->declare_parameter<double>("frame_nonstopped_distance", 0.05); // distance between frames to consider the car to be moving. uses hysteresis
+  frames_since_stop_force_frame_ =this->declare_parameter<int>("frames_since_stoped_force_frame", 5);
   calibration_skip_keyframes_ = this->declare_parameter<int>("calibration_skip_keyframes", 5); // Skip the first frames for calibration
+
+  calibration_max_interpolated_time_ = this->declare_parameter<double>("calibration_max_interpolated_time", 0.03);
+  calibration_max_interpolated_distance_ = this->declare_parameter<double>("calibration_max_interpolated_distance", 0.05);
+  calibration_max_interpolated_angle_ = this->declare_parameter<double>("calibration_max_interpolated_angle", 1.0);
+  calibration_max_interpolated_speed_ = this->declare_parameter<double>("calibration_max_interpolated_speed", 3.0);
+  calibration_max_interpolated_accel_ = this->declare_parameter<double>("calibration_max_interpolated_accel", 0.2);
 
   map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("output_map", 10);
   keyframe_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("keyframe_map", 10);
@@ -142,19 +152,17 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
   // path
 }
 
+#pragma GCC push_options
+#pragma GCC optimize("O0")
 void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   calibration_pointclouds_queue_.push(msg);
 
   std::unique_lock<std::mutex> lock(mutex_);
 
-  if (last_unmatched_keyframe_ >= keyframes_.size()) {
-    return;
-  }
+  while (last_unmatched_keyframe_ < int(keyframes_and_stopped_.size()) - 1) {
 
-  while (true){
-
-    std::shared_ptr<Frame> keyframe = keyframes_[last_unmatched_keyframe_];
+    std::shared_ptr<Frame> keyframe = keyframes_and_stopped_[last_unmatched_keyframe_];
     auto keyframe_stamp = rclcpp::Time(keyframe->header_.stamp);
 
     // rclcpp::Time(t2.header.stamp).seconds()
@@ -163,7 +171,7 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
     }
 
     // We need there to be a frame after the keyframe since we may wanto to interpolate in that direction
-    if (keyframe->frame_id_ + 1 >= processed_frames_.size()) {
+    if (keyframe->frame_id_ + 1 >= int(processed_frames_.size())) {
       return;
     }
 
@@ -197,10 +205,10 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
       frame_right = keyframe;
       frame_aux = processed_frames_[keyframe->frame_id_ + 1];
 
-      double dt1 = (rclcpp::Time(frame_right->header.stamp) - rclcpp::Time(frame_left->header.stamp)).seconds();
-      double dt2 = (rclcpp::Time(frame_aux->header.stamp) - rclcpp::Time(frame_right->header.stamp)).seconds();
-      interpolated_speed = (frame_aux->distance_ - frame_left->distance_) / (dt1 + dt2);
-      interpolated_accel = ((frame_aux->distance_ - frame_right->distance_) / dt2 - (frame_right->distance_ - frame_left->distance_) / dt1) / (dt1 + dt2);
+      double dt1 = (rclcpp::Time(frame_right->header_.stamp) - rclcpp::Time(frame_left->header_.stamp)).seconds();
+      double dt2 = (rclcpp::Time(frame_aux->header_.stamp) - rclcpp::Time(frame_right->header_.stamp)).seconds();
+      interpolated_speed = std::abs((frame_aux->distance_ - frame_left->distance_) / (dt1 + dt2));
+      interpolated_accel = std::abs(((frame_aux->distance_ - frame_right->distance_) / dt2 - (frame_right->distance_ - frame_left->distance_) / dt1) / (dt1 + dt2));
 
       interpolated_time = dt_left;
     }
@@ -211,34 +219,70 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
       frame_left = keyframe;
       frame_right = processed_frames_[keyframe->frame_id_ + 1];
 
-      double dt1 = (rclcpp::Time(frame_left->header.stamp) - rclcpp::Time(frame_aux->header.stamp)).seconds();
-      double dt2 = (rclcpp::Time(frame_right->header.stamp) - rclcpp::Time(frame_left->header.stamp)).seconds();
-      interpolated_speed = (frame_right->distance_ - frame_aux->distance_) / (dt1 + dt2);
-      interpolated_accel = ((frame_right->distance_ - frame_left->distance_) / dt2 - (frame_left->distance_ - frame_aux->distance_) / dt1) / (dt1 + dt2);
+      double dt1 = (rclcpp::Time(frame_left->header_.stamp) - rclcpp::Time(frame_aux->header_.stamp)).seconds();
+      double dt2 = (rclcpp::Time(frame_right->header_.stamp) - rclcpp::Time(frame_left->header_.stamp)).seconds();
+      interpolated_speed = std::abs((frame_right->distance_ - frame_aux->distance_) / (dt1 + dt2));
+      interpolated_accel = std::abs(((frame_right->distance_ - frame_left->distance_) / dt2 - (frame_left->distance_ - frame_aux->distance_) / dt1) / (dt1 + dt2));
 
       interpolated_time = dt_right;
     }
 
-    interpolated_distance = (frame_right->distance_ - frame_left->distance_) * interpolated_time / (rclcpp::Time(frame_right->header.stamp) - rclcpp::Time(frame_left->header.stamp)).seconds();
+    interpolated_distance = (frame_right->distance_ - frame_left->distance_) * interpolated_time / (rclcpp::Time(frame_right->header_.stamp) - rclcpp::Time(frame_left->header_.stamp)).seconds();
 
     // Interpolate the pose
     Eigen::Matrix4f interpolated_pose = poseInterpolation(
-      (rclcpp::Time(pc_msg->header.stamp) - rclcpp::Time(frame_left->header.stamp)).seconds(),
+      (rclcpp::Time(pc_msg->header.stamp) - rclcpp::Time(frame_left->header_.stamp)).seconds(),
       0.f,
-      (rclcpp::Time(frame_right->header.stamp) - rclcpp::Time(frame_left->header.stamp)).seconds(),
-      frame_left->pose,
-      frame_right->pose,
+      (rclcpp::Time(frame_right->header_.stamp) - rclcpp::Time(frame_left->header_.stamp)).seconds(),
+      frame_left->pose_,
+      frame_right->pose_
     );
 
     // Compute interpolation angle
     // trR = 1 + 2cos(theta)
-    Eigen::Matrix4f aux_pose = keyframe->pose() * interpolated_pose;
+    Eigen::Matrix4f aux_pose = keyframe->pose_.inverse() * interpolated_pose;
     Eigen::Affine3f aux_affine(aux_pose);
-    double interpolated_angle = std::acos(0.5*aux_affine.linear().trace() - 0.5);
+    double interpolated_angle = 180.0 * std::abs(std::acos(std::min(std::max(0.5*aux_affine.linear().trace() - 0.5, -1.0), 1.0)))/ 3.1416;
 
     // Decide on whether or not to keep the result as a calibraton frame
     // pc, pose, statistics
 
+    //calibration_max_interpolated_time_
+
+    RCLCPP_INFO(get_logger(), "Attempting to add keyframe id=%d to the calibration list", keyframe->keyframe_id_);
+    RCLCPP_INFO(get_logger(), "\t - stopped: %s", keyframe->stopped_ ? " true" : "false");
+    RCLCPP_INFO(get_logger(), "\t - interpolated time: %.4f s (%s)", interpolated_time, interpolated_time < calibration_max_interpolated_time_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated distance: %.4f m (%s)", interpolated_distance, interpolated_distance < calibration_max_interpolated_distance_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated angle: %.4f deg (%s)", interpolated_angle, interpolated_angle < calibration_max_interpolated_angle_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated speed: %.4f m/s (%s)", interpolated_speed, interpolated_speed < calibration_max_interpolated_speed_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated accel: %.4f m/s2 (%s)", interpolated_accel, interpolated_accel < calibration_max_interpolated_accel_ ? "accepted" : "rejected");
+
+    if (interpolated_time < calibration_max_interpolated_time_ &&
+      interpolated_distance < calibration_max_interpolated_distance_ &&
+      interpolated_angle < calibration_max_interpolated_angle_ &&
+      interpolated_speed < calibration_max_interpolated_speed_ &&
+      interpolated_accel < calibration_max_interpolated_accel_
+      )
+    {
+      PointcloudType::Ptr pc_ptr(new PointcloudType());
+      pcl::fromROSMsg(*pc_msg, *pc_ptr);
+
+      CalibrationFrame calibration_frame;
+
+      calibration_frame.source_pointcloud_ = pc_ptr;
+      calibration_frame.source_header_ = pc_msg->header;
+      calibration_frame.local_map_pose_ = interpolated_pose;
+
+      calibration_frame.interpolated_distance_ = interpolated_distance;
+      calibration_frame.interpolated_angle_ = interpolated_angle;
+      calibration_frame.interpolated_time_ = interpolated_time;
+      calibration_frame.estimated_speed_ = interpolated_speed;
+      calibration_frame.estimated_accel_ = interpolated_accel;
+
+      calibration_frames_.emplace_back(calibration_frame);
+    }
+
+    last_unmatched_keyframe_ += 1;
   }
 
 
@@ -256,6 +300,7 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
   // Compute the conditions to accept the combination as a calibration frame. interpolation distance, interpolation time, speed, and min_keyframe id (do not use the first keyframes for calibration since we do not have much info so far)
 
 }
+#pragma GCC pop_options
 
 void ExtrinsicMappingBasedCalibrator::mappingPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
@@ -276,6 +321,9 @@ void ExtrinsicMappingBasedCalibrator::mappingPointCloudCallback(const sensor_msg
   frame->pointcloud_raw_ = pc_ptr;
   frame->is_key_frame_ = false;
   frame->stopped_ = false;
+  frame->frames_since_stop_ = 0;
+  frame->distance_ = 0.f;
+  frame->delta_distance_; 0.f;
 
   if(rclcpp::Time(msg->header.stamp) < rclcpp::Time(lidar_header_->stamp) || int(processed_frames_.size()) >= max_frames_) {
     return;
@@ -308,11 +356,10 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
       }
 
       frame = unprocessed_frames_.back();
-      prev_frame = processed_frames_.back();
       unprocessed_frames_.pop();
 
       if (processed_frames_.size() > 0) {
-        const auto & prev_frame = processed_frames_.back();
+        prev_frame = processed_frames_.back();
         prev_pose = prev_frame->pose_;
         prev_distance = prev_frame->distance_;
       }
@@ -360,29 +407,50 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     geometry_msgs::msg::PoseStamped pose_msg;
     pose_msg.header = frame->header_;
     pose_msg.header.frame_id = map_frame_;
-    pose_msg.pose = tf2::toMsg(frame->pose_);
+    pose_msg.pose = tf2::toMsg(Eigen::Affine3d(frame->pose_.cast<double>()));
     trajectory_.push_back(pose_msg);
 
     // Fill the frame information
     Eigen::Vector3f translation = Eigen::Affine3f(frame->pose_.inverse() * prev_pose).translation();
-    frame->distance_ = prev_distance + translation.norm();
+    float delta_distance = translation.norm();
+    frame->distance_ = prev_distance + delta_distance;
     frame->frame_id_ = processed_frames_.size();
     frame->processed_ = true;
 
-    if (!first_iteration && translation.norm() < new_frame_min_distance_) {\
-      if (!prev_frame->stopped_ && translation.norm() < frame_stopped_distance_) {
-        // We force a frame when the car stops since it is a good candidate for calibration
+    if (!first_iteration && delta_distance < new_frame_min_distance_) {
+
+      if (std::abs(delta_distance - prev_frame->delta_distance_) < frame_stopped_distance_) {
+        // When the vehicle is stopped, we may either skip the frame, record it as a normal frame, or even save it for calibration
+
+        RCLCPP_WARN(get_logger(), "Old prev_frame->frames_since_stop_: %d", prev_frame->frames_since_stop_);
+        prev_frame->frames_since_stop_ += 1;
+        prev_frame->delta_distance_ = delta_distance;
+        RCLCPP_WARN(get_logger(), "New prev_frame->frames_since_stop_: %d", prev_frame->frames_since_stop_);
+
+        frame->frames_since_stop_ = prev_frame->frames_since_stop_;
         frame->stopped_ = true;
+
+        if(prev_frame->frames_since_stop_ == frames_since_stop_force_frame_) {
+          RCLCPP_WARN(get_logger(), "Added a keyframe_and_stopped frame");
+            keyframes_and_stopped_.push_back(frame);
+
+        }
+        else if (prev_frame->stopped_ && std::abs(prev_frame->frames_since_stop_ - frames_since_stop_force_frame_) > 1) {
+          RCLCPP_WARN(get_logger(), "Dropped stopped frame (%d). delta_distance=%.4f Unprocessed=%lu Frames=%lu Keyframes=%lu", prev_frame->frames_since_stop_, delta_distance, unprocessed_frames_.size(), processed_frames_.size(), keyframes_.size());
+          continue;
+        }
+
+        RCLCPP_WARN(get_logger(), "Adding a stopped frame (%d)", frame->frames_since_stop_);
       }
       else {
-        // If the vehicle is already stopped or moved to little we drop the frame
+        // If the vehicle moved to little we drop the frame
         RCLCPP_INFO(get_logger(), "Dropped frame. Unprocessed=%lu Frames=%lu Keyframes=%lu", unprocessed_frames_.size(), processed_frames_.size(), keyframes_.size());
       continue;
       }
     }
 
     //RCLCPP_INFO(get_logger(), "Thread. New frame");
-    std::unique_lock<std::mutex> lock(mutex_);
+    //std::unique_lock<std::mutex> lock(mutex_);
     processed_frames_.push_back(frame);
     checkKeyframe(frame);
 
@@ -406,6 +474,7 @@ void ExtrinsicMappingBasedCalibrator::checkKeyframe(std::shared_ptr<Frame> frame
 {
   if (keyframes_.size() == 0 || frame->distance_ >= keyframes_.back()->distance_ + new_keyframe_min_distance_) {
     keyframes_.push_back(frame);
+    keyframes_and_stopped_.push_back(frame);
     frame->is_key_frame_ = true;
     frame->keyframe_id_ = keyframes_.size();
     recalculateLocalMap();
@@ -419,7 +488,7 @@ void ExtrinsicMappingBasedCalibrator::recalculateLocalMap()
 
   PointcloudType::Ptr tmp_mcs_ptr(new PointcloudType());
 
-  for (int i = 0; i < local_map_num_keyframes_ && i < keyframes_.size(); i++) {
+  for (int i = 0; i < local_map_num_keyframes_ && i < int(keyframes_.size()); i++) {
     const auto  & keyframe = keyframes_[keyframes_.size() - i - 1];
 
     PointcloudType::Ptr keyframe_mcs_ptr(new PointcloudType());
@@ -453,30 +522,30 @@ void ExtrinsicMappingBasedCalibrator::recalculateLocalMap()
   //RCLCPP_INFO(get_logger(), "maxindex=%lu", maxindex);
   //RCLCPP_INFO(get_logger(), "maxindex2=%lu", std::numeric_limits<std::int32_t>::max());
 
-  auto start1 = std::chrono::high_resolution_clock::now();
+  //auto start1 = std::chrono::high_resolution_clock::now();
   pcl::VoxelGrid<PointType> voxel_grid;
   voxel_grid.setLeafSize(leaf_size_local_map_, leaf_size_local_map_, leaf_size_local_map_);
   voxel_grid.setInputCloud(tmp_mcs_ptr);
   voxel_grid.filter(*local_map_ptr_);
 
-  auto stop1 = std::chrono::high_resolution_clock::now();
+  //auto stop1 = std::chrono::high_resolution_clock::now();
 
 
-  local_map_ptr_->clear();
+  //local_map_ptr_->clear();
 
-  auto start2 = std::chrono::high_resolution_clock::now();
-  pcl::VoxelGridTriplets<PointType> voxel_grid2;
-  voxel_grid2.setLeafSize(leaf_size_local_map_, leaf_size_local_map_, leaf_size_local_map_);
-  voxel_grid2.setInputCloud(tmp_mcs_ptr);
-  voxel_grid2.filter(*local_map_ptr_);
-  auto stop2 = std::chrono::high_resolution_clock::now();
+  //auto start2 = std::chrono::high_resolution_clock::now();
+  //pcl::VoxelGridTriplets<PointType> voxel_grid2;
+  //voxel_grid2.setLeafSize(leaf_size_local_map_, leaf_size_local_map_, leaf_size_local_map_);
+  //voxel_grid2.setInputCloud(tmp_mcs_ptr);
+  //voxel_grid2.filter(*local_map_ptr_);
+  //auto stop2 = std::chrono::high_resolution_clock::now();
 
-  auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(stop1 - start1);
-  auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(stop2 - start2);
-  RCLCPP_WARN(get_logger(), "=== Voxel statistics: ===");
-  RCLCPP_WARN(get_logger(), "Input size = %lu", tmp_mcs_ptr->size());
-  RCLCPP_WARN(get_logger(), "Original implementation time = %d", duration1.count());
-  RCLCPP_WARN(get_logger(), "Triplet implementation time = %d", duration2.count());
+  //auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(stop1 - start1);
+  //auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(stop2 - start2);
+  //RCLCPP_WARN(get_logger(), "=== Voxel statistics: ===");
+  //RCLCPP_WARN(get_logger(), "Input size = %lu", tmp_mcs_ptr->size());
+  //RCLCPP_WARN(get_logger(), "Original implementation time = %d", duration1.count());
+  //RCLCPP_WARN(get_logger(), "Triplet implementation time = %d", duration2.count());
 
 
   //RCLCPP_INFO(get_logger(), "Subsampled local map...");
@@ -489,7 +558,7 @@ void ExtrinsicMappingBasedCalibrator::timerCallback()
 
   std::unique_lock<std::mutex> lock(mutex_);
 
-  if (keyframes_.size() == published_keyframes) {
+  if (int(keyframes_.size()) == published_keyframes) {
     return;
   }
 
@@ -592,7 +661,7 @@ void ExtrinsicMappingBasedCalibrator::keyFrameCallback(
 
   int requested_keyframe_id = request->id;
 
-  if (requested_keyframe_id < 0 || requested_keyframe_id >= keyframes_.size()) {
+  if (requested_keyframe_id < 0 || requested_keyframe_id >= int(keyframes_.size())) {
     RCLCPP_ERROR(get_logger(), "Invalid keyframe id");
     return;
   }
