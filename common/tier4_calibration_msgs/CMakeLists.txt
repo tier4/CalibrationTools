@@ -23,6 +23,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ExtrinsicCalibrationManager.srv"
   "srv/ExtrinsicCalibrator.srv"
   "srv/IntrinsicsOptimizer.srv"
+  "srv/KeyFrameMap.srv"
   DEPENDENCIES
     std_msgs
     sensor_msgs

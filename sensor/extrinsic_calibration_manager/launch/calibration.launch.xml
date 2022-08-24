@@ -90,6 +90,12 @@
       </include>
     </group>
 
+    <group if="$(eval &quot;'$(var mode)' == 'mapping_based' &quot;)">
+      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/mapping_based.launch.xml">
+        <arg name="vehicle_id" value="$(var vehicle_id)" />
+      </include>
+    </group>
+
     <group if="$(eval &quot;'$(var mode)' == 'target_based' &quot;)">
       <!-- not implemented yet -->
     </group>
