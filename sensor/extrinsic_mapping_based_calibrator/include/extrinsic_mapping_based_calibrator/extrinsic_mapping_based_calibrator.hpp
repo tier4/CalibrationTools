@@ -26,7 +26,7 @@
 #include <nav_msgs/msg/path.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
-#include <tier4_calibration_msgs/srv/key_frame_map.hpp>
+#include <tier4_calibration_msgs/srv/frame.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pclomp/ndt_omp.h>
@@ -37,9 +37,16 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
+#include <pcl/registration/registration.h>
+
 #include <tf2/convert.h>
-//#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+#ifdef ROS_DISTRO_GALACTIC
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#else
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#endif
+
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -57,6 +64,7 @@ using PointcloudType = pcl::PointCloud<PointType>;
 
 
 struct Frame {
+  using Ptr = std::shared_ptr<Frame>;
   float distance_;
   float delta_distance_;
   std_msgs::msg::Header header_;
@@ -76,6 +84,7 @@ struct CalibrationFrame {
   PointcloudType::Ptr target_pointcloud_; // we may not be able to store the pointcloud since it is
   std_msgs::msg::Header source_header_;
 
+  Frame::Ptr target_frame_;
   Eigen::Matrix4f local_map_pose_; // pose in the map from the target lidar
 
   double interpolated_distance_;
@@ -97,29 +106,42 @@ protected:
   //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
   void keyFrameCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::KeyFrameMap::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::KeyFrameMap::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
+  void allLidarCalibrationCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
+  void singleLidarCalibrationCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
 
   void calibrationPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
   void mappingPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
   void timerCallback();
 
-  void mappingThreadWorker();
+
   //void publishTf();
 
-  void subsampleFrame(std::shared_ptr<Frame>);
+  void subsampleFrame(Frame::Ptr);
 
-  void initLocalMap(std::shared_ptr<Frame> frame);
-  void checkKeyframe(std::shared_ptr<Frame> frame);
+  // Mapping methods
+  void mappingThreadWorker();
+  void initLocalMap(Frame::Ptr frame);
+  void checkKeyframe(Frame::Ptr frame);
   void createKeyFrame();
   void recalculateLocalMap();
-  PointcloudType::Ptr cropPointCloud(PointcloudType::Ptr & pointcloud, double max_range);
+
+  // General methods
+  PointcloudType::Ptr getDensePointcloudFromMap(const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
+
 
   // Parameters
   std::string base_frame_;
-  std::string sensor_kit_frame_;
-  std::string lidar_base_frame_;
-  std::string map_frame_;
+  std::string sensor_kit_frame_; // calibration parent frame
+  std::string lidar_base_frame_; // calibration child frame
+  std::string map_frame_; // isolated frame to visualize the mapping
+  std::string calibration_lidar_frame_; // calibration_source frame. needs to be a parameter since the pointcloud may come transformed due to the lidar's pipeline
+  std::string mapping_lidar_frame_; // calibration_target frame. needs to be a parameter since the pointcloud may come transformed due to the lidar's pipeline
   int max_frames_;
   int local_map_num_keyframes_;
   int calibration_num_keyframes_;
@@ -143,6 +165,7 @@ protected:
   double calibration_max_interpolated_angle_;
   double calibration_max_interpolated_speed_;
   double calibration_max_interpolated_accel_;
+  double max_calibration_range_;
 
   // ROS Interface
   tf2_ros::StaticTransformBroadcaster tf_broascaster_;
@@ -155,6 +178,10 @@ protected:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr keyframe_map_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr keyframe_pub_;
+
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr initial_source_aligned_map_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr target_map_pub_;
+
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr frame_path_pub_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr keyframe_path_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr keyframe_markers_pub_;
@@ -163,7 +190,8 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mapping_pointcloud_sub_;
 
   rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
-  rclcpp::Service<tier4_calibration_msgs::srv::KeyFrameMap>::SharedPtr keyframe_map_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr single_lidar_calibration_server_;
 
   rclcpp::TimerBase::SharedPtr timer_;
 
@@ -173,8 +201,7 @@ protected:
   std::mutex mutex_;
 
   // ROS Data
-  std_msgs::msg::Header::SharedPtr lidar_header_;
-  std::string lidar_frame_;
+  std_msgs::msg::Header::SharedPtr mapping_lidar_header_;
 
   // ROS Publishers buffers
   PointcloudType::Ptr published_map_pointcloud_ptr_;
@@ -184,18 +211,20 @@ protected:
 
   // Calibration matching data
   std::queue<sensor_msgs::msg::PointCloud2::SharedPtr> calibration_pointclouds_queue_;
+  std_msgs::msg::Header::SharedPtr calibration_lidar_header_;
   int last_unmatched_keyframe_;
 
   // Calibration data
   std::vector<CalibrationFrame> calibration_frames_;
+  std::vector<pcl::Registration<PointType, PointType>::Ptr> calibration_registrators_;
 
   // Mapping data
   int selected_keyframe_;
   int n_processed_frames_;
-  std::queue<std::shared_ptr<Frame>> unprocessed_frames_;
-  std::vector<std::shared_ptr<Frame>> processed_frames_;
-  std::vector<std::shared_ptr<Frame>> keyframes_;
-  std::vector<std::shared_ptr<Frame>> keyframes_and_stopped_;
+  std::queue<Frame::Ptr> unprocessed_frames_;
+  std::vector<Frame::Ptr> processed_frames_;
+  std::vector<Frame::Ptr> keyframes_;
+  std::vector<Frame::Ptr> keyframes_and_stopped_;
   pcl::PointCloud<PointType>::Ptr local_map_ptr_;
   std::vector<geometry_msgs::msg::PoseStamped> trajectory_;
 

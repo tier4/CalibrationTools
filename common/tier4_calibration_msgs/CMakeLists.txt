@@ -22,8 +22,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/TimeDelay.msg"
   "srv/ExtrinsicCalibrationManager.srv"
   "srv/ExtrinsicCalibrator.srv"
+  "srv/Frame.srv"
   "srv/IntrinsicsOptimizer.srv"
-  "srv/KeyFrameMap.srv"
   DEPENDENCIES
     std_msgs
     sensor_msgs

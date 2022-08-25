@@ -59,10 +59,10 @@ message("All targets: ${all_targets}")
 
 # Remove entry
 get_target_property(target_options extrinsic_mapping_based_calibrator COMPILE_OPTIONS)
-list(REMOVE_ITEM target_options "-pedantic")
-list(REMOVE_ITEM target_options "-error")
-list(REMOVE_ITEM target_options "-O3")
-list(REMOVE_ITEM target_options "-march=native")
+list(REMOVE_ITEM target_options "-Werror")
+#list(REMOVE_ITEM target_options "-error")
+#list(REMOVE_ITEM target_options "-O3")
+#list(REMOVE_ITEM target_options "-march=native")
 set_property(TARGET extrinsic_mapping_based_calibrator PROPERTY COMPILE_OPTIONS ${target_options})
 
 ament_auto_package(

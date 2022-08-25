@@ -6,6 +6,8 @@
   <arg name="child_frame" />
   <arg name="mapping_pointcloud" />
   <arg name="calibration_pointcloud" />
+  <arg name="calibration_lidar_frame" />
+  <arg name="mapping_lidar_frame" />
 
   <group>
     <push-ros-namespace namespace="$(var ns)" />
@@ -13,8 +15,11 @@
       <param name="base_frame" value="$(var base_frame)" />
       <param name="parent_frame" value="$(var parent_frame)" />
       <param name="child_frame" value="$(var child_frame)" />
-      <param name="marker_size" value="10.0" />
       <param name="map_frame" value="calibration_map" />
+      <param name="calibration_lidar_frame" value="$(var calibration_lidar_frame)" />
+      <param name="mapping_lidar_frame" value="$(var mapping_lidar_frame)" />
+
+      <param name="marker_size" value="10.0" />
 
       <param name="ndt_resolution" value="1.0" />
       <param name="ndt_step_size" value="0.1" />
