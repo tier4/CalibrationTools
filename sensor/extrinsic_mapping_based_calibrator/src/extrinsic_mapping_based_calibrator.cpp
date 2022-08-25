@@ -39,6 +39,23 @@
 
 using namespace std::chrono_literals;
 
+#define UPDATE_MAPPING_CALIBRATOR_PARAM(PARAM_STRUCT, NAME) \
+  update_param(parameters, #NAME, PARAM_STRUCT.NAME ## _)
+
+namespace
+{
+template <typename T>
+void update_param(
+  const std::vector<rclcpp::Parameter> & parameters, const std::string & name, T & value)
+{
+  auto it = std::find_if(parameters.cbegin(), parameters.cend(),
+    [&name](const rclcpp::Parameter & parameter) { return parameter.get_name() == name; });
+  if (it != parameters.cend()) {
+    value = it->template get_value<T>();
+    RCLCPP_INFO_STREAM(rclcpp::get_logger("extrinsic_mapping_based_calibrator"), "Setting parameter [" << name << "] to " << value);
+  }
+}
+}
 
 ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_mapping_based_calibrator_node", options),
@@ -56,36 +73,36 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
   calibration_lidar_frame_ = this->declare_parameter<std::string>("calibration_lidar_frame");
   mapping_lidar_frame_ = this->declare_parameter<std::string>("mapping_lidar_frame");
 
-  max_frames_ = this->declare_parameter<int>("max_frames", 500);
-  local_map_num_keyframes_ = this->declare_parameter<int>("local_map_num_keyframes", 15);
-  calibration_num_keyframes_ = this->declare_parameter<int>("calibration_num_keyframes_", 10);
-  max_pointcloud_range_ = this->declare_parameter<double>("max_pointcloud_range", 80.0); // maximum range of pointclouds during mapping
+  params_.max_frames_ = this->declare_parameter<int>("max_frames", 500);
+  params_.local_map_num_keyframes_ = this->declare_parameter<int>("local_map_num_keyframes", 15);
+  params_.calibration_num_keyframes_ = this->declare_parameter<int>("calibration_num_keyframes_", 10);
+  params_.max_pointcloud_range_ = this->declare_parameter<double>("max_pointcloud_range", 80.0); // maximum range of pointclouds during mapping
 
   // Mapping parameters
-  ndt_resolution_ = this->declare_parameter<double>("ndt_resolution", 5.0);
-  ndt_step_size_ = this->declare_parameter<double>("ndt_step_size", 0.1);
-  ndt_max_iterations_ = this->declare_parameter<int>("ndt_max_iterations", 35);
-  ndt_num_threads_ = this->declare_parameter<int>("ndt_num_threads", 8);
+  params_.ndt_resolution_ = this->declare_parameter<double>("ndt_resolution", 5.0);
+  params_.ndt_step_size_ = this->declare_parameter<double>("ndt_step_size", 0.1);
+  params_.ndt_max_iterations_ = this->declare_parameter<int>("ndt_max_iterations", 35);
+  params_.ndt_num_threads_ = this->declare_parameter<int>("ndt_num_threads", 8);
 
-  leaf_size_input_ = this->declare_parameter<double>("leaf_size_iput", 0.1);
-  leaf_size_local_map_ = this->declare_parameter<double>("leaf_size_local_map", 0.1);
-  leaf_size_dense_map_ = this->declare_parameter<double>("leaf_size_dense_map", 0.05);
-  new_keyframe_min_distance_ = this->declare_parameter<double>("new_keyframe_min_distance", 1.0);
-  new_frame_min_distance_ = this->declare_parameter<double>("new_frame_min_distance", 0.05);
-  frame_stopped_distance_ = this->declare_parameter<double>("frame_stopped_distance", 0.02); // distance between frames to consider the car to be stopped. uses hysteresis
-  frame_nonstopped_distance_ = this->declare_parameter<double>("frame_nonstopped_distance", 0.05); // distance between frames to consider the car to be moving. uses hysteresis
-  frames_since_stop_force_frame_ =this->declare_parameter<int>("frames_since_stoped_force_frame", 5);
-  calibration_skip_keyframes_ = this->declare_parameter<int>("calibration_skip_keyframes", 5); // Skip the first frames for calibration
+  params_.leaf_size_input_ = this->declare_parameter<double>("leaf_size_iput", 0.1);
+  params_.leaf_size_local_map_ = this->declare_parameter<double>("leaf_size_local_map", 0.1);
+  params_.leaf_size_dense_map_ = this->declare_parameter<double>("leaf_size_dense_map", 0.05);
+  params_.new_keyframe_min_distance_ = this->declare_parameter<double>("new_keyframe_min_distance", 1.0);
+  params_.new_frame_min_distance_ = this->declare_parameter<double>("new_frame_min_distance", 0.05);
+  params_.frame_stopped_distance_ = this->declare_parameter<double>("frame_stopped_distance", 0.02); // distance between frames to consider the car to be stopped. uses hysteresis
+  params_.frame_nonstopped_distance_ = this->declare_parameter<double>("frame_nonstopped_distance", 0.05); // distance between frames to consider the car to be moving. uses hysteresis
+  params_.frames_since_stop_force_frame_ =this->declare_parameter<int>("frames_since_stoped_force_frame", 5);
+  params_.calibration_skip_keyframes_ = this->declare_parameter<int>("calibration_skip_keyframes", 5); // Skip the first frames for calibration
 
   // Calibration frames selection criteria parameters
-  calibration_max_interpolated_time_ = this->declare_parameter<double>("calibration_max_interpolated_time", 0.03);
-  calibration_max_interpolated_distance_ = this->declare_parameter<double>("calibration_max_interpolated_distance", 0.05);
-  calibration_max_interpolated_angle_ = this->declare_parameter<double>("calibration_max_interpolated_angle", 1.0);
-  calibration_max_interpolated_speed_ = this->declare_parameter<double>("calibration_max_interpolated_speed", 3.0);
-  calibration_max_interpolated_accel_ = this->declare_parameter<double>("calibration_max_interpolated_accel", 0.4);
+  params_.calibration_max_interpolated_time_ = this->declare_parameter<double>("calibration_max_interpolated_time", 0.03);
+  params_.calibration_max_interpolated_distance_ = this->declare_parameter<double>("calibration_max_interpolated_distance", 0.05);
+  params_.calibration_max_interpolated_angle_ = this->declare_parameter<double>("calibration_max_interpolated_angle", 1.0);
+  params_.calibration_max_interpolated_speed_ = this->declare_parameter<double>("calibration_max_interpolated_speed", 3.0);
+  params_.calibration_max_interpolated_accel_ = this->declare_parameter<double>("calibration_max_interpolated_accel", 0.4);
 
   // Calibration parameters
-  max_calibration_range_ = this->declare_parameter<double>("max_calibration_range", 80.0);
+  params_.max_calibration_range_ = this->declare_parameter<double>("max_calibration_range", 80.0);
 
   map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("output_map", 10);
   keyframe_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("keyframe_map", 10);
@@ -130,24 +147,84 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
 
   published_map_pointcloud_ptr_.reset(new PointcloudType());
 
-  ndt.setResolution(ndt_resolution_); // 1.0
-  ndt.setStepSize(ndt_step_size_); // 0.1
-  ndt.setMaximumIterations(ndt_max_iterations_); // 35
-  ndt.setTransformationEpsilon(0.01);
-  ndt.setNeighborhoodSearchMethod(pclomp::DIRECT7);
+  // Mapping configuration
+  ndt_.setResolution(params_.ndt_resolution_); // 1.0
+  ndt_.setStepSize(params_.ndt_step_size_); // 0.1
+  ndt_.setMaximumIterations(params_.ndt_max_iterations_); // 35
+  ndt_.setTransformationEpsilon(0.01);
+  ndt_.setNeighborhoodSearchMethod(pclomp::DIRECT7);
 
-  if (ndt_num_threads_ > 0) {
-    ndt.setNumThreads(ndt_num_threads_);
+  if (params_.ndt_num_threads_ > 0) {
+    ndt_.setNumThreads(params_.ndt_num_threads_);
   }
 
-  last_unmatched_keyframe_ = calibration_skip_keyframes_;
+  last_unmatched_keyframe_ = params_.calibration_skip_keyframes_;
 
   std::thread thread = std::thread(&ExtrinsicMappingBasedCalibrator::mappingThreadWorker, this);
   thread.detach();
 
+
+  // Calibration configuration
+  calibration_ndt_ = pcl::make_shared<pclomp::NormalDistributionsTransform<PointType, PointType>>();
+  calibration_gicp_ = pcl::make_shared<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>>();
+  calibration_icp_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType >>();
+  calibration_registrators_ = {calibration_ndt_, calibration_gicp_, calibration_icp_};
+
   // services
   // timers local map
   // path
+}
+
+rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramCallback(
+  const std::vector<rclcpp::Parameter> & parameters)
+{
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+  result.reason = "success";
+
+  Params params = params_;
+
+  try {
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, max_frames);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, local_map_num_keyframes);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_num_keyframes);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, max_pointcloud_range);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, ndt_resolution);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, ndt_step_size);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, ndt_max_iterations);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, ndt_num_threads);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, leaf_size_input);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, leaf_size_local_map);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, leaf_size_dense_map);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, new_keyframe_min_distance);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, new_frame_min_distance);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, frame_stopped_distance);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, frame_nonstopped_distance);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, frames_since_stop_force_frame);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_skip_keyframes);
+
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_time);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_distance);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_angle);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_speed);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_accel);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, max_calibration_range);
+
+    // transaction succeeds, now assign values
+    params_ = params;
+  } catch (const rclcpp::exceptions::InvalidParameterTypeException & e) {
+    result.successful = false;
+    result.reason = e.what();
+  }
+
+  configureCalibrators();
+
+  return result;
+}
+
+void ExtrinsicMappingBasedCalibrator::configureCalibrators()
+{
+  return;
 }
 
 #pragma GCC push_options
@@ -254,17 +331,17 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
 
     RCLCPP_INFO(get_logger(), "Attempting to add keyframe id=%d to the calibration list", keyframe->keyframe_id_);
     RCLCPP_INFO(get_logger(), "\t - stopped: %s", keyframe->stopped_ ? " true" : "false");
-    RCLCPP_INFO(get_logger(), "\t - interpolated time: %.4f s (%s)", interpolated_time, interpolated_time < calibration_max_interpolated_time_ ? "accepted" : "rejected");
-    RCLCPP_INFO(get_logger(), "\t - interpolated distance: %.4f m (%s)", interpolated_distance, interpolated_distance < calibration_max_interpolated_distance_ ? "accepted" : "rejected");
-    RCLCPP_INFO(get_logger(), "\t - interpolated angle: %.4f deg (%s)", interpolated_angle, interpolated_angle < calibration_max_interpolated_angle_ ? "accepted" : "rejected");
-    RCLCPP_INFO(get_logger(), "\t - interpolated speed: %.4f m/s (%s)", interpolated_speed, interpolated_speed < calibration_max_interpolated_speed_ ? "accepted" : "rejected");
-    RCLCPP_INFO(get_logger(), "\t - interpolated accel: %.4f m/s2 (%s)", interpolated_accel, interpolated_accel < calibration_max_interpolated_accel_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated time: %.4f s (%s)", interpolated_time, interpolated_time < params_.calibration_max_interpolated_time_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated distance: %.4f m (%s)", interpolated_distance, interpolated_distance < params_.calibration_max_interpolated_distance_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated angle: %.4f deg (%s)", interpolated_angle, interpolated_angle < params_.calibration_max_interpolated_angle_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated speed: %.4f m/s (%s)", interpolated_speed, interpolated_speed < params_.calibration_max_interpolated_speed_ ? "accepted" : "rejected");
+    RCLCPP_INFO(get_logger(), "\t - interpolated accel: %.4f m/s2 (%s)", interpolated_accel, interpolated_accel < params_.calibration_max_interpolated_accel_ ? "accepted" : "rejected");
 
-    if (interpolated_time < calibration_max_interpolated_time_ &&
-      interpolated_distance < calibration_max_interpolated_distance_ &&
-      interpolated_angle < calibration_max_interpolated_angle_ &&
-      interpolated_speed < calibration_max_interpolated_speed_ &&
-      interpolated_accel < calibration_max_interpolated_accel_
+    if (interpolated_time < params_.calibration_max_interpolated_time_ &&
+      interpolated_distance < params_.calibration_max_interpolated_distance_ &&
+      interpolated_angle < params_.calibration_max_interpolated_angle_ &&
+      interpolated_speed < params_.calibration_max_interpolated_speed_ &&
+      interpolated_accel < params_.calibration_max_interpolated_accel_
       )
     {
       PointcloudType::Ptr pc_ptr(new PointcloudType());
@@ -332,7 +409,7 @@ void ExtrinsicMappingBasedCalibrator::mappingPointCloudCallback(const sensor_msg
   frame->distance_ = 0.f;
   frame->delta_distance_ = 0.f;
 
-  if(rclcpp::Time(msg->header.stamp) < rclcpp::Time(mapping_lidar_header_->stamp) || int(processed_frames_.size()) >= max_frames_) {
+  if(rclcpp::Time(msg->header.stamp) < rclcpp::Time(mapping_lidar_header_->stamp) || int(processed_frames_.size()) >= params_.max_frames_) {
     return;
   }
 
@@ -384,10 +461,10 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     pcl::VoxelGrid<PointType> voxel_grid;
     frame->pointcloud_subsampled_ = PointcloudType::Ptr(new PointcloudType());
     PointcloudType::Ptr aligned_cloud_ptr(new PointcloudType());
-    PointcloudType::Ptr cropped_cloud_ptr = cropPointCloud(frame->pointcloud_raw_, max_pointcloud_range_);
+    PointcloudType::Ptr cropped_cloud_ptr = cropPointCloud(frame->pointcloud_raw_, params_.max_pointcloud_range_);
 
     //RCLCPP_INFO(get_logger(), "Subsampling input...");
-    voxel_grid.setLeafSize(leaf_size_input_, leaf_size_input_, leaf_size_input_);
+    voxel_grid.setLeafSize(params_.leaf_size_input_, params_.leaf_size_input_, params_.leaf_size_input_);
     voxel_grid.setInputCloud(cropped_cloud_ptr);
     voxel_grid.filter(*frame->pointcloud_subsampled_);
     //RCLCPP_INFO(get_logger(), "Subsampled input!");
@@ -395,16 +472,16 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     //RCLCPP_INFO(get_logger(), "Thread. After voxel");
 
     // Register the frame to the map
-    ndt.setInputTarget(local_map_ptr_);
-    ndt.setInputSource(frame->pointcloud_subsampled_);
+    ndt_.setInputTarget(local_map_ptr_);
+    ndt_.setInputSource(frame->pointcloud_subsampled_);
 
 
     if (first_iteration) {
       frame->pose_ = Eigen::Matrix4f::Identity();
     }
     else {
-      ndt.align(*aligned_cloud_ptr, prev_pose);
-      frame->pose_ = ndt.getFinalTransformation();
+      ndt_.align(*aligned_cloud_ptr, prev_pose);
+      frame->pose_ = ndt_.getFinalTransformation();
     }
 
     //RCLCPP_INFO(get_logger(), "Thread. After ndt");
@@ -424,9 +501,9 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     frame->frame_id_ = processed_frames_.size();
     frame->processed_ = true;
 
-    if (!first_iteration && delta_distance < new_frame_min_distance_) {
+    if (!first_iteration && delta_distance < params_.new_frame_min_distance_) {
 
-      if (std::abs(delta_distance - prev_frame->delta_distance_) < frame_stopped_distance_) {
+      if (std::abs(delta_distance - prev_frame->delta_distance_) < params_.frame_stopped_distance_) {
         // When the vehicle is stopped, we may either skip the frame, record it as a normal frame, or even save it for calibration
 
         RCLCPP_WARN(get_logger(), "Old prev_frame->frames_since_stop_: %d", prev_frame->frames_since_stop_);
@@ -437,12 +514,12 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
         frame->frames_since_stop_ = prev_frame->frames_since_stop_;
         frame->stopped_ = true;
 
-        if(prev_frame->frames_since_stop_ == frames_since_stop_force_frame_) {
+        if(prev_frame->frames_since_stop_ == params_.frames_since_stop_force_frame_) {
           RCLCPP_WARN(get_logger(), "Added a keyframe_and_stopped frame");
             keyframes_and_stopped_.push_back(frame);
 
         }
-        else if (prev_frame->stopped_ && std::abs(prev_frame->frames_since_stop_ - frames_since_stop_force_frame_) > 1) {
+        else if (prev_frame->stopped_ && std::abs(prev_frame->frames_since_stop_ - params_.frames_since_stop_force_frame_) > 1) {
           RCLCPP_WARN(get_logger(), "Dropped stopped frame (%d). delta_distance=%.4f Unprocessed=%lu Frames=%lu Keyframes=%lu", prev_frame->frames_since_stop_, delta_distance, unprocessed_frames_.size(), processed_frames_.size(), keyframes_.size());
           continue;
         }
@@ -470,16 +547,16 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
 void ExtrinsicMappingBasedCalibrator::initLocalMap(Frame::Ptr frame)
 {
   local_map_ptr_.reset(new PointcloudType());
-  PointcloudType::Ptr cropped_cloud_ptr = cropPointCloud(frame->pointcloud_raw_, max_pointcloud_range_);
+  PointcloudType::Ptr cropped_cloud_ptr = cropPointCloud(frame->pointcloud_raw_, params_.max_pointcloud_range_);
   pcl::VoxelGrid<PointType> voxel_grid;
-  voxel_grid.setLeafSize(leaf_size_local_map_, leaf_size_local_map_, leaf_size_local_map_);
+  voxel_grid.setLeafSize(params_.leaf_size_local_map_, params_.leaf_size_local_map_, params_.leaf_size_local_map_);
   voxel_grid.setInputCloud(cropped_cloud_ptr);
   voxel_grid.filter(*local_map_ptr_);
 }
 
 void ExtrinsicMappingBasedCalibrator::checkKeyframe(Frame::Ptr frame)
 {
-  if (keyframes_.size() == 0 || frame->distance_ >= keyframes_.back()->distance_ + new_keyframe_min_distance_) {
+  if (keyframes_.size() == 0 || frame->distance_ >= keyframes_.back()->distance_ + params_.new_keyframe_min_distance_) {
     keyframes_.push_back(frame);
     keyframes_and_stopped_.push_back(frame);
     frame->is_key_frame_ = true;
@@ -495,7 +572,7 @@ void ExtrinsicMappingBasedCalibrator::recalculateLocalMap()
 
   PointcloudType::Ptr tmp_mcs_ptr(new PointcloudType());
 
-  for (int i = 0; i < local_map_num_keyframes_ && i < int(keyframes_.size()); i++) {
+  for (int i = 0; i < params_.local_map_num_keyframes_ && i < int(keyframes_.size()); i++) {
     const auto  & keyframe = keyframes_[keyframes_.size() - i - 1];
 
     PointcloudType::Ptr keyframe_mcs_ptr(new PointcloudType());
@@ -531,7 +608,7 @@ void ExtrinsicMappingBasedCalibrator::recalculateLocalMap()
 
   //auto start1 = std::chrono::high_resolution_clock::now();
   pcl::VoxelGrid<PointType> voxel_grid;
-  voxel_grid.setLeafSize(leaf_size_local_map_, leaf_size_local_map_, leaf_size_local_map_);
+  voxel_grid.setLeafSize(params_.leaf_size_local_map_, params_.leaf_size_local_map_, params_.leaf_size_local_map_);
   voxel_grid.setInputCloud(tmp_mcs_ptr);
   voxel_grid.filter(*local_map_ptr_);
 
@@ -590,7 +667,7 @@ void ExtrinsicMappingBasedCalibrator::timerCallback()
   }
 
   pcl::VoxelGrid<PointType> voxel_grid;
-  voxel_grid.setLeafSize(leaf_size_input_, leaf_size_input_, leaf_size_input_);
+  voxel_grid.setLeafSize(params_.leaf_size_input_, params_.leaf_size_input_, params_.leaf_size_input_);
   voxel_grid.setInputCloud(tmp_mcs_ptr);
   voxel_grid.filter(*subsampled_mcs_ptr);
 
@@ -692,8 +769,8 @@ PointcloudType::Ptr ExtrinsicMappingBasedCalibrator::getDensePointcloudFromMap(c
     assert(false);
   }
 
-  int min_keyframe_id = std::max<int>(0, keyframe->keyframe_id_ - calibration_num_keyframes_);
-  int max_keyframe_id = std::min<int>(keyframes_.size() - 1, keyframe->keyframe_id_ + calibration_num_keyframes_);
+  int min_keyframe_id = std::max<int>(0, keyframe->keyframe_id_ - params_.calibration_num_keyframes_);
+  int max_keyframe_id = std::min<int>(keyframes_.size() - 1, keyframe->keyframe_id_ + params_.calibration_num_keyframes_);
 
   int min_frame_id = keyframes_[min_keyframe_id]->frame_id_;
   int max_frame_id = keyframes_[max_keyframe_id]->frame_id_;
@@ -743,7 +820,7 @@ void ExtrinsicMappingBasedCalibrator::keyFrameCallback(
 
   RCLCPP_INFO(get_logger(), "keyFrameCallback callback. Processing keyframe=%d", requested_keyframe_id);
 
-  PointcloudType::Ptr subsampled_kcs_ptr = getDensePointcloudFromMap(keyframe->pose_, keyframe, leaf_size_dense_map_, 5.0);
+  PointcloudType::Ptr subsampled_kcs_ptr = getDensePointcloudFromMap(keyframe->pose_, keyframe, params_.leaf_size_dense_map_, 5.0);
   PointcloudType::Ptr cropped_scan_kcd_ptr = cropPointCloud(keyframe->pointcloud_raw_, 50.0);
 
   RCLCPP_INFO(get_logger(), "keyFrameCallback callback. map points=%lu", subsampled_kcs_ptr->size());
@@ -835,10 +912,10 @@ void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
   }
 
   CalibrationFrame & calibration_frame = calibration_frames_[request->id];
-  PointcloudType::Ptr source_pc_ptr = cropPointCloud(calibration_frame.source_pointcloud_, max_calibration_range_);
+  PointcloudType::Ptr source_pc_ptr = cropPointCloud(calibration_frame.source_pointcloud_, params_.max_calibration_range_);
 
-  PointcloudType::Ptr target_dense_pc_ptr = getDensePointcloudFromMap(calibration_frame.target_frame_->pose_, calibration_frame.target_frame_, leaf_size_dense_map_, max_calibration_range_ + initial_distance);
-  PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(calibration_frame.target_frame_->pose_, calibration_frame.target_frame_, leaf_size_local_map_, max_calibration_range_ + initial_distance);
+  PointcloudType::Ptr target_dense_pc_ptr = getDensePointcloudFromMap(calibration_frame.target_frame_->pose_, calibration_frame.target_frame_, params_.leaf_size_dense_map_, params_.max_calibration_range_ + initial_distance);
+  PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(calibration_frame.target_frame_->pose_, calibration_frame.target_frame_, params_.leaf_size_local_map_, params_.max_calibration_range_ + initial_distance);
 
   PointcloudType::Ptr initial_source_aligned_pc_ptr(new PointcloudType());
   pcl::transformPointCloud(*source_pc_ptr, *initial_source_aligned_pc_ptr, initial_calibration_transform);
@@ -850,7 +927,7 @@ void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
 
   double initial_score = sourceTargetDistance(estimator);
 
-  RCLCPP_WARN(this->get_logger(), "Initial calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = %.4f m", initial_score, std::sqrt(initial_score), leaf_size_dense_map_);
+  RCLCPP_WARN(this->get_logger(), "Initial calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = %.4f m", initial_score, std::sqrt(initial_score), params_.leaf_size_dense_map_);
 
   // Crop unused areas of the target pointcloud to save processing time
   cropTargetPointcloud<PointType>(initial_source_aligned_pc_ptr, target_dense_pc_ptr, initial_distance);

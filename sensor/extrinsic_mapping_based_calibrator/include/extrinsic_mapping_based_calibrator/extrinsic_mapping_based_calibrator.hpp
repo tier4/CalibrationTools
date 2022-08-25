@@ -38,6 +38,8 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/registration.h>
+#include <pcl/registration/icp.h>
+#include <pcl/registration/gicp.h>
 
 #include <tf2/convert.h>
 
@@ -105,6 +107,10 @@ protected:
   //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
   //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
+  OnSetParametersCallbackHandle::SharedPtr set_param_res_;
+  rcl_interfaces::msg::SetParametersResult paramCallback(
+    const std::vector<rclcpp::Parameter> & parameters);
+
   void keyFrameCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
@@ -131,6 +137,9 @@ protected:
   void createKeyFrame();
   void recalculateLocalMap();
 
+  // Calibration methods
+  void configureCalibrators();
+
   // General methods
   PointcloudType::Ptr getDensePointcloudFromMap(const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
 
@@ -142,30 +151,36 @@ protected:
   std::string map_frame_; // isolated frame to visualize the mapping
   std::string calibration_lidar_frame_; // calibration_source frame. needs to be a parameter since the pointcloud may come transformed due to the lidar's pipeline
   std::string mapping_lidar_frame_; // calibration_target frame. needs to be a parameter since the pointcloud may come transformed due to the lidar's pipeline
-  int max_frames_;
-  int local_map_num_keyframes_;
-  int calibration_num_keyframes_;
-  double max_pointcloud_range_;
-  double ndt_resolution_;
-  double ndt_step_size_;
-  int ndt_max_iterations_;
-  int ndt_num_threads_;
-  double leaf_size_input_;
-  double leaf_size_local_map_;
-  double leaf_size_dense_map_;
-  double new_keyframe_min_distance_;
-  double new_frame_min_distance_;
-  double frame_stopped_distance_;
-  double frame_nonstopped_distance_;
-  int frames_since_stop_force_frame_;
-  int calibration_skip_keyframes_;
 
-  double calibration_max_interpolated_time_;
-  double calibration_max_interpolated_distance_;
-  double calibration_max_interpolated_angle_;
-  double calibration_max_interpolated_speed_;
-  double calibration_max_interpolated_accel_;
-  double max_calibration_range_;
+  struct Params
+  {
+    int max_frames_;
+    int local_map_num_keyframes_;
+    int calibration_num_keyframes_;
+    double max_pointcloud_range_;
+    double ndt_resolution_;
+    double ndt_step_size_;
+    int ndt_max_iterations_;
+    int ndt_num_threads_;
+    double leaf_size_input_;
+    double leaf_size_local_map_;
+    double leaf_size_dense_map_;
+    double new_keyframe_min_distance_;
+    double new_frame_min_distance_;
+    double frame_stopped_distance_;
+    double frame_nonstopped_distance_;
+    int frames_since_stop_force_frame_;
+    int calibration_skip_keyframes_;
+
+    double calibration_max_interpolated_time_;
+    double calibration_max_interpolated_distance_;
+    double calibration_max_interpolated_angle_;
+    double calibration_max_interpolated_speed_;
+    double calibration_max_interpolated_accel_;
+    double max_calibration_range_;
+  } params_;
+
+
 
   // ROS Interface
   tf2_ros::StaticTransformBroadcaster tf_broascaster_;
@@ -195,7 +210,7 @@ protected:
 
   rclcpp::TimerBase::SharedPtr timer_;
 
-  pclomp::NormalDistributionsTransform<PointType, PointType> ndt;
+  pclomp::NormalDistributionsTransform<PointType, PointType> ndt_;
 
   // Threading, sync, and result
   std::mutex mutex_;
@@ -214,9 +229,12 @@ protected:
   std_msgs::msg::Header::SharedPtr calibration_lidar_header_;
   int last_unmatched_keyframe_;
 
-  // Calibration data
+  // Calibration
   std::vector<CalibrationFrame> calibration_frames_;
   std::vector<pcl::Registration<PointType, PointType>::Ptr> calibration_registrators_;
+  pclomp::NormalDistributionsTransform<PointType, PointType>::Ptr calibration_ndt_;
+  pcl::GeneralizedIterativeClosestPoint<PointType, PointType>::Ptr calibration_gicp_;
+  pcl::IterativeClosestPoint<PointType, PointType >::Ptr calibration_icp_;
 
   // Mapping data
   int selected_keyframe_;
