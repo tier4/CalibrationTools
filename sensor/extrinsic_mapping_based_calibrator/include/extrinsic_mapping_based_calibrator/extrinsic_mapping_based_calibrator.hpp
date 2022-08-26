@@ -40,6 +40,7 @@
 #include <pcl/registration/registration.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/gicp.h>
+#include <pcl/registration/correspondence_estimation.h>
 
 #include <tf2/convert.h>
 
@@ -139,6 +140,7 @@ protected:
 
   // Calibration methods
   void configureCalibrators();
+  void setUpCalibrators(PointcloudType::Ptr & source_pointcloud_ptr, PointcloudType::Ptr & target_pointcloud_ptr);
 
   // General methods
   PointcloudType::Ptr getDensePointcloudFromMap(const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
@@ -195,6 +197,7 @@ protected:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr keyframe_pub_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr initial_source_aligned_map_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr calibrated_source_aligned_map_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr target_map_pub_;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr frame_path_pub_;
@@ -235,6 +238,9 @@ protected:
   pclomp::NormalDistributionsTransform<PointType, PointType>::Ptr calibration_ndt_;
   pcl::GeneralizedIterativeClosestPoint<PointType, PointType>::Ptr calibration_gicp_;
   pcl::IterativeClosestPoint<PointType, PointType >::Ptr calibration_icp_;
+  pcl::search::KdTree<PointType>::Ptr source_tree_;
+  pcl::search::KdTree<PointType>::Ptr target_tree_;
+  pcl::registration::CorrespondenceEstimation<PointType, PointType>::Ptr correspondence_estimator_;
 
   // Mapping data
   int selected_keyframe_;

@@ -138,20 +138,19 @@ void sourceTargetDistance(const pcl::PointCloud<PointType> & source,
 
 template <class PointType>
 void findBestTransform(
-  const pcl::PointCloud<PointType> & source,
   const std::vector<Eigen::Matrix4f> & input_transforms,
-  std::vector< std::shared_ptr<pcl::Registration<PointType, PointType>> > & registratators,
+  std::vector<typename pcl::Registration<PointType, PointType>::Ptr> & registratators,
   Eigen::Matrix4f & best_transform,
   float & best_score)
 {
   std::vector<Eigen::Matrix4f> transforms = input_transforms;
 
-  best_transform = Eigen::Matrix4f::Identity;
+  best_transform = Eigen::Matrix4f::Identity();
   best_score = std::numeric_limits<float>::max();
 
   for (auto & registrator : registratators) {
 
-    Eigen::Matrix4f best_registrator_transform = Eigen::Matrix4f::Identity;
+    Eigen::Matrix4f best_registrator_transform = Eigen::Matrix4f::Identity();
     float best_registrator_score = std::numeric_limits<float>::max();
 
     for (auto & transform : transforms) {
@@ -160,6 +159,7 @@ void findBestTransform(
 
       Eigen::Matrix4f candidate_transform = registrator->getFinalTransformation();
       float candidate_score = registrator->getFitnessScore();
+      std::cout << "candidate score: " << candidate_score << std::endl;
 
       if (candidate_score < best_registrator_score) {
         best_registrator_transform = candidate_transform;
@@ -175,6 +175,9 @@ void findBestTransform(
     transforms.push_back(best_registrator_transform);
   }
 }
+
+#pragma GCC push_options
+#pragma GCC optimize("O0")
 
 template <class PointType>
 void cropTargetPointcloud(
@@ -194,9 +197,16 @@ void cropTargetPointcloud(
     max_p = max_p.max(pt);
   }
 
-  Eigen::Vector4f margin_vector = margin*Eigen::Vector4f::Ones();
+  //std::cout << "min: " << min_p << std::endl;
+  //std::cout << "max: " << max_p << std::endl;
+
   Eigen::Vector4f min_vector = min_p - margin;
-  Eigen::Vector4f max_vector = max_p - margin;
+  Eigen::Vector4f max_vector = max_p + margin;
+  min_vector.w() = 1.f;
+  max_vector.w() = 1.f;
+
+  //std::cout << "min_vector: " << min_vector << std::endl;
+  //std::cout << "max_vector: " << max_vector << std::endl;
 
   // Apply the filter
   pcl::CropBox<PointType> boxFilter;
@@ -205,6 +215,8 @@ void cropTargetPointcloud(
   boxFilter.setInputCloud(target_dense_pc_ptr);
   boxFilter.filter(*target_dense_pc_ptr);
 }
+
+#pragma GCC pop_options
 
 /*
 

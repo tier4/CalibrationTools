@@ -17,7 +17,7 @@
 #include <tier4_autoware_utils/tier4_autoware_utils.hpp>
 #include <tier4_pcl_extensions/voxel_grid_triplets.hpp>
 
-#include <pcl/registration/correspondence_estimation.h>
+
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl_ros/transforms.hpp>
@@ -109,6 +109,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
   keyframe_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("keyframe", 10);
 
   initial_source_aligned_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("initial_source_aligned_map", 10);
+  calibrated_source_aligned_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("calibrated_source_aligned_map", 10);
   target_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("target_map_pub", 10);
 
   frame_path_pub_ = this->create_publisher<nav_msgs::msg::Path>("frame_path", 10);
@@ -165,6 +166,9 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
 
 
   // Calibration configuration
+  target_tree_ = pcl::make_shared<pcl::search::KdTree<PointType>>();
+  source_tree_ = pcl::make_shared<pcl::search::KdTree<PointType>>();
+  correspondence_estimator_ = pcl::make_shared<pcl::registration::CorrespondenceEstimation<PointType, PointType>>();
   calibration_ndt_ = pcl::make_shared<pclomp::NormalDistributionsTransform<PointType, PointType>>();
   calibration_gicp_ = pcl::make_shared<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>>();
   calibration_icp_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType >>();
@@ -225,6 +229,27 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
 void ExtrinsicMappingBasedCalibrator::configureCalibrators()
 {
   return;
+}
+
+void ExtrinsicMappingBasedCalibrator::setUpCalibrators(PointcloudType::Ptr & source_pointcloud_ptr, PointcloudType::Ptr & target_pointcloud_ptr)
+{
+  //source_tree_->setInputCloud(source_pointcloud_ptr);
+  target_tree_->setInputCloud(source_pointcloud_ptr);
+
+  //correspondence_estimator_->setSearchMethodSource(source_tree_, true);
+  //correspondence_estimator_->setSearchMethodTarget(target_tree_, true); // we force the not recompute since we will be sharing
+  //correspondence_estimator_->setInputSource(source_pointcloud_ptr);
+  //correspondence_estimator_->setInputTarget(target_pointcloud_ptr);
+
+  // For now do not optimize. ICP updates the correspondence estimator every iteration. ITERATIVE closest point
+
+  for(auto & calibrator : calibration_registrators_) {
+    //calibrator->setCorrespondenceEstimation(correspondence_estimator_);
+    //calibrator->setSearchMethodSource(source_tree_, true);
+    //calibrator->setSearchMethodTarget(target_tree_, true);
+    calibrator->setInputSource(source_pointcloud_ptr);
+    calibrator->setInputTarget(target_pointcloud_ptr);
+  }
 }
 
 #pragma GCC push_options
@@ -921,40 +946,79 @@ void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
   pcl::transformPointCloud(*source_pc_ptr, *initial_source_aligned_pc_ptr, initial_calibration_transform);
 
   // Evaluate the initial calibration
-  pcl::registration::CorrespondenceEstimation<PointType, PointType> estimator;
-  estimator.setInputSource(initial_source_aligned_pc_ptr);
-  estimator.setInputTarget(target_dense_pc_ptr);
-
-  double initial_score = sourceTargetDistance(estimator);
-
-  RCLCPP_WARN(this->get_logger(), "Initial calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = %.4f m", initial_score, std::sqrt(initial_score), params_.leaf_size_dense_map_);
+  setUpCalibrators(source_pc_ptr, target_dense_pc_ptr);
 
   // Crop unused areas of the target pointcloud to save processing time
   cropTargetPointcloud<PointType>(initial_source_aligned_pc_ptr, target_dense_pc_ptr, initial_distance);
   cropTargetPointcloud<PointType>(initial_source_aligned_pc_ptr, target_thin_pc_ptr, initial_distance);
 
+  bool asd = target_dense_pc_ptr->points.empty();
+  int asd2 = target_dense_pc_ptr->points.size();
+
+  correspondence_estimator_->setInputSource(initial_source_aligned_pc_ptr);
+  correspondence_estimator_->setInputTarget(target_dense_pc_ptr);
+  double initial_score = sourceTargetDistance(*correspondence_estimator_);
+
+  RCLCPP_WARN(this->get_logger(), "Initial calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = %.4f m", initial_score, std::sqrt(initial_score), params_.leaf_size_dense_map_);
+
+
+  std::vector<Eigen::Matrix4f> candidate_transforms = {initial_calibration_transform};
+  Eigen::Matrix4f best_transform;
+  float best_score;
+
+  findBestTransform<PointType>(
+    candidate_transforms,
+    calibration_registrators_,
+    best_transform,
+    best_score);
+
+  PointcloudType::Ptr calibrated_source_aligned_pc_ptr(new PointcloudType());
+  pcl::transformPointCloud(*source_pc_ptr, *calibrated_source_aligned_pc_ptr, best_transform);
+
+  RCLCPP_WARN(this->get_logger(), "Best calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = %.4f m", best_score, std::sqrt(best_score), params_.leaf_size_dense_map_);
+
+  PointcloudType::Ptr test_aligned_pc_ptr(new PointcloudType());
+  pcl::transformPointCloud(*source_pc_ptr, *test_aligned_pc_ptr, best_transform);
+
+  correspondence_estimator_->setInputSource(test_aligned_pc_ptr);
+  correspondence_estimator_->setInputTarget(target_dense_pc_ptr);
+  double test_score = sourceTargetDistance(*correspondence_estimator_);
+
+  RCLCPP_WARN(this->get_logger(), "Test calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = %.4f m", test_score, std::sqrt(test_score), params_.leaf_size_dense_map_);
+
+
+
   // Perform the real calibration
 
   // Output ROS data
   PointcloudType::Ptr initial_source_aligned_map_ptr(new PointcloudType());
+  PointcloudType::Ptr calibrated_source_aligned_map_ptr(new PointcloudType());
   PointcloudType::Ptr target_thin_map_ptr(new PointcloudType());
   pcl::transformPointCloud(*initial_source_aligned_pc_ptr, *initial_source_aligned_map_ptr, calibration_frame.target_frame_->pose_);
+  pcl::transformPointCloud(*calibrated_source_aligned_pc_ptr, *calibrated_source_aligned_map_ptr, calibration_frame.target_frame_->pose_);
   pcl::transformPointCloud(*target_thin_pc_ptr, *target_thin_map_ptr, calibration_frame.target_frame_->pose_);
 
-  sensor_msgs::msg::PointCloud2 initial_source_aligned_map_msg, target_map_msg;
+  sensor_msgs::msg::PointCloud2 initial_source_aligned_map_msg, calibrated_source_aligned_map_msg, target_map_msg;
   initial_source_aligned_pc_ptr->width = initial_source_aligned_pc_ptr->points.size();
   initial_source_aligned_pc_ptr->height = 1;
+  calibrated_source_aligned_pc_ptr->width = calibrated_source_aligned_pc_ptr->points.size();
+  calibrated_source_aligned_pc_ptr->height = 1;
   target_thin_pc_ptr->width = target_thin_pc_ptr->points.size();
   target_thin_pc_ptr->height = 1;
+
   pcl::toROSMsg(*initial_source_aligned_map_ptr, initial_source_aligned_map_msg);
+  pcl::toROSMsg(*calibrated_source_aligned_map_ptr, calibrated_source_aligned_map_msg);
   pcl::toROSMsg(*target_thin_map_ptr, target_map_msg);
 
   initial_source_aligned_map_msg.header = calibration_frame.source_header_;
   initial_source_aligned_map_msg.header.frame_id = map_frame_;
+  calibrated_source_aligned_map_msg.header = calibration_frame.source_header_;
+  calibrated_source_aligned_map_msg.header.frame_id = map_frame_;
   target_map_msg.header = calibration_frame.target_frame_->header_;
   target_map_msg.header.frame_id = map_frame_;
 
   initial_source_aligned_map_pub_->publish(initial_source_aligned_map_msg);
+  calibrated_source_aligned_map_pub_->publish(calibrated_source_aligned_map_msg);
   target_map_pub_->publish(target_map_msg);
 
 
