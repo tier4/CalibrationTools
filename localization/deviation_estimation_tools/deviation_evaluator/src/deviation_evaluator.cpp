@@ -68,8 +68,12 @@ DeviationEvaluator::DeviationEvaluator(
   pub_ndt_pose_with_cov_ =
     create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_pose_with_covariance", 1);
+  pub_init_pose_with_cov_ =
+    create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "out_initial_pose_with_covariance", 1);
 
   current_ndt_pose_ptr_ = nullptr;
+  has_published_initial_pose_ = false;
 }
 
 /*
@@ -94,20 +98,30 @@ void DeviationEvaluator::callbackTwistWithCovariance(
 void DeviationEvaluator::callbackNDTPoseWithCovariance(
   const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
 {
+  if (!has_published_initial_pose_) {
+    geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov;
+    pose_with_cov = *msg;
+    pose_with_cov.pose.covariance[0] = 1.0;
+    pose_with_cov.pose.covariance[1 * 6 + 1] = 1.0;
+    pose_with_cov.pose.covariance[2 * 6 + 2] = 0.01;
+    pose_with_cov.pose.covariance[3 * 6 + 3] = 0.01;
+    pose_with_cov.pose.covariance[4 * 6 + 4] = 0.01;
+    pose_with_cov.pose.covariance[5 * 6 + 5] = 0.2;
+    pub_init_pose_with_cov_->publish(*msg);
+    has_published_initial_pose_ = true;
+    return;
+  }
+
   const double msg_time = rclcpp::Time(msg->header.stamp).seconds();
 
-  // current_ndt_pose_ptr_ = msg;
-  if (msg_time - start_time_ > period_) {
-    DEBUG_INFO(
-      this->get_logger(),
-      "NDT cycle"
-    );
-    start_time_ = msg_time;
-  } else if (msg_time - start_time_ < period_ - cut_) {
+  if (msg_time - start_time_ < period_ - cut_) {
     // Streaming NDT results
     pub_ndt_pose_with_cov_->publish(*msg);
-  } else {
-    // Not streaming NDT results
+  }
+
+  if (msg_time - start_time_ > period_) {
+    DEBUG_INFO(this->get_logger(), "NDT cycle");
+    start_time_ = msg_time;
   }
 }
 

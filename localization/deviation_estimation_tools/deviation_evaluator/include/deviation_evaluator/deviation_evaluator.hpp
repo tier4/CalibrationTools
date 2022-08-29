@@ -61,6 +61,8 @@ private:
     pub_twist_with_cov_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     pub_ndt_pose_with_cov_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+    pub_init_pose_with_cov_;
 
   bool show_debug_info_;
   std::string save_dir_;
@@ -74,6 +76,8 @@ private:
 
   geometry_msgs::msg::PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
   geometry_msgs::msg::PoseStamped::SharedPtr current_ndt_pose_ptr_;
+
+  bool has_published_initial_pose_;
 
   /**
    * @brief set twistWithCovariance measurement
