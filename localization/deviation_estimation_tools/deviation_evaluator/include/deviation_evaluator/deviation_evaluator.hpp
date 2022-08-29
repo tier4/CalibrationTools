@@ -60,7 +60,9 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
     pub_twist_with_cov_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    pub_ndt_pose_with_cov_;
+    pub_pose_with_cov_dr_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+    pub_pose_with_cov_gt_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     pub_init_pose_with_cov_;
 

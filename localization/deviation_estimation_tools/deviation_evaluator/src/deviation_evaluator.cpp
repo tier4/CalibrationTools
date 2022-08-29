@@ -65,9 +65,12 @@ DeviationEvaluator::DeviationEvaluator(
   pub_twist_with_cov_ =
     create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>(
     "out_twist_with_covariance", 1);
-  pub_ndt_pose_with_cov_ =
+  pub_pose_with_cov_dr_ =
     create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
-    "out_pose_with_covariance", 1);
+    "out_pose_with_covariance_dr", 1);
+  pub_pose_with_cov_gt_ =
+    create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "out_pose_with_covariance_gt", 1);
   pub_init_pose_with_cov_ =
     create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_initial_pose_with_covariance", 1);
@@ -115,9 +118,9 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   const double msg_time = rclcpp::Time(msg->header.stamp).seconds();
 
   if (msg_time - start_time_ < period_ - cut_) {
-    // Streaming NDT results
-    pub_ndt_pose_with_cov_->publish(*msg);
+    pub_pose_with_cov_dr_->publish(*msg);
   }
+  pub_pose_with_cov_gt_->publish(*msg);
 
   if (msg_time - start_time_ > period_) {
     DEBUG_INFO(this->get_logger(), "NDT cycle");

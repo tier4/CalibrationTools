@@ -36,6 +36,12 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 
+TWIST_TOPIC = '/deviation_evaluator/twist_estimator/twist_with_covariance'
+POSE_TOPIC = '/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance'
+NDT_POSE_TOPIC = '/localization/pose_estimator/pose_with_covariance'
+EKF_GT_ODOM_TOPIC = '/deviation_evaluator/ground_truth/ekf_localizer/kinematic_state'
+EKF_DR_ODOM_TOPIC = '/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic_state'
+
 
 def calc_stddev_rotated(P, theta):
     e_vec = np.array([[np.cos(theta)], [np.sin(theta)]])
@@ -155,20 +161,14 @@ class EKFBagFileParser(BagFileParser):
 class BagFileEvaluator():
 
     def __init__(self, bagfile, use_normal_ekf=False, bagfile_base=None):
-        twist_topic = '/localization/deviation_evaluator/twist_estimator/twist_with_covariance'
-        pose_topic = '/localization/deviation_evaluator/pose_estimator/pose_with_covariance'
-        ndt_pose_topic = '/localization/pose_estimator/pose_with_covariance'
-        ekf_gt_odom_topic = '/localization/pose_twist_fusion_filter/kinematic_state'
-        ekf_odom_topic = '/localization/deviation_evaluator/ekf_localizer/kinematic_state'
-
         bag_parser = EKFBagFileParser(bagfile)
 
-        self.pose_list, _ = bag_parser.get_messages(pose_topic)
-        self.ndt_pose_list, _ = bag_parser.get_messages(ndt_pose_topic)
+        self.pose_list, _ = bag_parser.get_messages(POSE_TOPIC)
+        self.ndt_pose_list, _ = bag_parser.get_messages(NDT_POSE_TOPIC)
         self.ekf_gt_pose_list, self.ekf_gt_pose_cov_list = bag_parser.get_messages(
-            ekf_gt_odom_topic)
-        self.ekf_pose_list, self.ekf_pose_cov_list = bag_parser.get_messages(ekf_odom_topic)
-        self.twist_list = bag_parser.get_messages(twist_topic)
+            EKF_GT_ODOM_TOPIC)
+        self.ekf_pose_list, self.ekf_pose_cov_list = bag_parser.get_messages(EKF_DR_ODOM_TOPIC)
+        self.twist_list = bag_parser.get_messages(TWIST_TOPIC)
 
         self.ekf_gt_pose_list_interpolated, self.allowed_idxs = self.calc_interpolate()
         self.error_vec_xy, self.error_vec, self.error_vec_body_frame = self.calc_errors()
