@@ -38,7 +38,7 @@ Visualization Manager:
             left_lane_bound: true
             pedestrian_marking: true
             right_lane_bound: true
-            road_lanelets: true
+            road_lanelets: false
             stop_lines: true
             traffic_light: true
             traffic_light_id: true
@@ -150,7 +150,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 20.534862518310547
+      Distance: 5.540429592132568
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -165,10 +165,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2999999523162842
+      Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: ThirdPersonFollower (rviz)
-      Yaw: 3.141592025756836
+      Yaw: 4.711589813232422
     Saved:
       - Class: rviz_default_plugins/ThirdPersonFollower
         Distance: 18
