@@ -59,7 +59,7 @@ protected:
   void targetPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
   void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
 
-  void calibrationimerCallback();
+  void calibrationTimerCallback();
 
   bool checkInitialTransforms();
 
@@ -72,12 +72,12 @@ protected:
   std::string sensor_kit_frame_;  // the parent for this calibration method must be a sensor kit
   std::string lidar_base_frame_;  // the child for this calibration method must be a the base of a
                                   // lidar (probably different from the actua lidar tf)
-  bool broacast_calibration_tf_;
+  bool broadcast_calibration_tf_;
   double min_z_;
   double max_z_;
 
   // ROS Interface
-  tf2_ros::StaticTransformBroadcaster tf_broascaster_;
+  tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
@@ -115,7 +115,7 @@ protected:
   Eigen::Affine3d initial_base_to_source_eigen_;
   Eigen::Affine3d initial_base_to_target_eigen_;
 
-  // Other tfs to calculate the complete chain. There are constant for our pourposes
+  // Other tfs to calculate the complete chain. There are constant for our purposes
   geometry_msgs::msg::Transform base_to_sensor_kit_msg_;
   tf2::Transform base_to_sensor_kit_tf2_;
   Eigen::Affine3d base_to_sensor_kit_eigen_;

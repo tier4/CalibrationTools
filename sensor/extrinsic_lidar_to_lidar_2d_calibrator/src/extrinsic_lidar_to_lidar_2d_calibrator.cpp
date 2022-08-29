@@ -35,7 +35,7 @@ using namespace std::chrono_literals;
 
 LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_lidar_to_lidar_2d_calibrator", options),
-  tf_broascaster_(this),
+  tf_broadcaster_(this),
   got_initial_transform_(false),
   received_request_(false),
   calibration_done_(false)
@@ -47,7 +47,7 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   sensor_kit_frame_ = this->declare_parameter<std::string>("parent_frame");
   lidar_base_frame_ = this->declare_parameter<std::string>("child_frame");
 
-  broacast_calibration_tf_ = this->declare_parameter<bool>("broacast_calibration_tf", false);
+  broadcast_calibration_tf_ = this->declare_parameter<bool>("broadcast_calibration_tf", false);
   min_z_ = this->declare_parameter<double>("min_z", 0.2);
   max_z_ = this->declare_parameter<double>("max_z", 0.6);
 
@@ -64,7 +64,7 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
     std::bind(&LidarToLidar2DCalibrator::targetPointCloudCallback, this, std::placeholders::_1));
 
   calib_timer_ = rclcpp::create_timer(
-    this, get_clock(), 200ms, std::bind(&LidarToLidar2DCalibrator::calibrationimerCallback, this));
+    this, get_clock(), 200ms, std::bind(&LidarToLidar2DCalibrator::calibrationTimerCallback, this));
 
   // The service server runs in a dedicated thread
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -163,7 +163,7 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
   return true;
 }
 
-void LidarToLidar2DCalibrator::calibrationimerCallback()
+void LidarToLidar2DCalibrator::calibrationTimerCallback()
 {
   // Make sure we have all the required initial tfs
   if (!checkInitialTransforms()) {
@@ -269,7 +269,7 @@ void LidarToLidar2DCalibrator::calibrationimerCallback()
   tf_msg.header.stamp = source_pointcloud_header_.stamp;
   tf_msg.header.frame_id = sensor_kit_frame_;
   tf_msg.child_frame_id = source_pointcloud_frame_;
-  tf_broascaster_.sendTransform(tf_msg);
+  tf_broadcaster_.sendTransform(tf_msg);
 
   // Publish the segmented pointclouds back in their frames (to evaluate visually the calibration)
   sensor_msgs::msg::PointCloud2 source_pointcloud_scs_msg, target_pointcloud_tcs_msg;
@@ -286,10 +286,10 @@ double LidarToLidar2DCalibrator::getAlignmentError(
   pcl::PointCloud<PointType>::Ptr target_pointcloud)
 {
   pcl::Correspondences correspondences;
-  pcl::registration::CorrespondenceEstimation<PointType, PointType> correspondance_estimator;
-  correspondance_estimator.setInputSource(source_pointcloud);
-  correspondance_estimator.setInputTarget(target_pointcloud);
-  correspondance_estimator.determineCorrespondences(correspondences);
+  pcl::registration::CorrespondenceEstimation<PointType, PointType> correspondence_estimator;
+  correspondence_estimator.setInputSource(source_pointcloud);
+  correspondence_estimator.setInputTarget(target_pointcloud);
+  correspondence_estimator.determineCorrespondences(correspondences);
 
   double error = 0.0;
 

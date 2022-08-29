@@ -19,7 +19,7 @@
       <param name="max_cos_distance" value="0.2" />
       <param name="max_iterations" value="500" />
       <param name="verbose" value="true" />
-      <param name="broacast_calibration_tf" value="true" />
+      <param name="broadcast_calibration_tf" value="true" />
       <param name="filter_estimations" value="true" />
 
       <param name="initial_angle_cov" value="5.0" /> <!--degrees -->

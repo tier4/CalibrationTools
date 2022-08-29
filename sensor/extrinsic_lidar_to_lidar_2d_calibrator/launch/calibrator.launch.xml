@@ -14,7 +14,7 @@
       <param name="parent_frame" value="$(var parent_frame)" />
       <param name="child_frame" value="$(var child_frame)" />
 
-      <param name="broacast_calibration_tf" value="true" />
+      <param name="broadcast_calibration_tf" value="true" />
       <param name="min_z" value="0.3" />
       <param name="max_z" value="0.6" />
 
