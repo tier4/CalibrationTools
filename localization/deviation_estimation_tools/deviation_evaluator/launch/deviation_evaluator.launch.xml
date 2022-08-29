@@ -5,7 +5,7 @@
   <arg name="rviz" default="false" description="launch rviz"/>
   <arg name="map_path" default="" description="point cloud and lanelet2 map directory path"/>
   <arg name="save_dir" default="/home/$(env USER)/deviation_evaluator_sample"/>
-  <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.yaml"/>
+  <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.param.yaml"/>
 
   <arg name="in_twist_with_covariance" default="/localization/twist_estimator/twist_with_covariance"/>
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>
@@ -13,8 +13,7 @@
   <arg name="out_ekf_odom" default="/localization/deviation_evaluator/ekf_localizer/kinematic_state"/>
   <arg name="out_twist_with_covariance" default="/localization/deviation_evaluator/twist_estimator/twist_with_covariance"/>
   <arg name="out_pose_with_covariance" default="/localization/deviation_evaluator/pose_estimator/pose_with_covariance"/>
-  <arg name="lanelet2_map_file" default="lanelet2_map.osm" />
-  <arg name="pointcloud_map_file" default="pointcloud_map.pcd" />
+  <arg name="lanelet2_map_file" default="$(var map_path)/lanelet2_map.osm" />
 
   <node pkg="deviation_evaluator" exec="deviation_evaluator" name="deviation_evaluator" output="screen">
     <remap from="in_twist_with_covariance" to="$(var in_twist_with_covariance)"/>
@@ -52,9 +51,10 @@
 
   <!-- Map -->
   <group>
-    <include file="$(find-pkg-share map_launch)/launch/map.launch.py" if="$(var rviz)">
-      <arg name="lanelet2_map_path" value="$(var map_path)/$(var lanelet2_map_file)" />
-      <arg name="pointcloud_map_path" value="$(var map_path)/$(var pointcloud_map_file)"/>
+    <include file="$(find-pkg-share map_loader)/launch/lanelet2_map_loader.launch.xml" if="$(var rviz)">
+      <arg name="lanelet2_map_path" value="$(var lanelet2_map_file)"/>
+      <arg name="lanelet2_map_topic" value="/map/vector_map"/>
+      <arg name="lanelet2_map_marker_topic" value="/map/vector_map_marker"/>
     </include>
   </group>
 
