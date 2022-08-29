@@ -35,6 +35,13 @@
 #include <string>
 #include <vector>
 
+/*!
+ * Transform a pointcloud between frames
+ * @param[in] source_frame Source frame
+ * @param[in] target_frame Target frame
+ * @param[out] pc_ptr Output pointcloud
+ * @param[in] buffer Tf buffer to get the transforms from
+ */
 template <typename PointcloudType>
 void transformPointcloud(
   const std::string & source_frame,
@@ -62,6 +69,12 @@ void transformPointcloud(
   }
 }
 
+/*!
+ * Crop a point cloud to a certain radius
+ * @param[in] pointcloud Point cloud to crop
+ * @param[in] max_range Range to crop the pointcloud to
+ * @retval Cropped pointcloud
+ */
 pcl::PointCloud<PointType>::Ptr cropPointCloud(
   pcl::PointCloud<PointType>::Ptr & pointcloud, double max_range)
 {
@@ -77,8 +90,15 @@ pcl::PointCloud<PointType>::Ptr cropPointCloud(
   return tmp_ptr;
 }
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
+/*!
+ * Interpolate a transform between two points in time
+ * @param[in] t Interpolation time t >t1 and t<=t2
+ * @param[in] t1 Left interpolation time
+ * @param[in] t2 Righti interpolation time
+ * @param[in] m1 Transformation at time t1
+ * @param[in] m2 Transformation at time t2
+ * @retval Interpolated transform at time t
+ */
 Eigen::Matrix4f poseInterpolation(double t, double t1, double t2, Eigen::Matrix4f const& m1, Eigen::Matrix4f const& m2) {
 
   assert(t >= t1 && t <= t2);
@@ -102,8 +122,12 @@ Eigen::Matrix4f poseInterpolation(double t, double t1, double t2, Eigen::Matrix4
 
   return result.matrix();
 }
-#pragma GCC pop_options
 
+/*!
+ * Compute the source to distance pointcloud distance
+ * @param[in] estimator Correspondence estimator between source and target
+ * @retval Source to distance pointcloud distance
+ */
 template <class PointType>
 float sourceTargetDistance(pcl::registration::CorrespondenceEstimation<PointType, PointType> & estimator)
 {
@@ -116,8 +140,6 @@ float sourceTargetDistance(pcl::registration::CorrespondenceEstimation<PointType
   float sum = 0;
 
   for (int i = 0; i < n_points; ++i) {
-    //int source_id = correspondences[i].index_query;
-    //int target_id = correspondences[i].index_match;
     float distance = correspondences[i].distance;
     sum += distance;
   }
@@ -125,6 +147,13 @@ float sourceTargetDistance(pcl::registration::CorrespondenceEstimation<PointType
   return sum / n_points;
 }
 
+/*!
+ * Interpolate a transform between two points in time
+ * @param[in] source Source pointcloud
+ * @param[in] transform Target to input frame transform
+ * @param[in] estimator Correspondence estimator between source and target
+ * @retval Source to distance pointcloud distance
+ */
 template <class PointType>
 void sourceTargetDistance(const pcl::PointCloud<PointType> & source,
   const Eigen::Matrix4f & transform,
@@ -132,10 +161,19 @@ void sourceTargetDistance(const pcl::PointCloud<PointType> & source,
 {
   pcl::PointCloud<PointType> source_transformed;
   transformPointCloud(source, source_transformed, transform);
+  estimator.setInputSource(source_transformed);
 
-  sourceTargetDistance(source, estimator);
+  return sourceTargetDistance(source, estimator);
 }
 
+/*!
+ * Find the best transform between pointclouds using a set of registrators and a set
+ * of input transforms (initial solutions) in a cascade approach
+ * @param[in] input_transforms Input transforms (to be used as initial solutions)
+ * @param[in] registratators Vector of registrators to use as a cascade
+ * @param[out] best_transform Output transform containing the best solution
+ * @param[out] best_score Output score containing the best solution
+ */
 template <class PointType>
 void findBestTransform(
   const std::vector<Eigen::Matrix4f> & input_transforms,
@@ -176,16 +214,18 @@ void findBestTransform(
   }
 }
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
+/*!
+ * Crop a target pointcloud to the ranges of a sorce one
+ * @param[in] initial_source_aligned_pc_ptr Pointcloud to use as a reference to crop a target pointcloud
+ * @param[out] target_dense_pc_ptr Pointcloud to be cropped
+ */
 template <class PointType>
 void cropTargetPointcloud(
   const typename pcl::PointCloud<PointType>::Ptr & initial_source_aligned_pc_ptr,
   typename pcl::PointCloud<PointType>::Ptr & target_dense_pc_ptr,
   float margin)
 {
-  // Get min max from the source
+  // Obtain data ranges from the source
   Eigen::Array4f min_p, max_p;
   min_p.setConstant (FLT_MAX);
   max_p.setConstant (-FLT_MAX);
@@ -197,16 +237,10 @@ void cropTargetPointcloud(
     max_p = max_p.max(pt);
   }
 
-  //std::cout << "min: " << min_p << std::endl;
-  //std::cout << "max: " << max_p << std::endl;
-
   Eigen::Vector4f min_vector = min_p - margin;
   Eigen::Vector4f max_vector = max_p + margin;
   min_vector.w() = 1.f;
   max_vector.w() = 1.f;
-
-  //std::cout << "min_vector: " << min_vector << std::endl;
-  //std::cout << "max_vector: " << max_vector << std::endl;
 
   // Apply the filter
   pcl::CropBox<PointType> boxFilter;
@@ -216,9 +250,5 @@ void cropTargetPointcloud(
   boxFilter.filter(*target_dense_pc_ptr);
 }
 
-#pragma GCC pop_options
 
-/*
-
-*/
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_UTILS_HPP_

@@ -12,8 +12,6 @@
   <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud" />
   <let name="calibration_pointcloud" value="/sensing/lidar/left/outlier_filtered/pointcloud" />
 
-  <log message="BBBBBBBBBBBBBBBBBBBBBBBB: AAAAAAAAAAAAAAAAAAAAAAAAA" />
-
   <arg name="rviz" />
 
   <!-- extrinsic_calibration_client -->

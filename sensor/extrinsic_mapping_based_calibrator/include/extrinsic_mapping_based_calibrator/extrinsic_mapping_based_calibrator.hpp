@@ -108,7 +108,11 @@ protected:
   //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
   //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
-  OnSetParametersCallbackHandle::SharedPtr set_param_res_;
+
+  /*!
+   * Callback to set parameters using the ROS interface
+   * @param[in] parameters vector of new parameters
+   */
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
 
@@ -122,27 +126,72 @@ protected:
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
 
+
+  /*!
+   * Message callback for calibration pointclouds (pointclouds in the frame to calibrate)
+   * @param[in] pc Calibration pointcloud msg
+   */
   void calibrationPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
+
+  /*!
+   * Message callback for mapping pointclouds (pointclouds used for the map used as a target during calibration)
+   * @param[in] pc Calibration pointcloud msg
+   */
   void mappingPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
+
+  /*!
+   * Timer callback. Publishes a 'sparse' map and the trajectory of the mapping
+   */
   void timerCallback();
 
-
-  //void publishTf();
-
-  void subsampleFrame(Frame::Ptr);
-
   // Mapping methods
+
+  /*!
+   * Dedicated thread to do mapping
+   */
   void mappingThreadWorker();
+
+  /*!
+   * Initialize a map using a Frame
+   * @param[in] frame Source pointcloud
+   */
   void initLocalMap(Frame::Ptr frame);
+
+  /*!
+   * Check whether a frame is considered a Keyframe
+   * @param[in] frame Keyframe candidate
+   */
   void checkKeyframe(Frame::Ptr frame);
-  void createKeyFrame();
+
+  /*!
+   * Recalculate the mapping local map based on the latest keyframes
+   */
   void recalculateLocalMap();
 
   // Calibration methods
+
+  /*!
+   * Configure the calibrator parameters
+   */
   void configureCalibrators();
+
+  /*!
+   * Prepare calibrators for a specific pair of pointclouds
+   * @param[in] source_pointcloud_ptr Source pointcloud
+   * @param[in] target_pointcloud_ptr Target pointcloud
+   */
   void setUpCalibrators(PointcloudType::Ptr & source_pointcloud_ptr, PointcloudType::Ptr & target_pointcloud_ptr);
 
   // General methods
+
+  /*!
+   * Compute a map with a user-defined resolution around a certain frame centered in `pose`
+   * @param[in] pose The pose in map coordinates the pointcloud should be centered in
+   * @param[in] frame Frame to use as a center for constructing the pointcloud
+   * @param[in] resolution Max resolution of the resulting pointcloud
+   * @param[in] max_range Max range of the resulting pointcloud
+   * @retval Source to distance pointcloud distance
+   */
   PointcloudType::Ptr getDensePointcloudFromMap(const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
 
 
@@ -188,6 +237,8 @@ protected:
   tf2_ros::StaticTransformBroadcaster tf_broascaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
+
+  OnSetParametersCallbackHandle::SharedPtr set_param_res_;
 
   rclcpp::CallbackGroup::SharedPtr subs_callback_group_;
   rclcpp::CallbackGroup::SharedPtr srv_callback_group_;

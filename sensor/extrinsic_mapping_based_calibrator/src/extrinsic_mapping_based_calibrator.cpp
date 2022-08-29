@@ -127,13 +127,6 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
   // The service server runs in a dedicated thread
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  //service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
-  //  "extrinsic_calibration",
-  //  std::bind(
-  //    &ExtrinsicMappingBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
-  //    std::placeholders::_2),
-  //  rmw_qos_profile_services_default, srv_callback_group_);
-
   keyframe_map_server_ = this->create_service<tier4_calibration_msgs::srv::Frame>(
     "keyframe_map",
     std::bind(
@@ -173,10 +166,6 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(const rclcpp::N
   calibration_gicp_ = pcl::make_shared<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>>();
   calibration_icp_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType >>();
   calibration_registrators_ = {calibration_ndt_, calibration_gicp_, calibration_icp_};
-
-  // services
-  // timers local map
-  // path
 }
 
 rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramCallback(
@@ -270,7 +259,6 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
     Frame::Ptr keyframe = keyframes_and_stopped_[last_unmatched_keyframe_];
     auto keyframe_stamp = rclcpp::Time(keyframe->header_.stamp);
 
-    // rclcpp::Time(t2.header.stamp).seconds()
     if (calibration_pointclouds_queue_.size() < 3 || rclcpp::Time(calibration_pointclouds_queue_.back()->header.stamp) < keyframe_stamp) {
       return;
     }
@@ -349,11 +337,6 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
     Eigen::Affine3f aux_affine(aux_pose);
     double interpolated_angle = 180.0 * std::abs(std::acos(std::min(std::max(0.5*aux_affine.linear().trace() - 0.5, -1.0), 1.0)))/ 3.1416;
 
-    // Decide on whether or not to keep the result as a calibraton frame
-    // pc, pose, statistics
-
-    //calibration_max_interpolated_time_
-
     RCLCPP_INFO(get_logger(), "Attempting to add keyframe id=%d to the calibration list", keyframe->keyframe_id_);
     RCLCPP_INFO(get_logger(), "\t - stopped: %s", keyframe->stopped_ ? " true" : "false");
     RCLCPP_INFO(get_logger(), "\t - interpolated time: %.4f s (%s)", interpolated_time, interpolated_time < params_.calibration_max_interpolated_time_ ? "accepted" : "rejected");
@@ -393,20 +376,6 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(const sensor
     last_unmatched_keyframe_ += 1;
   }
 
-
-
-  // Fill a queue with the pointclouds, max_size = 2
-  // Sadly, we can not rely on this since the mapping takes time!!!
-
-  // Assume we have matched all keyframes to some calibration pointcloud so far
-  // We have an unmatched keyframe
-  // We wait until we have one calibration pointcloud newer than the keyframe
-  // At this point we have one keyframe and two candidate calibration pointclouds
-  // Choose the closest calibration to the pointcloud to the keyframe
-  // Somehow we need to have a point in the trajectory or in the frames. maybe use 3 frames, and ask two of them newer that the keyframe or two if the last is stopped
-  // Interpolate
-  // Compute the conditions to accept the combination as a calibration frame. interpolation distance, interpolation time, speed, and min_keyframe id (do not use the first keyframes for calibration since we do not have much info so far)
-
 }
 #pragma GCC pop_options
 
@@ -420,10 +389,7 @@ void ExtrinsicMappingBasedCalibrator::mappingPointCloudCallback(const sensor_msg
   pcl::fromROSMsg(*msg, *pc_ptr);
   transformPointcloud<PointcloudType>(msg->header.frame_id, mapping_lidar_frame_, pc_ptr, *tf_buffer_);
 
-  //RCLCPP_INFO(get_logger(), "ROS: getting mutex");
   std::unique_lock<std::mutex> lock(mutex_);
-  //RCLCPP_INFO(get_logger(), "ROS: got mutex");
-
   auto frame = std::make_shared<Frame>();
   frame->header_ = msg->header;
   frame->processed_ = false;
@@ -452,8 +418,6 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     Eigen::Matrix4f prev_pose = Eigen::Matrix4f::Identity();
     float prev_distance = 0.f;
 
-    // /RCLCPP_INFO(get_logger(), "Thread. Entering locked");
-
     // Locked section
     {
       std::unique_lock<std::mutex> lock(mutex_);
@@ -474,8 +438,6 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
       }
     }
 
-    //RCLCPP_INFO(get_logger(), "Thread. Exited locked");
-
     // If there are no keyframes make the first and recalculate the local map
     if (first_iteration) {
       RCLCPP_INFO(get_logger(), "Thread. Init local map");
@@ -488,13 +450,9 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     PointcloudType::Ptr aligned_cloud_ptr(new PointcloudType());
     PointcloudType::Ptr cropped_cloud_ptr = cropPointCloud(frame->pointcloud_raw_, params_.max_pointcloud_range_);
 
-    //RCLCPP_INFO(get_logger(), "Subsampling input...");
     voxel_grid.setLeafSize(params_.leaf_size_input_, params_.leaf_size_input_, params_.leaf_size_input_);
     voxel_grid.setInputCloud(cropped_cloud_ptr);
-    voxel_grid.filter(*frame->pointcloud_subsampled_);
-    //RCLCPP_INFO(get_logger(), "Subsampled input!");
-
-    //RCLCPP_INFO(get_logger(), "Thread. After voxel");
+    voxel_grid.filter(*frame->pointcloud_subsampled_);;
 
     // Register the frame to the map
     ndt_.setInputTarget(local_map_ptr_);
@@ -509,7 +467,6 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
       frame->pose_ = ndt_.getFinalTransformation();
     }
 
-    //RCLCPP_INFO(get_logger(), "Thread. After ndt");
     std::unique_lock<std::mutex> lock(mutex_);
 
     // We record the whole trajectory
@@ -531,25 +488,19 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
       if (std::abs(delta_distance - prev_frame->delta_distance_) < params_.frame_stopped_distance_) {
         // When the vehicle is stopped, we may either skip the frame, record it as a normal frame, or even save it for calibration
 
-        RCLCPP_WARN(get_logger(), "Old prev_frame->frames_since_stop_: %d", prev_frame->frames_since_stop_);
         prev_frame->frames_since_stop_ += 1;
         prev_frame->delta_distance_ = delta_distance;
-        RCLCPP_WARN(get_logger(), "New prev_frame->frames_since_stop_: %d", prev_frame->frames_since_stop_);
 
         frame->frames_since_stop_ = prev_frame->frames_since_stop_;
         frame->stopped_ = true;
 
         if(prev_frame->frames_since_stop_ == params_.frames_since_stop_force_frame_) {
           RCLCPP_WARN(get_logger(), "Added a keyframe_and_stopped frame");
-            keyframes_and_stopped_.push_back(frame);
-
+          keyframes_and_stopped_.push_back(frame);
         }
         else if (prev_frame->stopped_ && std::abs(prev_frame->frames_since_stop_ - params_.frames_since_stop_force_frame_) > 1) {
-          RCLCPP_WARN(get_logger(), "Dropped stopped frame (%d). delta_distance=%.4f Unprocessed=%lu Frames=%lu Keyframes=%lu", prev_frame->frames_since_stop_, delta_distance, unprocessed_frames_.size(), processed_frames_.size(), keyframes_.size());
           continue;
         }
-
-        RCLCPP_WARN(get_logger(), "Adding a stopped frame (%d)", frame->frames_since_stop_);
       }
       else {
         // If the vehicle moved to little we drop the frame
@@ -558,8 +509,6 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
       }
     }
 
-    //RCLCPP_INFO(get_logger(), "Thread. New frame");
-    //std::unique_lock<std::mutex> lock(mutex_);
     processed_frames_.push_back(frame);
     checkKeyframe(frame);
 
@@ -594,7 +543,6 @@ void ExtrinsicMappingBasedCalibrator::recalculateLocalMap()
 {
   local_map_ptr_->clear();
 
-
   PointcloudType::Ptr tmp_mcs_ptr(new PointcloudType());
 
   for (int i = 0; i < params_.local_map_num_keyframes_ && i < int(keyframes_.size()); i++) {
@@ -605,59 +553,10 @@ void ExtrinsicMappingBasedCalibrator::recalculateLocalMap()
     *tmp_mcs_ptr += *keyframe_mcs_ptr;
   }
 
-  float minx = std::numeric_limits<float>::max();
-  float maxx = -std::numeric_limits<float>::max();
-  float miny = minx;
-  float maxy = maxy;
-  float minz = minx;
-  float maxz = maxz;
-
-  //for( auto& p : tmp_mcs_ptr->points){
-  //  minx = std::min(minx, p.x);
-  //  miny = std::min(miny, p.y);
-  //  minz = std::min(minz, p.z);
-  //  maxx = std::max(maxx, p.x);
-  //  maxy = std::max(maxy, p.y);
-  //  maxz = std::max(maxz, p.z);
-  //}
-
-  //unsigned long int maxindex = (maxx - minx) * (maxy - miny) * (maxz - minz) / (leaf_size_local_map_*leaf_size_local_map_*leaf_size_local_map_);
-
-  //RCLCPP_INFO(get_logger(), "Subsampling local map...");
-  //RCLCPP_INFO(get_logger(), "leaf size=%f", leaf_size_local_map_);
-  //RCLCPP_INFO(get_logger(), "dx=%f", maxx - minx);
-  //RCLCPP_INFO(get_logger(), "dy=%f", maxy - miny);
-  //RCLCPP_INFO(get_logger(), "dz=%f", maxz - minz);
-  //RCLCPP_INFO(get_logger(), "maxindex=%lu", maxindex);
-  //RCLCPP_INFO(get_logger(), "maxindex2=%lu", std::numeric_limits<std::int32_t>::max());
-
-  //auto start1 = std::chrono::high_resolution_clock::now();
   pcl::VoxelGrid<PointType> voxel_grid;
   voxel_grid.setLeafSize(params_.leaf_size_local_map_, params_.leaf_size_local_map_, params_.leaf_size_local_map_);
   voxel_grid.setInputCloud(tmp_mcs_ptr);
   voxel_grid.filter(*local_map_ptr_);
-
-  //auto stop1 = std::chrono::high_resolution_clock::now();
-
-
-  //local_map_ptr_->clear();
-
-  //auto start2 = std::chrono::high_resolution_clock::now();
-  //pcl::VoxelGridTriplets<PointType> voxel_grid2;
-  //voxel_grid2.setLeafSize(leaf_size_local_map_, leaf_size_local_map_, leaf_size_local_map_);
-  //voxel_grid2.setInputCloud(tmp_mcs_ptr);
-  //voxel_grid2.filter(*local_map_ptr_);
-  //auto stop2 = std::chrono::high_resolution_clock::now();
-
-  //auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(stop1 - start1);
-  //auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(stop2 - start2);
-  //RCLCPP_WARN(get_logger(), "=== Voxel statistics: ===");
-  //RCLCPP_WARN(get_logger(), "Input size = %lu", tmp_mcs_ptr->size());
-  //RCLCPP_WARN(get_logger(), "Original implementation time = %d", duration1.count());
-  //RCLCPP_WARN(get_logger(), "Triplet implementation time = %d", duration2.count());
-
-
-  //RCLCPP_INFO(get_logger(), "Subsampled local map...");
 }
 
 void ExtrinsicMappingBasedCalibrator::timerCallback()
@@ -675,14 +574,6 @@ void ExtrinsicMappingBasedCalibrator::timerCallback()
   PointcloudType::Ptr tmp_mcs_ptr(new PointcloudType());
   PointcloudType::Ptr subsampled_mcs_ptr(new PointcloudType());
   *tmp_mcs_ptr += *published_map_pointcloud_ptr_;
-
-
-  //for (auto it = keyframes_.begin() + published_keyframes; it != keyframes_.end(); ++it) {
-  //  Frame::Ptr keyframe = *it;
-  //  PointcloudType::Ptr keyframe_mcs_ptr(new PointcloudType());
-  //  pcl::transformPointCloud(*keyframe->pointcloud_subsampled_, *keyframe_mcs_ptr, keyframe->pose_);
-  //  *tmp_mcs_ptr += *keyframe_mcs_ptr;
-  //}
 
   for (auto it = processed_frames_.begin() + published_keyframes; it != processed_frames_.end(); ++it) {
     Frame::Ptr frame = *it;
@@ -849,28 +740,6 @@ void ExtrinsicMappingBasedCalibrator::keyFrameCallback(
   PointcloudType::Ptr cropped_scan_kcd_ptr = cropPointCloud(keyframe->pointcloud_raw_, 50.0);
 
   RCLCPP_INFO(get_logger(), "keyFrameCallback callback. map points=%lu", subsampled_kcs_ptr->size());
-
-  // Publish the data
-  /*sensor_msgs::msg::PointCloud2 map_msg, scan_msg;
-  cropped_scan_kcd_ptr->width = cropped_scan_kcd_ptr->points.size();
-  cropped_scan_kcd_ptr->height = 1;
-  cropped_kcd_ptr->width = cropped_kcd_ptr->points.size();
-  cropped_kcd_ptr->height = 1;
-  pcl::toROSMsg(*cropped_kcd_ptr, map_msg);
-  pcl::toROSMsg(*cropped_scan_kcd_ptr, scan_msg);
-
-  map_msg.header = keyframe->header_;
-  scan_msg.header = keyframe->header_;
-  RCLCPP_INFO(get_logger(), "keyFrameCallback callback. pc frame=%s", keyframe->header_.frame_id.c_str());
-
-  keyframe_map_pub_->publish(map_msg);
-  keyframe_pub_->publish(scan_msg);
-
-  pcl::io::savePCDFileASCII("keyframe_scan.pcd", *cropped_scan_kcd_ptr);
-  pcl::io::savePCDFileASCII("keyframe_map.pcd", *cropped_kcd_ptr);
-
-  RCLCPP_INFO(get_logger(), "keyFrameCallback callback. Published");
-  */
 }
 
 void ExtrinsicMappingBasedCalibrator::allLidarCalibrationCallback(
@@ -878,26 +747,6 @@ void ExtrinsicMappingBasedCalibrator::allLidarCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
 {
   std::unique_lock<std::mutex> lock(mutex_);
-
-  // Iterate for all calibration frames
-
-  //    Generate target pointcloud
-  //    Setup the registrators (source and target)
-  //    Set as input transform the initial one only
-  //    Obtain the best transform and score
-
-  // Select the best M transforms and the initial
-
-  // Iterate fot all calibration frames
-  //    Setup the registrators (source and target)
-  //    Set as input transform the initial one and the best M
-  //    Obtain the best transform and score
-
-  // Tenemos una NxN matrix.
-  // Para cada frame vemos como su mejor transfor se comporta en los demas frames
-
-  // Tenemos dos criterios, cuantos frames mejoraron al initial
-  // Al error mismo
 }
 
 #pragma GCC push_options
@@ -1020,14 +869,6 @@ void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
   initial_source_aligned_map_pub_->publish(initial_source_aligned_map_msg);
   calibrated_source_aligned_map_pub_->publish(calibrated_source_aligned_map_msg);
   target_map_pub_->publish(target_map_msg);
-
-
-  // Perform calibration with a single frame using as candidates only the initial calibration pose
-  // Print statistics
-
-  // Publish the soure pointcloud transformed using the initial calib and the local map pose
-  // Publish the source pointcloud transformed using hte calibrated pose and the local map pose
-  // Publish the less dense map pointcloud using the local map pose
 }
 
 #pragma GCC pop_options
