@@ -37,11 +37,12 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 
 TWIST_TOPIC = '/deviation_evaluator/twist_estimator/twist_with_covariance'
-POSE_TOPIC = '/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance'
+POSE_TOPIC = '/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance'
 NDT_POSE_TOPIC = '/localization/pose_estimator/pose_with_covariance'
 EKF_GT_ODOM_TOPIC = '/deviation_evaluator/ground_truth/ekf_localizer/kinematic_state'
 EKF_DR_ODOM_TOPIC = '/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic_state'
-
+SCALE = 3
+NDT_FREQ = 10
 
 def calc_stddev_rotated(P, theta):
     e_vec = np.array([[np.cos(theta)], [np.sin(theta)]])
@@ -184,8 +185,6 @@ class BagFileEvaluator():
         self.stddev_long_2d_gt, self.stddev_short_2d_gt = self.calc_long_short_radius(
             self.ekf_gt_pose_cov_list)
 
-        self.scale = 3
-
     def calc_interpolate(self):
         gt_timestamps = self.ekf_gt_pose_list[:, 0].tolist()
         timestamps = self.ekf_pose_list[:, 0].tolist()
@@ -277,7 +276,7 @@ class BagFileEvaluator():
 
     def calc_roc_curve(self, a_th, error, stddev):
         a = error
-        b = stddev * self.scale
+        b = stddev * SCALE
 
         Aeq1 = a > a_th
 
@@ -291,12 +290,11 @@ class BagFileEvaluator():
 
     def get_duration_to_error(self, ):
         duration_to_error = []
-        ndt_freq = 10
         for timestamp, error in zip(self.ekf_pose_list[:, 0], self.error_vec_body_frame[:, 1]):
             idx = bisect.bisect_left(self.pose_list[:, 0], timestamp)
             if idx > 0 and error < 2:
                 duration = timestamp - self.pose_list[idx - 1, 0]
-                if duration > 5.0 / ndt_freq:  # Only count if NDT hasn't come for 5 steps.
+                if duration > 5.0 / NDT_FREQ:  # Only count if NDT hasn't come for 5 steps.
                     duration_to_error.append([duration, error])
         return np.array(duration_to_error)
 
@@ -305,18 +303,17 @@ class BagFileEvaluator():
     # Autoware.
     def calc_thres_lower_bound(self, how):
         if how == 'body_frame':
-            b = self.stddev_lateral_2d_gt * self.scale
+            b = self.stddev_lateral_2d_gt * SCALE
         elif how == 'long_radius':
-            b = self.stddev_long_2d_gt * self.scale
+            b = self.stddev_long_2d_gt * SCALE
 
         thres_lower_bound = 0
-        ndt_freq = 10
         for idx in range(len(b)):
             if idx < 100:  # ignore first 10[s]
                 continue
             timestamp = self.ekf_gt_pose_list[idx, 0]
             idx_ndt = bisect.bisect_left(self.ndt_pose_list[:, 0], timestamp)
-            if timestamp - self.ndt_pose_list[idx_ndt - 3, 0] < 4.0 / ndt_freq:
+            if timestamp - self.ndt_pose_list[idx_ndt - 3, 0] < 4.0 / NDT_FREQ:
                 thres_lower_bound = max(thres_lower_bound, b[idx])
         return thres_lower_bound
 
@@ -337,7 +334,7 @@ class BagFileEvaluator():
         ax.legend()
         ax.set_title(
             'Recall for detecting localization anomalies (over {0:.3f} [m], {1}-sigma)'.format(
-                a_th, self.scale))
+                a_th, SCALE))
         if save_path is not None:
             plt.savefig(save_path)
         plt.close()
