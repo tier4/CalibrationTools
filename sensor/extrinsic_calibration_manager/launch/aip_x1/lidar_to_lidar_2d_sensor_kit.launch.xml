@@ -25,7 +25,7 @@
     <param name="parent_frame" value="$(var parent_frame)" />
     <param name="child_frames" value="
     [livox_front_left_base_link,
-    livox_front_center_base_link
+    livox_front_center_base_link,
     livox_front_right_base_link]" />
   </node>
 

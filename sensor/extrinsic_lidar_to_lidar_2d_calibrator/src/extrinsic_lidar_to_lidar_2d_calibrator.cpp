@@ -38,7 +38,8 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   tf_broadcaster_(this),
   got_initial_transform_(false),
   received_request_(false),
-  calibration_done_(false)
+  calibration_done_(false),
+  first_observation_(true)
 {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -48,6 +49,34 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   lidar_base_frame_ = this->declare_parameter<std::string>("child_frame");
 
   broadcast_calibration_tf_ = this->declare_parameter<bool>("broadcast_calibration_tf", false);
+  filter_estimations_ = this->declare_parameter<bool>("filter_estimations", true);
+
+  max_calibration_range_ = this->declare_parameter<double>("max_calibration_range", 20.0);
+  max_corr_distance_ = this->declare_parameter<double>("max_corr_distance", 0.5);
+  max_iterations_ = this->declare_parameter<int>("max_iterations", 100);
+
+  initial_angle_cov_ = this->declare_parameter<double>("initial_angle_cov", 5.0);
+  initial_xy_cov_ = this->declare_parameter<double>("initial_xy_cov", 0.05);
+
+  angle_measurement_cov_ = this->declare_parameter<double>("angle_measurement_cov", 0.5);
+  angle_process_cov_ = this->declare_parameter<double>("angle_process_cov", 0.1);
+  xy_measurement_cov_ = this->declare_parameter<double>("xy_measurement_cov", 0.005);
+  xy_process_cov_ = this->declare_parameter<double>("xy_process_cov", 0.001);
+
+  angle_convergence_threshold_ = this->declare_parameter<float>("angle_convergence_threshold", 0.0);
+  xy_convergence_threshold_ = this->declare_parameter<float>("xy_convergence_threshold", 0.0);
+
+  initial_angle_cov_ = std::pow(initial_angle_cov_ * M_PI_2 / 180.0, 2);
+  initial_xy_cov_ = std::pow(initial_xy_cov_, 2);
+
+  angle_measurement_cov_ = std::pow(angle_measurement_cov_ * M_PI_2 / 180.0, 2);
+  angle_process_cov_ = std::pow(angle_process_cov_ * M_PI_2 / 180.0, 2);
+  xy_measurement_cov_ = std::pow(xy_measurement_cov_, 2);
+  xy_process_cov_ = std::pow(xy_process_cov_, 2);
+
+  angle_convergence_threshold_ = std::pow(angle_convergence_threshold_ * M_PI_2 / 180.0, 2);
+  xy_convergence_threshold_ = std::pow(xy_convergence_threshold_, 2);
+
   min_z_ = this->declare_parameter<double>("min_z", 0.2);
   max_z_ = this->declare_parameter<double>("max_z", 0.6);
 
@@ -75,6 +104,34 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
       &LidarToLidar2DCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
     rmw_qos_profile_services_default, srv_callback_group_);
+
+  // Initialize the filter
+  kalman_filter_.setA(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
+  kalman_filter_.setB(Eigen::DiagonalMatrix<double, 3>(0.0, 0.0, 0.0));
+  kalman_filter_.setC(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
+  kalman_filter_.setQ(Eigen::DiagonalMatrix<double, 3>(
+    angle_measurement_cov_, xy_measurement_cov_, xy_measurement_cov_));
+  kalman_filter_.setR(
+    Eigen::DiagonalMatrix<double, 3>(angle_process_cov_, xy_process_cov_, xy_process_cov_));
+
+  calibration_gicp_ =
+    pcl::make_shared<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>>();
+  calibration_icp_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
+  calibration_icp_fine_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
+  calibration_icp_fine_2_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
+  calibration_icp_fine_3_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
+  calibration_registrators_ = {
+    calibration_gicp_, calibration_icp_, calibration_icp_fine_, calibration_icp_fine_2_,
+    calibration_icp_fine_3_};
+
+  for (auto & calibrator : calibration_registrators_) {
+    calibrator->setMaximumIterations(max_iterations_);
+    calibrator->setMaxCorrespondenceDistance(max_corr_distance_);
+  }
+
+  calibration_icp_fine_->setMaxCorrespondenceDistance(0.2 * max_corr_distance_);
+  calibration_icp_fine_2_->setMaxCorrespondenceDistance(0.1 * max_corr_distance_);
+  calibration_icp_fine_3_->setMaxCorrespondenceDistance(0.05 * max_corr_distance_);
 }
 
 void LidarToLidar2DCalibrator::requestReceivedCallback(
@@ -150,8 +207,15 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
     base_to_sensor_kit_msg_ =
       tf_buffer_->lookupTransform(base_frame_, sensor_kit_frame_, t, timeout).transform;
 
+    lidar_base_to_source_msg_ =
+      tf_buffer_->lookupTransform(lidar_base_frame_, source_pointcloud_frame_, t, timeout)
+        .transform;
+
     fromMsg(base_to_sensor_kit_msg_, base_to_sensor_kit_tf2_);
     base_to_sensor_kit_eigen_ = tf2::transformToEigen(base_to_sensor_kit_msg_);
+
+    fromMsg(lidar_base_to_source_msg_, lidar_base_to_source_tf2_);
+    lidar_base_to_source_eigen_ = tf2::transformToEigen(lidar_base_to_source_msg_);
 
     got_initial_transform_ = true;
 
@@ -199,13 +263,17 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
 
   // Segment points in a range of z
   for (auto & point : raw_source_pointcloud_bcs->points) {
-    if (point.z >= min_z_ && point.z <= max_z_) {
+    if (
+      point.z >= min_z_ && point.z <= max_z_ &&
+      std::sqrt(point.x * point.x + point.y * point.y) <= max_calibration_range_) {
       source_pointcloud_bcs->push_back(point);
     }
   }
 
   for (auto & point : raw_target_pointcloud_bcs->points) {
-    if (point.z >= min_z_ && point.z <= max_z_) {
+    if (
+      point.z >= min_z_ && point.z <= max_z_ &&
+      std::sqrt(point.x * point.x + point.y * point.y) <= max_calibration_range_) {
       target_pointcloud_bcs->push_back(point);
     }
   }
@@ -214,9 +282,6 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
     *source_pointcloud_bcs, *source_pointcloud_scs, initial_base_to_source_eigen_.inverse());
   pcl::transformPointCloud(
     *target_pointcloud_bcs, *target_pointcloud_tcs, initial_base_to_target_eigen_.inverse());
-
-  RCLCPP_WARN(this->get_logger(), "ICP Source points: %ld", source_pointcloud_bcs->size());
-  RCLCPP_WARN(this->get_logger(), "ICP Target points: %ld", target_pointcloud_bcs->size());
 
   // Turn them into kit coordinates
   pcl::transformPointCloud(
@@ -233,36 +298,57 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
     point.z = 0.f;
   }
 
-  // Do 2d ICP. Consider using nlopt and or filtering to improve the results
   pcl::PointCloud<PointType>::Ptr source_pointcloud_aligned_kcs(new pcl::PointCloud<PointType>);
-  pcl::IterativeClosestPoint<PointType, PointType> icp;
-  icp.setInputSource(source_pointcloud_kcs);
-  icp.setInputTarget(target_pointcloud_kcs);
-  icp.setMaxCorrespondenceDistance(0.5);
-  icp.setMaximumIterations(200);
-  icp.setTransformationEpsilon(0.0);
-  icp.align(*source_pointcloud_aligned_kcs);
+  Eigen::Matrix4f best_transform;
+  float best_score;
 
-  if (!icp.hasConverged()) {
-    RCLCPP_WARN(this->get_logger(), "ICP did not converge");
-    return;
-  }
-
-  Eigen::Matrix4f source_transform_transform = icp.getFinalTransformation();
+  findBestTransform(
+    source_pointcloud_kcs, target_pointcloud_kcs, calibration_registrators_,
+    source_pointcloud_aligned_kcs, best_transform, best_score);
 
   double init_error = getAlignmentError(source_pointcloud_kcs, target_pointcloud_kcs);
   double final_error = getAlignmentError(source_pointcloud_aligned_kcs, target_pointcloud_kcs);
-  double icp_error = icp.getFitnessScore();
 
-  RCLCPP_WARN(this->get_logger(), "init_error: %.2f", init_error);
-  RCLCPP_WARN(this->get_logger(), "final_error: %.2f", final_error);
-  RCLCPP_WARN(this->get_logger(), "icp_error: %.2f", icp_error);
+  RCLCPP_INFO(this->get_logger(), "Initial avrage error: %.4f m", init_error);
+  RCLCPP_INFO(this->get_logger(), "Final average error: %.4f m", final_error);
 
-  Eigen::Affine3d icp_affine = Eigen::Affine3d(source_transform_transform.cast<double>());
+  Eigen::Affine3d icp_affine = Eigen::Affine3d(best_transform.cast<double>());
   Eigen::Affine3d inital_kit_to_source_eigen =
     base_to_sensor_kit_eigen_.inverse() * initial_base_to_source_eigen_;
 
-  Eigen::Affine3d estimated_kit_to_source_eigen = inital_kit_to_source_eigen * icp_affine;
+  Eigen::Affine3d estimated_kit_to_source_eigen = icp_affine * inital_kit_to_source_eigen;
+
+  // Optional filtering
+  if (filter_estimations_) {
+    auto estimated_rpy =
+      tier4_autoware_utils::getRPY(tf2::toMsg(estimated_kit_to_source_eigen).orientation);
+
+    Eigen::Vector3d x(
+      estimated_rpy.z, estimated_kit_to_source_eigen.translation().x(),
+      estimated_kit_to_source_eigen.translation().y());
+    Eigen::DiagonalMatrix<double, 3> p0(initial_angle_cov_, initial_xy_cov_, initial_xy_cov_);
+
+    if (first_observation_) {
+      kalman_filter_.init(x, p0);
+      first_observation_ = false;
+    } else {
+      kalman_filter_.update(x);
+    }
+
+    estimated_rpy.z = kalman_filter_.getXelement(0);
+    estimated_kit_to_source_eigen.translation().x() = kalman_filter_.getXelement(1);
+    estimated_kit_to_source_eigen.translation().y() = kalman_filter_.getXelement(2);
+
+    geometry_msgs::msg::Pose pose_msg;
+    pose_msg.orientation = tier4_autoware_utils::createQuaternionFromRPY(
+      estimated_rpy.x, estimated_rpy.y, estimated_rpy.z);
+
+    pose_msg.position.x = kalman_filter_.getXelement(1);
+    pose_msg.position.y = kalman_filter_.getXelement(2);
+    pose_msg.position.z = estimated_kit_to_source_eigen.translation().z();
+
+    tf2::fromMsg(pose_msg, estimated_kit_to_source_eigen);
+  }
 
   geometry_msgs::msg::TransformStamped tf_msg =
     tf2::eigenToTransform(estimated_kit_to_source_eigen);
@@ -279,6 +365,39 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
   target_pointcloud_tcs_msg.header = target_pointcloud_header_;
   source_pub_->publish(source_pointcloud_scs_msg);
   target_pub_->publish(target_pointcloud_tcs_msg);
+
+  // We perform basic filtering on the estimated angles
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    if (filter_estimations_) {
+      Eigen::MatrixXd p;
+      kalman_filter_.getP(p);
+      double yaw_cov = p(0, 0);
+      double x_cov = p(1, 1);
+      double y_cov = p(2, 2);
+
+      if (
+        yaw_cov < angle_convergence_threshold_ && x_cov < xy_convergence_threshold_ &&
+        y_cov < xy_convergence_threshold_) {
+        output_calibration_msg_ =
+          tf2::toMsg(estimated_kit_to_source_eigen * lidar_base_to_source_eigen_.inverse());
+        calibration_done_ = true;
+      }
+
+      RCLCPP_INFO(
+        this->get_logger(), "Filter cov: yaw=%.2e, x=%.2e, y=%.2e", yaw_cov, x_cov, y_cov);
+
+      RCLCPP_INFO(
+        this->get_logger(), "Convergence thresh: angle=%.2e, xy=%.2e", angle_convergence_threshold_,
+        xy_convergence_threshold_);
+
+    } else {
+      output_calibration_msg_ =
+        tf2::toMsg(estimated_kit_to_source_eigen * lidar_base_to_source_eigen_.inverse());
+      calibration_done_ = true;
+    }
+  }
 }
 
 double LidarToLidar2DCalibrator::getAlignmentError(
@@ -292,12 +411,69 @@ double LidarToLidar2DCalibrator::getAlignmentError(
   correspondence_estimator.determineCorrespondences(correspondences);
 
   double error = 0.0;
+  int n = 0;
 
   for (unsigned long i = 0; i < correspondences.size(); ++i) {
-    // int source_id = correspondences[i].index_query;
-    // int target_id = correspondences[i].index_match;
-    error += std::sqrt(correspondences[i].distance);
+    if (correspondences[i].distance <= max_corr_distance_) {
+      error += std::sqrt(correspondences[i].distance);
+      n += 1;
+    }
   }
 
-  return error / correspondences.size();
+  return error / n;
+}
+
+void LidarToLidar2DCalibrator::findBestTransform(
+  pcl::PointCloud<PointType>::Ptr & source_pointcloud_ptr,
+  pcl::PointCloud<PointType>::Ptr & target_pointcloud_ptr,
+  std::vector<pcl::Registration<PointType, PointType>::Ptr> & registratators,
+  pcl::PointCloud<PointType>::Ptr & best_aligned_pointcloud_ptr, Eigen::Matrix4f & best_transform,
+  float & best_score)
+{
+  pcl::Correspondences correspondences;
+  pcl::registration::CorrespondenceEstimation<PointType, PointType> estimator;
+  estimator.setInputSource(source_pointcloud_ptr);
+  estimator.setInputTarget(target_pointcloud_ptr);
+  estimator.determineCorrespondences(correspondences);
+
+  best_transform = Eigen::Matrix4f::Identity();
+  best_score = 0.f;
+  for (int i = 0; i < int(correspondences.size()); ++i) {
+    best_score += correspondences[i].distance;
+  }
+
+  best_score /= correspondences.size();
+
+  std::vector<Eigen::Matrix4f> transforms = {best_transform};
+
+  for (auto & registrator : registratators) {
+    Eigen::Matrix4f best_registrator_transform = Eigen::Matrix4f::Identity();
+    float best_registrator_score = std::numeric_limits<float>::max();
+    pcl::PointCloud<PointType>::Ptr best_registrator_aligned_cloud_ptr(
+      new pcl::PointCloud<PointType>());
+
+    for (auto & transform : transforms) {
+      pcl::PointCloud<PointType>::Ptr aligned_cloud_ptr(new pcl::PointCloud<PointType>());
+      registrator->setInputSource(source_pointcloud_ptr);
+      registrator->setInputTarget(target_pointcloud_ptr);
+      registrator->align(*aligned_cloud_ptr, transform);
+
+      Eigen::Matrix4f candidate_transform = registrator->getFinalTransformation();
+      float candidate_score = registrator->getFitnessScore(max_corr_distance_);
+
+      if (candidate_score < best_registrator_score) {
+        best_registrator_transform = candidate_transform;
+        best_registrator_score = candidate_score;
+        best_registrator_aligned_cloud_ptr = aligned_cloud_ptr;
+      }
+    }
+
+    if (best_registrator_score < best_score) {
+      best_transform = best_registrator_transform;
+      best_score = best_registrator_score;
+      best_aligned_pointcloud_ptr = best_registrator_aligned_cloud_ptr;
+    }
+
+    transforms.push_back(best_registrator_transform);
+  }
 }

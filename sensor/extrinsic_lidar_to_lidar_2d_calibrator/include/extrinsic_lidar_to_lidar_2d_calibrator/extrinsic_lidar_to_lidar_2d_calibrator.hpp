@@ -29,6 +29,8 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
+#include <pcl/registration/gicp.h>
+#include <pcl/registration/icp.h>
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
@@ -67,12 +69,33 @@ protected:
     pcl::PointCloud<PointType>::Ptr source_pointcloud,
     pcl::PointCloud<PointType>::Ptr target_pointcloud);
 
+  void findBestTransform(
+    pcl::PointCloud<PointType>::Ptr & source_pointcloud_ptr,
+    pcl::PointCloud<PointType>::Ptr & target_pointcloud_ptr,
+    std::vector<pcl::Registration<PointType, PointType>::Ptr> & registratators,
+    pcl::PointCloud<PointType>::Ptr & best_aligned_pointcloud_ptr, Eigen::Matrix4f & best_transform,
+    float & best_score);
+
   // Parameters
   std::string base_frame_;
   std::string sensor_kit_frame_;  // the parent for this calibration method must be a sensor kit
   std::string lidar_base_frame_;  // the child for this calibration method must be a the base of a
                                   // lidar (probably different from the actua lidar tf)
   bool broadcast_calibration_tf_;
+  bool filter_estimations_;
+  double max_calibration_range_;
+  double max_corr_distance_;
+  int max_iterations_;
+
+  double initial_angle_cov_;
+  double initial_xy_cov_;
+  double angle_measurement_cov_;
+  double angle_process_cov_;
+  double xy_measurement_cov_;
+  double xy_process_cov_;
+  double angle_convergence_threshold_;
+  double xy_convergence_threshold_;
+
   double min_z_;
   double max_z_;
 
@@ -117,8 +140,16 @@ protected:
 
   // Other tfs to calculate the complete chain. There are constant for our purposes
   geometry_msgs::msg::Transform base_to_sensor_kit_msg_;
+  geometry_msgs::msg::Transform lidar_base_to_source_msg_;
   tf2::Transform base_to_sensor_kit_tf2_;
+  tf2::Transform lidar_base_to_source_tf2_;
   Eigen::Affine3d base_to_sensor_kit_eigen_;
+  Eigen::Affine3d lidar_base_to_source_eigen_;
+
+  std::vector<pcl::Registration<PointType, PointType>::Ptr> calibration_registrators_;
+  pcl::GeneralizedIterativeClosestPoint<PointType, PointType>::Ptr calibration_gicp_;
+  pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_, calibration_icp_fine_,
+    calibration_icp_fine_2_, calibration_icp_fine_3_;
 
   geometry_msgs::msg::Pose output_calibration_msg_;
 
@@ -126,6 +157,10 @@ protected:
   bool received_request_;
   bool broadcast_tf_;
   bool calibration_done_;
+
+  // Filtering
+  KalmanFilter kalman_filter_;
+  bool first_observation_;
 };
 
 #endif  // EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
