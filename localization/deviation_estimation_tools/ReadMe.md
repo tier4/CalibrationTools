@@ -32,10 +32,6 @@ If your are using rosbag, it should contain the following topics:
 - /tf_static (that contains transform from `base_link` to `imu_link`)
 - (/localization/twist_estimator/twist_with_covariance: required in the next step)
 
-NOTE that the twist and pose used for the calibration must be estimated with DEFAULT dead reckoning calibration parameters. In case of `sample_vehicle` in Autoware tutorial, leave the two following parameters as default (e.g. by setting `VEHICLE_ID` to `default`):
-- `speed_scale_factor` in pacmod interface (default: 1.0)
-- `angular_velocity_offset_*` in `imu_corrector.param.yaml` (default: 0.0)
-
 Play the rosbag in a different terminal:
 
 ```sh
