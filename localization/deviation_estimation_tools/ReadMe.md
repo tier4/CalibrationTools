@@ -115,7 +115,7 @@ ros2 bag play YOUR_BAG
 
 ### C. Visualization step
 
-After the evaluation, run the following command to generate the final results in `/home/$USER/deviation_evaluator_sample`.
+After the evaluation, run the following command to generate the final results in `$HOME/deviation_evaluator_sample`.
 
 ```sh
 pip3 install -r requirements.txt
@@ -196,7 +196,7 @@ ros2 launch deviation_evaluator deviation_evaluator.launch.xml map_path:=MAP_PAT
 ros2 bag play YOUR_BAG
 ```
 
-All the intermediate ros2bag and config files will be stored in `/home/$USER/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
+All the intermediate ros2bag and config files will be stored in `$HOME/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
 
 ### Features
 
@@ -252,14 +252,14 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
 | -------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
 | `/localization/twist_estimator/twist_with_covariance`    | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist                                                     |
 | `/localization/pose_estimator/pose_with_covariance`      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose                                                      |
-| `/localization/pose_twist_fusion_filter/kinematic_state` | `nav_msgs::msg::Odometry`                        | Input odometry (recorded with `ros2 bag record` in launch file) |
 
 #### Output
 
 | Name                                                                      | Type                                             | Description                        |
 | ------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------- |
-| `/localization/deviation_evaluator/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for `ekf_localizer`) |
-| `/localization/deviation_evaluator/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for `ekf_localizer`)  |
+| `/deviation_evaluator/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for `ekf_localizer`) |
+| `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`)  |
+| `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)  |
 
 ### Parameters for deviation evaluator
 
