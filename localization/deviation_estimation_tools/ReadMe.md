@@ -196,7 +196,7 @@ ros2 launch deviation_evaluator deviation_evaluator.launch.xml map_path:=MAP_PAT
 ros2 bag play YOUR_BAG
 ```
 
-All the intermediate ros2bag and config files will be stored in `$HOME/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
+All the ros2bag and config files will be stored in `$HOME/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
 
 ### Features
 
