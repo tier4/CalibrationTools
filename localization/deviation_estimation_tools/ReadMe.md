@@ -24,13 +24,15 @@ ros2 launch deviation_estimator deviation_estimator.launch.xml
 Then, you need to run either ROS bag or `autoware_launch` to provide `pose` and `twist` to `deviation_estimator`.
 You can check the estimated results either by looking at the output of `/estimated_*` ROS topics, or a text file saved in the designated path (default: `$(env HOME)/output.txt`).
 
-If your are using rosbag, it should contain the following topics:
+If you are using rosbag, it should contain the following topics:
 
 - /localization/twist_estimator/twist_with_covariance_raw
 - /localization/pose_estimator/pose_with_covariance
 - /clock
 - /tf_static (that contains transform from `base_link` to `imu_link`)
 - (/localization/twist_estimator/twist_with_covariance: required in the next step)
+
+NOTE that the pose and twist must be estimated with default parameters (see `known issues` section for detail).
 
 Play the rosbag in a different terminal:
 
