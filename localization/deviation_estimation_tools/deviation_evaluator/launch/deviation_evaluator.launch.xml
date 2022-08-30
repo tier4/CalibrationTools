@@ -33,7 +33,6 @@
   <group>
     <push-ros-namespace namespace="dead_reckoning"/>
     <include file="$(find-pkg-share ekf_localizer)/launch/ekf_localizer.launch.xml">
-      <arg name="enable_yaw_bias_estimation" value="true"/>
       <arg name="input_pose_with_cov_name" value="$(var out_pose_with_covariance_dr)"/>
       <arg name="input_twist_with_cov_name" value="$(var out_twist_with_covariance)"/>
       <arg name="input_initial_pose_name" value="$(var out_init_pose_with_covariance)"/>
@@ -47,7 +46,6 @@
   <group>
     <push-ros-namespace namespace="ground_truth"/>
     <include file="$(find-pkg-share ekf_localizer)/launch/ekf_localizer.launch.xml">
-      <arg name="enable_yaw_bias_estimation" value="true"/>
       <arg name="input_pose_with_cov_name" value="$(var out_pose_with_covariance_gt)"/>
       <arg name="input_twist_with_cov_name" value="$(var out_twist_with_covariance)"/>
       <arg name="input_initial_pose_name" value="$(var out_init_pose_with_covariance)"/>
