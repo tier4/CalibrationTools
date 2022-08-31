@@ -9,7 +9,6 @@
 
   <arg name="in_twist_with_covariance" default="/localization/twist_estimator/twist_with_covariance"/>
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>
-  <arg name="in_ekf_gt_odom" default="/localization/pose_twist_fusion_filter/kinematic_state"/>
   <arg name="out_ekf_odom_dr" default="/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic_state"/>
   <arg name="out_ekf_odom_gt" default="/deviation_evaluator/ground_truth/ekf_localizer/kinematic_state"/>
   <arg name="out_twist_with_covariance" default="/deviation_evaluator/twist_estimator/twist_with_covariance"/>
