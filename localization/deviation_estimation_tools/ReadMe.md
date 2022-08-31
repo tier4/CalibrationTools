@@ -242,6 +242,13 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
     <img src="./deviation_evaluator/media/thres2recall_sample.png" width="400">
 </p>
 
+### Architecture of `deviation_evaluator`
+The architecture of `deviation_evaluator` is shown below. It launches two `ekf_localizer`, one for ground truth estimation and one for (partially) dead reckoning estimation. Outputs of both `ekf_localizer` will be recorded and analyzed with `deviation_evaluation_visualizer` in the next step.
+
+<p align="left">
+    <img src="./deviation_evaluator/media/deviation_evaluator.drawio.svg" width="400">
+</p>
+
 ### Inputs / Outputs
 
 #### Input
@@ -255,7 +262,7 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
 
 | Name                                                                      | Type                                             | Description                                       |
 | ------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------- |
-| `/deviation_evaluator/twist_estimator/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for `ekf_localizer`)                |
+| `/deviation_evaluator/twist_estimator/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for both `ekf_localizer`)           |
 | `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`)  |
 | `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)    |
 | `/deviation_evaluator/initialpose3d`                                      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output initial pose (for both `ekf_localizer`)    |
