@@ -170,7 +170,7 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 | t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                           |
 | x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                           |
 | estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                            |
-| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
+| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt"       |
 | imu_link_frame            | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"            |
 
 ### Functions
@@ -253,11 +253,12 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
 
 #### Output
 
-| Name                                                                      | Type                                             | Description                        |
-| ------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------- |
-| `/deviation_evaluator/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for `ekf_localizer`) |
-| `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`)  |
-| `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)  |
+| Name                                                                      | Type                                             | Description                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------- |
+| `/deviation_evaluator/twist_estimator/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for `ekf_localizer`)                |
+| `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`)  |
+| `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)    |
+| `/deviation_evaluator/initialpose3d`                                      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output initial pose (for both `ekf_localizer`)    |
 
 ### Parameters for deviation evaluator
 
@@ -265,7 +266,7 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
 | --------- | ---------- | -------------------------------------------------------------------------- | ---------------------------------------------- |
 | rviz      | bool       | Show rviz if true                                                          | false                                          |
 | map_path  | string     | Path to the directory where map data (OpenStreetMap or .osm data) is saved | ""                                             |
-| save_dir  | string     | Output directory where figures, parameter files, and scores are saved      | "$(env HOME)/deviation_evaluator_sample" |
+| save_dir  | string     | Output directory where figures, parameter files, and scores are saved      | "$(env HOME)/deviation_evaluator_sample"       |
 | stddev_vx | double     | Standard deviation of vx                                                   | 0.8 (in `config/deviation_evaluator.yaml`)     |
 | stddev_wz | double     | Standard deviation of wz                                                   | 0.01 (in `config/deviation_evaluator.yaml`)    |
 | coef_vx   | double     | Velocity bias                                                              | 1 (in `config/deviation_evaluator.yaml`)       |
