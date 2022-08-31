@@ -22,9 +22,7 @@
   <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
     <param name="parent_frame" value="$(var parent_frame)" />
     <param name="child_frames" value="
-    [velodyne_top_base_link,
-    livox_front_center_base_link,
-    livox_front_right_base_link]" />
+    [velodyne_top_base_link]" />
   </node>
 
   <!-- velodyne_top_base_link: extrinsic_ground_plane_calibrator -->
@@ -39,23 +37,5 @@
   </group>
 
   <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
-
-  <!-- livox_front_center_base_link: extrinsic_dummy_calibrator -->
-  <group>
-    <include file="$(find-pkg-share extrinsic_dummy_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_center_base_link" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_center_base_link" />
-    </include>
-  </group>
-
-  <!-- livox_front_right_base_link: extrinsic_dummy_calibrator -->
-  <group>
-    <include file="$(find-pkg-share extrinsic_dummy_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_right_base_link" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_right_base_link" />
-    </include>
-  </group>
 
 </launch>
