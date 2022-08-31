@@ -243,7 +243,7 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
 </p>
 
 ### Architecture of `deviation_evaluator`
-The architecture of `deviation_evaluator` is shown below. It launches two `ekf_localizer`, one for ground truth estimation and one for (partially) dead reckoning estimation. Outputs of both `ekf_localizer` will be recorded and analyzed with `deviation_evaluation_visualizer` in the next step.
+The architecture of `deviation_evaluator` is shown below. It launches two `ekf_localizer`, one for ground truth estimation and one for (partially) dead reckoning estimation. Outputs of both `ekf_localizer` will be recorded and analyzed with `deviation_evaluation_visualizer`.
 
 <p align="left">
     <img src="./deviation_evaluator/media/deviation_evaluator.drawio.svg" width="400">
