@@ -373,7 +373,7 @@ void ExtrinsicMapBasedCalibrator::printTransform(const tf2::Transform & tf)
 
   tf2::Matrix3x3 tf2_matrix(tf.getRotation());
   double roll = NAN;
-double pitch;
+double pitch = NAN;
 double yaw;
   tf2_matrix.getRPY(roll, pitch, yaw);
   RCLCPP_INFO_STREAM(this->get_logger(), "rotate");
