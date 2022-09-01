@@ -29,6 +29,7 @@ def generate_launch_description():
         package='apriltag_ros', plugin='AprilTagNode',
         remappings=[
             ("image", LaunchConfiguration("image_topic")),
+            ("image_rect", LaunchConfiguration("image_topic")),
             ("camera_info", LaunchConfiguration("camera_info_topic")),
             ("detections", LaunchConfiguration("apriltag_detections_topic"))],
         parameters=[cfg_16h5])
