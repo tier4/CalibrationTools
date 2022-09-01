@@ -17,31 +17,27 @@
 
 #include <Eigen/Dense>
 #include <kalman_filter/kalman_filter.hpp>
-#include <pcl/kdtree/impl/kdtree_flann.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
+#include <std_srvs/srv/empty.hpp>
+#include <tier4_pcl_extensions/joint_icp_extended.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include <std_srvs/srv/empty.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/frame.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
-#include <pclomp/ndt_omp.h>
-#include <pclomp/ndt_omp_impl.hpp>
-#include <pclomp/voxel_grid_covariance_omp.h>
-#include <pclomp/voxel_grid_covariance_omp_impl.hpp>
-
 #include <pcl/filters/passthrough.h>
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
-#include <pcl/registration/registration.h>
-#include <pcl/registration/icp.h>
 #include <pcl/registration/gicp.h>
+#include <pcl/registration/icp.h>
+#include <pcl/registration/registration.h>
+#include <pclomp/ndt_omp.h>
+#include <pclomp/voxel_grid_covariance_omp.h>
 #include <pcl/registration/correspondence_estimation.h>
-
 #include <tf2/convert.h>
 
 #ifdef ROS_DISTRO_GALACTIC
@@ -56,17 +52,17 @@
 //#include <pcl_conversions/pcl_conversions.h>
 
 #include <iostream>
-#include <unordered_map>
 #include <mutex>
-#include <string>
-#include <vector>
 #include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 using PointType = pcl::PointXYZ;
 using PointcloudType = pcl::PointCloud<PointType>;
 
-
-struct Frame {
+struct Frame
+{
   using Ptr = std::shared_ptr<Frame>;
   float distance_;
   float delta_distance_;
@@ -79,23 +75,23 @@ struct Frame {
   bool is_key_frame_;
   bool stopped_;
   int frames_since_stop_;
-  Eigen::Matrix4f pose_; // map->lidar
+  Eigen::Matrix4f pose_;  // map->lidar
 };
 
-struct CalibrationFrame {
+struct CalibrationFrame
+{
   PointcloudType::Ptr source_pointcloud_;
-  PointcloudType::Ptr target_pointcloud_; // we may not be able to store the pointcloud since it is
+  PointcloudType::Ptr target_pointcloud_;  // we may not be able to store the pointcloud since it is
   std_msgs::msg::Header source_header_;
 
   Frame::Ptr target_frame_;
-  Eigen::Matrix4f local_map_pose_; // pose in the map from the target lidar
+  Eigen::Matrix4f local_map_pose_;  // pose in the map from the target lidar
 
   double interpolated_distance_;
-  double interpolated_angle_; // det(rot * inv rot) o algo asi
+  double interpolated_angle_;  // det(rot * inv rot) o algo asi
   double interpolated_time_;
   double estimated_speed_;
   double estimated_accel_;
-
 };
 
 class ExtrinsicMappingBasedCalibrator : public rclcpp::Node
@@ -104,10 +100,9 @@ public:
   ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
-  //void requestReceivedCallback(
+  // void requestReceivedCallback(
   //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
   //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
-
 
   /*!
    * Callback to set parameters using the ROS interface
@@ -119,13 +114,12 @@ protected:
   void keyFrameCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
-  void allLidarCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
   void singleLidarCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
-
+  void multipleLidarCalibrationCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
 
   /*!
    * Message callback for calibration pointclouds (pointclouds in the frame to calibrate)
@@ -134,7 +128,8 @@ protected:
   void calibrationPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
 
   /*!
-   * Message callback for mapping pointclouds (pointclouds used for the map used as a target during calibration)
+   * Message callback for mapping pointclouds (pointclouds used for the map used as a target during
+   * calibration)
    * @param[in] pc Calibration pointcloud msg
    */
   void mappingPointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
@@ -180,7 +175,8 @@ protected:
    * @param[in] source_pointcloud_ptr Source pointcloud
    * @param[in] target_pointcloud_ptr Target pointcloud
    */
-  void setUpCalibrators(PointcloudType::Ptr & source_pointcloud_ptr, PointcloudType::Ptr & target_pointcloud_ptr);
+  void setUpCalibrators(
+    PointcloudType::Ptr & source_pointcloud_ptr, PointcloudType::Ptr & target_pointcloud_ptr);
 
   // General methods
 
@@ -192,16 +188,19 @@ protected:
    * @param[in] max_range Max range of the resulting pointcloud
    * @retval Source to distance pointcloud distance
    */
-  PointcloudType::Ptr getDensePointcloudFromMap(const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
-
+  PointcloudType::Ptr getDensePointcloudFromMap(
+    const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
 
   // Parameters
   std::string base_frame_;
-  std::string sensor_kit_frame_; // calibration parent frame
-  std::string lidar_base_frame_; // calibration child frame
-  std::string map_frame_; // isolated frame to visualize the mapping
-  std::string calibration_lidar_frame_; // calibration_source frame. needs to be a parameter since the pointcloud may come transformed due to the lidar's pipeline
-  std::string mapping_lidar_frame_; // calibration_target frame. needs to be a parameter since the pointcloud may come transformed due to the lidar's pipeline
+  std::string sensor_kit_frame_;  // calibration parent frame
+  std::string lidar_base_frame_;  // calibration child frame
+  std::string map_frame_;         // isolated frame to visualize the mapping
+  std::string
+    calibration_lidar_frame_;        // calibration_source frame. needs to be a parameter since the
+                                     // pointcloud may come transformed due to the lidar's pipeline
+  std::string mapping_lidar_frame_;  // calibration_target frame. needs to be a parameter since the
+                                     // pointcloud may come transformed due to the lidar's pipeline
 
   struct Params
   {
@@ -223,15 +222,21 @@ protected:
     int frames_since_stop_force_frame_;
     int calibration_skip_keyframes_;
 
+    // Calibration preprocessing
     double calibration_max_interpolated_time_;
     double calibration_max_interpolated_distance_;
     double calibration_max_interpolated_angle_;
     double calibration_max_interpolated_speed_;
     double calibration_max_interpolated_accel_;
+    bool calibration_use_only_stopped_;
     double max_calibration_range_;
+
+    // Calibration parameters
+    int calibration_solver_iterations_;
+    double calibration_max_corr_dist_coarse_;
+    double calibration_max_corr_dist_fine_;
+    double calibration_max_corr_dist_ultrafine_;
   } params_;
-
-
 
   // ROS Interface
   tf2_ros::StaticTransformBroadcaster tf_broascaster_;
@@ -261,6 +266,7 @@ protected:
   rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr single_lidar_calibration_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr multiple_lidar_calibration_server_;
 
   rclcpp::TimerBase::SharedPtr timer_;
 
@@ -286,12 +292,19 @@ protected:
   // Calibration
   std::vector<CalibrationFrame> calibration_frames_;
   std::vector<pcl::Registration<PointType, PointType>::Ptr> calibration_registrators_;
+  std::vector<pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr>
+    calibration_batch_registrators_;
   pclomp::NormalDistributionsTransform<PointType, PointType>::Ptr calibration_ndt_;
   pcl::GeneralizedIterativeClosestPoint<PointType, PointType>::Ptr calibration_gicp_;
-  pcl::IterativeClosestPoint<PointType, PointType >::Ptr calibration_icp_;
-  pcl::search::KdTree<PointType>::Ptr source_tree_;
-  pcl::search::KdTree<PointType>::Ptr target_tree_;
+  pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_coarse_;
+  pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_fine_;
+  pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_ultrafine_;
   pcl::registration::CorrespondenceEstimation<PointType, PointType>::Ptr correspondence_estimator_;
+
+  pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr calibration_batch_icp_coarse_;
+  pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr calibration_batch_icp_fine_;
+  pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr
+    calibration_batch_icp_ultrafine_;
 
   // Mapping data
   int selected_keyframe_;
@@ -302,7 +315,6 @@ protected:
   std::vector<Frame::Ptr> keyframes_and_stopped_;
   pcl::PointCloud<PointType>::Ptr local_map_ptr_;
   std::vector<geometry_msgs::msg::PoseStamped> trajectory_;
-
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
