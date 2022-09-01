@@ -13,6 +13,7 @@
   <let name="calibration_pointcloud" value="/sensing/lidar/left/outlier_filtered/pointcloud" />
 
   <arg name="rviz" />
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/velodyne_top.rviz" />
 
   <!-- extrinsic_calibration_client -->
   <!--arg name="src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensor_kit_calibration.yaml" />
@@ -47,5 +48,7 @@
     <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)" />
     <arg name="calibration_pointcloud" value="$(var calibration_pointcloud)" />
   </include>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)" />
 
 </launch>
