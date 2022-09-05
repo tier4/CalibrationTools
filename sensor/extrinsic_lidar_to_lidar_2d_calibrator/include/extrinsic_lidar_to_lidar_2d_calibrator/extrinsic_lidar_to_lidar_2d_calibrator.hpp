@@ -15,7 +15,6 @@
 #ifndef EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
 #define EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
 
-#define PCL_NO_PRECOMPILE  // We require this macro to use the PCL templates with velodyne PCs
 #include <Eigen/Dense>
 #include <kalman_filter/kalman_filter.hpp>
 #include <pcl/kdtree/impl/kdtree_flann.hpp>
@@ -36,16 +35,13 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <velodyne_pointcloud/point_types.h>
 
 #include <iostream>
 #include <mutex>
 #include <string>
 #include <vector>
 
-// using PointType = velodyne_pointcloud::PointXYZIR;
 using PointType = pcl::PointXYZ;
-// using PointCloudType = pcl::PointCloud<pcl::PointXYZ>;
 
 class LidarToLidar2DCalibrator : public rclcpp::Node
 {

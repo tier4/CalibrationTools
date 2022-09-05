@@ -28,7 +28,6 @@
   <depend>tier4_autoware_utils</depend>
   <depend>tier4_calibration_msgs</depend>
   <depend>visualization_msgs</depend>
-  <depend>velodyne_pointcloud</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
