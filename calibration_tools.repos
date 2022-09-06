@@ -14,7 +14,7 @@ repositories:
   vendor/apriltag_msgs:
     type: git
     url: git@github.com:christianrauch/apriltag_msgs.git
-    version: master
+    version: 2.0.0
   vendor/apriltag_ros:
     type: git
     url: git@github.com:christianrauch/apriltag_ros.git
