@@ -6,6 +6,15 @@
   <arg name="child_frame" />
   <arg name="pointcloud_topic" />
 
+  <arg name="use_crop_box_filter" default="true" />
+  <arg name="crop_box_min_x" default="-50.0" />
+  <arg name="crop_box_min_y" default="-50.0" />
+  <arg name="crop_box_min_z" default="-50.0" />
+  <arg name="crop_box_max_x" default="50.0" />
+  <arg name="crop_box_max_y" default="50.0" />
+  <arg name="crop_box_max_z" default="50.0" />
+  <arg name="use_pca_rough_normal" default="true" />
+
   <group>
     <push-ros-namespace namespace="$(var ns)" />
     <node pkg="extrinsic_ground_plane_calibrator" exec="extrinsic_ground_plane_calibrator" name="extrinsic_ground_plane_calibrator" output="screen">
@@ -13,7 +22,17 @@
       <param name="parent_frame" value="$(var parent_frame)" />
       <param name="child_frame" value="$(var child_frame)" />
       <param name="marker_size" value="10.0" />
-      <param name="max_inlier_distance" value="0.01" />
+
+      <param name="use_crop_box_filter" value="$(var use_crop_box_filter)" />
+      <param name="crop_box_min_x" value="$(var crop_box_min_x)" />
+      <param name="crop_box_min_y" value="$(var crop_box_min_y)" />
+      <param name="crop_box_min_z" value="$(var crop_box_min_z)" />
+      <param name="crop_box_max_x" value="$(var crop_box_max_x)" />
+      <param name="crop_box_max_y" value="$(var crop_box_max_y)" />
+      <param name="crop_box_max_z" value="$(var crop_box_max_z)" />
+      <param name="use_pca_rough_normal" value="$(var use_pca_rough_normal)" />
+
+      <param name="max_inlier_distance" value="0.02" />
       <param name="min_plane_points" value="500" />
       <param name="min_plane_points_percentage" value="20.0" />
       <param name="max_cos_distance" value="0.2" />
