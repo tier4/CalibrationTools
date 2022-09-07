@@ -14,11 +14,11 @@ repositories:
   vendor/apriltag_msgs:
     type: git
     url: git@github.com:christianrauch/apriltag_msgs.git
-    version: master
+    version: 2.0.0
   vendor/apriltag_ros:
     type: git
     url: git@github.com:christianrauch/apriltag_ros.git
-    version: master
+    version: 0f5ee01e01a0e8074c186ddcdd1f85a36d0cb5d5
   vendor/ros2_numpy:
     type: git
     url: git@github.com:Box-Robotics/ros2_numpy.git
