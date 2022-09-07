@@ -14,16 +14,15 @@
 //  limitations under the License.
 //
 
+#include "time_delay_estimator/general_time_delay_estimator_node.hpp"
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "time_delay_estimator/general_time_delay_estimator_node.hpp"
-
 double validateRange(
-  rclcpp::Node * node, const double min, const double max, const double val,
-  std::string name)
+  rclcpp::Node * node, const double min, const double max, const double val, std::string name)
 {
   auto & clk = *node->get_clock();
   if (min < std::abs(val) && std::abs(val) < max) {
@@ -37,10 +36,7 @@ double validateRange(
   return 0.0;
 }
 
-double addOffset(const double val, const double offset)
-{
-  return val + offset;
-}
+double addOffset(const double val, const double offset) { return val + offset; }
 
 TimeDelayEstimatorNode::TimeDelayEstimatorNode(const rclcpp::NodeOptions & node_options)
 : Node("time_delay_estimator", node_options)
@@ -83,8 +79,8 @@ TimeDelayEstimatorNode::TimeDelayEstimatorNode(const rclcpp::NodeOptions & node_
   // input
   sub_control_mode_report_ =
     create_subscription<autoware_auto_vehicle_msgs::msg::ControlModeReport>(
-    "~/input/control_mode", queue_size,
-    std::bind(&TimeDelayEstimatorNode::callbackControlModeReport, this, _1));
+      "~/input/control_mode", queue_size,
+      std::bind(&TimeDelayEstimatorNode::callbackControlModeReport, this, _1));
 
   // response
   sub_input_cmd_ = create_subscription<Float32Stamped>(
@@ -94,8 +90,7 @@ TimeDelayEstimatorNode::TimeDelayEstimatorNode(const rclcpp::NodeOptions & node_
     "~/input/input_status", queue_size,
     std::bind(&TimeDelayEstimatorNode::callbackInputStatus, this, _1));
   sub_is_engaged_ = create_subscription<BoolStamped>(
-    "~/input/is_engage", queue_size,
-    std::bind(&TimeDelayEstimatorNode::callbackEngage, this, _1));
+    "~/input/is_engage", queue_size, std::bind(&TimeDelayEstimatorNode::callbackEngage, this, _1));
 
   params_.total_data_size =
     static_cast<int>(params_.sampling_duration * params_.sampling_hz * params_.num_interpolation) +
@@ -113,8 +108,8 @@ TimeDelayEstimatorNode::TimeDelayEstimatorNode(const rclcpp::NodeOptions & node_
       std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(period_s));
     timer_data_processing_ =
       std::make_shared<rclcpp::GenericTimer<decltype(data_processing_callback)>>(
-      this->get_clock(), period_ns, std::move(data_processing_callback),
-      this->get_node_base_interface()->get_context());
+        this->get_clock(), period_ns, std::move(data_processing_callback),
+        this->get_node_base_interface()->get_context());
     this->get_node_timers_interface()->add_timer(timer_data_processing_, nullptr);
   }
   // estimation callback
@@ -167,15 +162,12 @@ bool TimeDelayEstimatorNode::estimateTimeDelay()
   return true;
 }
 
-
 void TimeDelayEstimatorNode::callbackInputCmd(const Float32Stamped::ConstSharedPtr msg)
 {
   input_cmd_ptr_ = msg;
   const auto & t = this->get_clock()->now().seconds();
   double input =
-    validateRange(
-    this, valid_input_.min, valid_input_.max,
-    input_cmd_ptr_->data, data_name_);
+    validateRange(this, valid_input_.min, valid_input_.max, input_cmd_ptr_->data, data_name_);
   const double input_offset = addOffset(input, input_offset_);
   collected_data_->input_.setValue(input_offset, t);
 }
@@ -185,8 +177,7 @@ void TimeDelayEstimatorNode::callbackInputStatus(const Float32Stamped::ConstShar
   input_status_ptr_ = msg;
   const auto & t = this->get_clock()->now().seconds();
   double input_response = validateRange(
-    this, valid_input_.min, valid_input_.max, input_status_ptr_->data,
-    data_name_ + " response");
+    this, valid_input_.min, valid_input_.max, input_status_ptr_->data, data_name_ + " response");
   const double input_response_offset = addOffset(input_response, input_offset_);
   collected_data_->response_.setValue(input_response_offset, t);
 }

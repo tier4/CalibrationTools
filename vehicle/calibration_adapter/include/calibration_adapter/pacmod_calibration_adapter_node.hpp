@@ -17,15 +17,16 @@
 #ifndef CALIBRATION_ADAPTER__PACMOD_CALIBRATION_ADAPTER_NODE_HPP_
 #define CALIBRATION_ADAPTER__PACMOD_CALIBRATION_ADAPTER_NODE_HPP_
 
-#include "rclcpp/rclcpp.hpp"
 #include "calibration_adapter/calibration_adapter_node_base.hpp"
+#include "rclcpp/rclcpp.hpp"
+
 #include "tier4_calibration_msgs/msg/float32_stamped.hpp"
 #include "tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp"
 
 class PacmodCalibrationAdapterNode : public CalibrationAdapterNodeBase
 {
 public:
-using SteeringWheelStatusStamped = tier4_vehicle_msgs::msg::SteeringWheelStatusStamped;
+  using SteeringWheelStatusStamped = tier4_vehicle_msgs::msg::SteeringWheelStatusStamped;
   PacmodCalibrationAdapterNode();
 
 private:

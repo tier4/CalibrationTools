@@ -14,18 +14,19 @@
 // limitations under the License.
 //
 
-#include <string>
-#include "pitch_checker/pitch_reader.hpp"
 #include "pitch_checker/pitch_compare.hpp"
+
+#include "pitch_checker/pitch_reader.hpp"
+
+#include <string>
 
 namespace pitch_compare
 {
 PitchCompareNode::PitchCompareNode(const rclcpp::NodeOptions & node_options)
 : Node("pitch_compare", node_options)
 {
-  const auto base_pitch_csv = this->declare_parameter<std::string>(
-    "base_pitch_csv",
-    "base_pitch.csv");
+  const auto base_pitch_csv =
+    this->declare_parameter<std::string>("base_pitch_csv", "base_pitch.csv");
   const auto pitch_csv = this->declare_parameter<std::string>("pitch_csv", "pitch.csv");
 
   PitchReader node(base_pitch_csv);

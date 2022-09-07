@@ -14,11 +14,13 @@
 // limitations under the License.
 //
 
-#include <tf2/utils.h>
-#include <limits>
-#include <vector>
-#include <memory>
 #include "calibration_adapter/calibration_adapter_node.hpp"
+
+#include <tf2/utils.h>
+
+#include <limits>
+#include <memory>
+#include <vector>
 
 CalibrationAdapterNode::CalibrationAdapterNode()
 {
@@ -31,27 +33,21 @@ CalibrationAdapterNode::CalibrationAdapterNode()
   lowpass_cutoff_value_ = this->declare_parameter<double>("lowpass_cutoff_value", 0.033);
 
   pub_steering_angle_cmd_ =
-    create_publisher<Float32Stamped>(
-    "~/output/steering_angle_cmd", durable_qos);
+    create_publisher<Float32Stamped>("~/output/steering_angle_cmd", durable_qos);
   pub_acceleration_status_ =
-    create_publisher<Float32Stamped>(
-    "~/output/acceleration_status", durable_qos);
+    create_publisher<Float32Stamped>("~/output/acceleration_status", durable_qos);
   pub_acceleration_cmd_ =
-    create_publisher<Float32Stamped>(
-    "~/output/acceleration_cmd", durable_qos);
+    create_publisher<Float32Stamped>("~/output/acceleration_cmd", durable_qos);
 
   sub_control_cmd_ = create_subscription<ControlCommandStamped>(
-    "~/input/control_cmd", queue_size, std::bind(
-      &CalibrationAdapterNode::callbackControlCmd,
-      this, _1));
+    "~/input/control_cmd", queue_size,
+    std::bind(&CalibrationAdapterNode::callbackControlCmd, this, _1));
   sub_twist_ = create_subscription<Velocity>(
-    "~/input/twist_status", queue_size, std::bind(
-      &CalibrationAdapterNode::callbackTwistStatus,
-      this, _1));
-
+    "~/input/twist_status", queue_size,
+    std::bind(&CalibrationAdapterNode::callbackTwistStatus, this, _1));
 }
 
-template<class T>
+template <class T>
 T CalibrationAdapterNode::getNearestTimeDataFromVec(
   const T base_data, const double back_time, const std::vector<T> & vec)
 {
@@ -70,9 +66,7 @@ T CalibrationAdapterNode::getNearestTimeDataFromVec(
 }
 
 double CalibrationAdapterNode::getAccel(
-  const TwistStamped & prev_twist,
-  const TwistStamped & current_twist,
-  const double dt)
+  const TwistStamped & prev_twist, const TwistStamped & current_twist, const double dt)
 {
   if (dt < 1e-03) {
     // invalid twist. return prev acceleration
@@ -82,10 +76,9 @@ double CalibrationAdapterNode::getAccel(
   return dv / dt;
 }
 
-template<class T>
+template <class T>
 void CalibrationAdapterNode::pushDataToVec(
-  const T data, const std::size_t max_size,
-  std::vector<T> * vec)
+  const T data, const std::size_t max_size, std::vector<T> * vec)
 {
   vec->emplace_back(data);
   while (vec->size() > max_size) {
@@ -93,8 +86,7 @@ void CalibrationAdapterNode::pushDataToVec(
   }
 }
 
-void CalibrationAdapterNode::callbackControlCmd(
-  const ControlCommandStamped::ConstSharedPtr msg)
+void CalibrationAdapterNode::callbackControlCmd(const ControlCommandStamped::ConstSharedPtr msg)
 {
   Float32Stamped steer_angle_msg;
   steer_angle_msg.header.stamp = msg->stamp;
@@ -109,8 +101,7 @@ void CalibrationAdapterNode::callbackControlCmd(
   pub_acceleration_cmd_->publish(accel_msg);
 }
 
-void CalibrationAdapterNode::callbackTwistStatus(
-  const Velocity::ConstSharedPtr msg)
+void CalibrationAdapterNode::callbackTwistStatus(const Velocity::ConstSharedPtr msg)
 {
   TwistStamped twist;
   twist.header = msg->header;
@@ -120,9 +111,8 @@ void CalibrationAdapterNode::callbackTwistStatus(
     const double dt =
       (rclcpp::Time(msg->header.stamp) - rclcpp::Time(past_msg.header.stamp)).seconds();
     const double raw_acceleration = getAccel(past_msg, twist, dt);
-    acceleration_ = math_utils::lowpassFilter(
-      acceleration_, raw_acceleration,
-      lowpass_cutoff_value_, dt);
+    acceleration_ =
+      math_utils::lowpassFilter(acceleration_, raw_acceleration, lowpass_cutoff_value_, dt);
   }
   pushDataToVec(twist, twist_vec_max_size_, &twist_vec_);
 

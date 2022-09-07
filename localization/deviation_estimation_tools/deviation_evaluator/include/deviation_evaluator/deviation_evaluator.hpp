@@ -15,16 +15,13 @@
 #ifndef DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 #define DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 
-
-#include <chrono>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <mutex>
-#include <queue>
-#include <string>
-#include <vector>
-#include <cmath>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/LU"
+#include "rclcpp/rclcpp.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.h"
+#include "tf2_ros/transform_broadcaster.h"
+#include "tf2_ros/transform_listener.h"
 
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -33,19 +30,21 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
 #include "nav_msgs/msg/odometry.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "tier4_debug_msgs/msg/float64_stamped.hpp"
-#include "tier4_debug_msgs/msg/float64_multi_array_stamped.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/header.hpp"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/utils.h"
-#include "tf2_ros/transform_broadcaster.h"
-#include "tf2_ros/transform_listener.h"
+#include "tier4_debug_msgs/msg/float64_multi_array_stamped.hpp"
+#include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/LU"
+#include <chrono>
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <vector>
 
 class DeviationEvaluator : public rclcpp::Node
 {
@@ -57,8 +56,7 @@ private:
     sub_twist_with_cov_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     sub_ndt_pose_with_cov_;
-  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
-    pub_twist_with_cov_;
+  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr pub_twist_with_cov_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     pub_ndt_pose_with_cov_;
 

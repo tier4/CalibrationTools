@@ -482,8 +482,8 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
       this->get_logger(), "Initial euler angles: roll=%.2f, pitch=%.2f, yaw=%.2f", initial_rpy.x,
       initial_rpy.y, initial_rpy.z);
     RCLCPP_INFO(
-      this->get_logger(), "Estimated euler angles: roll=%.2f, pitch=%.2f, yaw=%.2f", estimated_rpy.x,
-      estimated_rpy.y, estimated_rpy.z);
+      this->get_logger(), "Estimated euler angles: roll=%.2f, pitch=%.2f, yaw=%.2f",
+      estimated_rpy.x, estimated_rpy.y, estimated_rpy.z);
 
     RCLCPP_INFO(
       this->get_logger(), "Initial translation: x=%.2f, y=%.2f, z=%.2f",

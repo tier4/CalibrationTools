@@ -23,30 +23,29 @@ from rclpy.node import Node
 
 
 class ViewPlot(Node):
-
     def __init__(self):
-        super().__init__('pitch_viewer')
-        package_path = get_package_share_directory('pitch_checker')
-        self.declare_parameter('pitch_file_name', package_path + '/pitch.csv')
-        file_name = self.get_parameter('pitch_file_name').get_parameter_value().string_value
+        super().__init__("pitch_viewer")
+        package_path = get_package_share_directory("pitch_checker")
+        self.declare_parameter("pitch_file_name", package_path + "/pitch.csv")
+        file_name = self.get_parameter("pitch_file_name").get_parameter_value().string_value
         data = pd.read_csv(file_name)
 
-        x = data['x']
-        y = data['y']
-        z = data['z']
-        pitch = data['pitch']
+        x = data["x"]
+        y = data["y"]
+        z = data["z"]
+        pitch = data["pitch"]
 
         fig1 = plt.subplot(121)
         # cmap... cmap or hsv
-        sc1 = fig1.scatter(x, y, c=pitch, label='pitch', cmap='gist_rainbow')
+        sc1 = fig1.scatter(x, y, c=pitch, label="pitch", cmap="gist_rainbow")
         sc1.set_clim(-0.025, 0.025)
         plt.colorbar(sc1)
-        fig1.set_title('pitch')
+        fig1.set_title("pitch")
 
         fig2 = plt.subplot(122)
-        sc2 = fig2.scatter(x, y, c=z, label='z', cmap='gist_rainbow')
+        sc2 = fig2.scatter(x, y, c=z, label="z", cmap="gist_rainbow")
         plt.colorbar(sc2)
-        fig2.set_title('z-axis')
+        fig2.set_title("z-axis")
         plt.show()
 
 
@@ -58,5 +57,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

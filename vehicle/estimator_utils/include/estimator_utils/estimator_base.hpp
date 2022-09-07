@@ -17,11 +17,13 @@
 #ifndef ESTIMATOR_UTILS__ESTIMATOR_BASE_HPP_
 #define ESTIMATOR_UTILS__ESTIMATOR_BASE_HPP_
 
-#include <vector>
-#include <string>
-#include "rclcpp/rclcpp.hpp"
-#include "tier4_calibration_msgs/msg/estimation_result.hpp"
 #include "estimator_utils/math_utils.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+#include "tier4_calibration_msgs/msg/estimation_result.hpp"
+
+#include <string>
+#include <vector>
 
 class EstimatorBase
 {
@@ -33,8 +35,8 @@ public:
   virtual bool checkIsValidData() = 0;
   virtual void postprocessOutput() = 0;
   virtual void publishData() = 0;
-  bool getIsValidData() {return is_valid_data_;}
-  bool getIsValidEstimation() {return is_valid_estimation_;}
+  bool getIsValidData() { return is_valid_data_; }
+  bool getIsValidEstimation() { return is_valid_estimation_; }
   using outputType = tier4_calibration_msgs::msg::EstimationResult;
   void createPublisher(const std::string & name, rclcpp::Node * node)
   {
@@ -43,8 +45,7 @@ public:
     rclcpp::QoS durable_qos(queue_size);
     durable_qos.transient_local();  // option for latching
 
-    pub_estimated_ =
-      rclcpp::create_publisher<outputType>(node, "output/" + name, durable_qos);
+    pub_estimated_ = rclcpp::create_publisher<outputType>(node, "output/" + name, durable_qos);
 
     result_msgs_.result.resize(5, 0);
     result_msgs_.result_mean.resize(5, 0);
@@ -76,7 +77,7 @@ public:
   bool is_valid_data_ = false;
   bool is_valid_estimation_ = false;
 
-  void processData() {is_valid_data_ = checkIsValidData();}
+  void processData() { is_valid_data_ = checkIsValidData(); }
   /**
    * data flow
    * if data is valid data:
@@ -92,7 +93,9 @@ public:
         is_valid_estimation_ = estimate();
         if (is_valid_data_ && is_valid_estimation_) {
           postprocessOutput();
-          if (seq_ > 50) {calcStatistics();}
+          if (seq_ > 50) {
+            calcStatistics();
+          }
           seq_++;
         }
       }

@@ -15,6 +15,7 @@
 #include "extrinsic_map_based_calibrator/grid_search_matching.hpp"
 
 #include "tier4_autoware_utils/math/unit_conversion.hpp"
+
 #include <omp.h>
 
 namespace extrinsic_map_base_calibrator
@@ -64,10 +65,10 @@ matchingResult GridSearchMatching::gridSearch(
     generateSearchElement(config_.y_range_min_, config_.y_range_max_, config_.y_resolution_);
   std::vector<double> z_elements =
     generateSearchElement(config_.z_range_min_, config_.z_range_max_, config_.z_resolution_);
-  std::vector<double> roll_elements =
-    generateSearchElement(config_.roll_range_min_, config_.roll_range_max_, config_.roll_resolution_);
-  std::vector<double> pitch_elements =
-    generateSearchElement(config_.pitch_range_min_, config_.pitch_range_max_, config_.pitch_resolution_);
+  std::vector<double> roll_elements = generateSearchElement(
+    config_.roll_range_min_, config_.roll_range_max_, config_.roll_resolution_);
+  std::vector<double> pitch_elements = generateSearchElement(
+    config_.pitch_range_min_, config_.pitch_range_max_, config_.pitch_resolution_);
   std::vector<double> yaw_elements =
     generateSearchElement(config_.yaw_range_min_, config_.yaw_range_max_, config_.yaw_resolution_);
 
@@ -75,28 +76,30 @@ matchingResult GridSearchMatching::gridSearch(
   tree_map->setInputCloud(map_pointcloud);
   matchingResult min_score_result;
   min_score_result.score = DBL_MAX;
-  #pragma omp parallel for
-  for (const auto & x_element: x_elements) {
-    #pragma omp parallel for
-    for (const auto & y_element: y_elements) {
-      #pragma omp parallel for
-      for  (const auto & z_element: z_elements) {
-        #pragma omp parallel for
-        for  (const auto & roll_element: roll_elements) {
-          #pragma omp parallel for
-          for  (const auto & pitch_element: pitch_elements) {
-            #pragma omp parallel for
-            for  (const auto & yaw_element: yaw_elements) {
-              Eigen::Matrix4d transformation_score_matrix = getMatrix4d(x_element, y_element, z_element, roll_element, pitch_element, yaw_element);
+#pragma omp parallel for
+  for (const auto & x_element : x_elements) {
+#pragma omp parallel for
+    for (const auto & y_element : y_elements) {
+#pragma omp parallel for
+      for (const auto & z_element : z_elements) {
+#pragma omp parallel for
+        for (const auto & roll_element : roll_elements) {
+#pragma omp parallel for
+          for (const auto & pitch_element : pitch_elements) {
+#pragma omp parallel for
+            for (const auto & yaw_element : yaw_elements) {
+              Eigen::Matrix4d transformation_score_matrix = getMatrix4d(
+                x_element, y_element, z_element, roll_element, pitch_element, yaw_element);
               PointCloudT::Ptr translated_cloud(new PointCloudT);
               pcl::transformPointCloud(
                 *sensor_pointcloud, *translated_cloud, transformation_score_matrix);
 
-              pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_sensor(new pcl::search::KdTree<pcl::PointXYZ>);
+              pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_sensor(
+                new pcl::search::KdTree<pcl::PointXYZ>);
               tree_sensor->setInputCloud(translated_cloud);
               double tmp_score =
                 matcher_.getFitnessScore(map_pointcloud, translated_cloud, tree_map, tree_sensor);
-              #pragma omp critical (score)
+#pragma omp critical(score)
               {
                 if (tmp_score < min_score_result.score) {
                   min_score_result.score = tmp_score;
@@ -112,8 +115,9 @@ matchingResult GridSearchMatching::gridSearch(
   return min_score_result;
 }
 
-Eigen::Matrix4d GridSearchMatching::getMatrix4d(const double & x, const double & y, const double & z,
-  const double & roll, const double & pitch, const double & yaw)
+Eigen::Matrix4d GridSearchMatching::getMatrix4d(
+  const double & x, const double & y, const double & z, const double & roll, const double & pitch,
+  const double & yaw)
 {
   Eigen::Matrix4d transformation_roll = Eigen::Matrix4d::Identity();
   double phi = tier4_autoware_utils::deg2rad(roll);

@@ -13,21 +13,21 @@
 
   <depend>rclcpp</depend>
   <depend>tf2</depend>
-  <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>yaml_cpp_vendor</depend>
+  <depend>tf2_ros</depend>
   <depend>tier4_autoware_utils</depend>
   <depend>tier4_calibration_msgs</depend>
+  <depend>yaml_cpp_vendor</depend>
 
   <exec_depend>autoware_launch</exec_depend>
-  <exec_depend>image_proc</exec_depend>
-  <exec_depend>individual_params</exec_depend>
-  <exec_depend>extrinsic_manual_calibrator</exec_depend>
   <exec_depend>extrinsic_calibration_client</exec_depend>
+  <exec_depend>extrinsic_dummy_calibrator</exec_depend>
   <exec_depend>extrinsic_ground_plane_calibrator</exec_depend>
   <exec_depend>extrinsic_interactive_calibrator</exec_depend>
-  <exec_depend>extrinsic_dummy_calibrator</exec_depend>
+  <exec_depend>extrinsic_manual_calibrator</exec_depend>
   <exec_depend>extrinsic_tag_based_calibrator</exec_depend>
+  <exec_depend>image_proc</exec_depend>
+  <exec_depend>individual_params</exec_depend>
   <exec_depend>tunable_static_tf_broadcaster</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>

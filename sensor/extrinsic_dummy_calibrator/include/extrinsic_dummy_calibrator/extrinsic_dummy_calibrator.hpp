@@ -15,30 +15,29 @@
 #ifndef EXTRINSIC_DUMMY_CALIBRATOR__EXTRINSIC_DUMMY_CALIBRATOR_HPP_
 #define EXTRINSIC_DUMMY_CALIBRATOR__EXTRINSIC_DUMMY_CALIBRATOR_HPP_
 
-#include <string>
-#include <iostream>
-#include <memory>
-#include <mutex>
-#include <vector>
-
-#include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/point_cloud2.hpp"
-#include "rclcpp/clock.hpp"
-
 #include "pcl/PCLPointCloud2.h"
+#include "pcl/filters/extract_indices.h"
+#include "pcl/filters/voxel_grid.h"
+#include "pcl/io/pcd_io.h"
 #include "pcl/point_types.h"
 #include "pcl/registration/gicp.h"
+#include "pcl/segmentation/sac_segmentation.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl_ros/transforms.hpp"
-#include "pcl/io/pcd_io.h"
-#include "pcl/filters/voxel_grid.h"
-#include "pcl/segmentation/sac_segmentation.h"
-#include "pcl/filters/extract_indices.h"
-#include "tf2_ros/transform_listener.h"
+#include "rclcpp/clock.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
+
+#include "sensor_msgs/msg/point_cloud2.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tier4_calibration_msgs/srv/extrinsic_calibrator.hpp"
 
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
 
 namespace extrinsic_dummy_calibrator
 {
@@ -52,7 +51,6 @@ private:
   std::string parent_frame_;
   std::string child_frame_;
   rclcpp::CallbackGroup::SharedPtr callback_group_;
-
 
 public:
   explicit ExtrinsicDummyCalibrator(const rclcpp::NodeOptions & node_options);

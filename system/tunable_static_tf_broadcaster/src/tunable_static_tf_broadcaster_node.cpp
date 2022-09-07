@@ -27,13 +27,12 @@
  * limitations under the License.
  */
 
+#include "tunable_static_tf_broadcaster/tunable_static_tf_broadcaster_node.hpp"
+
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "tunable_static_tf_broadcaster/tunable_static_tf_broadcaster_node.hpp"
-
 
 namespace tunable_static_tf_broadcaster
 {
@@ -76,15 +75,13 @@ TunableStaticTfBroadcasterNode::TunableStaticTfBroadcasterNode(
   }
 
   // Parameter reconfigure
-  set_param_res_ =
-    add_on_set_parameters_callback(
+  set_param_res_ = add_on_set_parameters_callback(
     std::bind(&TunableStaticTfBroadcasterNode::onParameter, this, _1));
 }
 
 double TunableStaticTfBroadcasterNode::declare_parameter_with_min_max(
   const std::string & name, const double default_value, const double min_value,
-  const double max_value,
-  const std::string & description_name, const std::string & description)
+  const double max_value, const std::string & description_name, const std::string & description)
 {
   rcl_interfaces::msg::ParameterDescriptor desc;
   desc.name = description_name;
@@ -101,7 +98,7 @@ void TunableStaticTfBroadcasterNode::onTimer()
 {
   // Send transform
   transform_.header.stamp =
-    this->now() + rclcpp::Duration::from_seconds(1 / publish_rate_);    // Set future time to allow
+    this->now() + rclcpp::Duration::from_seconds(1 / publish_rate_);  // Set future time to allow
   // slower sending w/o other node's timeout.
   broadcaster_.sendTransform(transform_);
 }
@@ -110,13 +107,13 @@ SetParametersResult TunableStaticTfBroadcasterNode::onParameter(
   const std::vector<rclcpp::Parameter> & parameters)
 {
   auto update_param = [&parameters](const std::string & name, double & v) {
-      const auto it = std::find_if(
-        parameters.cbegin(), parameters.cend(),
-        [&name](const rclcpp::Parameter & parameter) {return parameter.get_name() == name;});
-      if (it != parameters.cend()) {
-        v = it->as_double();
-      }
-    };
+    const auto it = std::find_if(
+      parameters.cbegin(), parameters.cend(),
+      [&name](const rclcpp::Parameter & parameter) { return parameter.get_name() == name; });
+    if (it != parameters.cend()) {
+      v = it->as_double();
+    }
+  };
 
   SetParametersResult result;
   result.successful = true;
@@ -140,8 +137,8 @@ SetParametersResult TunableStaticTfBroadcasterNode::onParameter(
     RCLCPP_DEBUG(
       this->get_logger(),
       "Setting parameters by params... {x: %lf y: %lf z: %lf roll: %lf pitch: %lf yaw: %lf}",
-      t.transform.translation.x, t.transform.translation.y, t.transform.translation.z,
-      roll, pitch, yaw);
+      t.transform.translation.x, t.transform.translation.y, t.transform.translation.z, roll, pitch,
+      yaw);
   } catch (const rclcpp::exceptions::InvalidParameterTypeException & e) {
     result.successful = false;
     result.reason = e.what();

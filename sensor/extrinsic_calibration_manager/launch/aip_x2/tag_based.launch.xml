@@ -1,101 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-
-  <arg name="vehicle_id" default="default" />
-  <let name="sensor_model" value="aip_x2" />
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_x2"/>
   <arg name="camera_name" default=""/>
   <arg name="rviz" default="false"/>
   <arg name="decompress_images" default="true"/>
 
   <group>
-    <push-ros-namespace namespace="front_unit" />
+    <push-ros-namespace namespace="front_unit"/>
     <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/tag_based_front_unit.launch.xml">
-      <arg name="vehicle_id" value="$(var vehicle_id)" />
-      <arg name="camera_name" value="$(var camera_name)" />
-      <arg name="rviz" value="$(var rviz)" />
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="camera_name" value="$(var camera_name)"/>
+      <arg name="rviz" value="$(var rviz)"/>
     </include>
   </group>
 
   <group>
-    <push-ros-namespace namespace="rear_unit" />
+    <push-ros-namespace namespace="rear_unit"/>
     <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/tag_based_rear_unit.launch.xml">
-      <arg name="vehicle_id" value="$(var vehicle_id)" />
-      <arg name="camera_name" value="$(var camera_name)" />
-      <arg name="rviz" value="$(var rviz)" />
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="camera_name" value="$(var camera_name)"/>
+      <arg name="rviz" value="$(var rviz)"/>
     </include>
   </group>
 
   <group>
-    <push-ros-namespace namespace="top_unit" />
+    <push-ros-namespace namespace="top_unit"/>
     <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/tag_based_top_unit.launch.xml">
-      <arg name="vehicle_id" value="$(var vehicle_id)" />
-      <arg name="camera_name" value="$(var camera_name)" />
-      <arg name="rviz" value="$(var rviz)" />
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="camera_name" value="$(var camera_name)"/>
+      <arg name="rviz" value="$(var rviz)"/>
     </include>
   </group>
 
   <group if="$(var decompress_images)">
-    <push-ros-namespace namespace="sensing/camera/camera0" />
+    <push-ros-namespace namespace="sensing/camera/camera0"/>
 
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen" >
-      <remap from="decompressor/input/compressed_image" to="image_raw/compressed" />
-      <remap from="decompressor/output/raw_image" to="image_raw" />
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="image_raw"/>
     </node>
   </group>
 
-  <group if="$(var decompress_images)" >
-    <push-ros-namespace namespace="sensing/camera/camera1" />
+  <group if="$(var decompress_images)">
+    <push-ros-namespace namespace="sensing/camera/camera1"/>
 
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen" >
-      <remap from="decompressor/input/compressed_image" to="image_raw/compressed" />
-      <remap from="decompressor/output/raw_image" to="image_raw" />
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="image_raw"/>
     </node>
   </group>
 
-  <group if="$(var decompress_images)" >
-    <push-ros-namespace namespace="sensing/camera/camera2" />
+  <group if="$(var decompress_images)">
+    <push-ros-namespace namespace="sensing/camera/camera2"/>
 
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen" >
-      <remap from="decompressor/input/compressed_image" to="image_raw/compressed" />
-      <remap from="decompressor/output/raw_image" to="image_raw" />
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="image_raw"/>
     </node>
   </group>
 
+  <group if="$(var decompress_images)">
+    <push-ros-namespace namespace="sensing/camera/camera3"/>
 
-  <group if="$(var decompress_images)" >
-    <push-ros-namespace namespace="sensing/camera/camera3" />
-
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen" >
-      <remap from="decompressor/input/compressed_image" to="image_raw/compressed" />
-      <remap from="decompressor/output/raw_image" to="image_raw" />
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="image_raw"/>
     </node>
   </group>
 
-  <group if="$(var decompress_images)" >
-    <push-ros-namespace namespace="sensing/camera/camera4" />
+  <group if="$(var decompress_images)">
+    <push-ros-namespace namespace="sensing/camera/camera4"/>
 
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen" >
-      <remap from="decompressor/input/compressed_image" to="image_raw/compressed" />
-      <remap from="decompressor/output/raw_image" to="image_raw" />
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="image_raw"/>
     </node>
   </group>
 
-  <group if="$(var decompress_images)" >
-    <push-ros-namespace namespace="sensing/camera/camera5" />
+  <group if="$(var decompress_images)">
+    <push-ros-namespace namespace="sensing/camera/camera5"/>
 
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen" >
-      <remap from="decompressor/input/compressed_image" to="image_raw/compressed" />
-      <remap from="decompressor/output/raw_image" to="image_raw" />
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="image_raw"/>
     </node>
   </group>
 
-  <group if="$(var decompress_images)" >
-    <push-ros-namespace namespace="sensing/camera/camera6" />
+  <group if="$(var decompress_images)">
+    <push-ros-namespace namespace="sensing/camera/camera6"/>
 
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen" >
-      <remap from="decompressor/input/compressed_image" to="image_raw/compressed" />
-      <remap from="decompressor/output/raw_image" to="image_raw" />
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="image_raw"/>
     </node>
   </group>
-
 </launch>

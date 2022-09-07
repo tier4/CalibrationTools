@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR_CALIBRATION_ESTIMATOR_HPP_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR_CALIBRATION_ESTIMATOR_HPP_
+#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__CALIBRATION_ESTIMATOR_HPP_
+#define EXTRINSIC_TAG_BASED_CALIBRATOR__CALIBRATION_ESTIMATOR_HPP_
 
 #include <extrinsic_tag_based_calibrator/apriltag_hypothesis.hpp>
 #include <extrinsic_tag_based_calibrator/lidartag_hypothesis.hpp>
@@ -167,4 +167,4 @@ private:
   cv::Matx31d hypothesis_translation_vector_, observation_translation_vector_;
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR_CALIBRATION_ESTIMATOR_HPP_
+#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__CALIBRATION_ESTIMATOR_HPP_
