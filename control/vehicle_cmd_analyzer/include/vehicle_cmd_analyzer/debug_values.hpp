@@ -22,8 +22,7 @@ class DebugValues
 {
 public:
   /// Types of debug values
-  enum class TYPE
-  {
+  enum class TYPE {
     DT = 0,
     CURRENT_TARGET_VEL = 1,
     CURRENT_TARGET_D_VEL = 2,
@@ -39,24 +38,24 @@ public:
    * @param [in] type the TYPE enum for which to get the index
    * @return index of the type
    */
-  int getValuesIdx(const TYPE & type) const {return static_cast<int>(type);}
+  int getValuesIdx(const TYPE & type) const { return static_cast<int>(type); }
   /**
    * @brief get all the debug values as an std::array
    * @return array of all debug values
    */
-  std::array<double, static_cast<int>(TYPE::SIZE)> getValues() const {return values_;}
+  std::array<double, static_cast<int>(TYPE::SIZE)> getValues() const { return values_; }
   /**
    * @brief set the given type to the given value
    * @param [in] type TYPE of the value
    * @param [in] value value to set
    */
-  void setValues(const TYPE & type, const double val) {values_.at(static_cast<int>(type)) = val;}
+  void setValues(const TYPE & type, const double val) { values_.at(static_cast<int>(type)) = val; }
   /**
    * @brief set the given type to the given value
    * @param [in] type index of the type
    * @param [in] value value to set
    */
-  void setValues(const int type, const double val) {values_.at(type) = val;}
+  void setValues(const int type, const double val) { values_.at(type) = val; }
 
 private:
   static constexpr int num_debug_values_ = static_cast<int>(TYPE::SIZE);

@@ -15,20 +15,19 @@
 #ifndef POINT_CLOUD_ACCUMULATOR__POINT_CLOUD_ACCUMULATOR_HPP_
 #define POINT_CLOUD_ACCUMULATOR__POINT_CLOUD_ACCUMULATOR_HPP_
 
-#include <vector>
-#include <memory>
-
 #include "message_filters/cache.h"
 #include "message_filters/subscriber.h"
-
-#include "rclcpp/clock.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/point_cloud2.hpp"
-
+#include "pcl/PCLPointCloud2.h"
 #include "pcl/point_types.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl_ros/transforms.hpp"
-#include "pcl/PCLPointCloud2.h"
+#include "rclcpp/clock.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+#include "sensor_msgs/msg/point_cloud2.hpp"
+
+#include <memory>
+#include <vector>
 
 namespace point_cloud_accumulator
 {

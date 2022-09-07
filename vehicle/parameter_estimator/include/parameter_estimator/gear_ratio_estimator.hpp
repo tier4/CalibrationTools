@@ -17,18 +17,20 @@
 #ifndef PARAMETER_ESTIMATOR__GEAR_RATIO_ESTIMATOR_HPP_
 #define PARAMETER_ESTIMATOR__GEAR_RATIO_ESTIMATOR_HPP_
 
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
-#include <eigen3/Eigen/LU>
-#include <memory>
-#include <vector>
-#include "rclcpp/rclcpp.hpp"
 #include "estimator_utils/estimator_base.hpp"
 #include "estimator_utils/math_utils.hpp"
 #include "estimator_utils/optimization_utils.hpp"
 #include "parameter_estimator/debugger.hpp"
 #include "parameter_estimator/parameters.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
+#include <eigen3/Eigen/LU>
+
+#include <memory>
+#include <vector>
 
 class GearRatioEstimator : public EstimatorBase
 {
@@ -37,7 +39,7 @@ public:
     rclcpp::Node * node, const Params & p, const double & cov, const double ff,
     const std::vector<double> & est);
   ~GearRatioEstimator() {}
-  void setData(const VehicleData & v) {data_ = v;}
+  void setData(const VehicleData & v) { data_ = v; }
 
 private:
   VehicleData data_;

@@ -10,13 +10,13 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>autoware_auto_vehicle_msgs</depend>
+  <depend>estimator_utils</depend>
+  <depend>geometry_msgs</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
-  <depend>autoware_auto_vehicle_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>tier4_debug_msgs</depend>
   <depend>tier4_calibration_msgs</depend>
-  <depend>estimator_utils</depend>
+  <depend>tier4_debug_msgs</depend>
   <depend>vehicle_info_util</depend>
   <exec_depend>plotjuggler</exec_depend>
   <exec_depend>plotjuggler_ros</exec_depend>

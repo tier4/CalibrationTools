@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR_LIDARTAG_HYPOTHESIS_H_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR_LIDARTAG_HYPOTHESIS_H_
+#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__LIDARTAG_HYPOTHESIS_HPP_
+#define EXTRINSIC_TAG_BASED_CALIBRATOR__LIDARTAG_HYPOTHESIS_HPP_
 
 #include <extrinsic_tag_based_calibrator/types.hpp>
 #include <opencv2/core.hpp>
@@ -117,4 +117,4 @@ protected:
   double estimated_speed_;
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR_LIDARTAG_HYPOTHESIS_HPP_
+#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__LIDARTAG_HYPOTHESIS_HPP_

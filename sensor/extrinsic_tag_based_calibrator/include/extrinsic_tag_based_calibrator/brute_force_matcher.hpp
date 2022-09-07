@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR_BRUTE_FORCE_MATCHER_HPP_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR_BRUTE_FORCE_MATCHER_HPP_
+#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__BRUTE_FORCE_MATCHER_HPP_
+#define EXTRINSIC_TAG_BASED_CALIBRATOR__BRUTE_FORCE_MATCHER_HPP_
 
 #include <pcl/features/fpfh_omp.h>
 #include <pcl/features/normal_3d_omp.h>
@@ -32,4 +32,4 @@ bool bruteForceMatcher(
   PointCloudT::Ptr & source, PointCloudT::Ptr & target, double thresh,
   std::vector<int> & source_indexes, std::vector<int> & target_indexes, bool debug = false);
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR_BRUTE_FORCE_MATCHER_HPP_
+#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__BRUTE_FORCE_MATCHER_HPP_

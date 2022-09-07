@@ -14,9 +14,10 @@
 //  limitations under the License.
 //
 
+#include "parameter_estimator/wheel_base_estimator.hpp"
+
 #include <memory>
 #include <vector>
-#include "parameter_estimator/wheel_base_estimator.hpp"
 
 WheelBaseEstimator::WheelBaseEstimator(
   rclcpp::Node * node, const Params & p, double cov, const double ff, const double est)
@@ -73,4 +74,4 @@ bool WheelBaseEstimator::checkIsValidData()
   return true;
 }
 
-void WheelBaseEstimator::publishData() {debugger_->publishDebugValue();}
+void WheelBaseEstimator::publishData() { debugger_->publishDebugValue(); }

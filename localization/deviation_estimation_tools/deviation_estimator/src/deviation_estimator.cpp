@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "deviation_estimator/deviation_estimator.hpp"
+
+#include "rclcpp/logging.hpp"
+
 #include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include "deviation_estimator/deviation_estimator.hpp"
-#include "rclcpp/logging.hpp"
 
 // clang-format off
 #define PRINT_MAT(X) std::cout << #X << ":\n" << X << std::endl << std::endl
@@ -29,15 +31,14 @@
 // clang-format on
 using std::placeholders::_1;
 
-double double_round(const double x, const int n)
-{
-  return std::round(x * pow(10, n)) / pow(10, n);
-}
+double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
 
-template<typename T>
+template <typename T>
 double calculateMean(const std::vector<T> & v)
 {
-  if (v.size() == 0) {return 0;}
+  if (v.size() == 0) {
+    return 0;
+  }
 
   double mean = 0;
   for (const T & t : v) {
@@ -47,10 +48,12 @@ double calculateMean(const std::vector<T> & v)
   return mean;
 }
 
-template<typename T>
+template <typename T>
 double calculateStd(const std::vector<T> & v)
 {
-  if (v.size() == 0) {return 0;}
+  if (v.size() == 0) {
+    return 0;
+  }
 
   double mean = calculateMean(v);
   double error = 0;
@@ -60,69 +63,65 @@ double calculateStd(const std::vector<T> & v)
   return std::sqrt(error / v.size());
 }
 
-template<typename T>
+template <typename T>
 double calculateStdMeanConst(const std::vector<T> & v, const double mean)
 {
-  if (v.size() == 0) {return 0;}
+  if (v.size() == 0) {
+    return 0;
+  }
 
   double error = 0;
   for (const T & t : v) {
     error += pow(t - mean, 2);
   }
-  return std::sqrt(error / v.size() );
+  return std::sqrt(error / v.size());
 }
 
 struct CompareMsgTimestamp
 {
-  template<typename T1>
+  template <typename T1>
   bool operator()(T1 const & t1, double const & t2) const
   {
     return rclcpp::Time(t1.header.stamp).seconds() < t2;
   }
 
-  template<typename T2>
+  template <typename T2>
   bool operator()(double const & t1, T2 const & t2) const
   {
     return t1 < rclcpp::Time(t2.header.stamp).seconds();
   }
 
-  template<typename T1, typename T2>
+  template <typename T1, typename T2>
   bool operator()(T1 const & t1, T2 const & t2) const
   {
     return rclcpp::Time(t1.header.stamp).seconds() < rclcpp::Time(t2.header.stamp).seconds();
   }
 
-  template<typename T1>
+  template <typename T1>
   bool operator()(T1 const & t1, rclcpp::Time const & t2) const
   {
     return rclcpp::Time(t1.header.stamp).seconds() < t2.seconds();
   }
 
-  template<typename T2>
+  template <typename T2>
   bool operator()(rclcpp::Time const & t1, T2 const & t2) const
   {
     return t1.seconds() < rclcpp::Time(t2.header.stamp).seconds();
   }
 };
 
-template<typename T>
+template <typename T>
 std::vector<T> extractSubTrajectory(
-  const std::vector<T> & msg_list,
-  const rclcpp::Time t0, const rclcpp::Time t1
-) {
-  auto start_iter = std::lower_bound(
-    msg_list.begin(), msg_list.end(),
-    t0, CompareMsgTimestamp());
-  auto end_iter = std::lower_bound(
-    msg_list.begin(), msg_list.end(),
-    t1, CompareMsgTimestamp());
+  const std::vector<T> & msg_list, const rclcpp::Time t0, const rclcpp::Time t1)
+{
+  auto start_iter = std::lower_bound(msg_list.begin(), msg_list.end(), t0, CompareMsgTimestamp());
+  auto end_iter = std::lower_bound(msg_list.begin(), msg_list.end(), t1, CompareMsgTimestamp());
   std::vector<T> msg_list_sub(start_iter, end_iter);
   return msg_list_sub;
 }
 
 DeviationEstimator::DeviationEstimator(
-  const std::string & node_name,
-  const rclcpp::NodeOptions & node_options)
+  const std::string & node_name, const rclcpp::NodeOptions & node_options)
 : rclcpp::Node(node_name, node_options),
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
@@ -134,12 +133,9 @@ DeviationEstimator::DeviationEstimator(
   vx_threshold_ = declare_parameter("vx_threshold", 1.5);
   wz_threshold_ = declare_parameter("wz_threshold", 0.01);
   estimation_freq_ = declare_parameter("estimation_freq", 0.5);
-  use_pose_with_covariance_ =
-    declare_parameter("use_pose_with_covariance", true);
-  use_twist_with_covariance_ =
-    declare_parameter("use_twist_with_covariance", true);
-  use_predefined_coef_vx_ =
-    declare_parameter("use_predefined_coef_vx", false);
+  use_pose_with_covariance_ = declare_parameter("use_pose_with_covariance", true);
+  use_twist_with_covariance_ = declare_parameter("use_twist_with_covariance", true);
+  use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
   results_path_ = declare_parameter("results_path", "test");
   imu_link_frame_ = declare_parameter("imu_link_frame", "tamagawa/imu_link");
@@ -152,31 +148,21 @@ DeviationEstimator::DeviationEstimator(
     this->get_node_base_interface()->get_context());
   this->get_node_timers_interface()->add_timer(timer_control_, nullptr);
 
-  sub_pose_with_cov_ =
-    create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+  sub_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_pose_with_covariance", 1,
     std::bind(&DeviationEstimator::callbackPoseWithCovariance, this, _1));
-  sub_twist_with_cov_raw_ =
-    create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_twist_with_covariance_raw",
-    1,
+  sub_twist_with_cov_raw_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
+    "in_twist_with_covariance_raw", 1,
     std::bind(&DeviationEstimator::callbackTwistWithCovarianceRaw, this, _1));
-  sub_pose_ =
-    create_subscription<geometry_msgs::msg::PoseStamped>(
-    "in_pose", 1,
-    std::bind(&DeviationEstimator::callbackPose, this, _1));
-  sub_twist_raw_ =
-    create_subscription<geometry_msgs::msg::TwistStamped>(
-    "in_twist_raw",
-    1,
-    std::bind(&DeviationEstimator::callbackTwistRaw, this, _1));
+  sub_pose_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+    "in_pose", 1, std::bind(&DeviationEstimator::callbackPose, this, _1));
+  sub_twist_raw_ = create_subscription<geometry_msgs::msg::TwistStamped>(
+    "in_twist_raw", 1, std::bind(&DeviationEstimator::callbackTwistRaw, this, _1));
 
-  pub_coef_vx_ =
-    create_publisher<std_msgs::msg::Float64>("estimated_coef_vx", 1);
+  pub_coef_vx_ = create_publisher<std_msgs::msg::Float64>("estimated_coef_vx", 1);
   pub_bias_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_bias_angular_velocity", 1);
-  pub_stddev_vx_ =
-    create_publisher<std_msgs::msg::Float64>("estimated_stddev_vx", 1);
+  pub_stddev_vx_ = create_publisher<std_msgs::msg::Float64>("estimated_stddev_vx", 1);
   pub_stddev_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
@@ -188,9 +174,7 @@ DeviationEstimator::DeviationEstimator(
   tf_base2imu_ptr_ = nullptr;
   saveEstimatedParameters();
 
-  DEBUG_INFO(
-    this->get_logger(),
-    "[Deviation Estimator] launch success");
+  DEBUG_INFO(this->get_logger(), "[Deviation Estimator] launch success");
 }
 
 void DeviationEstimator::callbackPoseWithCovariance(
@@ -267,22 +251,15 @@ void DeviationEstimator::timerCallback()
 
   // Publish angular velocity bias
   if (bias_angvel_[2].second != 0) {
-    bias_angvel_base_.vector.x =
-      bias_angvel_[0].first / bias_angvel_[0].second;
-    bias_angvel_base_.vector.y =
-      bias_angvel_[1].first / bias_angvel_[1].second;
-    bias_angvel_base_.vector.z =
-      bias_angvel_[2].first / bias_angvel_[2].second;
+    bias_angvel_base_.vector.x = bias_angvel_[0].first / bias_angvel_[0].second;
+    bias_angvel_base_.vector.y = bias_angvel_[1].first / bias_angvel_[1].second;
+    bias_angvel_base_.vector.z = bias_angvel_[2].first / bias_angvel_[2].second;
 
     if (tf_base2imu_ptr_ == nullptr) {
       tf_base2imu_ptr_ = std::make_shared<geometry_msgs::msg::TransformStamped>();
       getTransform(imu_link_frame_, output_frame_, tf_base2imu_ptr_);
     }
-    tf2::doTransform(
-      bias_angvel_base_,
-      bias_angvel_imu_,
-      *tf_base2imu_ptr_
-    );
+    tf2::doTransform(bias_angvel_base_, bias_angvel_imu_, *tf_base2imu_ptr_);
 
     pub_bias_angvel_->publish(bias_angvel_imu_.vector);
   }
@@ -299,7 +276,7 @@ void DeviationEstimator::timerCallback()
 
 void DeviationEstimator::updateBias()
 {
-  if(twist_all_.empty()) return;
+  if (twist_all_.empty()) return;
   rclcpp::Time t0_rclcpp_time = rclcpp::Time(pose_buf_.front().header.stamp);
   rclcpp::Time t1_rclcpp_time = rclcpp::Time(pose_buf_.back().header.stamp);
   if (t1_rclcpp_time <= t0_rclcpp_time) return;
@@ -321,18 +298,18 @@ void DeviationEstimator::updateBias()
     double dx = pose_buf_.back().pose.position.x - pose_buf_.front().pose.position.x;
     double dy = pose_buf_.back().pose.position.y - pose_buf_.front().pose.position.y;
     double d_coef_vx = (d_pos.first * dx + d_pos.second * dy) /
-      (d_pos.first * d_pos.first + d_pos.second * d_pos.second);
+                       (d_pos.first * d_pos.first + d_pos.second * d_pos.second);
 
-    double time_factor = (
-      rclcpp::Time(twist_buf.back().header.stamp).seconds() -
-      rclcpp::Time(twist_buf.front().header.stamp).seconds()
-      ) / (t1 - t0);
+    double time_factor = (rclcpp::Time(twist_buf.back().header.stamp).seconds() -
+                          rclcpp::Time(twist_buf.front().header.stamp).seconds()) /
+                         (t1 - t0);
     coef_vx_.first += d_coef_vx * time_factor;
     coef_vx_.second += 1;
     coef_vx_list_.push_back(d_coef_vx);
   } else {
     DEBUG_INFO(
-      this->get_logger(), "[Deviation Estimator] coef_vx estimation is not updated since the vehicle is not moving.");
+      this->get_logger(),
+      "[Deviation Estimator] coef_vx estimation is not updated since the vehicle is not moving.");
   }
 
   std::vector<double> error_rpy = calculateErrorRPY(pose_buf_, twist_buf, false);
@@ -347,12 +324,10 @@ void DeviationEstimator::updateBias()
 
 void DeviationEstimator::estimateStddev()
 {
-  double est_window_duration = 4.0; // Hard coded
+  double est_window_duration = 4.0;  // Hard coded
 
   auto duration = rclcpp::Duration(
-    int(est_window_duration / 1),
-    int((est_window_duration - est_window_duration / 1) * 1e9)
-  );
+    int(est_window_duration / 1), int((est_window_duration - est_window_duration / 1) * 1e9));
 
   std::vector<double> error_x_list;
   std::vector<std::vector<double>> error_rpy_lists;
@@ -364,16 +339,15 @@ void DeviationEstimator::estimateStddev()
 
   // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
   while (t1_rclcpp_time < rclcpp::Time(pose_all_.back().header.stamp)) {
-
     std::vector<geometry_msgs::msg::PoseStamped> pose_sub_traj =
       extractSubTrajectory(pose_all_, t0_rclcpp_time, t1_rclcpp_time);
 
-    if (rclcpp::Time(pose_sub_traj.back().header.stamp) > rclcpp::Time(pose_sub_traj.front().header.stamp)) {
+    if (
+      rclcpp::Time(pose_sub_traj.back().header.stamp) >
+      rclcpp::Time(pose_sub_traj.front().header.stamp)) {
       std::vector<geometry_msgs::msg::TwistStamped> twist_sub_traj = extractSubTrajectory(
-        twist_all_,
-        rclcpp::Time(pose_sub_traj.front().header.stamp),
-        rclcpp::Time(pose_sub_traj.back().header.stamp)
-      );
+        twist_all_, rclcpp::Time(pose_sub_traj.front().header.stamp),
+        rclcpp::Time(pose_sub_traj.back().header.stamp));
 
       // calculate Error theta only if the vehicle is moving
       double x0 = pose_sub_traj.front().pose.position.x;
@@ -396,7 +370,8 @@ void DeviationEstimator::estimateStddev()
       mean_abs_wz /= twist_sub_traj.size();
       if (mean_abs_wz < wz_threshold_) {
         std::pair<double, double> d_pos = calculateErrorPos(pose_sub_traj, twist_sub_traj);
-        double distance_from_twist = std::sqrt(d_pos.first * d_pos.first + d_pos.second * d_pos.second);
+        double distance_from_twist =
+          std::sqrt(d_pos.first * d_pos.first + d_pos.second * d_pos.second);
         error_x_list.push_back(distance - distance_from_twist);
       }
     }
@@ -413,8 +388,7 @@ void DeviationEstimator::estimateStddev()
 
 std::pair<double, double> DeviationEstimator::calculateErrorPos(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-  const bool enable_bias)
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const bool enable_bias)
 {
   double t_prev = rclcpp::Time(twist_list.front().header.stamp).seconds();
   std::pair<double, double> d_pos;
@@ -424,9 +398,9 @@ std::pair<double, double> DeviationEstimator::calculateErrorPos(
     yaw += twist_list[i].twist.angular.z * (t_cur - t_prev);
     if (enable_bias) {
       d_pos.first += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::cos(yaw) *
-        coef_vx_.first / coef_vx_.second;
+                     coef_vx_.first / coef_vx_.second;
       d_pos.second += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::sin(yaw) *
-        coef_vx_.first / coef_vx_.second;
+                      coef_vx_.first / coef_vx_.second;
     } else {
       d_pos.first += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::cos(yaw);
       d_pos.second += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::sin(yaw);
@@ -438,8 +412,7 @@ std::pair<double, double> DeviationEstimator::calculateErrorPos(
 
 std::vector<double> DeviationEstimator::calculateErrorRPY(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-  const bool enable_bias)
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const bool enable_bias)
 {
   double roll_0 = 0, pitch_0 = 0, yaw_0 = 0;
   double roll_1 = 0, pitch_1 = 0, yaw_1 = 0;
@@ -454,12 +427,12 @@ std::vector<double> DeviationEstimator::calculateErrorRPY(
   for (std::size_t i = 0; i < twist_list.size() - 1; ++i) {
     double t_cur = rclcpp::Time(twist_list[i + 1].header.stamp).seconds();
     if (enable_bias) {
-      d_roll += (t_cur - t_prev) * (twist_list[i].twist.angular.x -
-        bias_angvel_[0].first / bias_angvel_[0].second);
-      d_pitch += (t_cur - t_prev) * (twist_list[i].twist.angular.y -
-        bias_angvel_[1].first / bias_angvel_[1].second);
-      d_yaw += (t_cur - t_prev) * (twist_list[i].twist.angular.z -
-        bias_angvel_[2].first / bias_angvel_[2].second);
+      d_roll += (t_cur - t_prev) *
+                (twist_list[i].twist.angular.x - bias_angvel_[0].first / bias_angvel_[0].second);
+      d_pitch += (t_cur - t_prev) *
+                 (twist_list[i].twist.angular.y - bias_angvel_[1].first / bias_angvel_[1].second);
+      d_yaw += (t_cur - t_prev) *
+               (twist_list[i].twist.angular.z - bias_angvel_[2].first / bias_angvel_[2].second);
     } else {
       d_roll += (t_cur - t_prev) * twist_list[i].twist.angular.x;
       d_pitch += (t_cur - t_prev) * twist_list[i].twist.angular.y;
@@ -467,9 +440,9 @@ std::vector<double> DeviationEstimator::calculateErrorRPY(
     }
     t_prev = t_cur;
   }
-  double error_roll = clipRadian(- roll_1 + roll_0 + d_roll);
-  double error_pitch = clipRadian(- pitch_1 + pitch_0 + d_pitch);
-  double error_yaw = clipRadian(- yaw_1 + yaw_0 + d_yaw);
+  double error_roll = clipRadian(-roll_1 + roll_0 + d_roll);
+  double error_pitch = clipRadian(-pitch_1 + pitch_0 + d_pitch);
+  double error_yaw = clipRadian(-yaw_1 + yaw_0 + d_yaw);
   std::vector<double> error_rpy = {error_roll, error_pitch, error_yaw};
   return error_rpy;
 }
@@ -477,9 +450,8 @@ std::vector<double> DeviationEstimator::calculateErrorRPY(
 void DeviationEstimator::estimateStddevPrime()
 {
   double stddev_coef_vx = calculateStd(coef_vx_list_);
-  stddev_vx_prime_ = std::sqrt(
-    pow(stddev_vx_, 2) +
-    pow(stddev_coef_vx, 2) * pow(dx_design_, 2) / dt_design_);
+  stddev_vx_prime_ =
+    std::sqrt(pow(stddev_vx_, 2) + pow(stddev_coef_vx, 2) * pow(dx_design_, 2) / dt_design_);
 
   std_msgs::msg::Float64 stddev_vx_msg;
   stddev_vx_msg.data = stddev_vx_prime_;
@@ -489,11 +461,9 @@ void DeviationEstimator::estimateStddevPrime()
   // bias deviation into account) for angular velocities
   for (int rpy = 0; rpy < 3; rpy++) {
     double stddev_bias_dif_rpy = calculateStdMeanConst(
-      bias_angvel_list_[rpy],
-      bias_angvel_[rpy].first / bias_angvel_[rpy].second
-    );
-    stddev_angvel_prime_base_[rpy] = std::sqrt(pow(stddev_angvel_base_[rpy], 2) +
-      dt_design_ * pow(stddev_bias_dif_rpy, 2));
+      bias_angvel_list_[rpy], bias_angvel_[rpy].first / bias_angvel_[rpy].second);
+    stddev_angvel_prime_base_[rpy] =
+      std::sqrt(pow(stddev_angvel_base_[rpy], 2) + dt_design_ * pow(stddev_bias_dif_rpy, 2));
   }
 
   // base_link -> imu_link conversion
@@ -549,15 +519,15 @@ void DeviationEstimator::saveEstimatedParameters()
   file << std::endl;
   file << "# Results expressed in imu_link" << std::endl;
   file << "# Copy the following to imu_corrector.param.yaml" << std::endl;
-  file << "angular_velocity_stddev_xx: " << double_round(stddev_angvel_prime_imu_[0], 5) << std::endl;
-  file << "angular_velocity_stddev_yy: " << double_round(stddev_angvel_prime_imu_[1], 5) << std::endl;
-  file << "angular_velocity_stddev_zz: " << double_round(stddev_angvel_prime_imu_[2], 5) << std::endl;
-  file << "angular_velocity_offset_x: " << double_round(
-    bias_angvel_imu_.vector.x, 6) << std::endl;
-  file << "angular_velocity_offset_y: " << double_round(
-    bias_angvel_imu_.vector.y, 6) << std::endl;
-  file << "angular_velocity_offset_z: " << double_round(
-    bias_angvel_imu_.vector.z, 6) << std::endl;
+  file << "angular_velocity_stddev_xx: " << double_round(stddev_angvel_prime_imu_[0], 5)
+       << std::endl;
+  file << "angular_velocity_stddev_yy: " << double_round(stddev_angvel_prime_imu_[1], 5)
+       << std::endl;
+  file << "angular_velocity_stddev_zz: " << double_round(stddev_angvel_prime_imu_[2], 5)
+       << std::endl;
+  file << "angular_velocity_offset_x: " << double_round(bias_angvel_imu_.vector.x, 6) << std::endl;
+  file << "angular_velocity_offset_y: " << double_round(bias_angvel_imu_.vector.y, 6) << std::endl;
+  file << "angular_velocity_offset_z: " << double_round(bias_angvel_imu_.vector.z, 6) << std::endl;
 
   file.close();
 }

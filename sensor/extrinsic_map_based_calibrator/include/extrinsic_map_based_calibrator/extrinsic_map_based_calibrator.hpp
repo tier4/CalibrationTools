@@ -15,32 +15,32 @@
 #ifndef EXTRINSIC_MAP_BASED_CALIBRATOR__EXTRINSIC_MAP_BASED_CALIBRATOR_HPP_
 #define EXTRINSIC_MAP_BASED_CALIBRATOR__EXTRINSIC_MAP_BASED_CALIBRATOR_HPP_
 
-#include <string>
-#include <iostream>
-#include <memory>
-#include <mutex>
-#include <vector>
-
-#include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/point_cloud2.hpp"
-#include "rclcpp/clock.hpp"
-
 #include "pcl/PCLPointCloud2.h"
 #include "pcl/point_types.h"
 #include "pcl/registration/gicp.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl_ros/transforms.hpp"
-#include "tf2_ros/transform_listener.h"
+#include "rclcpp/clock.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
+
+#include "sensor_msgs/msg/point_cloud2.hpp"
+
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
 #ifdef ROS_DISTRO_GALACTIC
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #else
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #endif
-#include "tier4_calibration_msgs/srv/extrinsic_calibrator.hpp"
 #include "extrinsic_map_based_calibrator/extrinsic_map_based_preprocessing.hpp"
 #include "extrinsic_map_based_calibrator/grid_search_matching.hpp"
 
+#include "tier4_calibration_msgs/srv/extrinsic_calibrator.hpp"
 
 namespace extrinsic_map_base_calibrator
 {
@@ -70,6 +70,7 @@ private:
   sensor_msgs::msg::PointCloud2 calibrated_pointcloud_msg_;
 
   bool is_debug_pub_ = true;
+  bool is_calibration_area_map_ = true;
 
   matchingResult calibrated_sensor_result_;
 
@@ -80,27 +81,27 @@ public:
   explicit ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptions & node_options);
   bool mapBasedCalibration(const tf2::Transform & tf_initial_pose);
   bool preprocessing(
-    PointCloudT::Ptr & pcl_map,
-    PointCloudT::Ptr & pcl_map_without_wall,
+    PointCloudT::Ptr & pcl_map, PointCloudT::Ptr & pcl_map_without_wall,
     PointCloudT::Ptr & pcl_sensor, const tf2::Transform & tf_initial_pose);
+  bool preprocessing(
+    PointCloudT::Ptr & pcl_map, PointCloudT::Ptr & pcl_sensor,
+    const tf2::Transform & tf_initial_pose);
   bool convertFromROSMsg(
-    PointCloudT::Ptr & pcl_map,
-    PointCloudT::Ptr & pcl_map_without_wall,
-    PointCloudT::Ptr & pcl_sensor);
+    PointCloudT::Ptr & pcl_pointcloud, const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
   void targetMapWithWallCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   void targetMapWithoutWallCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   void sourcePointcloudCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   void publishPointCloud(
-    const PointCloudT::Ptr & pcl_map,
-    const PointCloudT::Ptr & pcl_map_without_wall,
-    const PointCloudT::Ptr & pcl_sensor,
-    const PointCloudT::Ptr & pcl_sensor_without_wall,
+    const PointCloudT::Ptr & pcl_map, const PointCloudT::Ptr & pcl_map_without_wall,
+    const PointCloudT::Ptr & pcl_sensor, const PointCloudT::Ptr & pcl_sensor_without_wall,
     const PointCloudT::Ptr & pcl_result);
-  void publishPointCloud(const PointCloudT::Ptr & pcl_pointcloud,
-  const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & pub);
+  void publishPointCloud(
+    const PointCloudT::Ptr & pcl_pointcloud,
+    const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & pub);
   void requestReceivedCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+  void printTransform(const tf2::Transform & tf);
 };
 
 }  // namespace extrinsic_map_base_calibrator

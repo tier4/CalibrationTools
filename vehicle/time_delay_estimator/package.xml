@@ -10,16 +10,16 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <!--ros depends-->
+  <depend>autoware_auto_vehicle_msgs</depend>
+  <depend>calibration_adapter</depend>
+  <depend>eigen</depend>
+  <depend>estimator_utils</depend>
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
-  <!--ros msg depends-->
-  <depend>autoware_auto_vehicle_msgs</depend>
-  <depend>tier4_calibration_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>estimator_utils</depend>
-  <depend>calibration_adapter</depend>
+  <depend>tier4_calibration_msgs</depend>
+  <!--ros msg depends-->
   <!--other depends-->
-  <depend>eigen</depend>
 
   <exec_depend>plotjuggler</exec_depend>
   <exec_depend>plotjuggler_ros</exec_depend>

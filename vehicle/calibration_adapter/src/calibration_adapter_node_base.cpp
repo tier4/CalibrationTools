@@ -14,12 +14,13 @@
 // limitations under the License.
 //
 
-#include <tf2/utils.h>
-#include <memory>
 #include "calibration_adapter/calibration_adapter_node_base.hpp"
 
-CalibrationAdapterNodeBase::CalibrationAdapterNodeBase()
-: Node("calibration_adapter")
+#include <tf2/utils.h>
+
+#include <memory>
+
+CalibrationAdapterNodeBase::CalibrationAdapterNodeBase() : Node("calibration_adapter")
 {
   using std::placeholders::_1;
 
@@ -28,36 +29,28 @@ CalibrationAdapterNodeBase::CalibrationAdapterNodeBase()
   rclcpp::QoS durable_qos(queue_size);
   durable_qos.transient_local();  // option for latching
 
-  pub_accel_status_ =
-    create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
+  pub_accel_status_ = create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
     "~/output/accel_status", durable_qos);
-  pub_brake_status_ =
-    create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
+  pub_brake_status_ = create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
     "~/output/brake_status", durable_qos);
-  pub_steer_status_ =
-    create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
+  pub_steer_status_ = create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
     "~/output/steer_status", durable_qos);
-  pub_accel_cmd_ =
-    create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
+  pub_accel_cmd_ = create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
     "~/output/accel_cmd", durable_qos);
-  pub_brake_cmd_ =
-    create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
+  pub_brake_cmd_ = create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
     "~/output/brake_cmd", durable_qos);
-  pub_steer_cmd_ =
-    create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
+  pub_steer_cmd_ = create_publisher<tier4_calibration_msgs::msg::Float32Stamped>(
     "~/output/steer_cmd", durable_qos);
 
   // steering angle
   pub_steering_angle_status_ =
-    create_publisher<Float32Stamped>(
-    "~/output/steering_angle_status", durable_qos);
+    create_publisher<Float32Stamped>("~/output/steering_angle_status", durable_qos);
   sub_steering_angle_status_ = create_subscription<SteeringAngleStatus>(
-    "~/input/steering_angle_status", queue_size, std::bind(
-      &CalibrationAdapterNodeBase::callbackSteeringAngleStatus,
-      this, _1));
+    "~/input/steering_angle_status", queue_size,
+    std::bind(&CalibrationAdapterNodeBase::callbackSteeringAngleStatus, this, _1));
 
-  pub_is_engage_ = create_publisher<tier4_calibration_msgs::msg::BoolStamped>(
-    "~/output/is_engage", durable_qos);
+  pub_is_engage_ =
+    create_publisher<tier4_calibration_msgs::msg::BoolStamped>("~/output/is_engage", durable_qos);
 
   sub_engage_status_ = create_subscription<autoware_auto_vehicle_msgs::msg::Engage>(
     "~/input/is_engage", queue_size,
@@ -79,8 +72,7 @@ void CalibrationAdapterNodeBase::callbackSteeringAngleStatus(
   pub_steering_angle_status_->publish(steer_status_msg);
 }
 
-void CalibrationAdapterNodeBase::onActuationCmd(
-  const ActuationCommandStamped::ConstSharedPtr msg)
+void CalibrationAdapterNodeBase::onActuationCmd(const ActuationCommandStamped::ConstSharedPtr msg)
 {
   Float32Stamped brake_msgs;
   brake_msgs.header = msg->header;
@@ -98,8 +90,7 @@ void CalibrationAdapterNodeBase::onActuationCmd(
   pub_steer_cmd_->publish(steer_msgs);
 }
 
-void CalibrationAdapterNodeBase::onActuationStatus(
-  const ActuationStatusStamped::ConstSharedPtr msg)
+void CalibrationAdapterNodeBase::onActuationStatus(const ActuationStatusStamped::ConstSharedPtr msg)
 {
   Float32Stamped accel_msgs;
   accel_msgs.header = msg->header;
@@ -117,8 +108,7 @@ void CalibrationAdapterNodeBase::onActuationStatus(
   pub_steer_status_->publish(steer_msgs);
 }
 
-void CalibrationAdapterNodeBase::onEngageStatus(
-  const EngageStatus::SharedPtr msg)
+void CalibrationAdapterNodeBase::onEngageStatus(const EngageStatus::SharedPtr msg)
 {
   BoolStamped engage_msgs;
   engage_msgs.data = msg->engage;

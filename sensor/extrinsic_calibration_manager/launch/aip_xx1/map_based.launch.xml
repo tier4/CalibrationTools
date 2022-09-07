@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <arg name="map_path" default="(env HOME)/map/"/>
+  <arg name="map_calibration_area_file" default="map_calibration_area.pcd"/>
+  <arg name="use_calibration_area_map" default="true"/>
+  <arg name="calibration_rviz" default="true"/>
+  <let name="sensor_model" value="aip_xx1"/>
+
+  <!-- rviz -->
+  <node
+    pkg="rviz2"
+    exec="rviz2"
+    name="rviz2"
+    output="screen"
+    args="
+        -d $(find-pkg-share extrinsic_map_based_calibrator)/config/$(var sensor_model)/map_based_calib.rviz"
+    if="$(var calibration_rviz)"
+  />
+
+  <group>
+    <push-ros-namespace namespace="sensor_kit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/map_based_sensor_kit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)"/>
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="sensors"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/map_based_sensors.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)"/>
+    </include>
+  </group>
+
+  <!-- Map -->
+  <group if="$(var use_calibration_area_map)">
+    <push-ros-namespace namespace="sensor_kit"/>
+    <include file="$(find-pkg-share extrinsic_map_based_calibrator)/launch/map.launch.py">
+      <arg name="pointcloud_map_path" value="$(var map_path)/$(var map_calibration_area_file)"/>
+    </include>
+  </group>
+</launch>

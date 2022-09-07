@@ -15,14 +15,9 @@
 #ifndef DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 #define DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 
-#include <chrono>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <queue>
-#include <utility>
-#include <string>
-#include <vector>
+#include "rclcpp/rclcpp.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.h"
 
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -31,25 +26,30 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "tier4_debug_msgs/msg/float64_stamped.hpp"
-#include "tier4_debug_msgs/msg/float64_multi_array_stamped.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/header.hpp"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/utils.h"
+#include "tier4_debug_msgs/msg/float64_multi_array_stamped.hpp"
+#include "tier4_debug_msgs/msg/float64_stamped.hpp"
+
 #include <tf2/transform_datatypes.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
+
+#include <chrono>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <queue>
+#include <string>
+#include <utility>
+#include <vector>
 
 #ifdef ROS_DISTRO_GALACTIC
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #else
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
-
-
 
 class DeviationEstimator : public rclcpp::Node
 {
@@ -58,11 +58,11 @@ public:
 
 private:
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
-    sub_pose_;   //!< @brief measurement pose subscriber
+    sub_pose_;  //!< @brief measurement pose subscriber
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr
     sub_twist_raw_;  //!< @brief measurement twist subscriber
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    sub_pose_with_cov_;   //!< @brief measurement pose with covariance subscriber
+    sub_pose_with_cov_;  //!< @brief measurement pose with covariance subscriber
   rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
     sub_twist_with_cov_raw_;  //!< @brief measurement twist with covariance subscriber
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_coef_vx_;
@@ -75,7 +75,7 @@ private:
   tf2_ros::TransformListener tf_listener_;
 
   bool show_debug_info_;
-  bool use_pose_with_covariance_;  //!< @brief  use covariance in pose_with_covariance message
+  bool use_pose_with_covariance_;   //!< @brief  use covariance in pose_with_covariance message
   bool use_twist_with_covariance_;  //!< @brief  use covariance in twist_with_covariance message
   bool use_predefined_coef_vx_;
   double predefined_coef_vx_;
@@ -115,7 +115,8 @@ private:
   /**
    * @brief set twistWithCovariance measurement
    */
-  void callbackTwistWithCovarianceRaw(geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
+  void callbackTwistWithCovarianceRaw(
+    geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
 
   /**
    * @brief set pose measurement
@@ -133,46 +134,46 @@ private:
   void timerCallback();
 
   /**
-    * @brief stock bias for every small sub-trajectory
-    */
+   * @brief stock bias for every small sub-trajectory
+   */
   void updateBias();
 
   /**
-    * @brief clip radian
-    */
+   * @brief clip radian
+   */
   double clipRadian(double rad);
 
   /**
-    * @brief save the results to a text file
-    */
+   * @brief save the results to a text file
+   */
   void saveEstimatedParameters();
 
   /**
-    * @brief get yaw from quaternion
-    */
+   * @brief get yaw from quaternion
+   */
   double getYawFromQuat(const geometry_msgs::msg::Quaternion quat_msg);
 
   /**
-    * @brief get stddev
-    */
+   * @brief get stddev
+   */
   void estimateStddev();
 
   /**
-    * @brief get stddev prime
-    */
+   * @brief get stddev prime
+   */
   void estimateStddevPrime();
 
   /**
-    * @brief calculate diff x
-    */
+   * @brief calculate diff x
+   */
   std::pair<double, double> calculateErrorPos(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
     const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
     const bool enable_bias = false);
 
   /**
-    * @brief calculate diff RPY
-    */
+   * @brief calculate diff RPY
+   */
   std::vector<double> calculateErrorRPY(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
     const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
@@ -182,6 +183,6 @@ private:
     const std::string & target_frame, const std::string & source_frame,
     const geometry_msgs::msg::TransformStamped::SharedPtr transform_stamped_ptr);
 
-//   friend class DeviationEstimatorTestSuite;  // for test code
+  //   friend class DeviationEstimatorTestSuite;  // for test code
 };
 #endif  // DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_

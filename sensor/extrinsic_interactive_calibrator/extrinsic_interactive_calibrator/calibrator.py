@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from extrinsic_interactive_calibrator.utils import cv_to_transformation_matrix, \
-    tf_message_to_transform_matrix, transform_matrix_to_cv
 import cv2
+from extrinsic_interactive_calibrator.utils import cv_to_transformation_matrix
+from extrinsic_interactive_calibrator.utils import tf_message_to_transform_matrix
+from extrinsic_interactive_calibrator.utils import transform_matrix_to_cv
 import numpy as np
 
-class Calibrator:
 
+class Calibrator:
     def __init__(self):
 
         # Calibration parameters
@@ -42,19 +43,20 @@ class Calibrator:
         self.inlier_error = inlier_error
 
     def set_camera_info(self, k, d):
-        self.k = np.array(k).reshape(3,3)
-        self.d = np.array(d).reshape(-1,)
+        self.k = np.array(k).reshape(3, 3)
+        self.d = np.array(d).reshape(
+            -1,
+        )
 
     def set_method(self, method):
 
-        if method == 'sqpnp':
+        if method == "sqpnp":
             self.flags = cv2.SOLVEPNP_SQPNP
         else:
             self.flags = None
 
     def set_ransac(self, use_ransac):
         self.use_ransac = use_ransac
-
 
     def calibrate(self, object_points, image_points):
 
@@ -75,11 +77,12 @@ class Calibrator:
             return self.calibrate_ransac(object_points, image_points)
 
         tvec = np.zeros((3,))
-        rvec = np.zeros((3,3))
+        rvec = np.zeros((3, 3))
 
         try:
             retval, rvec, tvec = cv2.solvePnP(
-                object_points, image_points, self.k, self.d, flags=self.flags)
+                object_points, image_points, self.k, self.d, flags=self.flags
+            )
         except Exception as e:
             pass
 
@@ -87,35 +90,35 @@ class Calibrator:
 
         return camera_to_lidar_transform
 
-
     def calibrate_ransac(self, object_points, image_points):
 
         num_points, dim = object_points.shape
 
         best_tvec = np.zeros((3,))
-        best_rvec = np.zeros((3,3))
+        best_rvec = np.zeros((3, 3))
         best_inliers = -1
         best_error = np.inf
 
         for iter in range(self.ransac_iters):
 
             indexes = np.random.choice(num_points, min(num_points, self.min_points))
-            object_points_iter = object_points[indexes,:]
-            image_points_iter = image_points[indexes,:]
+            object_points_iter = object_points[indexes, :]
+            image_points_iter = image_points[indexes, :]
 
             try:
                 retval, iter_rvec, iter_tvec = cv2.solvePnP(
-                    object_points_iter, image_points_iter, self.k, self.d, flags=self.flags)
+                    object_points_iter, image_points_iter, self.k, self.d, flags=self.flags
+                )
             except Exception as e:
                 continue
 
             reproj_error_iter, inliers = self.calculate_reproj_error(
-                object_points, image_points, tvec = iter_tvec, rvec = iter_rvec)
+                object_points, image_points, tvec=iter_tvec, rvec=iter_rvec
+            )
 
             if (
-                (inliers.sum() == best_inliers and reproj_error_iter < best_error)
-                or inliers.sum() > best_inliers
-               ):
+                inliers.sum() == best_inliers and reproj_error_iter < best_error
+            ) or inliers.sum() > best_inliers:
                 best_error = reproj_error_iter
                 best_inliers = inliers.sum()
                 best_tvec = iter_tvec
@@ -125,9 +128,9 @@ class Calibrator:
 
         return camera_to_lidar_transform
 
-
-    def calculate_reproj_error(self, object_points, image_points,
-        tvec = None, rvec = None, tf_msg = None, transform_matrix = None):
+    def calculate_reproj_error(
+        self, object_points, image_points, tvec=None, rvec=None, tf_msg=None, transform_matrix=None
+    ):
 
         if isinstance(object_points, list) and isinstance(image_points, list):
             if len(object_points) == 0:
@@ -150,7 +153,7 @@ class Calibrator:
         reproj_error = np.linalg.norm(projected_points - image_points, axis=1)
 
         if self.use_ransac:
-            inliers = (reproj_error <= self.inlier_error)
+            inliers = reproj_error <= self.inlier_error
         else:
             inliers = np.ones_like(reproj_error)
 

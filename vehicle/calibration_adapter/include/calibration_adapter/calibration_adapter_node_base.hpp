@@ -20,11 +20,11 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include "autoware_auto_vehicle_msgs/msg/engage.hpp"
+#include "autoware_auto_vehicle_msgs/msg/steering_report.hpp"
 #include "tier4_calibration_msgs/msg/bool_stamped.hpp"
 #include "tier4_calibration_msgs/msg/float32_stamped.hpp"
 #include "tier4_vehicle_msgs/msg/actuation_command_stamped.hpp"
 #include "tier4_vehicle_msgs/msg/actuation_status_stamped.hpp"
-#include "autoware_auto_vehicle_msgs/msg/steering_report.hpp"
 
 class CalibrationAdapterNodeBase : public rclcpp::Node
 {

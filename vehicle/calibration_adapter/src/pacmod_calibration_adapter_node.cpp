@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 
-#include <tf2/utils.h>
-#include <memory>
 #include "calibration_adapter/pacmod_calibration_adapter_node.hpp"
+
+#include <tf2/utils.h>
+
+#include <memory>
 
 PacmodCalibrationAdapterNode::PacmodCalibrationAdapterNode()
 {
@@ -27,9 +29,7 @@ PacmodCalibrationAdapterNode::PacmodCalibrationAdapterNode()
   rclcpp::QoS durable_qos(queue_size);
   durable_qos.transient_local();  // option for latching
 
-  pub_handle_status_ =
-    create_publisher<Float32Stamped>(
-    "~/output/handle_status", durable_qos);
+  pub_handle_status_ = create_publisher<Float32Stamped>("~/output/handle_status", durable_qos);
   sub_handle_status_ = create_subscription<SteeringWheelStatusStamped>(
     "~/input/handle_status", queue_size,
     std::bind(&PacmodCalibrationAdapterNode::callbackSteeringWheelStatus, this, _1));
@@ -40,11 +40,10 @@ void PacmodCalibrationAdapterNode::callbackSteeringWheelStatus(
 {
   tier4_calibration_msgs::msg::Float32Stamped steer_msgs;
   steer_msgs.header.stamp = msg->stamp;
-  steer_msgs.header.frame_id ="base_link";
+  steer_msgs.header.frame_id = "base_link";
   steer_msgs.data = msg->data;
   pub_handle_status_->publish(steer_msgs);
 }
-
 
 int main(int argc, char ** argv)
 {

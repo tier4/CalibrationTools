@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR_EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR_EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
+#define EXTRINSIC_TAG_BASED_CALIBRATOR__EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
 
 #include <extrinsic_tag_based_calibrator/calibration_estimator.hpp>
 #include <extrinsic_tag_based_calibrator/tag_calibrator_visualizer.hpp>
@@ -152,4 +152,4 @@ protected:
   double filtered_reproj_error_;
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR_EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_

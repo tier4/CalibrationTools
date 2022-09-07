@@ -15,10 +15,10 @@
 #include "extrinsic_calibration_manager/extrinsic_calibration_manager_node.hpp"
 
 #include <iomanip>
-#include <vector>
 #include <memory>
-#include <string>
 #include <sstream>
+#include <string>
+#include <vector>
 
 using namespace std::chrono_literals;
 
@@ -37,13 +37,13 @@ ExtrinsicCalibrationManagerNode::ExtrinsicCalibrationManagerNode(
   parent_frame_ = this->declare_parameter("parent_frame", "");
   child_frames_ = this->declare_parameter("child_frames", std::vector<std::string>());
   client_ns_ = this->declare_parameter("client_ns", "extrinsic_calibration");
+  threshold_ = this->declare_parameter("fitness_score_threshold", 10.0);
 }
 
 void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Request>
-  request,
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Response>
-  response)
+    response)
 {
   // open yaml file
   auto yaml_node = YAML::LoadFile(request->src_path);
@@ -56,9 +56,7 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
   for (const auto & child_frame : child_frames_) {
     TargetClient target_client;
     if (!createTargetClient(
-        yaml_node, parent_frame_, child_frame, client_ns_, callback_group_,
-        target_client))
-    {
+          yaml_node, parent_frame_, child_frame, client_ns_, callback_group_, target_client)) {
       rclcpp::shutdown();
     }
     target_clients_.push_back(target_client);
@@ -82,15 +80,15 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
     *req = target_client.request;
 
     auto cb = [&](rclcpp::Client<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedFuture
-        response_client) {
-        auto res = response_client.get();
-        target_client.response = *res;
-        target_client.estimated = true;
-        RCLCPP_INFO_STREAM(
-          this->get_logger(), "Received service message: " << target_client.child_frame <<
-            "(success = " << res->success <<
-            " score = " << res->score << ")");
-      };
+                    response_client) {
+      auto res = response_client.get();
+      target_client.response = *res;
+      target_client.estimated = true;
+      RCLCPP_INFO_STREAM(
+        this->get_logger(), "Received service message: " << target_client.child_frame
+                                                         << "(success = " << res->success
+                                                         << " score = " << res->score << ")");
+    };
 
     RCLCPP_INFO_STREAM(this->get_logger(), "Call service: " << target_client.child_frame);
     target_client.client->async_send_request(req, cb);
@@ -98,11 +96,12 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
 
   // wait for responses
   while (rclcpp::ok()) {
-    bool done = std::all_of(
-      target_clients_.begin(), target_clients_.end(), [](auto target_client) {
-        return target_client.estimated;
-      });
-    if (done) {break;}
+    bool done = std::all_of(target_clients_.begin(), target_clients_.end(), [](auto target_client) {
+      return target_client.estimated;
+    });
+    if (done) {
+      break;
+    }
     rclcpp::sleep_for(5s);
     RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for responses...");
   }
@@ -110,15 +109,28 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
   // dump yaml file
   dumpCalibrationConfig(request->dst_path, target_clients_);
 
-  // TODO(Akihito OHSATO): handling results of success/score
-  response->success = true;
-  response->score = 0.0;
+  bool success = true;
+  double max_score = -std::numeric_limits<double>::max();
+  for (auto & target_client : target_clients_) {
+    if (!target_client.response.success) {
+      success = false;
+    }
+    if (target_client.response.score > max_score) {
+      max_score = target_client.response.score;
+    }
+  }
+
+  if (max_score > threshold_) {
+    success = false;
+  }
+  response->success = success;
+  response->score = max_score;
 }
 
 bool ExtrinsicCalibrationManagerNode::createTargetClient(
-  const YAML::Node & yaml_node, const std::string & parent_frame,
-  const std::string & child_frame, const std::string & client_ns,
-  const rclcpp::CallbackGroup::SharedPtr & callback_group, TargetClient & target_client)
+  const YAML::Node & yaml_node, const std::string & parent_frame, const std::string & child_frame,
+  const std::string & client_ns, const rclcpp::CallbackGroup::SharedPtr & callback_group,
+  TargetClient & target_client)
 {
   target_client.parent_frame = parent_frame;
   target_client.child_frame = child_frame;
@@ -141,8 +153,7 @@ bool ExtrinsicCalibrationManagerNode::createTargetClient(
 }
 
 geometry_msgs::msg::Pose ExtrinsicCalibrationManagerNode::getPoseFromYaml(
-  const YAML::Node & yaml_node, const std::string & parent_frame,
-  const std::string & child_frame)
+  const YAML::Node & yaml_node, const std::string & parent_frame, const std::string & child_frame)
 {
   tf2::Vector3 pos(
     yaml_node[parent_frame][child_frame]["x"].as<double>(),
@@ -154,7 +165,8 @@ geometry_msgs::msg::Pose ExtrinsicCalibrationManagerNode::getPoseFromYaml(
     tier4_autoware_utils::createQuaternionFromRPY(
       yaml_node[parent_frame][child_frame]["roll"].as<double>(),
       yaml_node[parent_frame][child_frame]["pitch"].as<double>(),
-      yaml_node[parent_frame][child_frame]["yaw"].as<double>()), quat);
+      yaml_node[parent_frame][child_frame]["yaw"].as<double>()),
+    quat);
   return tier4_autoware_utils::transform2pose(toMsg(tf2::Transform(quat, pos)));
 }
 
@@ -183,11 +195,11 @@ bool ExtrinsicCalibrationManagerNode::dumpCalibrationConfig(
     rpy_y << std::setw(yaml_precision_) << std::fixed << rpy.y;
     rpy_z << std::setw(yaml_precision_) << std::fixed << rpy.z;
 
-    out << YAML::Key << target_client.child_frame << YAML::Value << YAML::BeginMap << YAML::Key <<
-      "x" << YAML::Value << xyz_x.str() << YAML::Key << "y" << YAML::Value << xyz_y.str() <<
-      YAML::Key << "z" << YAML::Value << xyz_z.str() << YAML::Key << "roll" << YAML::Value <<
-      rpy_x.str() << YAML::Key << "pitch" << YAML::Value << rpy_y.str() << YAML::Key << "yaw" <<
-      YAML::Value << rpy_z.str() << YAML::EndMap;
+    out << YAML::Key << target_client.child_frame << YAML::Value << YAML::BeginMap << YAML::Key
+        << "x" << YAML::Value << xyz_x.str() << YAML::Key << "y" << YAML::Value << xyz_y.str()
+        << YAML::Key << "z" << YAML::Value << xyz_z.str() << YAML::Key << "roll" << YAML::Value
+        << rpy_x.str() << YAML::Key << "pitch" << YAML::Value << rpy_y.str() << YAML::Key << "yaw"
+        << YAML::Value << rpy_z.str() << YAML::EndMap;
   }
 
   out << YAML::EndMap << YAML::EndMap;

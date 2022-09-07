@@ -15,23 +15,35 @@
 # limitations under the License.
 
 
-from extrinsic_interactive_calibrator.utils import decompose_transformation_matrix, \
-    transform_points
-import matplotlib.pyplot as plt
-from PySide2.QtWidgets import QGraphicsItem, QGraphicsView, QWidget
-from PySide2.QtGui import QColor, QPainter, QPen, QPixmap
-from PySide2.QtCore import QThread, QObject, QPoint, QRectF, QSize, Qt, Signal
 import copy
-import cv2
-import numpy as np
-import time
 import threading
+import time
+
+from PySide2.QtCore import QObject
+from PySide2.QtCore import QPoint
+from PySide2.QtCore import QRectF
+from PySide2.QtCore import QSize
+from PySide2.QtCore import QThread
+from PySide2.QtCore import Qt
+from PySide2.QtCore import Signal
+from PySide2.QtGui import QColor
+from PySide2.QtGui import QPainter
+from PySide2.QtGui import QPen
+from PySide2.QtGui import QPixmap
+from PySide2.QtWidgets import QGraphicsItem
+from PySide2.QtWidgets import QGraphicsView
+from PySide2.QtWidgets import QWidget
+import cv2
+from extrinsic_interactive_calibrator.utils import decompose_transformation_matrix
+from extrinsic_interactive_calibrator.utils import transform_points
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-def intensity_to_rainbow_qcolor(value, alpha = 1.0):
+def intensity_to_rainbow_qcolor(value, alpha=1.0):
 
     h = value * 5.0 + 1.0
-    i = h // 1 #floor(h)
+    i = h // 1  # floor(h)
     f = h - i
     if i % 2 == 0:
         f = 1.0 - f
@@ -47,12 +59,12 @@ def intensity_to_rainbow_qcolor(value, alpha = 1.0):
     elif i == 4:
         r, g, b = n, 1.0, 0.0
     elif i >= 5:
-        r ,g ,b = 1.0, n, 0
+        r, g, b = 1.0, n, 0
 
-    return QColor(int(255*r), int(255*g), int(255*b), int(255*alpha))
+    return QColor(int(255 * r), int(255 * g), int(255 * b), int(255 * alpha))
+
 
 class RenderingData:
-
     def __init__(self):
         self.image_to_lidar_transform = None
         self.image_to_lidar_translation = None
@@ -86,10 +98,10 @@ class RenderingData:
         self.k = None
         self.d = None
 
-class CustomQGraphicsView(QGraphicsView):
 
-    def __init__ (self, parent=None):
-        super(CustomQGraphicsView, self).__init__ (parent)
+class CustomQGraphicsView(QGraphicsView):
+    def __init__(self, parent=None):
+        super(CustomQGraphicsView, self).__init__(parent)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -126,14 +138,15 @@ class CustomQGraphicsView(QGraphicsView):
         delta = new_pos - old_pos
         self.translate(delta.x(), delta.y())
 
-class Renderer(QObject):
 
+class Renderer(QObject):
     def __init__(self, image_view):
         super().__init__()
         self.image_view = image_view
 
     def render(self):
         self.image_view.paintEventThread()
+
 
 class ImageView(QGraphicsItem, QObject):
 
@@ -164,7 +177,6 @@ class ImageView(QGraphicsItem, QObject):
         self.rendered_signal.connect(self.update2)
         self.render_request_signal.connect(self.renderer.render)
 
-
         self.line_pen = QPen()
         self.line_pen.setWidth(2)
         self.line_pen.setBrush(Qt.white)
@@ -191,14 +203,19 @@ class ImageView(QGraphicsItem, QObject):
         self.green_pen = QPen(Qt.green)
         self.green_pen.setBrush(Qt.green)
 
-        colormap_name = 'hsv'
+        colormap_name = "hsv"
         self.colormap_bins = 100
         self.colormap = plt.get_cmap(colormap_name, self.colormap_bins)
-        self.colormap = [(int(255*self.colormap(i)[2]),
-            int(255*self.colormap(i)[1]),
-            int(255*self.colormap(i)[0])) for i in range(self.colormap_bins)]
+        self.colormap = [
+            (
+                int(255 * self.colormap(i)[2]),
+                int(255 * self.colormap(i)[1]),
+                int(255 * self.colormap(i)[0]),
+            )
+            for i in range(self.colormap_bins)
+        ]
 
-        #self.setMinimumWidth(300)
+        # self.setMinimumWidth(300)
 
         self.update_count = 0
         self.render_count = 0
@@ -288,17 +305,18 @@ class ImageView(QGraphicsItem, QObject):
             self.data_ui.max_rendering_distance = value
         self.update()
 
-
     def set_current_point(self, point):
         with self.lock:
-            self.data_ui.current_object_point = None if point is None else point.reshape(1,3)
+            self.data_ui.current_object_point = None if point is None else point.reshape(1, 3)
         self.update()
 
     def set_transform(self, transform):
         with self.lock:
             self.data_ui.image_to_lidar_transform = transform
-            self.data_ui.image_to_lidar_translation, self.data_ui.image_to_lidar_rotation = \
-                decompose_transformation_matrix(transform)
+            (
+                self.data_ui.image_to_lidar_translation,
+                self.data_ui.image_to_lidar_rotation,
+            ) = decompose_transformation_matrix(transform)
         self.update()
 
     def pixmap(self):
@@ -329,12 +347,12 @@ class ImageView(QGraphicsItem, QObject):
 
             subsample = self.data_ui.subsample_factor
 
-            self.data_ui.pointcloud_xyz = self.data_ui.pointcloud_xyz[::subsample,:]
+            self.data_ui.pointcloud_xyz = self.data_ui.pointcloud_xyz[::subsample, :]
             self.data_ui.pointcloud_intensity = self.data_ui.pointcloud_intensity[::subsample]
 
     def set_camera_info(self, k, d):
         with self.lock:
-            self.data_ui.k = np.copy(k).reshape((3,3))
+            self.data_ui.k = np.copy(k).reshape((3, 3))
             self.data_ui.d = np.copy(d).reshape((-1,))
 
     def set_calibration_points(self, object_points, image_points):
@@ -372,7 +390,9 @@ class ImageView(QGraphicsItem, QObject):
             if self.rendered_image == None:
                 return QRectF(0, 0, 500, 500)
 
-            return QRectF(0, 0, self.rendered_image.size().width(), self.rendered_image.size().height())
+            return QRectF(
+                0, 0, self.rendered_image.size().width(), self.rendered_image.size().height()
+            )
 
     def paintEventThread(self):
 
@@ -398,7 +418,8 @@ class ImageView(QGraphicsItem, QObject):
             scaled_pix_size.scale(self.data_renderer.widget_size, Qt.KeepAspectRatio)
 
             rendered_image = self.pix.scaled(
-                scaled_pix_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                scaled_pix_size, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
 
         painter = QPainter(rendered_image)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -406,16 +427,21 @@ class ImageView(QGraphicsItem, QObject):
         painter.setPen(Qt.red)
 
         painter.drawLine(QPoint(0, 0), QPoint(0, scaled_pix_size.height()))
-        painter.drawLine(QPoint(0, scaled_pix_size.height()),
-            QPoint(scaled_pix_size.width(), scaled_pix_size.height()))
-        painter.drawLine(QPoint(scaled_pix_size.width(), scaled_pix_size.height()),
-            QPoint(scaled_pix_size.width(), 0))
+        painter.drawLine(
+            QPoint(0, scaled_pix_size.height()),
+            QPoint(scaled_pix_size.width(), scaled_pix_size.height()),
+        )
+        painter.drawLine(
+            QPoint(scaled_pix_size.width(), scaled_pix_size.height()),
+            QPoint(scaled_pix_size.width(), 0),
+        )
         painter.drawLine(QPoint(scaled_pix_size.width(), 0), QPoint(0, 0))
 
         self.width_image_to_widget_factor = float(scaled_pix_size.width()) / self.image_width
         self.height_image_to_widget_factor = float(scaled_pix_size.height()) / self.image_height
-        self.image_to_widget_factor = np.array([self.width_image_to_widget_factor,
-            self.height_image_to_widget_factor])
+        self.image_to_widget_factor = np.array(
+            [self.width_image_to_widget_factor, self.height_image_to_widget_factor]
+        )
 
         if self.data_renderer.draw_pointcloud_flag:
             self.draw_pointcloud(painter)
@@ -432,45 +458,55 @@ class ImageView(QGraphicsItem, QObject):
             self.rendered_image = rendered_image
             self.rendered_signal.emit()
 
-
     def draw_pointcloud(self, painter):
 
         if (
-            self.data_renderer.image_to_lidar_translation is None or
-            self.data_renderer.image_to_lidar_rotation is None
+            self.data_renderer.image_to_lidar_translation is None
+            or self.data_renderer.image_to_lidar_rotation is None
         ):
             return
 
         t1 = time.time()
 
-        pointcloud_ccs = transform_points(self.data_renderer.image_to_lidar_translation,
-            self.data_renderer.image_to_lidar_rotation, self.data_renderer.pointcloud_xyz)
+        pointcloud_ccs = transform_points(
+            self.data_renderer.image_to_lidar_translation,
+            self.data_renderer.image_to_lidar_rotation,
+            self.data_renderer.pointcloud_xyz,
+        )
 
         # Transform to the image coordinate system
-        tvec = np.zeros((3,1))
-        rvec = np.zeros((3,1))
+        tvec = np.zeros((3, 1))
+        rvec = np.zeros((3, 1))
         pointcloud_ics, _ = cv2.projectPoints(
-            pointcloud_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d)
+            pointcloud_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d
+        )
         pointcloud_ics = pointcloud_ics.reshape(-1, 2)
 
-        indexes = np.logical_and(np.logical_and(
-            np.logical_and(pointcloud_ics[:, 0] >= 0, pointcloud_ics[:, 0] < self.image_width),
-            np.logical_and(pointcloud_ics[:, 1] >= 0, pointcloud_ics[:, 1] < self.image_height)),
+        indexes = np.logical_and(
+            np.logical_and(
+                np.logical_and(pointcloud_ics[:, 0] >= 0, pointcloud_ics[:, 0] < self.image_width),
+                np.logical_and(pointcloud_ics[:, 1] >= 0, pointcloud_ics[:, 1] < self.image_height),
+            ),
             np.logical_and(
                 pointcloud_ccs[:, 2] >= self.data_renderer.min_rendering_distance,
-                pointcloud_ccs[:, 2] < self.data_renderer.max_rendering_distance))
+                pointcloud_ccs[:, 2] < self.data_renderer.max_rendering_distance,
+            ),
+        )
 
         # Transform (rescale) into the widet coordinate system
         pointdloud_z = pointcloud_ccs[indexes, 2]
         pointcloud_i = self.data_renderer.pointcloud_intensity[indexes]
 
-        if self.data_renderer.marker_units == 'meters':
-            factor = self.data_renderer.k[0, 0] * self.data_renderer.marker_size_meters * \
-                self.width_image_to_widget_factor
+        if self.data_renderer.marker_units == "meters":
+            factor = (
+                self.data_renderer.k[0, 0]
+                * self.data_renderer.marker_size_meters
+                * self.width_image_to_widget_factor
+            )
             scale_px = factor / pointdloud_z
         else:
             factor = self.data_renderer.marker_size_pixels * self.width_image_to_widget_factor
-            scale_px =  factor * np.ones_like(pointdloud_z)
+            scale_px = factor * np.ones_like(pointdloud_z)
 
         pointcloud_wcs = pointcloud_ics[indexes, :] * self.image_to_widget_factor
 
@@ -508,42 +544,52 @@ class ImageView(QGraphicsItem, QObject):
         painter.setPen(Qt.blue)
         painter.setBrush(Qt.blue)
 
-        draw_marker_f = \
+        draw_marker_f = (
             painter.drawEllipse if self.data_renderer.marker_type == "circles" else painter.drawRect
+        )
 
-        #print(f"Drawing pointcloud size: {scale_px.shape[0]}")
+        # print(f"Drawing pointcloud size: {scale_px.shape[0]}")
 
         for point, radius, color_channel in zip(pointcloud_wcs, scale_px, color_scalars):
 
             if self.data_renderer.color_channel == "intensity":
                 color = intensity_to_rainbow_qcolor(
-                    color_channel, self.data_renderer.rendering_alpha)
+                    color_channel, self.data_renderer.rendering_alpha
+                )
             else:
-                color_index = int(self.colormap_bins * \
-                    ((self.data_renderer.rainbow_offset + \
-                    (color_channel / self.data_renderer.rainbow_distance)) % 1.0))
+                color_index = int(
+                    self.colormap_bins
+                    * (
+                        (
+                            self.data_renderer.rainbow_offset
+                            + (color_channel / self.data_renderer.rainbow_distance)
+                        )
+                        % 1.0
+                    )
+                )
                 color = self.colormap[color_index]
                 color = QColor(
-                    color[0], color[1], color[2], int(255*self.data_renderer.rendering_alpha))
+                    color[0], color[1], color[2], int(255 * self.data_renderer.rendering_alpha)
+                )
 
             painter.setPen(color)
             painter.setBrush(color)
-            draw_marker_f(point[0] - 0.5*radius, point[1] - 0.5*radius, radius, radius)
+            draw_marker_f(point[0] - 0.5 * radius, point[1] - 0.5 * radius, radius, radius)
 
         t3 = time.time()
 
-        #print(f"Pointcloud preprocessing: {1000.0*(t2-t1):.2f}")
-        #print(f"Pointcloud rendering: {1000.0*(t3-t2):.2f}")
+        # print(f"Pointcloud preprocessing: {1000.0*(t2-t1):.2f}")
+        # print(f"Pointcloud rendering: {1000.0*(t3-t2):.2f}")
 
     def draw_calibration_points(self, painter):
 
         if (
-            self.data_renderer.image_points is None or
-            self.data_renderer.object_points is None or
-            len(self.data_renderer.image_points) == 0 or
-            len(self.data_renderer.object_points) == 0 or
-            self.data_renderer.image_to_lidar_translation is None or
-            self.data_renderer.image_to_lidar_rotation is None
+            self.data_renderer.image_points is None
+            or self.data_renderer.object_points is None
+            or len(self.data_renderer.image_points) == 0
+            or len(self.data_renderer.object_points) == 0
+            or self.data_renderer.image_to_lidar_translation is None
+            or self.data_renderer.image_to_lidar_rotation is None
         ):
             return
 
@@ -551,14 +597,18 @@ class ImageView(QGraphicsItem, QObject):
 
         object_points_lcs = np.array(self.data_renderer.object_points)
 
-        object_points_ccs = transform_points(self.data_renderer.image_to_lidar_translation,
-            self.data_renderer.image_to_lidar_rotation, object_points_lcs)
+        object_points_ccs = transform_points(
+            self.data_renderer.image_to_lidar_translation,
+            self.data_renderer.image_to_lidar_rotation,
+            object_points_lcs,
+        )
 
         # Transform to the image coordinate system
-        tvec = np.zeros((3,1))
-        rvec = np.zeros((3,1))
+        tvec = np.zeros((3, 1))
+        rvec = np.zeros((3, 1))
         object_points_ics, _ = cv2.projectPoints(
-            object_points_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d)
+            object_points_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d
+        )
         object_points_ics = object_points_ics.reshape(-1, 2)
 
         repr_err = np.linalg.norm(object_points_ics - image_points, axis=1)
@@ -573,7 +623,8 @@ class ImageView(QGraphicsItem, QObject):
         line_pen = self.line_pen
 
         for object_point_wcs, image_point, d in zip(
-            object_points_wcs, self.data_renderer.image_points, repr_err):
+            object_points_wcs, self.data_renderer.image_points, repr_err
+        ):
 
             image_point_wcs = image_point * self.image_to_widget_factor
 
@@ -588,41 +639,51 @@ class ImageView(QGraphicsItem, QObject):
                     image_pen = self.red_pen
 
             painter.setPen(line_pen)
-            painter.drawLine(object_point_wcs[0], object_point_wcs[1],
-                image_point_wcs[0], image_point_wcs[1])
+            painter.drawLine(
+                object_point_wcs[0], object_point_wcs[1], image_point_wcs[0], image_point_wcs[1]
+            )
 
             painter.setPen(object_pen)
             painter.setBrush(object_pen.brush())
             painter.drawEllipse(
-                object_point_wcs[0] - 0.5*radius, object_point_wcs[1] - 0.5*radius, radius, radius)
+                object_point_wcs[0] - 0.5 * radius,
+                object_point_wcs[1] - 0.5 * radius,
+                radius,
+                radius,
+            )
 
             painter.setPen(image_pen)
             painter.setBrush(image_pen.brush())
             painter.drawEllipse(
-                image_point_wcs[0] - 0.5*radius, image_point_wcs[1] - 0.5*radius, radius, radius)
+                image_point_wcs[0] - 0.5 * radius, image_point_wcs[1] - 0.5 * radius, radius, radius
+            )
 
     def draw_external_calibration_points(self, painter):
 
         if (
-            self.data_renderer.external_image_points is None or
-            self.data_renderer.external_object_points is None or
-            len(self.data_renderer.external_image_points) == 0 or
-            len(self.data_renderer.external_object_points) == 0 or
-            self.data_renderer.image_to_lidar_translation is None or
-            self.data_renderer.image_to_lidar_rotation is None
+            self.data_renderer.external_image_points is None
+            or self.data_renderer.external_object_points is None
+            or len(self.data_renderer.external_image_points) == 0
+            or len(self.data_renderer.external_object_points) == 0
+            or self.data_renderer.image_to_lidar_translation is None
+            or self.data_renderer.image_to_lidar_rotation is None
         ):
             return
 
         object_points_lcs = np.array(self.data_renderer.external_object_points)
 
-        object_points_ccs = transform_points(self.data_renderer.image_to_lidar_translation,
-            self.data_renderer.image_to_lidar_rotation, object_points_lcs)
+        object_points_ccs = transform_points(
+            self.data_renderer.image_to_lidar_translation,
+            self.data_renderer.image_to_lidar_rotation,
+            object_points_lcs,
+        )
 
         # Transform to the image coordinate system
-        tvec = np.zeros((3,1))
-        rvec = np.zeros((3,1))
+        tvec = np.zeros((3, 1))
+        rvec = np.zeros((3, 1))
         object_points_ics, _ = cv2.projectPoints(
-            object_points_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d)
+            object_points_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d
+        )
         object_points_ics = object_points_ics.reshape(-1, 2)
 
         # Transform (rescale) into the widet coordinate system
@@ -642,7 +703,7 @@ class ImageView(QGraphicsItem, QObject):
         for i1 in range(len(image_points)):
 
             tag_index = i1 // 4
-            i2 = 4*tag_index + ((i1 + 1) % 4)
+            i2 = 4 * tag_index + ((i1 + 1) % 4)
 
             image_point_1_wcs = image_points[i1] * self.image_to_widget_factor
             image_point_2_wcs = image_points[i2] * self.image_to_widget_factor
@@ -652,34 +713,46 @@ class ImageView(QGraphicsItem, QObject):
 
             painter.setPen(image_line_pen)
             painter.drawLine(
-                image_point_1_wcs[0], image_point_1_wcs[1],
-                image_point_2_wcs[0], image_point_2_wcs[1])
+                image_point_1_wcs[0],
+                image_point_1_wcs[1],
+                image_point_2_wcs[0],
+                image_point_2_wcs[1],
+            )
 
             painter.setPen(object_line_pen)
             painter.drawLine(
-                object_point_1_wcs[0], object_point_1_wcs[1],
-                object_point_2_wcs[0], object_point_2_wcs[1])
-
+                object_point_1_wcs[0],
+                object_point_1_wcs[1],
+                object_point_2_wcs[0],
+                object_point_2_wcs[1],
+            )
 
         # Draw normal points
         for object_point_wcs, image_point in zip(
-            object_points_wcs, self.data_renderer.external_image_points):
+            object_points_wcs, self.data_renderer.external_image_points
+        ):
 
             image_point_wcs = image_point * self.image_to_widget_factor
 
             painter.setPen(line_pen)
-            painter.drawLine(object_point_wcs[0], object_point_wcs[1],
-                image_point_wcs[0], image_point_wcs[1])
+            painter.drawLine(
+                object_point_wcs[0], object_point_wcs[1], image_point_wcs[0], image_point_wcs[1]
+            )
 
             painter.setPen(object_pen)
             painter.setBrush(object_pen.brush())
             painter.drawEllipse(
-                object_point_wcs[0] - 0.5*radius, object_point_wcs[1] - 0.5*radius, radius, radius)
+                object_point_wcs[0] - 0.5 * radius,
+                object_point_wcs[1] - 0.5 * radius,
+                radius,
+                radius,
+            )
 
             painter.setPen(image_pen)
             painter.setBrush(image_pen.brush())
             painter.drawEllipse(
-                image_point_wcs[0] - 0.5*radius, image_point_wcs[1] - 0.5*radius, radius, radius)
+                image_point_wcs[0] - 0.5 * radius, image_point_wcs[1] - 0.5 * radius, radius, radius
+            )
 
     def draw_current_point(self, painter):
 
@@ -687,34 +760,47 @@ class ImageView(QGraphicsItem, QObject):
             return
 
         if (
-            self.data_renderer.image_to_lidar_translation is None or
-            self.data_renderer.image_to_lidar_rotation is None
+            self.data_renderer.image_to_lidar_translation is None
+            or self.data_renderer.image_to_lidar_rotation is None
         ):
             return
 
-        object_point_ccs = transform_points(self.data_renderer.image_to_lidar_translation,
-            self.data_renderer.image_to_lidar_rotation, self.data_renderer.current_object_point)
+        object_point_ccs = transform_points(
+            self.data_renderer.image_to_lidar_translation,
+            self.data_renderer.image_to_lidar_rotation,
+            self.data_renderer.current_object_point,
+        )
 
         # Transform to the image coordinate system
-        tvec = np.zeros((3,1))
-        rvec = np.zeros((3,1))
+        tvec = np.zeros((3, 1))
+        rvec = np.zeros((3, 1))
         object_point_ics, _ = cv2.projectPoints(
-            object_point_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d)
+            object_point_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d
+        )
         object_point_ics = object_point_ics.reshape(1, 2)
 
         # Transform (rescale) into the widet coordinate system
         object_point_wcs = object_point_ics * self.image_to_widget_factor
-        object_point_wcs = object_point_wcs.reshape(2,)
+        object_point_wcs = object_point_wcs.reshape(
+            2,
+        )
 
         radius = 20 * self.width_image_to_widget_factor
 
         painter.setPen(Qt.magenta)
-        painter.drawLine(object_point_wcs[0] - radius, object_point_wcs[1] - radius,
-            object_point_wcs[0] + radius, object_point_wcs[1] + radius)
+        painter.drawLine(
+            object_point_wcs[0] - radius,
+            object_point_wcs[1] - radius,
+            object_point_wcs[0] + radius,
+            object_point_wcs[1] + radius,
+        )
 
-        painter.drawLine(object_point_wcs[0] + radius, object_point_wcs[1] - radius,
-            object_point_wcs[0] - radius, object_point_wcs[1] + radius)
-
+        painter.drawLine(
+            object_point_wcs[0] + radius,
+            object_point_wcs[1] - radius,
+            object_point_wcs[0] - radius,
+            object_point_wcs[1] + radius,
+        )
 
     def mousePressEvent(self, e):
 

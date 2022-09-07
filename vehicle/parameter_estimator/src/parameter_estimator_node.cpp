@@ -14,10 +14,11 @@
 //  limitations under the License.
 //
 
-#include <memory>
-#include <vector>
-#include <utility>
 #include "parameter_estimator/parameter_estimator_node.hpp"
+
+#include <memory>
+#include <utility>
+#include <vector>
 
 ParameterEstimatorNode::ParameterEstimatorNode(const rclcpp::NodeOptions & node_options)
 : Node("parameter_estimator", node_options)
@@ -37,19 +38,17 @@ ParameterEstimatorNode::ParameterEstimatorNode(const rclcpp::NodeOptions & node_
   covariance_ = this->declare_parameter<double>("initial_covariance", 1.0);
   forgetting_factor_ = this->declare_parameter<double>("forgetting_factor", 0.999);
   select_gear_ratio_estimator = this->declare_parameter<bool>("select_gear_ratio_estimator", true);
-  select_steer_offset_estimator = this->declare_parameter<bool>(
-    "select_steer_offset_estimator",
-    true);
+  select_steer_offset_estimator =
+    this->declare_parameter<bool>("select_steer_offset_estimator", true);
   select_wheel_base_estimator = this->declare_parameter<bool>("select_wheel_base_estimator", true);
   params_.valid_max_steer_rad = this->declare_parameter<double>("valid_max_steer_rad", 0.05);
   params_.valid_min_velocity = this->declare_parameter<double>("valid_min_velocity", 0.5);
-  params_.valid_min_angular_velocity = this->declare_parameter<double>(
-    "valid_min_angular_velocity",
-    0.1);
+  params_.valid_min_angular_velocity =
+    this->declare_parameter<double>("valid_min_angular_velocity", 0.1);
   params_.is_showing_debug_info = this->declare_parameter<bool>("is_showing_debug_info", true);
 
-  const auto estimated_gear_ratio = this->declare_parameter<std::vector<double>>(
-    "gear_ratio", {15.7, 0.053, 0.047});
+  const auto estimated_gear_ratio =
+    this->declare_parameter<std::vector<double>>("gear_ratio", {15.7, 0.053, 0.047});
   steer_offset_estimator_ =
     std::make_unique<SteerOffsetEstimator>(this, params_, covariance_, forgetting_factor_, 0);
   wheel_base_estimator_ = std::make_unique<WheelBaseEstimator>(
@@ -76,8 +75,8 @@ ParameterEstimatorNode::ParameterEstimatorNode(const rclcpp::NodeOptions & node_
   }
   sub_control_mode_report_ =
     create_subscription<autoware_auto_vehicle_msgs::msg::ControlModeReport>(
-    "input/control_mode", queue_size,
-    std::bind(&ParameterEstimatorNode::callbackControlModeReport, this, _1));
+      "input/control_mode", queue_size,
+      std::bind(&ParameterEstimatorNode::callbackControlModeReport, this, _1));
 
   initTimer(1.0 / update_hz_);
 }
@@ -99,31 +98,26 @@ void ParameterEstimatorNode::timerCallback()
   const auto & is_debug = params_.is_showing_debug_info;
   if (!vehicle_twist_ptr_) {
     RCLCPP_INFO_EXPRESSION(
-      rclcpp::get_logger(
-        "parameter_estimator"), is_debug, "vehicle_twist_ptr_ is null");
+      rclcpp::get_logger("parameter_estimator"), is_debug, "vehicle_twist_ptr_ is null");
     return;
   } else if (!steer_ptr_ && (select_steer_offset_estimator || select_wheel_base_estimator)) {
     RCLCPP_INFO_EXPRESSION(
-      rclcpp::get_logger("parameter_estimator"), is_debug,
-      "steer_ptr_ is null");
+      rclcpp::get_logger("parameter_estimator"), is_debug, "steer_ptr_ is null");
     return;
   } else if (!steer_wheel_ptr_ && select_gear_ratio_estimator) {
     RCLCPP_INFO_EXPRESSION(
-      rclcpp::get_logger(
-        "parameter_estimator"), is_debug, "steer_wheel_ptr_ is null");
+      rclcpp::get_logger("parameter_estimator"), is_debug, "steer_wheel_ptr_ is null");
     return;
   } else if (!imu_ptr_) {
     RCLCPP_INFO_EXPRESSION(rclcpp::get_logger("parameter_estimator"), is_debug, "imu_ptr_ is null");
     return;
   } else if (auto_mode_duration_ < 0.5 && use_auto_mode_) {
     RCLCPP_INFO_STREAM_THROTTLE(
-      rclcpp::get_logger("parameter_estimator"), clk,
-      5000, "not auto mode");
+      rclcpp::get_logger("parameter_estimator"), clk, 5000, "not auto mode");
     return;
   } else {
     RCLCPP_INFO_STREAM_THROTTLE(
-      rclcpp::get_logger("parameter_estimator"), clk,
-      5000, "running parameter estimator");
+      rclcpp::get_logger("parameter_estimator"), clk, 5000, "running parameter estimator");
   }
 
   {
@@ -186,13 +180,13 @@ void ParameterEstimatorNode::callbackControlModeReport(
   if (control_mode_ptr_->mode == autoware_auto_vehicle_msgs::msg::ControlModeReport::AUTONOMOUS) {
     auto_mode_duration_ = (this->now().seconds() - last_manual_time_);
     RCLCPP_DEBUG_STREAM_THROTTLE(
-      rclcpp::get_logger("parameter_estimator"), clk,
-      5000, "[parameter_estimator] control mode duration: " << auto_mode_duration_);
+      rclcpp::get_logger("parameter_estimator"), clk, 5000,
+      "[parameter_estimator] control mode duration: " << auto_mode_duration_);
   } else {
     auto_mode_duration_ = 0;
     last_manual_time_ = this->now().seconds();
     RCLCPP_DEBUG_STREAM_THROTTLE(
-      rclcpp::get_logger("parameter_estimator"), clk,
-      5000, "[parameter_estimator] control mode : manual");
+      rclcpp::get_logger("parameter_estimator"), clk, 5000,
+      "[parameter_estimator] control mode : manual");
   }
 }
