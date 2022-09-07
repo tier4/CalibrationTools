@@ -14,9 +14,9 @@
 //  limitations under the License.
 //
 
-#include <gtest/gtest.h>
-
 #include "estimator_utils/estimator_utils.hpp"
+
+#include <gtest/gtest.h>
 
 int main(int argc, char ** argv)
 {

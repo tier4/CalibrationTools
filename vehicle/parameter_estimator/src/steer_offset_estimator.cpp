@@ -14,9 +14,10 @@
 //  limitations under the License.
 //
 
+#include "parameter_estimator/steer_offset_estimator.hpp"
+
 #include <memory>
 #include <vector>
-#include "parameter_estimator/steer_offset_estimator.hpp"
 SteerOffsetEstimator::SteerOffsetEstimator(
   rclcpp::Node * node, const Params & p, double cov, const double ff, const double est)
 {
@@ -55,8 +56,7 @@ bool SteerOffsetEstimator::checkIsValidData()
   debugger_->debug_values_.data[5] = 0;
   if (
     std::fabs(d.velocity) < params_.valid_min_velocity ||
-    std::fabs(d.steer) > params_.valid_max_steer_rad)
-  {
+    std::fabs(d.steer) > params_.valid_max_steer_rad) {
     return false;
   }
   debugger_->debug_values_.data[5] = 1;
@@ -71,4 +71,4 @@ void SteerOffsetEstimator::postprocessOutput()
   result_msgs_.covariance = covariance;
 }
 
-void SteerOffsetEstimator::publishData() {debugger_->publishDebugValue();}
+void SteerOffsetEstimator::publishData() { debugger_->publishDebugValue(); }

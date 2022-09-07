@@ -14,9 +14,10 @@
 //  limitations under the License.
 //
 
-#include <vector>
-#include <memory>
 #include "parameter_estimator/gear_ratio_estimator.hpp"
+
+#include <memory>
+#include <vector>
 
 GearRatioEstimator::GearRatioEstimator(
   rclcpp::Node * node, const Params & p, const double & cov, const double ff,
@@ -86,8 +87,7 @@ bool GearRatioEstimator::checkIsValidData()
   debugger_->debug_values_.data[5] = 0;
   if (
     std::fabs(d.velocity) < params_.valid_min_velocity ||
-    std::fabs(d.angular_velocity) < params_.valid_min_angular_velocity)
-  {
+    std::fabs(d.angular_velocity) < params_.valid_min_angular_velocity) {
     return false;
   }
   debugger_->debug_values_.data[5] = 1;

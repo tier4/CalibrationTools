@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <memory>
 #include "deviation_evaluator/deviation_evaluator.hpp"
+
+#include <memory>
 
 int main(int argc, char ** argv)
 {

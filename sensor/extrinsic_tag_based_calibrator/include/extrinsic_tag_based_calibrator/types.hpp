@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR_TYPES_HPP_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR_TYPES_HPP_
+#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__TYPES_HPP_
+#define EXTRINSIC_TAG_BASED_CALIBRATOR__TYPES_HPP_
 
 enum class EstimationMode {
   NoFiltering,
@@ -26,4 +26,4 @@ enum class DynamicsModel {
   ConstantVelocity,
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR_TYPES_HPP_
+#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__TYPES_HPP_

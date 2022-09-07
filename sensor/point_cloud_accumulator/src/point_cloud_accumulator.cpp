@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #include "point_cloud_accumulator/point_cloud_accumulator.hpp"
-#include <vector>
+
 #include <memory>
+#include <vector>
 
 namespace point_cloud_accumulator
 {
@@ -26,13 +27,11 @@ PointCloudAccumulator::PointCloudAccumulator(const rclcpp::NodeOptions & node_op
 
   accumulate_frame_num_ = this->declare_parameter("accumulate_frame_num", 10);
 
-  accumulated_point_cloud_pub_ =
-    this->create_publisher<sensor_msgs::msg::PointCloud2>(
+  accumulated_point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
     "~/output/default", rclcpp::SensorDataQoS());
 
   auto rmw_qos_profile = rclcpp::SensorDataQoS().get_rmw_qos_profile();
-  lidar_subscriber_.subscribe(
-    this, "~/input/default", rmw_qos_profile);
+  lidar_subscriber_.subscribe(this, "~/input/default", rmw_qos_profile);
   lidar_cache_.connectInput(lidar_subscriber_);
   lidar_cache_.setCacheSize(accumulate_frame_num_);
   lidar_cache_.registerCallback(std::bind(&PointCloudAccumulator::dummyCallback, this, _1));
@@ -48,8 +47,7 @@ void PointCloudAccumulator::dummyCallback(const sensor_msgs::msg::PointCloud2::C
       RCLCPP_DEBUG(
         this->get_logger(), "cant get sensor cache. vector size = %ld", lidar_cache_vector.size());
     } else {
-      RCLCPP_DEBUG(
-        this->get_logger(), "get sensor topic. size = %ld", msg->data.size());
+      RCLCPP_DEBUG(this->get_logger(), "get sensor topic. size = %ld", msg->data.size());
       // do publish
       pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_sensor(new pcl::PointCloud<pcl::PointXYZ>);
       for (auto & cache : lidar_cache_vector) {

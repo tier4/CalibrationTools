@@ -14,16 +14,15 @@
 //  limitations under the License.
 //
 
+#include "time_delay_estimator/time_delay_estimator_node.hpp"
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "time_delay_estimator/time_delay_estimator_node.hpp"
-
 double validateRange(
-  rclcpp::Node * node, const double min, const double max, const double val,
-  std::string name)
+  rclcpp::Node * node, const double min, const double max, const double val, std::string name)
 {
   auto & clk = *node->get_clock();
   if (min < std::abs(val) && std::abs(val) < max) {
@@ -37,10 +36,7 @@ double validateRange(
   return 0.0;
 }
 
-double addOffset(const double val, const double offset)
-{
-  return val + offset;
-}
+double addOffset(const double val, const double offset) { return val + offset; }
 
 TimeDelayEstimatorNode::TimeDelayEstimatorNode(const rclcpp::NodeOptions & node_options)
 : Node("time_delay_estimator", node_options)
@@ -111,8 +107,7 @@ TimeDelayEstimatorNode::TimeDelayEstimatorNode(const rclcpp::NodeOptions & node_
     "~/input/steer_status", queue_size,
     std::bind(&TimeDelayEstimatorNode::callbackSteerStatus, this, _1));
   sub_is_engaged_ = create_subscription<BoolStamped>(
-    "~/input/is_engage", queue_size,
-    std::bind(&TimeDelayEstimatorNode::callbackEngage, this, _1));
+    "~/input/is_engage", queue_size, std::bind(&TimeDelayEstimatorNode::callbackEngage, this, _1));
 
   params_.total_data_size =
     static_cast<int>(params_.sampling_duration * params_.sampling_hz * params_.num_interpolation) +
@@ -141,8 +136,8 @@ TimeDelayEstimatorNode::TimeDelayEstimatorNode(const rclcpp::NodeOptions & node_
       std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(period_s));
     timer_data_processing_ =
       std::make_shared<rclcpp::GenericTimer<decltype(data_processing_callback)>>(
-      this->get_clock(), period_ns, std::move(data_processing_callback),
-      this->get_node_base_interface()->get_context());
+        this->get_clock(), period_ns, std::move(data_processing_callback),
+        this->get_node_base_interface()->get_context());
     this->get_node_timers_interface()->add_timer(timer_data_processing_, nullptr);
   }
   // estimation callback
@@ -230,16 +225,13 @@ bool TimeDelayEstimatorNode::estimateTimeDelay()
   return true;
 }
 
-
 void TimeDelayEstimatorNode::callbackAccelCmd(const Float32Stamped::ConstSharedPtr msg)
 {
   accel_cmd_ptr_ = msg;
   const auto & t = this->get_clock()->now().seconds();
   // accel
   double accel_input =
-    validateRange(
-    this, valid_accel_.min, valid_accel_.max,
-    accel_cmd_ptr_->data, "accel input");
+    validateRange(this, valid_accel_.min, valid_accel_.max, accel_cmd_ptr_->data, "accel input");
   const double accel_input_offset = addOffset(accel_input, accel_offset_);
   accel_data_->input_.setValue(accel_input_offset, t);
 }
@@ -250,9 +242,7 @@ void TimeDelayEstimatorNode::callbackBrakeCmd(const Float32Stamped::ConstSharedP
   const auto & t = this->get_clock()->now().seconds();
   // brake
   double brake_input =
-    validateRange(
-    this, valid_brake_.min, valid_brake_.max,
-    brake_cmd_ptr_->data, "brake input");
+    validateRange(this, valid_brake_.min, valid_brake_.max, brake_cmd_ptr_->data, "brake input");
   const double brake_input_offset = addOffset(brake_input, brake_offset_);
   brake_data_->input_.setValue(brake_input_offset, t);
 }
@@ -262,9 +252,7 @@ void TimeDelayEstimatorNode::callbackSteerCmd(const Float32Stamped::ConstSharedP
   steer_cmd_ptr_ = msg;
   const auto & t = this->get_clock()->now().seconds();
   double steer_input =
-    validateRange(
-    this, valid_steer_.min, valid_steer_.max,
-    steer_cmd_ptr_->data, "steer input");
+    validateRange(this, valid_steer_.min, valid_steer_.max, steer_cmd_ptr_->data, "steer input");
   steer_input = math_utils::normalize(steer_input, -1.0, 1.0);
   const double steer_input_offset = addOffset(steer_input, steer_offset_);
   steer_data_->input_.setValue(steer_input_offset, t);
@@ -275,8 +263,7 @@ void TimeDelayEstimatorNode::callbackAccelStatus(const Float32Stamped::ConstShar
   accel_status_ptr_ = msg;
   const auto & t = this->get_clock()->now().seconds();
   double accel_response = validateRange(
-    this, valid_accel_.min, valid_accel_.max, accel_status_ptr_->data,
-    "accel response");
+    this, valid_accel_.min, valid_accel_.max, accel_status_ptr_->data, "accel response");
   const double accel_response_offset = addOffset(accel_response, accel_offset_);
   accel_data_->response_.setValue(accel_response_offset, t);
 }
@@ -286,8 +273,7 @@ void TimeDelayEstimatorNode::callbackBrakeStatus(const Float32Stamped::ConstShar
   brake_status_ptr_ = msg;
   const auto & t = this->get_clock()->now().seconds();
   double brake_response = validateRange(
-    this, valid_brake_.min, valid_brake_.max, brake_status_ptr_->data,
-    "brake response");
+    this, valid_brake_.min, valid_brake_.max, brake_status_ptr_->data, "brake response");
   const double brake_response_offset = addOffset(brake_response, brake_offset_);
   brake_data_->response_.setValue(brake_response_offset, t);
 }
@@ -297,8 +283,7 @@ void TimeDelayEstimatorNode::callbackSteerStatus(const Float32Stamped::ConstShar
   steer_status_ptr_ = msg;
   const auto & t = this->get_clock()->now().seconds();
   double steer_response = validateRange(
-    this, valid_steer_.min, valid_steer_.max, steer_status_ptr_->data,
-    "steer response");
+    this, valid_steer_.min, valid_steer_.max, steer_status_ptr_->data, "steer response");
   steer_response = math_utils::normalize(steer_response, -1.0, 1.0);
   const double steer_response_offset = addOffset(steer_response, steer_offset_);
   steer_data_->response_.setValue(steer_response_offset, t);

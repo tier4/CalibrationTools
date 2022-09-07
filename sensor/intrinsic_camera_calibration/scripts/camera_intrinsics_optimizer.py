@@ -15,14 +15,15 @@
 # limitations under the License.
 
 import array
+from copy import deepcopy
+
 import cv2
 import nlopt
 import numpy as np
 import rclpy
-
-from copy import deepcopy
 from rclpy.node import Node
 from tier4_calibration_msgs.srv import IntrinsicsOptimizer
+
 
 class CameraIntrinsicsOptimizer(Node):
     def __init__(self):
@@ -61,19 +62,19 @@ class CameraIntrinsicsOptimizer(Node):
             self.calib_flags |= cv2.CALIB_FIX_ASPECT_RATIO
         if zero_tangent_dist:
             self.calib_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        if (num_ks > 3):
+        if num_ks > 3:
             self.calib_flags |= cv2.CALIB_RATIONAL_MODEL
-        if (num_ks < 6):
+        if num_ks < 6:
             self.calib_flags |= cv2.CALIB_FIX_K6
-        if (num_ks < 5):
+        if num_ks < 5:
             self.calib_flags |= cv2.CALIB_FIX_K5
-        if (num_ks < 4):
+        if num_ks < 4:
             self.calib_flags |= cv2.CALIB_FIX_K4
-        if (num_ks < 3):
+        if num_ks < 3:
             self.calib_flags |= cv2.CALIB_FIX_K3
-        if (num_ks < 2):
+        if num_ks < 2:
             self.calib_flags |= cv2.CALIB_FIX_K2
-        if (num_ks < 1):
+        if num_ks < 1:
             self.calib_flags |= cv2.CALIB_FIX_K1
         self.calib_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
 
@@ -89,16 +90,16 @@ class CameraIntrinsicsOptimizer(Node):
             raise NotImplementedError
 
         # Advertise service
-        self.opt_serice = self.create_service(IntrinsicsOptimizer,
-            "optimize_intrinsics", self.service_callback)
+        self.opt_serice = self.create_service(
+            IntrinsicsOptimizer, "optimize_intrinsics", self.service_callback
+        )
 
     def reproj_error(self, object_points, image_points, k):
 
         d = np.zeros((5,))
-        k = np.reshape(k, (3,3))
+        k = np.reshape(k, (3, 3))
 
-        _, rvec, tvec = cv2.solvePnP(
-            object_points, image_points, k, d, flags=cv2.SOLVEPNP_SQPNP)
+        _, rvec, tvec = cv2.solvePnP(object_points, image_points, k, d, flags=cv2.SOLVEPNP_SQPNP)
 
         num_points, dim = object_points.shape
         projected_points, _ = cv2.projectPoints(object_points, rvec, tvec, k, d)
@@ -110,10 +111,10 @@ class CameraIntrinsicsOptimizer(Node):
     def param_to_k(self, params):
 
         k_opt = np.eye(3)
-        k_opt[0,0] = self.fx0 + self.opt_allowed_percentage*self.fx0*params[0]
-        k_opt[1,1] = self.fy0 + self.opt_allowed_percentage*self.fy0*params[1]
-        k_opt[0,2] = self.cx0 + self.opt_allowed_percentage*self.cx0*params[2]
-        k_opt[1,2] = self.cy0 + self.opt_allowed_percentage*self.cy0*params[3]
+        k_opt[0, 0] = self.fx0 + self.opt_allowed_percentage * self.fx0 * params[0]
+        k_opt[1, 1] = self.fy0 + self.opt_allowed_percentage * self.fy0 * params[1]
+        k_opt[0, 2] = self.cx0 + self.opt_allowed_percentage * self.cx0 * params[2]
+        k_opt[1, 2] = self.cy0 + self.opt_allowed_percentage * self.cy0 * params[3]
 
         return k_opt
 
@@ -138,7 +139,7 @@ class CameraIntrinsicsOptimizer(Node):
         initial_k = np.array(initial_camera_info.k).reshape(3, 3)
         initial_d = np.array(initial_camera_info.d).flatten()
 
-        if (np.abs(initial_d).sum() != 0.0):
+        if np.abs(initial_d).sum() != 0.0:
             self.get_logger().error("We only support distortion-less intrinsics for now")
             return initial_camera_info
 
@@ -187,20 +188,23 @@ class CameraIntrinsicsOptimizer(Node):
         initial_d = np.array(initial_camera_info.d).flatten()
 
         _, new_k, new_d, _, _ = cv2.calibrateCamera(
-            [object_points.reshape(-1,3)],
-            [image_points.reshape(-1,1,2)],
+            [object_points.reshape(-1, 3)],
+            [image_points.reshape(-1, 1, 2)],
             (initial_camera_info.width, initial_camera_info.height),
-            cameraMatrix=initial_k, distCoeffs=initial_d, flags=self.calib_flags)
+            cameraMatrix=initial_k,
+            distCoeffs=initial_d,
+            flags=self.calib_flags,
+        )
 
         optimized_camera_info = deepcopy(initial_camera_info)
         optimized_camera_info.k = new_k.reshape(-1)
-        optimized_camera_info.d = array.array('d', new_d)
+        optimized_camera_info.d = array.array("d", new_d)
 
         return optimized_camera_info
 
-    def service_callback(self,
-                         request : IntrinsicsOptimizer.Request,
-                         response: IntrinsicsOptimizer.Response):
+    def service_callback(
+        self, request: IntrinsicsOptimizer.Request, response: IntrinsicsOptimizer.Response
+    ):
 
         points = request.calibration_points
         initial_camera_info = request.initial_camera_info
@@ -220,26 +224,31 @@ class CameraIntrinsicsOptimizer(Node):
 
         if self.method == "CV":
             optimized_camera_info = self.optimize_cv(
-                object_points, image_points, initial_camera_info)
+                object_points, image_points, initial_camera_info
+            )
         else:
             optimized_camera_info = self.optimize_nlopt(
-                object_points, image_points, initial_camera_info)
+                object_points, image_points, initial_camera_info
+            )
 
         ncm, _ = cv2.getOptimalNewCameraMatrix(
             np.array(optimized_camera_info.k).reshape(3, 3),
             np.array(optimized_camera_info.d).reshape(-1),
-            (optimized_camera_info.width, optimized_camera_info.height), 0.0)
+            (optimized_camera_info.width, optimized_camera_info.height),
+            0.0,
+        )
 
         p = np.zeros((3, 4), dtype=np.float64)
 
         for j in range(3):
             for i in range(3):
-                p[j,i] = ncm[j, i]
+                p[j, i] = ncm[j, i]
 
         optimized_camera_info.p = p.reshape(-1)
         response.optimized_camera_info = optimized_camera_info
 
         return response
+
 
 def main(args=None):
     try:
@@ -251,6 +260,7 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()

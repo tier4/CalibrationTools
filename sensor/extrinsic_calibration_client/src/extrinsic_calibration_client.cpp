@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <chrono>
-#include <memory>
-
 #include "rclcpp/rclcpp.hpp"
 
 #include "tier4_calibration_msgs/srv/extrinsic_calibration_manager.hpp"
+
+#include <chrono>
+#include <memory>
 
 using namespace std::chrono_literals;
 
@@ -46,9 +46,8 @@ int main(int argc, char * argv[])
 
   if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
     RCLCPP_INFO_STREAM(
-      node->get_logger(),
-      "Received service message. success " << result.get()->success << " score " <<
-        result.get()->score);
+      node->get_logger(), "Received service message. success " << result.get()->success << " score "
+                                                               << result.get()->score);
   } else {
     RCLCPP_ERROR(node->get_logger(), "Problem while waiting for response.");
   }

@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "deviation_evaluator/deviation_evaluator.hpp"
+
+#include "rclcpp/logging.hpp"
+
 #include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
-#include "deviation_evaluator/deviation_evaluator.hpp"
-#include "rclcpp/logging.hpp"
 
 // clang-format off
 #define PRINT_MAT(X) std::cout << #X << ":\n" << X << std::endl << std::endl
@@ -28,16 +30,10 @@
 // clang-format on
 using std::placeholders::_1;
 
-
-double double_round(const double x, const int n)
-{
-  return std::round(x * pow(10, n)) / pow(10, n);
-}
-
+double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
 
 DeviationEvaluator::DeviationEvaluator(
-  const std::string & node_name,
-  const rclcpp::NodeOptions & node_options)
+  const std::string & node_name, const rclcpp::NodeOptions & node_options)
 : rclcpp::Node(node_name, node_options)
 {
   show_debug_info_ = declare_parameter("show_debug_info", false);
@@ -51,28 +47,20 @@ DeviationEvaluator::DeviationEvaluator(
 
   save2YamlFile();
 
-  sub_twist_with_cov_ =
-    create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_twist_with_covariance",
-    1,
+  sub_twist_with_cov_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
+    "in_twist_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackTwistWithCovariance, this, _1));
-  sub_ndt_pose_with_cov_ =
-    create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
-    "in_ndt_pose_with_covariance",
-    1,
+  sub_ndt_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "in_ndt_pose_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackNDTPoseWithCovariance, this, _1));
 
-  pub_twist_with_cov_ =
-    create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>(
+  pub_twist_with_cov_ = create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>(
     "out_twist_with_covariance", 1);
-  pub_pose_with_cov_dr_ =
-    create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+  pub_pose_with_cov_dr_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_pose_with_covariance_dr", 1);
-  pub_pose_with_cov_gt_ =
-    create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+  pub_pose_with_cov_gt_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_pose_with_covariance_gt", 1);
-  pub_init_pose_with_cov_ =
-    create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+  pub_init_pose_with_cov_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_initial_pose_with_covariance", 1);
 
   current_ndt_pose_ptr_ = nullptr;

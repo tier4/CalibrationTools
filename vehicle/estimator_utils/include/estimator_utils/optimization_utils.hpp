@@ -21,6 +21,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/LU>
+
 #include <vector>
 
 namespace optimization_utils
@@ -39,11 +40,11 @@ inline void estimateByRLS(
   const Eigen::MatrixXd & ff, const Eigen::MatrixXd & y)
 {
   /**
-     * coef_n=(cov_n-1*zn_n)/(rho_n+zn^T_n*cov_n-1*zn_n)
-     * cov_n=[cov_n-1 - coef*zn^T*cov_n-1)]
-     * th_n=th_n-1+coef_n*epsilon_n
-     * eps_n=y_n-zn^T_n*th_n-1
-  */
+   * coef_n=(cov_n-1*zn_n)/(rho_n+zn^T_n*cov_n-1*zn_n)
+   * cov_n=[cov_n-1 - coef*zn^T*cov_n-1)]
+   * th_n=th_n-1+coef_n*epsilon_n
+   * eps_n=y_n-zn^T_n*th_n-1
+   */
   Eigen::MatrixXd znT = zn.transpose();
   const Eigen::MatrixXd coef = (cov * zn) / ((ff + znT * cov * zn)(0, 0));
   cov = (cov - coef * znT * cov) / ff(0, 0);
@@ -162,7 +163,7 @@ inline double getLeastSquaredError(
   return getErrorNorm(X, Y, w);
 }
 
-template<class T>
+template <class T>
 bool change_abs_min(T & a, const T & b)
 {
   if (std::abs(b) < std::abs(a)) {
