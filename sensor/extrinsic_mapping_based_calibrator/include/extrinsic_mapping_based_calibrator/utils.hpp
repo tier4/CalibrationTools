@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2022 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -208,15 +208,16 @@ float sourceTargetDistance(
  * Find the best transform between pointclouds using a set of registrators and a set
  * of input transforms (initial solutions) in a cascade approach
  * @param[in] input_transforms Input transforms (to be used as initial solutions)
- * @param[in] registratators Vector of registrators to use as a cascade
+ * @param[in] registrators Vector of registrators to use as a cascade
+ * @param[in] verbose verbose mode
  * @param[out] best_transform Output transform containing the best solution
  * @param[out] best_score Output score containing the best solution
  */
 template <class RegistratorPtrType, class PointType>
 void findBestTransform(
   const std::vector<Eigen::Matrix4f> & input_transforms,
-  std::vector<typename RegistratorPtrType::Ptr> & registratators, Eigen::Matrix4f & best_transform,
-  float & best_score)
+  std::vector<typename RegistratorPtrType::Ptr> & registrators, bool verbose,
+  Eigen::Matrix4f & best_transform, float & best_score)
 {
   std::vector<Eigen::Matrix4f> transforms = input_transforms;
   std::vector<std::string> transforms_names;
@@ -229,7 +230,7 @@ void findBestTransform(
   best_score = std::numeric_limits<float>::max();
   std::string best_name;
 
-  for (auto & registrator : registratators) {
+  for (auto & registrator : registrators) {
     Eigen::Matrix4f best_registrator_transform = Eigen::Matrix4f::Identity();
     float best_registrator_score = std::numeric_limits<float>::max();
     std::string best_registrator_name;
@@ -244,7 +245,10 @@ void findBestTransform(
       Eigen::Matrix4f candidate_transform = registrator->getFinalTransformation();
       float candidate_score = registrator->getFitnessScore();
       std::string candidate_name = registrator->getClassName() + " (" + transform_name + ")";
-      std::cout << candidate_name << " score: " << candidate_score << std::endl;
+
+      if (verbose) {
+        std::cout << candidate_name << " score: " << candidate_score << std::endl;
+      }
 
       if (candidate_score < best_registrator_score) {
         best_registrator_transform = candidate_transform;
@@ -263,7 +267,9 @@ void findBestTransform(
     transforms_names.push_back(best_registrator_name);
   }
 
-  std::cout << "Best rsult: " << best_name << " score: " << best_score << std::endl;
+  if (verbose) {
+    std::cout << "Best result: " << best_name << " score: " << best_score << std::endl;
+  }
 }
 
 /*!

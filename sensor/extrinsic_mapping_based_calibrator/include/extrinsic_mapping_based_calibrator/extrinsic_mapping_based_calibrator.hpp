@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2022 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,15 +16,22 @@
 #define EXTRINSIC_MAPPING_BASED_CALIBRATOR_EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
 
 #include <Eigen/Dense>
-#include <kalman_filter/kalman_filter.hpp>
+#include <extrinsic_mapping_based_calibrator/types.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
-#include <std_srvs/srv/empty.hpp>
-#include <tier4_pcl_extensions/joint_icp_extended.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/path.hpp>
+#ifdef ROS_DISTRO_GALACTIC
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#else
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#endif
+#include <std_srvs/srv/empty.hpp>
+#include <tier4_pcl_extensions/joint_icp_extended.hpp>
+
+#include <tier4_calibration_msgs/srv/calibration_database.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/frame.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -32,68 +39,22 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
+#include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/gicp.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/registration.h>
 #include <pclomp/ndt_omp.h>
 #include <pclomp/voxel_grid_covariance_omp.h>
-#include <pcl/registration/correspondence_estimation.h>
 #include <tf2/convert.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#else
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#endif
-
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-//#include <pcl_conversions/pcl_conversions.h>
 
-#include <iostream>
 #include <mutex>
 #include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-using PointType = pcl::PointXYZ;
-using PointcloudType = pcl::PointCloud<PointType>;
-
-struct Frame
-{
-  using Ptr = std::shared_ptr<Frame>;
-  float distance_;
-  float delta_distance_;
-  std_msgs::msg::Header header_;
-  PointcloudType::Ptr pointcloud_raw_;
-  PointcloudType::Ptr pointcloud_subsampled_;
-  int frame_id_;
-  int keyframe_id_;
-  bool processed_;
-  bool is_key_frame_;
-  bool stopped_;
-  int frames_since_stop_;
-  Eigen::Matrix4f pose_;  // map->lidar
-};
-
-struct CalibrationFrame
-{
-  PointcloudType::Ptr source_pointcloud_;
-  PointcloudType::Ptr target_pointcloud_;  // we may not be able to store the pointcloud since it is
-  std_msgs::msg::Header source_header_;
-
-  Frame::Ptr target_frame_;
-  Eigen::Matrix4f local_map_pose_;  // pose in the map from the target lidar
-
-  double interpolated_distance_;
-  double interpolated_angle_;  // det(rot * inv rot) o algo asi
-  double interpolated_time_;
-  double estimated_speed_;
-  double estimated_accel_;
-};
-
 class ExtrinsicMappingBasedCalibrator : public rclcpp::Node
 {
 public:
@@ -120,6 +81,12 @@ protected:
   void multipleLidarCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
+  void loadDatabaseCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response);
+  void saveDatabaseCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response);
 
   /*!
    * Message callback for calibration pointclouds (pointclouds in the frame to calibrate)
@@ -191,6 +158,13 @@ protected:
   PointcloudType::Ptr getDensePointcloudFromMap(
     const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
 
+  /*!
+   * Filter calibration frames to avoid high speed, acceleration, interpolation, etc
+   * @param[in] calibration_frames The raw calibrated frames
+   */
+  std::vector<CalibrationFrame> filterCalibrationFrames(
+    const std::vector<CalibrationFrame> & calibration_frames);
+
   // Parameters
   std::string base_frame_;
   std::string sensor_kit_frame_;  // calibration parent frame
@@ -204,6 +178,7 @@ protected:
 
   struct Params
   {
+    bool verbose_;
     int max_frames_;
     int local_map_num_keyframes_;
     int calibration_num_keyframes_;
@@ -267,6 +242,10 @@ protected:
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr single_lidar_calibration_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr multiple_lidar_calibration_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
+    load_database_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
+    save_database_server_;
 
   rclcpp::TimerBase::SharedPtr timer_;
 
