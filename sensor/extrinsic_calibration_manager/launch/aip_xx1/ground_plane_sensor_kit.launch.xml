@@ -38,13 +38,14 @@
       <arg name="child_frame" value="velodyne_top_base_link" />
       <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" />
 
-      <arg name="crop_box_min_x" value="-2.0" />
+      <!-- The following parameters are only needed when calibrating in a closed space, where the ranges were hardcoded for experiment purposes -->
+      <!--arg name="crop_box_min_x" value="-2.0" />
       <arg name="crop_box_min_y" value="-10.0" />
       <arg name="crop_box_min_z" value="-10.0" />
       <arg name="crop_box_max_x" value="6.0" />
       <arg name="crop_box_max_y" value="0.0" />
       <arg name="crop_box_max_z" value="0.0" />
-      <arg name="use_pca_rough_normal" value="false" />
+      <arg name="use_pca_rough_normal" value="false" /-->
     </include>
   </group>
 
