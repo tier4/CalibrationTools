@@ -162,16 +162,16 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 ### Parameters for deviation estimator
 
-| Name                      | Type   | Description                                                                                 | Default value                  |
-| ------------------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------------ |
-| show_debug_info           | bool   | Flag to display debug info                                                                  | true                           |
-| use_pose_with_covariance  | bool   | Flag to use PoseWithCovarianceStamped rostopic for pose. Use PoseStamped if false.          | true                           |
-| use_twist_with_covariance | bool   | Flag to use TwistWithCovarianceStamped rostopic for pose. Use TwistStamped if false.        | true                           |
-| t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                           |
-| x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                           |
-| estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                            |
-| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt"       |
-| imu_link_frame            | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"            |
+| Name                      | Type   | Description                                                                                 | Default value            |
+| ------------------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------ |
+| show_debug_info           | bool   | Flag to display debug info                                                                  | true                     |
+| use_pose_with_covariance  | bool   | Flag to use PoseWithCovarianceStamped rostopic for pose. Use PoseStamped if false.          | true                     |
+| use_twist_with_covariance | bool   | Flag to use TwistWithCovarianceStamped rostopic for pose. Use TwistStamped if false.        | true                     |
+| t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                     |
+| x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
+| estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                      |
+| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
+| imu_link_frame            | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"      |
 
 ### Functions
 
@@ -243,6 +243,7 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
 </p>
 
 ### Architecture of `deviation_evaluator`
+
 The architecture of `deviation_evaluator` is shown below. It launches two `ekf_localizer`, one for ground truth estimation and one for (partially) dead reckoning estimation. Outputs of both `ekf_localizer` will be recorded and analyzed with `deviation_evaluation_visualizer`.
 
 <p align="left">
@@ -253,33 +254,33 @@ The architecture of `deviation_evaluator` is shown below. It launches two `ekf_l
 
 #### Input
 
-| Name                                                     | Type                                             | Description                                                     |
-| -------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
-| `/localization/twist_estimator/twist_with_covariance`    | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist                                                     |
-| `/localization/pose_estimator/pose_with_covariance`      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose                                                      |
+| Name                                                  | Type                                             | Description |
+| ----------------------------------------------------- | ------------------------------------------------ | ----------- |
+| `/localization/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist |
+| `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose  |
 
 #### Output
 
-| Name                                                                      | Type                                             | Description                                       |
-| ------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------- |
-| `/deviation_evaluator/twist_estimator/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for both `ekf_localizer`)           |
-| `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`)  |
-| `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)    |
-| `/deviation_evaluator/initialpose3d`                                      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output initial pose (for both `ekf_localizer`)    |
+| Name                                                                      | Type                                             | Description                                      |
+| ------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| `/deviation_evaluator/twist_estimator/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for both `ekf_localizer`)          |
+| `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`) |
+| `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)   |
+| `/deviation_evaluator/initialpose3d`                                      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output initial pose (for both `ekf_localizer`)   |
 
 ### Parameters for deviation evaluator
 
-| Name      | Type       | Description                                                                | Default value                                  |
-| --------- | ---------- | -------------------------------------------------------------------------- | ---------------------------------------------- |
-| rviz      | bool       | Show rviz if true                                                          | false                                          |
-| map_path  | string     | Path to the directory where map data (OpenStreetMap or .osm data) is saved | ""                                             |
-| save_dir  | string     | Output directory where figures, parameter files, and scores are saved      | "$(env HOME)/deviation_evaluator_sample"       |
-| stddev_vx | double     | Standard deviation of vx                                                   | 0.8 (in `config/deviation_evaluator.yaml`)     |
-| stddev_wz | double     | Standard deviation of wz                                                   | 0.01 (in `config/deviation_evaluator.yaml`)    |
-| coef_vx   | double     | Velocity bias                                                              | 1 (in `config/deviation_evaluator.yaml`)       |
-| bias_wz   | double     | Yaw rate bias                                                              | 0 (in `config/deviation_evaluator.yaml`)       |
-| period    | double [s] | Duration of cycle                                                          | 10 (in `config/deviation_evaluator.yaml`)      |
-| cut       | double [s] | Duration of ndt-cut-off                                                    | 9 (in `config/deviation_evaluator.yaml`)       |
+| Name      | Type       | Description                                                                | Default value                               |
+| --------- | ---------- | -------------------------------------------------------------------------- | ------------------------------------------- |
+| rviz      | bool       | Show rviz if true                                                          | false                                       |
+| map_path  | string     | Path to the directory where map data (OpenStreetMap or .osm data) is saved | ""                                          |
+| save_dir  | string     | Output directory where figures, parameter files, and scores are saved      | "$(env HOME)/deviation_evaluator_sample"    |
+| stddev_vx | double     | Standard deviation of vx                                                   | 0.8 (in `config/deviation_evaluator.yaml`)  |
+| stddev_wz | double     | Standard deviation of wz                                                   | 0.01 (in `config/deviation_evaluator.yaml`) |
+| coef_vx   | double     | Velocity bias                                                              | 1 (in `config/deviation_evaluator.yaml`)    |
+| bias_wz   | double     | Yaw rate bias                                                              | 0 (in `config/deviation_evaluator.yaml`)    |
+| period    | double [s] | Duration of cycle                                                          | 10 (in `config/deviation_evaluator.yaml`)   |
+| cut       | double [s] | Duration of ndt-cut-off                                                    | 9 (in `config/deviation_evaluator.yaml`)    |
 
 ## 4. Reflect the estimated parameters in Autoware
 
