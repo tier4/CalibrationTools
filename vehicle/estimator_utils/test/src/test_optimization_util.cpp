@@ -14,12 +14,14 @@
 //  limitations under the License.
 //
 
-#include <gtest/gtest.h>
+#include "estimator_utils/optimization_utils.hpp"
 
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/LU>
+
+#include <gtest/gtest.h>
 
 #include <cassert>
 #include <chrono>
@@ -29,8 +31,6 @@
 #include <random>
 #include <utility>
 #include <vector>
-
-#include "estimator_utils/optimization_utils.hpp"
 
 TEST(optimization_utils, change_abs_min)
 {

@@ -52,7 +52,6 @@ CalibrationEstimator::CalibrationEstimator()
 {
 }
 
-
 void CalibrationEstimator::update(const apriltag_msgs::msg::AprilTagDetectionArray & msg)
 {
   for (auto & detection : msg.detections) {

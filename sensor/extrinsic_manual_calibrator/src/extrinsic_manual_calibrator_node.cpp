@@ -25,8 +25,7 @@ ExtrinsicManualCalibratorNode::ExtrinsicManualCalibratorNode(
   using namespace std::placeholders;
 
   // rosparam
-  tf_parameter_ns_ =
-    this->declare_parameter("tf_parameter_ns", "tf_broadcaster");
+  tf_parameter_ns_ = this->declare_parameter("tf_parameter_ns", "tf_broadcaster");
 
   // calibration request callback
   server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
@@ -92,8 +91,7 @@ geometry_msgs::msg::Pose ExtrinsicManualCalibratorNode::getTfParameters(
   pose.position.y = params.get().at(1).as_double();
   pose.position.z = params.get().at(2).as_double();
   pose.orientation = tier4_autoware_utils::createQuaternionFromRPY(
-    params.get().at(3).as_double(), params.get().at(4).as_double(),
-    params.get().at(5).as_double());
+    params.get().at(3).as_double(), params.get().at(4).as_double(), params.get().at(5).as_double());
   return pose;
 }
 void ExtrinsicManualCalibratorNode::setTfParameters(
@@ -103,8 +101,8 @@ void ExtrinsicManualCalibratorNode::setTfParameters(
   const auto rpy = tier4_autoware_utils::getRPY(pose.orientation);
   auto results = client->set_parameters(
     {rclcpp::Parameter("tf_x", xyz.x), rclcpp::Parameter("tf_y", xyz.y),
-      rclcpp::Parameter("tf_z", xyz.z), rclcpp::Parameter("tf_roll", rpy.x),
-      rclcpp::Parameter("tf_pitch", rpy.y), rclcpp::Parameter("tf_yaw", rpy.z)});
+     rclcpp::Parameter("tf_z", xyz.z), rclcpp::Parameter("tf_roll", rpy.x),
+     rclcpp::Parameter("tf_pitch", rpy.y), rclcpp::Parameter("tf_yaw", rpy.z)});
 }
 
 int main(int argc, char ** argv)

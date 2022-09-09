@@ -14,18 +14,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy, json, os, signal, sys, rclpy, threading
-import numpy as np
+import copy
+import json
+import os
+import signal
+import sys
+import threading
 
+from PySide2.QtCore import Qt
+from PySide2.QtCore import Signal
+from PySide2.QtGui import QImage
+from PySide2.QtGui import QPixmap
+from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import QCheckBox
+from PySide2.QtWidgets import QComboBox
+from PySide2.QtWidgets import QDoubleSpinBox
+from PySide2.QtWidgets import QFileDialog
+from PySide2.QtWidgets import QFrame
+from PySide2.QtWidgets import QGraphicsScene
+from PySide2.QtWidgets import QGraphicsView
+from PySide2.QtWidgets import QGroupBox
+from PySide2.QtWidgets import QHBoxLayout
+from PySide2.QtWidgets import QLabel
+from PySide2.QtWidgets import QMainWindow
+from PySide2.QtWidgets import QPushButton
+from PySide2.QtWidgets import QSpinBox
+from PySide2.QtWidgets import QVBoxLayout
+from PySide2.QtWidgets import QWidget
 from extrinsic_interactive_calibrator.calibrator import Calibrator
-from extrinsic_interactive_calibrator.image_view import CustomQGraphicsView, ImageView
+from extrinsic_interactive_calibrator.image_view import CustomQGraphicsView
+from extrinsic_interactive_calibrator.image_view import ImageView
 from extrinsic_interactive_calibrator.ros_interface import RosInterface
+import numpy as np
+import rclpy
 from rosidl_runtime_py.convert import message_to_ordereddict
-from PySide2.QtCore import Qt, Signal
-from PySide2.QtGui import QImage, QPixmap
-from PySide2.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
-    QFrame, QGraphicsScene, QGraphicsView, QGroupBox, QHBoxLayout, QLabel, QMainWindow, \
-    QPushButton, QSpinBox, QVBoxLayout, QWidget
+
+
 class InteractiveCalibratorUI(QMainWindow):
 
     sensor_data_signal = Signal()
@@ -44,15 +68,20 @@ class InteractiveCalibratorUI(QMainWindow):
         self.ros_interface.set_transform_callback(self.transform_ros_callback)
         self.ros_interface.set_object_point_callback(self.object_point_ros_callback)
         self.ros_interface.set_external_calibration_points_callback(
-            self.external_calibration_points_ros_callback)
+            self.external_calibration_points_ros_callback
+        )
         self.ros_interface.set_optimize_camera_intrinsics_status_callback(
-            self.optimize_camera_intrinsics_status_callback)
+            self.optimize_camera_intrinsics_status_callback
+        )
         self.ros_interface.set_optimize_camera_intrinsics_result_callback(
-            self.optimize_camera_intrinsics_result_callback)
+            self.optimize_camera_intrinsics_result_callback
+        )
         self.ros_interface.set_calibration_api_request_received_callback(
-            self.calibration_api_request_received_callback)
+            self.calibration_api_request_received_callback
+        )
         self.ros_interface.set_calibration_api_request_sent_callback(
-            self.calibration_api_request_sent_callback)
+            self.calibration_api_request_sent_callback
+        )
 
         self.sensor_data_signal.connect(self.sensor_data_callback)
         self.transform_signal.connect(self.transform_callback)
@@ -94,7 +123,7 @@ class InteractiveCalibratorUI(QMainWindow):
 
         # Parent widget
         self.central_widget = QWidget(self)
-        #self.central_widget.resize(1000,1000)
+        # self.central_widget.resize(1000,1000)
 
         self.setCentralWidget(self.central_widget)
         self.layout = QHBoxLayout(self.central_widget)
@@ -123,7 +152,7 @@ class InteractiveCalibratorUI(QMainWindow):
         # Visualization group
         self.make_vizualization_options()
 
-        #self.menu_layout.addWidget(label)
+        # self.menu_layout.addWidget(label)
         self.left_menu_layout.addWidget(self.calibration_api_group)
         self.left_menu_layout.addWidget(self.data_collection_options_group)
         self.left_menu_layout.addWidget(self.calibration_status_group)
@@ -132,7 +161,7 @@ class InteractiveCalibratorUI(QMainWindow):
         self.right_menu_layout.addWidget(self.visualization_options_group)
 
         self.layout.addWidget(self.graphics_view)
-        #self.layout.addWidget(self.image_view)
+        # self.layout.addWidget(self.image_view)
 
         self.layout.addWidget(self.left_menu_widget)
         self.layout.addWidget(self.right_menu_widget)
@@ -142,7 +171,7 @@ class InteractiveCalibratorUI(QMainWindow):
     def make_image_view(self):
 
         self.image_view = ImageView()
-        #self.image_view.set_pixmap(pixmap)
+        # self.image_view.set_pixmap(pixmap)
         self.image_view.clicked_signal.connect(self.image_click_callback)
 
         # We need the view to control the zoom
@@ -159,14 +188,14 @@ class InteractiveCalibratorUI(QMainWindow):
         # Add the scene into the view
         self.graphics_view.setScene(self.scene)
 
-
     def make_calibration_tools_api(self):
         self.calibration_api_group = QGroupBox("Calibration API")
 
         self.calibration_api_label = QLabel()
         self.calibration_api_label.setFrameStyle(QFrame.Panel | QFrame.Sunken)
         self.calibration_api_label.setStyleSheet(
-            "QLabel { background-color : red; color : black; }")
+            "QLabel { background-color : red; color : black; }"
+        )
         self.calibration_api_label.setText("Disconnected")
         self.calibration_api_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
@@ -180,7 +209,7 @@ class InteractiveCalibratorUI(QMainWindow):
         calibration_api_layout = QVBoxLayout()
         calibration_api_layout.addWidget(self.calibration_api_label)
         calibration_api_layout.addWidget(self.calibration_api_button)
-        #calibration_api_layout.addStretch(1)
+        # calibration_api_layout.addStretch(1)
         self.calibration_api_group.setLayout(calibration_api_layout)
 
         # Calibration status group
@@ -202,8 +231,10 @@ class InteractiveCalibratorUI(QMainWindow):
         self.calibration_status_inliers_label.setText("inliers: ")
         self.calibration_status_inliers_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
-        self.state_1_message = f"To add a calibration pair\nfirst click the 3d point." + \
-            "\nTo delete a calibration\npoint, click it in the\nimage"
+        self.state_1_message = (
+            f"To add a calibration pair\nfirst click the 3d point."
+            + "\nTo delete a calibration\npoint, click it in the\nimage"
+        )
 
         user_message_label = QLabel()
         user_message_label.setText(self.state_1_message)
@@ -215,7 +246,6 @@ class InteractiveCalibratorUI(QMainWindow):
         load_calibration_button = QPushButton("Load calibration")
         load_calibration_button.clicked.connect(self.load_calibration_callback)
 
-
         calibration_status_layout = QVBoxLayout()
         calibration_status_layout.addWidget(calibration_status_helper_label)
         calibration_status_layout.addWidget(self.calibration_status_points_label)
@@ -224,7 +254,7 @@ class InteractiveCalibratorUI(QMainWindow):
         calibration_status_layout.addWidget(user_message_label)
         calibration_status_layout.addWidget(save_calibration_button)
         calibration_status_layout.addWidget(load_calibration_button)
-        #calibration_status_layout.addStretch(1)
+        # calibration_status_layout.addStretch(1)
         self.calibration_status_group.setLayout(calibration_status_layout)
 
     def make_calibration_options(self):
@@ -238,7 +268,8 @@ class InteractiveCalibratorUI(QMainWindow):
         def calibration_intrinsics_callback():
             self.ros_interface.optimize_camera_intrinsics(
                 self.object_calibration_points + self.external_object_calibration_points,
-                self.image_calibration_points + self.external_image_calibration_points)
+                self.image_calibration_points + self.external_image_calibration_points,
+            )
 
             self.calibration2_button.setEnabled(False)
             self.calibration2_button.setText("Optimizing...")
@@ -273,28 +304,34 @@ class InteractiveCalibratorUI(QMainWindow):
         def use_optimized_intrinsics_callback(state):
             if state == Qt.Checked:
                 self.image_view.set_camera_info(
-                    self.optimized_camera_info.k, self.optimized_camera_info.d)
+                    self.optimized_camera_info.k, self.optimized_camera_info.d
+                )
                 self.calibrator.set_camera_info(
-                    self.optimized_camera_info.k, self.optimized_camera_info.d)
+                    self.optimized_camera_info.k, self.optimized_camera_info.d
+                )
             else:
                 self.image_view.set_camera_info(self.camera_info.k, self.camera_info.d)
                 self.calibrator.set_camera_info(self.camera_info.k, self.camera_info.d)
 
         self.use_optimized_intrinsics_checkbox = QCheckBox("Use optimized Intrinsics")
-        self.use_optimized_intrinsics_checkbox.stateChanged.connect(use_optimized_intrinsics_callback)
+        self.use_optimized_intrinsics_checkbox.stateChanged.connect(
+            use_optimized_intrinsics_callback
+        )
         self.use_optimized_intrinsics_checkbox.setEnabled(False)
         self.use_optimized_intrinsics_checkbox.setChecked(False)
 
         def pnp_min_points_callback():
-            self.calibration_possible = \
-                len(self.image_calibration_points) + len(self.external_image_calibration_points) \
-                    >= self.pnp_min_points_spinbox.value()
+            self.calibration_possible = (
+                len(self.image_calibration_points) + len(self.external_image_calibration_points)
+                >= self.pnp_min_points_spinbox.value()
+            )
 
             self.calibration_button.setEnabled(self.calibration_possible)
             self.calibration2_button.setEnabled(
-                self.calibration_possible and
-                self.optimize_camera_intrinsics_status and
-                not self.optimize_camera_intrinsics_waiting)
+                self.calibration_possible
+                and self.optimize_camera_intrinsics_status
+                and not self.optimize_camera_intrinsics_waiting
+            )
 
         pnp_min_points_label = QLabel("Minimum pnp\n points")
         self.pnp_min_points_spinbox = QSpinBox()
@@ -382,8 +419,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.publish_tf_checkbox = QCheckBox("Publish tf")
         self.publish_tf_checkbox.stateChanged.connect(republish_data_callback)
         self.publish_tf_checkbox.setChecked(True)
-
-
 
         data_collection_options_layout = QVBoxLayout()
         data_collection_options_layout.addWidget(self.pause_start_button)
@@ -532,7 +567,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.render_inliers_checkbox.setChecked(False)
         self.render_inliers_checkbox.setEnabled(False)
 
-
         visualization_options_layout = QVBoxLayout()
         visualization_options_layout.addWidget(tf_source_label)
         visualization_options_layout.addWidget(self.tf_source_combobox)
@@ -562,26 +596,30 @@ class InteractiveCalibratorUI(QMainWindow):
         visualization_options_layout.addWidget(rendering_min_distance_spinbox)
         visualization_options_layout.addWidget(rendering_max_distance_label)
         visualization_options_layout.addWidget(rendering_max_distance_spinbox)
-        #visualization_options_layout.addStretch(1)
+        # visualization_options_layout.addStretch(1)
         self.visualization_options_group.setLayout(visualization_options_layout)
 
     def save_calibration_callback(self):
 
         output_folder = QFileDialog.getExistingDirectory(
-            None, "Select directory to save the calibration result", ".",
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
+            None,
+            "Select directory to save the calibration result",
+            ".",
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
+        )
 
-        if (output_folder is None or output_folder == ''):
+        if output_folder is None or output_folder == "":
             return
 
         print(output_folder)
 
         object_points = np.array(
             self.object_calibration_points + self.external_object_calibration_points,
-            dtype=np.float64)
+            dtype=np.float64,
+        )
         image_points = np.array(
-            self.image_calibration_points + self.external_image_calibration_points,
-            dtype=np.float64)
+            self.image_calibration_points + self.external_image_calibration_points, dtype=np.float64
+        )
 
         num_points, dim = object_points.shape
         assert dim == 3
@@ -595,7 +633,7 @@ class InteractiveCalibratorUI(QMainWindow):
 
             d = message_to_ordereddict(self.optimized_camera_info)
 
-            with open(os.path.join(output_folder, "optimized_camera_info.json"), 'w') as fout:
+            with open(os.path.join(output_folder, "optimized_camera_info.json"), "w") as fout:
                 fout.write(json.dumps(d, indent=4, sort_keys=False))
 
         self.ros_interface.save_calibration_tfs(output_folder)
@@ -604,10 +642,13 @@ class InteractiveCalibratorUI(QMainWindow):
     def load_calibration_callback(self):
 
         input_dir = QFileDialog.getExistingDirectory(
-            None, "Select directory to load calibration points from", ".",
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
+            None,
+            "Select directory to load calibration points from",
+            ".",
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
+        )
 
-        if (input_dir is None or input_dir == ''):
+        if input_dir is None or input_dir == "":
             return
 
         print(input_dir)
@@ -623,20 +664,23 @@ class InteractiveCalibratorUI(QMainWindow):
 
         assert len(self.image_calibration_points) == len(self.object_calibration_points)
 
-        self.calibration_possible = \
-            len(self.image_calibration_points) + len(self.external_image_calibration_points) \
-                >= self.pnp_min_points_spinbox.value()
+        self.calibration_possible = (
+            len(self.image_calibration_points) + len(self.external_image_calibration_points)
+            >= self.pnp_min_points_spinbox.value()
+        )
 
         self.calibration_button.setEnabled(self.calibration_possible)
         self.calibration2_button.setEnabled(
-            self.calibration_possible and
-            self.optimize_camera_intrinsics_status and
-            not self.optimize_camera_intrinsics_waiting)
+            self.calibration_possible
+            and self.optimize_camera_intrinsics_status
+            and not self.optimize_camera_intrinsics_waiting
+        )
 
         self.calibration_callback()
 
         self.image_view.set_calibration_points(
-            self.object_calibration_points, self.image_calibration_points)
+            self.object_calibration_points, self.image_calibration_points
+        )
         pass
 
     def calibration_callback(self):
@@ -651,17 +695,17 @@ class InteractiveCalibratorUI(QMainWindow):
         self.calibrator.set_ransac(self.use_ransac_checkbox.isChecked())
 
         # Calibrate
-        object_calibration_points = \
+        object_calibration_points = (
             self.object_calibration_points + self.external_object_calibration_points
-        image_calibration_points = \
+        )
+        image_calibration_points = (
             self.image_calibration_points + self.external_image_calibration_points
+        )
 
         if len(object_calibration_points) == 0 or len(image_calibration_points) == 0:
             return
 
-        transform = self.calibrator.calibrate(
-            object_calibration_points,
-            image_calibration_points)
+        transform = self.calibrator.calibrate(object_calibration_points, image_calibration_points)
 
         if transform is None:
             return
@@ -673,14 +717,19 @@ class InteractiveCalibratorUI(QMainWindow):
 
         self.tf_source_callback(self.tf_source_combobox.currentText())
 
-        self.calibration_api_button.setEnabled(self.calibration_api_request_received
-            and self.calibrated_transform is not None)
+        self.calibration_api_button.setEnabled(
+            self.calibration_api_request_received and self.calibrated_transform is not None
+        )
         self.ros_interface.set_camera_lidar_transform(transform)
 
     def update_calibration_status(self):
 
-        object_calibration_points = self.object_calibration_points + self.external_object_calibration_points
-        image_calibration_points = self.image_calibration_points + self.external_image_calibration_points
+        object_calibration_points = (
+            self.object_calibration_points + self.external_object_calibration_points
+        )
+        image_calibration_points = (
+            self.image_calibration_points + self.external_image_calibration_points
+        )
 
         calibration_points_available = len(object_calibration_points) > 0
 
@@ -688,7 +737,8 @@ class InteractiveCalibratorUI(QMainWindow):
             calibrated_error, calibrated_inliers = self.calibrator.calculate_reproj_error(
                 object_calibration_points,
                 image_calibration_points,
-                transform_matrix = self.calibrated_transform)
+                transform_matrix=self.calibrated_transform,
+            )
             calibrated_error_string = f"{calibrated_error:.2f}"
             self.calibrated_error = calibrated_error
         else:
@@ -699,7 +749,8 @@ class InteractiveCalibratorUI(QMainWindow):
             source_error, source_inliers = self.calibrator.calculate_reproj_error(
                 object_calibration_points,
                 image_calibration_points,
-                transform_matrix = self.source_transform)
+                transform_matrix=self.source_transform,
+            )
             source_error_string = f"{source_error:.2f}"
         else:
             source_error_string = ""
@@ -707,9 +758,11 @@ class InteractiveCalibratorUI(QMainWindow):
 
         self.calibration_status_points_label.setText(f"#points: {len(object_calibration_points)}")
         self.calibration_status_error_label.setText(
-            f"Reproj error: {calibrated_error_string} / {source_error_string}")
+            f"Reproj error: {calibrated_error_string} / {source_error_string}"
+        )
         self.calibration_status_inliers_label.setText(
-            f"inliers:  {int(calibrated_inliers.sum())} / {int(source_inliers.sum())}")
+            f"inliers:  {int(calibrated_inliers.sum())} / {int(source_inliers.sum())}"
+        )
 
     def tf_source_callback(self, string):
 
@@ -738,7 +791,8 @@ class InteractiveCalibratorUI(QMainWindow):
             height, width, channel = img.shape
             bytes_per_line = 3 * width
             q_img = QImage(
-                img.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
+                img.data, width, height, bytes_per_line, QImage.Format_RGB888
+            ).rgbSwapped()
             self.pixmap_tmp = QPixmap(q_img)
 
             self.pointcloud_tmp = pointcloud
@@ -758,7 +812,9 @@ class InteractiveCalibratorUI(QMainWindow):
     def object_point_ros_callback(self, point):
 
         assert np.prod(point.shape) == 3
-        point = point.reshape(3,)
+        point = point.reshape(
+            3,
+        )
         self.object_point_signal.emit(point[0], point[1], point[2])
 
     def external_calibration_points_ros_callback(self, object_points, image_points):
@@ -774,16 +830,17 @@ class InteractiveCalibratorUI(QMainWindow):
         with self.lock:
             self.optimize_camera_intrinsics_status = service_status
             self.calibration2_button.setEnabled(
-                service_status and
-                self.calibration_possible and
-                not self.optimize_camera_intrinsics_waiting)
+                service_status
+                and self.calibration_possible
+                and not self.optimize_camera_intrinsics_waiting
+            )
 
     def optimize_camera_intrinsics_result_callback(self, optimized_camera_info):
 
         with self.lock:
             self.calibration2_button.setEnabled(
-                self.calibration_possible and
-                self.optimize_camera_intrinsics_status)
+                self.calibration_possible and self.optimize_camera_intrinsics_status
+            )
 
             self.calibration2_button.setText("Calibrate intrinsics\n(experimental)")
             self.use_optimized_intrinsics_checkbox.setEnabled(True)
@@ -796,18 +853,21 @@ class InteractiveCalibratorUI(QMainWindow):
     def calibration_api_request_received_callback(self):
 
         self.calibration_api_label.setStyleSheet(
-            "QLabel { background-color : yellow; color : black; }")
+            "QLabel { background-color : yellow; color : black; }"
+        )
         self.calibration_api_label.setText("Waiting calibration")
 
         self.calibration_api_request_received = True
 
-        self.calibration_api_button.setEnabled(self.calibration_api_request_received
-            and self.calibrated_transform is not None)
+        self.calibration_api_button.setEnabled(
+            self.calibration_api_request_received and self.calibrated_transform is not None
+        )
 
     def calibration_api_request_sent_callback(self):
 
         self.calibration_api_label.setStyleSheet(
-            "QLabel { background-color : green; color : black; }")
+            "QLabel { background-color : green; color : black; }"
+        )
         self.calibration_api_label.setText("Calibration sent")
 
         self.calibration_api_request_received = False
@@ -821,14 +881,14 @@ class InteractiveCalibratorUI(QMainWindow):
             self.image_view.set_pixmap(self.pixmap_tmp)
             self.image_view.set_pointcloud(self.pointcloud_tmp)
 
-            if (
-                not( self.use_optimized_intrinsics_checkbox.isChecked() and
-                self.use_optimized_intrinsics_checkbox.isEnabled())
+            if not (
+                self.use_optimized_intrinsics_checkbox.isChecked()
+                and self.use_optimized_intrinsics_checkbox.isEnabled()
             ):
                 self.camera_info = self.camera_info_tmp
 
-                self.image_view.set_camera_info(self.camera_info_tmp.k,self.camera_info_tmp.d)
-                self.calibrator.set_camera_info(self.camera_info_tmp.k,self.camera_info_tmp.d)
+                self.image_view.set_camera_info(self.camera_info_tmp.k, self.camera_info_tmp.d)
+                self.calibrator.set_camera_info(self.camera_info_tmp.k, self.camera_info_tmp.d)
 
             self.image_view.update()
             self.graphics_view.update()
@@ -863,28 +923,34 @@ class InteractiveCalibratorUI(QMainWindow):
             return
 
         self.image_calibration_points.append(p)
-        self.object_calibration_points.append(self.current_object_point.reshape(3,))
+        self.object_calibration_points.append(
+            self.current_object_point.reshape(
+                3,
+            )
+        )
 
         self.image_view.set_calibration_points(
-            self.object_calibration_points, self.image_calibration_points)
+            self.object_calibration_points, self.image_calibration_points
+        )
 
         self.calibration_callback()
 
         self.current_object_point = None
         self.image_view.set_current_point(None)
 
-        self.calibration_possible = \
-            len(self.image_calibration_points) + len(self.external_image_calibration_points) \
-                >= self.pnp_min_points_spinbox.value()
+        self.calibration_possible = (
+            len(self.image_calibration_points) + len(self.external_image_calibration_points)
+            >= self.pnp_min_points_spinbox.value()
+        )
 
         self.calibration_button.setEnabled(self.calibration_possible)
         self.calibration2_button.setEnabled(
-            self.calibration_possible and
-            self.optimize_camera_intrinsics_status and
-            not self.optimize_camera_intrinsics_waiting)
+            self.calibration_possible
+            and self.optimize_camera_intrinsics_status
+            and not self.optimize_camera_intrinsics_waiting
+        )
 
         self.image_view.update()
-
 
     def delete_calibration_points(self, p):
 
@@ -894,7 +960,7 @@ class InteractiveCalibratorUI(QMainWindow):
         p = p.reshape(1, 2)
 
         # Detection deletion feature
-        tolerance = 15 # px
+        tolerance = 15  # px
 
         object_points = np.array(self.object_calibration_points)
         image_points = np.array(self.image_calibration_points)
@@ -908,12 +974,13 @@ class InteractiveCalibratorUI(QMainWindow):
         self.image_calibration_points = [p for p in image_points]
 
         self.calibration_callback()
-        self.image_view.set_calibration_points(self.object_calibration_points,
-            self.image_calibration_points)
+        self.image_view.set_calibration_points(
+            self.object_calibration_points, self.image_calibration_points
+        )
 
     def object_point_callback(self, x, y, z):
 
-        point_array = np.array([x, y, z], np.float64).reshape(1,3)
+        point_array = np.array([x, y, z], np.float64).reshape(1, 3)
 
         self.image_view.set_current_point(point_array)
         self.image_view.update()
@@ -924,28 +991,33 @@ class InteractiveCalibratorUI(QMainWindow):
 
         with self.lock:
             self.external_object_calibration_points = copy.deepcopy(
-                self.external_object_calibration_points_tmp)
+                self.external_object_calibration_points_tmp
+            )
             self.external_image_calibration_points = copy.deepcopy(
-                self.external_image_calibration_points_tmp)
+                self.external_image_calibration_points_tmp
+            )
 
         self.image_view.set_external_calibration_points(
-            self.external_object_calibration_points,
-            self.external_image_calibration_points_tmp)
+            self.external_object_calibration_points, self.external_image_calibration_points_tmp
+        )
 
-        self.calibration_possible = \
-            len(self.image_calibration_points) + len(self.external_image_calibration_points) \
-                >= self.pnp_min_points_spinbox.value()
+        self.calibration_possible = (
+            len(self.image_calibration_points) + len(self.external_image_calibration_points)
+            >= self.pnp_min_points_spinbox.value()
+        )
 
         self.calibration_button.setEnabled(self.calibration_possible)
         self.calibration2_button.setEnabled(
-            self.calibration_possible and
-            self.optimize_camera_intrinsics_status and
-            not self.optimize_camera_intrinsics_waiting)
+            self.calibration_possible
+            and self.optimize_camera_intrinsics_status
+            and not self.optimize_camera_intrinsics_waiting
+        )
 
     def optimized_camera_info_callback(self):
 
         with self.lock:
             self.optimized_camera_info = copy.deepcopy(self.optimized_camera_info_tmp)
+
 
 def main(args=None):
     app = QApplication(sys.argv)
@@ -965,8 +1037,10 @@ def main(args=None):
         print("Received sigint. Quiting...")
         rclpy.shutdown()
 
+
 def sigint_handler(*args):
     QApplication.quit()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

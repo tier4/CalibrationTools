@@ -14,11 +14,12 @@
 // limitations under the License.
 //
 
-#include <string>
+#include "pitch_checker/pitch_checker.hpp"
+
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
-#include "pitch_checker/pitch_checker.hpp"
 
 PitchChecker::PitchChecker(const rclcpp::NodeOptions & node_options)
 : Node("pitch_checker", node_options)
@@ -28,8 +29,7 @@ PitchChecker::PitchChecker(const rclcpp::NodeOptions & node_options)
   update_hz_ = this->declare_parameter<double>("update_hz", 10.0);
   output_file_ = this->declare_parameter<std::string>("output_file", "pitch.csv");
   save_flag_server_ = this->create_service<std_srvs::srv::Trigger>(
-    "/pitch_checker/save_flag",
-    std::bind(&PitchChecker::onSaveService, this, _1, _2, _3));
+    "/pitch_checker/save_flag", std::bind(&PitchChecker::onSaveService, this, _1, _2, _3));
   initTimer(1.0 / update_hz_);
 }
 
@@ -78,13 +78,12 @@ bool PitchChecker::getTf()
   geometry_msgs::msg::TransformStamped::ConstSharedPtr transform;
   try {
     transform = transform_listener_->getTransform(
-      "map", "base_link", rclcpp::Time(0),
-      rclcpp::Duration::from_seconds(0.5));
+      "map", "base_link", rclcpp::Time(0), rclcpp::Duration::from_seconds(0.5));
   } catch (tf2::TransformException & ex) {
     auto & clk = *this->get_clock();
     RCLCPP_WARN_SKIPFIRST_THROTTLE(
-      rclcpp::get_logger("pitch_checker"), clk,
-      5000, "cannot get map to base_link transform. %s", ex.what());
+      rclcpp::get_logger("pitch_checker"), clk, 5000, "cannot get map to base_link transform. %s",
+      ex.what());
     return false;
   }
   double roll, pitch, yaw;
@@ -109,14 +108,18 @@ void PitchChecker::pitchInfoToMap()
     const int y_i = static_cast<int>(std::nearbyint(tf_info.y));
     const auto xy_i = std::pair<int, int>(x_i, y_i);
     // create new key
-    if (tf_map_.count(xy_i) == 0) {tf_map_[xy_i] = std::vector<TfInfo>();}
+    if (tf_map_.count(xy_i) == 0) {
+      tf_map_[xy_i] = std::vector<TfInfo>();
+    }
     tf_map_[xy_i].emplace_back(tf_info);
   }
 
   for (const auto & map_val : tf_map_) {
     const auto key = map_val.first;
     const auto tf_info_vec = map_val.second;
-    if (tf_info_vec.empty()) {continue;}
+    if (tf_info_vec.empty()) {
+      continue;
+    }
     std::vector<TfInfo> vec1;
     std::vector<TfInfo> vec2;
     // separate vec by yaw
@@ -128,8 +131,12 @@ void PitchChecker::pitchInfoToMap()
         vec2.emplace_back(tf_info);
       }
       tf_map_unified_[key] = std::vector<TfInfo>();
-      if (!vec1.empty()) {tf_map_unified_[key].emplace_back(getMedianPitchTfInfo(vec1));}
-      if (!vec2.empty()) {tf_map_unified_[key].emplace_back(getMedianPitchTfInfo(vec2));}
+      if (!vec1.empty()) {
+        tf_map_unified_[key].emplace_back(getMedianPitchTfInfo(vec1));
+      }
+      if (!vec2.empty()) {
+        tf_map_unified_[key].emplace_back(getMedianPitchTfInfo(vec2));
+      }
     }
   }
 }
@@ -139,7 +146,7 @@ TfInfo PitchChecker::getMedianPitchTfInfo(const std::vector<TfInfo> & tf_info_ve
   auto tf_info_vec_local = tf_info_vec;
   std::sort(
     tf_info_vec_local.begin(), tf_info_vec_local.end(),
-    [](const TfInfo & x, const TfInfo & y) {return x.pitch < y.pitch;});
+    [](const TfInfo & x, const TfInfo & y) { return x.pitch < y.pitch; });
 
   if (tf_info_vec_local.size() % 2 == 0) {
     const int mid_idx_1 = (tf_info_vec_local.size()) / 2;
@@ -163,8 +170,7 @@ bool PitchChecker::writeMap()
   std::ofstream of(output_file_);
   if (!of.is_open()) {
     RCLCPP_ERROR_STREAM(
-      rclcpp::get_logger("pitch_checker"),
-      "cannot open the file: " << output_file_);
+      rclcpp::get_logger("pitch_checker"), "cannot open the file: " << output_file_);
     return false;
   }
 
@@ -174,8 +180,8 @@ bool PitchChecker::writeMap()
     const int x = key.first;
     const int y = key.second;
     for (const auto tf_info : map_val.second) {
-      of << x << "," << y << "," << tf_info.z << "," << tf_info.yaw << "," << tf_info.pitch <<
-        std::endl;
+      of << x << "," << y << "," << tf_info.z << "," << tf_info.yaw << "," << tf_info.pitch
+         << std::endl;
     }
   }
   return true;

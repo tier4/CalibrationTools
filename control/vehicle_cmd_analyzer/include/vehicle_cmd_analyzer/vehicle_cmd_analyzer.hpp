@@ -15,17 +15,19 @@
 #ifndef VEHICLE_CMD_ANALYZER__VEHICLE_CMD_ANALYZER_HPP_
 #define VEHICLE_CMD_ANALYZER__VEHICLE_CMD_ANALYZER_HPP_
 
-#include <rclcpp/rclcpp.hpp>
-#include <memory>
-#include <utility>
-#include <string>
-#include <algorithm>
-#include <tuple>
-#include "tier4_debug_msgs/msg/float32_multi_array_stamped.hpp"
-#include "autoware_auto_control_msgs/msg/ackermann_control_command.hpp"
+#include "vehicle_cmd_analyzer/debug_values.hpp"
 #include "vehicle_info_util/vehicle_info_util.hpp"
 
-#include "vehicle_cmd_analyzer/debug_values.hpp"
+#include <rclcpp/rclcpp.hpp>
+
+#include "autoware_auto_control_msgs/msg/ackermann_control_command.hpp"
+#include "tier4_debug_msgs/msg/float32_multi_array_stamped.hpp"
+
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
 
 class VehicleCmdAnalyzer : public rclcpp::Node
 {
@@ -35,8 +37,8 @@ private:
   rclcpp::Publisher<tier4_debug_msgs::msg::Float32MultiArrayStamped>::SharedPtr pub_debug_;
   rclcpp::TimerBase::SharedPtr timer_control_;
 
-  std::shared_ptr<autoware_auto_control_msgs::msg::AckermannControlCommand>
-  vehicle_cmd_ptr_{nullptr};
+  std::shared_ptr<autoware_auto_control_msgs::msg::AckermannControlCommand> vehicle_cmd_ptr_{
+    nullptr};
 
   // timer callback
   double control_rate_;

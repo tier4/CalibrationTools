@@ -26,11 +26,10 @@ from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import Float64MultiArray
 
-plt.style.use('dark_background')
+plt.style.use("dark_background")
 
 
 class CorrData:
-
     def __init__(self, name, node):
         self.print_debug = False
         self.input_received = False
@@ -44,25 +43,17 @@ class CorrData:
         self._node = node
 
         self.sub_input = node.create_subscription(
-            Float32MultiArray,
-            '/debug_values/'+name+'_input',
-            self.CallBackInput,
-            10)
+            Float32MultiArray, "/debug_values/" + name + "_input", self.CallBackInput, 10
+        )
         self.sub_response = node.create_subscription(
-            Float32MultiArray,
-            '/debug_values/'+name+'_response',
-            self.CallBackResponse,
-            10)
+            Float32MultiArray, "/debug_values/" + name + "_response", self.CallBackResponse, 10
+        )
         self.sub_estimated = node.create_subscription(
-            Float32MultiArray,
-            '/debug_values/'+name+'_estimated',
-            self.CallBackEstimated,
-            10)
+            Float32MultiArray, "/debug_values/" + name + "_estimated", self.CallBackEstimated, 10
+        )
         self.sub_correlation = node.create_subscription(
-            Float64MultiArray,
-            '/debug_values/'+name+'_correlation',
-            self.CallBackCorr,
-            10)
+            Float64MultiArray, "/debug_values/" + name + "_correlation", self.CallBackCorr, 10
+        )
 
     def CallBackCorr(self, msg):
         self.cross_correlation = msg.data
@@ -75,25 +66,24 @@ class CorrData:
         self.input = msg.data
         self.input_received = True
         if self.print_debug:
-            self._node.get_logger().info('in')
+            self._node.get_logger().info("in")
             print(self.input[::1])
 
     def CallBackResponse(self, msg):
         self.response = msg.data
         self.response_received = True
         if self.print_debug:
-            self._node.get_logger().info('resp')
+            self._node.get_logger().info("resp")
             print(self.response[::1])
 
     def CallBackEstimated(self, msg):
         self.estimated = msg.data
         self.estimated_received = True
         if self.print_debug:
-            self._node.get_logger().info('est')
+            self._node.get_logger().info("est")
 
 
-class PlotData():
-
+class PlotData:
     def __init__(self):
         self.ax_corr = None
         self.ax_val = None
@@ -104,27 +94,30 @@ class PlotData():
 
 
 class TimeDelayAnimator(Node):
-
     def __init__(self):
-        super().__init__('correlation_visualizer')
+        super().__init__("correlation_visualizer")
         self.debugMode()
 
     def debugMode(self):
         self.accel_plt = PlotData()  # accel
         self.brake_plt = PlotData()  # brake
         self.steer_plt = PlotData()  # steer
-        self.fig, (self.accel_plt.ax_corr, self.brake_plt.ax_corr,
-                   self.steer_plt.ax_corr) = plt.subplots(3, 1, figsize=(6, 12))
+        self.fig, (
+            self.accel_plt.ax_corr,
+            self.brake_plt.ax_corr,
+            self.steer_plt.ax_corr,
+        ) = plt.subplots(3, 1, figsize=(6, 12))
 
-        self.accel_data = CorrData('accel', self)
-        self.brake_data = CorrData('brake', self)
-        self.steer_data = CorrData('steer', self)
+        self.accel_data = CorrData("accel", self)
+        self.brake_data = CorrData("brake", self)
+        self.steer_data = CorrData("steer", self)
         self.ani = animation.FuncAnimation(
-            self.fig, self.animationCallback, interval=200, blit=True)
+            self.fig, self.animationCallback, interval=200, blit=True
+        )
         min_max = [0, 1000]
-        self.setPlotGraph(self.accel_plt, 'accel', min_max, [0, 1])
-        self.setPlotGraph(self.brake_plt, 'brake', min_max, [0, 1])
-        self.setPlotGraph(self.steer_plt, 'steer', min_max, [-1, 1])
+        self.setPlotGraph(self.accel_plt, "accel", min_max, [0, 1])
+        self.setPlotGraph(self.brake_plt, "brake", min_max, [0, 1])
+        self.setPlotGraph(self.steer_plt, "steer", min_max, [-1, 1])
         return
 
     def setPlotGraph(self, plotter, name, min_max, range_list):
@@ -133,21 +126,24 @@ class TimeDelayAnimator(Node):
         plotter.ax_corr.set_ylim(range_list)
         plotter.ax_val.set_xlim(min_max)
         plotter.ax_val.set_ylim(range_list)
-        plotter.im_corr, = plotter.ax_corr.plot(
-            [], [], label='0: cross correlation', color='red', marker='')
-        plotter.im_input, = plotter.ax_val.plot(
-            [], [], label='1: input (right axis)', color='green', marker='')
-        plotter.im_response, = plotter.ax_val.plot(
-            [], [], label='2: response (right axis)', color='purple', marker='')
-        plotter.im_estimated, = plotter.ax_val.plot(
-            [], [], label='3: estimated (right axis)', color='orange', marker='')
+        (plotter.im_corr,) = plotter.ax_corr.plot(
+            [], [], label="0: cross correlation", color="red", marker=""
+        )
+        (plotter.im_input,) = plotter.ax_val.plot(
+            [], [], label="1: input (right axis)", color="green", marker=""
+        )
+        (plotter.im_response,) = plotter.ax_val.plot(
+            [], [], label="2: response (right axis)", color="purple", marker=""
+        )
+        (plotter.im_estimated,) = plotter.ax_val.plot(
+            [], [], label="3: estimated (right axis)", color="orange", marker=""
+        )
         handler1, label1 = plotter.ax_corr.get_legend_handles_labels()
         handler2, label2 = plotter.ax_val.get_legend_handles_labels()
-        plotter.ax_corr.legend(handler1 + handler2, label1 +
-                               label2, loc=2, borderaxespad=0.)
-        plotter.ax_corr.set_xlabel(name + ' correlation index / time')
-        plotter.ax_corr.set_ylabel(name + ' correlation')
-        plotter.ax_val.set_ylabel(name + '  value')
+        plotter.ax_corr.legend(handler1 + handler2, label1 + label2, loc=2, borderaxespad=0.0)
+        plotter.ax_corr.set_xlabel(name + " correlation index / time")
+        plotter.ax_corr.set_ylabel(name + " correlation")
+        plotter.ax_val.set_ylabel(name + "  value")
         return
 
     def animationCallback(self, data):
@@ -155,10 +151,20 @@ class TimeDelayAnimator(Node):
             self.timerCallback()
         except KeyboardInterrupt:
             exit(0)
-        return self.accel_plt.im_corr, self.accel_plt.im_input, self.accel_plt.im_response, \
-            self.accel_plt.im_estimated, self.brake_plt.im_corr, self.brake_plt.im_input, \
-            self.brake_plt.im_response, self.brake_plt.im_estimated, self.steer_plt.im_corr, \
-            self.steer_plt.im_input, self.steer_plt.im_response, self.steer_plt.im_estimated
+        return (
+            self.accel_plt.im_corr,
+            self.accel_plt.im_input,
+            self.accel_plt.im_response,
+            self.accel_plt.im_estimated,
+            self.brake_plt.im_corr,
+            self.brake_plt.im_input,
+            self.brake_plt.im_response,
+            self.brake_plt.im_estimated,
+            self.steer_plt.im_corr,
+            self.steer_plt.im_input,
+            self.steer_plt.im_response,
+            self.steer_plt.im_estimated,
+        )
 
     def setData(self, data, plotter, resample_rate=1):
         corr_data_y = copy.deepcopy(np.array(data.cross_correlation[::resample_rate]))
@@ -169,8 +175,8 @@ class TimeDelayAnimator(Node):
         response_data_x = np.arange(len(response_data_y))
         estimated_data_y = copy.deepcopy(np.array(data.estimated[::-resample_rate]))
         estimated_data_x = np.arange(len(estimated_data_y))
-        if (len(corr_data_x) != len(corr_data_y)):
-            print('size mismatch for I/O')
+        if len(corr_data_x) != len(corr_data_y):
+            print("size mismatch for I/O")
             return
         plotter.im_corr.set_data(corr_data_x, corr_data_y)
         plotter.im_input.set_data(input_data_x, input_data_y)
@@ -197,5 +203,5 @@ def main(args=None):
     plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

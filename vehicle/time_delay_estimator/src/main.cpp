@@ -14,8 +14,9 @@
 //  limitations under the License.
 //
 
-#include <memory>
 #include "time_delay_estimator/time_delay_estimator_node.hpp"
+
+#include <memory>
 
 int main(int argc, char ** argv)
 {

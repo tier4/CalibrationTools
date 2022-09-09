@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR_TAG_CALIBRATOR_VISUALIZER_H_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR_TAG_CALIBRATOR_VISUALIZER_H_
+#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__TAG_CALIBRATOR_VISUALIZER_HPP_
+#define EXTRINSIC_TAG_BASED_CALIBRATOR__TAG_CALIBRATOR_VISUALIZER_HPP_
 
 #include <Eigen/Core>
 #include <extrinsic_tag_based_calibrator/apriltag_hypothesis.hpp>
@@ -119,4 +119,4 @@ private:
   cv::Affine3d camera_base_transform_;
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR_TAG_CALIBRATOR_VISUALIZER_HPP_
+#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__TAG_CALIBRATOR_VISUALIZER_HPP_

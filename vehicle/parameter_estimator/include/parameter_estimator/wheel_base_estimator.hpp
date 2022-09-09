@@ -17,13 +17,14 @@
 #ifndef PARAMETER_ESTIMATOR__WHEEL_BASE_ESTIMATOR_HPP_
 #define PARAMETER_ESTIMATOR__WHEEL_BASE_ESTIMATOR_HPP_
 
-#include <memory>
-#include "rclcpp/rclcpp.hpp"
 #include "estimator_utils/estimator_base.hpp"
 #include "estimator_utils/math_utils.hpp"
 #include "estimator_utils/optimization_utils.hpp"
 #include "parameter_estimator/debugger.hpp"
 #include "parameter_estimator/parameters.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+#include <memory>
 
 class WheelBaseEstimator : public EstimatorBase
 {
@@ -31,7 +32,7 @@ public:
   explicit WheelBaseEstimator(
     rclcpp::Node * node, const Params & p, double cov, const double ff, const double est);
   ~WheelBaseEstimator() {}
-  void setData(const VehicleData & v) {data_ = v;}
+  void setData(const VehicleData & v) { data_ = v; }
 
 private:
   VehicleData data_;

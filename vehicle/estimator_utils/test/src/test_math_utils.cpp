@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+#include "estimator_utils/math_utils.hpp"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -25,8 +27,6 @@
 #include <random>
 #include <utility>
 #include <vector>
-
-#include "estimator_utils/math_utils.hpp"
 
 TEST(math_utils, saturation)
 {
