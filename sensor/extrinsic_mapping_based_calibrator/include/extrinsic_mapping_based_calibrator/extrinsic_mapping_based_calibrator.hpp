@@ -165,6 +165,13 @@ protected:
   std::vector<CalibrationFrame> filterCalibrationFrames(
     const std::vector<CalibrationFrame> & calibration_frames);
 
+  /*!
+   * Select best K calibration frames based on information and spatial correlation
+   * @param[in] calibration_frames The raw calibrated frames
+   */
+  std::vector<CalibrationFrame> selectBestKCalibrationFrames(
+    const std::vector<CalibrationFrame> & calibration_frames, int num_frames);
+
   // Parameters
   std::string base_frame_;
   std::string sensor_kit_frame_;  // calibration parent frame
@@ -181,7 +188,7 @@ protected:
     bool verbose_;
     int max_frames_;
     int local_map_num_keyframes_;
-    int calibration_num_keyframes_;
+    int calibration_num_keyframes_; // Num of keyframes to use when creating a dense point cloud
     double max_pointcloud_range_;
     double ndt_resolution_;
     double ndt_step_size_;
@@ -196,6 +203,7 @@ protected:
     double frame_nonstopped_distance_;
     int frames_since_stop_force_frame_;
     int calibration_skip_keyframes_;
+    int calibration_max_frames_; // num of max calibration frames to use
 
     // Calibration preprocessing
     double calibration_max_interpolated_time_;
@@ -205,6 +213,7 @@ protected:
     double calibration_max_interpolated_accel_;
     bool calibration_use_only_stopped_;
     double max_calibration_range_;
+    double calibration_min_pca_eigenvalue_;
 
     // Calibration parameters
     int calibration_solver_iterations_;
