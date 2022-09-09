@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="vehicle_id" default="default" />
-  <let name="sensor_model" value="aip_x1" />
-  <let name="base_frame" value="base_link" />
-  <let name="parent_frame" value="sensor_kit_base_link" />
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_ground_plane_calibrator)/rviz/velodyne_top.rviz" />
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_x1"/>
+  <let name="base_frame" value="base_link"/>
+  <let name="parent_frame" value="sensor_kit_base_link"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_ground_plane_calibrator)/rviz/velodyne_top.rviz"/>
   <arg name="rviz" default="true"/>
 
   <!-- extrinsic_calibration_client -->
@@ -23,53 +23,52 @@
     [velodyne_top_base_link,
     livox_front_left_base_link,
     livox_front_center_base_link,
-    livox_front_right_base_link]" />
+    livox_front_right_base_link]"/>
   </node>
 
   <!-- velodyne_top_base_link: extrinsic_ground_plane_calibrator -->
   <group>
     <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/velodyne_top_base_link" />
-      <arg name="base_frame" value="$(var base_frame)" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="velodyne_top_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" />
+      <arg name="ns" value="$(var parent_frame)/velodyne_top_base_link"/>
+      <arg name="base_frame" value="$(var base_frame)"/>
+      <arg name="parent_frame" value="$(var parent_frame)"/>
+      <arg name="child_frame" value="velodyne_top_base_link"/>
+      <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
     </include>
   </group>
 
   <!-- livox_front_left_base_link: extrinsic_ground_plane_calibrator -->
   <group>
     <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_left_base_link" />
-      <arg name="base_frame" value="$(var base_frame)" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_left_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/front_left/livox/lidar" />
+      <arg name="ns" value="$(var parent_frame)/livox_front_left_base_link"/>
+      <arg name="base_frame" value="$(var base_frame)"/>
+      <arg name="parent_frame" value="$(var parent_frame)"/>
+      <arg name="child_frame" value="livox_front_left_base_link"/>
+      <arg name="pointcloud_topic" value="/sensing/lidar/front_left/livox/lidar"/>
     </include>
   </group>
 
   <!-- livox_front_center_base_link: extrinsic_ground_plane_calibrator -->
   <group>
     <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_center_base_link" />
-      <arg name="base_frame" value="$(var base_frame)" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_center_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/front_center/livox/lidar" />
+      <arg name="ns" value="$(var parent_frame)/livox_front_center_base_link"/>
+      <arg name="base_frame" value="$(var base_frame)"/>
+      <arg name="parent_frame" value="$(var parent_frame)"/>
+      <arg name="child_frame" value="livox_front_center_base_link"/>
+      <arg name="pointcloud_topic" value="/sensing/lidar/front_center/livox/lidar"/>
     </include>
   </group>
 
   <!-- livox_front_right_base_link: extrinsic_ground_plane_calibrator -->
   <group>
     <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_right_base_link" />
-      <arg name="base_frame" value="$(var base_frame)" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_right_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/front_right/livox/lidar" />
+      <arg name="ns" value="$(var parent_frame)/livox_front_right_base_link"/>
+      <arg name="base_frame" value="$(var base_frame)"/>
+      <arg name="parent_frame" value="$(var parent_frame)"/>
+      <arg name="child_frame" value="livox_front_right_base_link"/>
+      <arg name="pointcloud_topic" value="/sensing/lidar/front_right/livox/lidar"/>
     </include>
   </group>
 
   <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
-
 </launch>
