@@ -43,6 +43,7 @@ EKF_DR_ODOM_TOPIC = "/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic
 SCALE = 3
 NDT_FREQ = 10
 
+
 def calc_stddev_rotated(P, theta):
     e_vec = np.array([[np.cos(theta)], [np.sin(theta)]])
     d = np.sqrt(np.dot(np.dot(e_vec.T, P), e_vec) / np.linalg.det(P))
