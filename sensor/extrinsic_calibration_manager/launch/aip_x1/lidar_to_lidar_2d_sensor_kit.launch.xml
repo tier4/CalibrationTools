@@ -5,8 +5,11 @@
   <let name="sensor_model" value="aip_x1" />
   <let name="base_frame" value="base_link" />
   <let name="parent_frame" value="sensor_kit_base_link" />
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_ground_plane_calibrator)/rviz/velodyne_top.rviz" />
+  <let name="target_pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" />
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_lidar_to_lidar_2d_calibrator)/rviz/velodyne_top.rviz" />
   <arg name="rviz" default="true"/>
+
+  <!--target frame is velodyne_top_base_link -->
 
   <!-- extrinsic_calibration_client -->
   <arg name="src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensor_kit_calibration.yaml" />
@@ -21,56 +24,48 @@
   <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
     <param name="parent_frame" value="$(var parent_frame)" />
     <param name="child_frames" value="
-    [velodyne_top_base_link,
-    livox_front_left_base_link,
+    [livox_front_left_base_link,
     livox_front_center_base_link,
     livox_front_right_base_link]" />
   </node>
 
-  <!-- velodyne_top_base_link: extrinsic_ground_plane_calibrator -->
+  <!-- livox_front_center_base_link: extrinsic_lidar_to_lidar_2d_calibrator -->
   <group>
-    <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/velodyne_top_base_link" />
-      <arg name="base_frame" value="$(var base_frame)" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="velodyne_top_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" />
-    </include>
-  </group>
-
-  <!-- livox_front_left_base_link: extrinsic_ground_plane_calibrator -->
-  <group>
-    <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
-      <arg name="ns" value="$(var parent_frame)/livox_front_left_base_link" />
-      <arg name="base_frame" value="$(var base_frame)" />
-      <arg name="parent_frame" value="$(var parent_frame)" />
-      <arg name="child_frame" value="livox_front_left_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/front_left/livox/lidar" />
-    </include>
-  </group>
-
-  <!-- livox_front_center_base_link: extrinsic_ground_plane_calibrator -->
-  <group>
-    <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
+    <include file="$(find-pkg-share extrinsic_lidar_to_lidar_2d_calibrator)/launch/calibrator.launch.xml">
       <arg name="ns" value="$(var parent_frame)/livox_front_center_base_link" />
       <arg name="base_frame" value="$(var base_frame)" />
       <arg name="parent_frame" value="$(var parent_frame)" />
       <arg name="child_frame" value="livox_front_center_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/front_center/livox/lidar" />
+      <arg name="source_pointcloud_topic" value="/sensing/lidar/front_center/livox/lidar" />
+      <arg name="target_pointcloud_topic" value="$(var target_pointcloud_topic)" />
     </include>
   </group>
 
-  <!-- livox_front_right_base_link: extrinsic_ground_plane_calibrator -->
+  <!-- livox_front_left_base_link: extrinsic_lidar_to_lidar_2d_calibrator -->
   <group>
-    <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
+    <include file="$(find-pkg-share extrinsic_lidar_to_lidar_2d_calibrator)/launch/calibrator.launch.xml">
+      <arg name="ns" value="$(var parent_frame)/livox_front_left_base_link" />
+      <arg name="base_frame" value="$(var base_frame)" />
+      <arg name="parent_frame" value="$(var parent_frame)" />
+      <arg name="child_frame" value="livox_front_left_base_link" />
+      <arg name="source_pointcloud_topic" value="/sensing/lidar/front_left/livox/lidar" />
+      <arg name="target_pointcloud_topic" value="$(var target_pointcloud_topic)" />
+    </include>
+  </group>
+
+  <!-- livox_front_right_base_link: extrinsic_lidar_to_lidar_2d_calibrator -->
+  <group>
+    <include file="$(find-pkg-share extrinsic_lidar_to_lidar_2d_calibrator)/launch/calibrator.launch.xml">
       <arg name="ns" value="$(var parent_frame)/livox_front_right_base_link" />
       <arg name="base_frame" value="$(var base_frame)" />
       <arg name="parent_frame" value="$(var parent_frame)" />
       <arg name="child_frame" value="livox_front_right_base_link" />
-      <arg name="pointcloud_topic" value="/sensing/lidar/front_right/livox/lidar" />
+      <arg name="source_pointcloud_topic" value="/sensing/lidar/front_right/livox/lidar" />
+      <arg name="target_pointcloud_topic" value="$(var target_pointcloud_topic)" />
     </include>
   </group>
 
   <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
+
 
 </launch>
