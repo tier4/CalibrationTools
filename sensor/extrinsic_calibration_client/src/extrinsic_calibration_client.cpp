@@ -48,8 +48,8 @@ int main(int argc, char * argv[])
   if (rclcpp::spin_until_future_complete(node, future) == rclcpp::FutureReturnCode::SUCCESS) {
     auto result = future.get();
     RCLCPP_INFO_STREAM(
-      node->get_logger(),
-      "Received service message. success " << result->success << " score " << result->score);
+      node->get_logger(), "Received service message. success " << result.get()->success << " score "
+                                                               << result.get()->score);
   } else {
     RCLCPP_ERROR(node->get_logger(), "Problem while waiting for response.");
   }

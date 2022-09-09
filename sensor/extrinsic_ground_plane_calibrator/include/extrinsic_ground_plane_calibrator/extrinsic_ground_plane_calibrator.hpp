@@ -84,10 +84,11 @@ protected:
   std::string base_frame_;
   std::string sensor_kit_frame_;  // the parent for this calibration method must be a sensor kit
   std::string lidar_base_frame_;  // the child for this calibration method must be a the base of a
-                                  // lidar (probably different from the actua lidar tf)
+                                  // lidar (probably different from the actual lidar tf)
   double marker_size_;
   double max_inlier_distance_;
   int min_plane_points_;
+  int min_plane_points_percentage_;
   double max_cos_distance_;
   int max_iterations_;
   bool verbose_;

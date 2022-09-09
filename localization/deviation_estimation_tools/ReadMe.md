@@ -22,16 +22,17 @@ ros2 launch deviation_estimator deviation_estimator.launch.xml
 ```
 
 Then, you need to run either ROS bag or `autoware_launch` to provide `pose` and `twist` to `deviation_estimator`.
-You can check the estimated results either by looking at the output of `/estimated_*` ROS topics, or a text file saved in the designated path (default: `/home/$(env USER)/output.txt`).
+You can check the estimated results either by looking at the output of `/estimated_*` ROS topics, or a text file saved in the designated path (default: `$(env HOME)/output.txt`).
 
-If your are using rosbag, it should contain the following topics:
+If you are using rosbag, it should contain the following topics:
 
 - /localization/twist_estimator/twist_with_covariance_raw
 - /localization/pose_estimator/pose_with_covariance
 - /clock
 - /tf_static (that contains transform from `base_link` to `imu_link`)
 - (/localization/twist_estimator/twist_with_covariance: required in the next step)
-- (/localization/pose_twist_fusion_filter/kinematic_state: required in the next step)
+
+NOTE that the pose and twist must be estimated with default parameters (see `known issues` section for detail).
 
 Play the rosbag in a different terminal:
 
@@ -112,7 +113,7 @@ ros2 bag play YOUR_BAG
 
 ### C. Visualization step
 
-After the evaluation, run the following command to generate the final results in `/home/$USER/deviation_evaluator_sample`.
+After the evaluation, run the following command to generate the final results in `$HOME/deviation_evaluator_sample`.
 
 ```sh
 pip3 install -r requirements.txt
@@ -161,16 +162,16 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 ### Parameters for deviation estimator
 
-| Name                      | Type   | Description                                                                                 | Default value                  |
-| ------------------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------------ |
-| show_debug_info           | bool   | Flag to display debug info                                                                  | true                           |
-| use_pose_with_covariance  | bool   | Flag to use PoseWithCovarianceStamped rostopic for pose. Use PoseStamped if false.          | true                           |
-| use_twist_with_covariance | bool   | Flag to use TwistWithCovarianceStamped rostopic for pose. Use TwistStamped if false.        | true                           |
-| t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                           |
-| x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                           |
-| estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                            |
-| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "/home/$(env USER)/output.txt" |
-| imu_link_frame            | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"            |
+| Name                      | Type   | Description                                                                                 | Default value            |
+| ------------------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------ |
+| show_debug_info           | bool   | Flag to display debug info                                                                  | true                     |
+| use_pose_with_covariance  | bool   | Flag to use PoseWithCovarianceStamped rostopic for pose. Use PoseStamped if false.          | true                     |
+| use_twist_with_covariance | bool   | Flag to use TwistWithCovarianceStamped rostopic for pose. Use TwistStamped if false.        | true                     |
+| t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                     |
+| x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
+| estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                      |
+| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
+| imu_link_frame            | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"      |
 
 ### Functions
 
@@ -193,7 +194,7 @@ ros2 launch deviation_evaluator deviation_evaluator.launch.xml map_path:=MAP_PAT
 ros2 bag play YOUR_BAG
 ```
 
-All the intermediate ros2bag and config files will be stored in `/home/$USER/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
+All the ros2bag and config files will be stored in `$HOME/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
 
 ### Features
 
@@ -241,36 +242,45 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
     <img src="./deviation_evaluator/media/thres2recall_sample.png" width="400">
 </p>
 
+### Architecture of `deviation_evaluator`
+
+The architecture of `deviation_evaluator` is shown below. It launches two `ekf_localizer`, one for ground truth estimation and one for (partially) dead reckoning estimation. Outputs of both `ekf_localizer` will be recorded and analyzed with `deviation_evaluation_visualizer`.
+
+<p align="left">
+    <img src="./deviation_evaluator/media/deviation_evaluator.drawio.svg" width="400">
+</p>
+
 ### Inputs / Outputs
 
 #### Input
 
-| Name                                                     | Type                                             | Description                                                     |
-| -------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
-| `/localization/twist_estimator/twist_with_covariance`    | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist                                                     |
-| `/localization/pose_estimator/pose_with_covariance`      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose                                                      |
-| `/localization/pose_twist_fusion_filter/kinematic_state` | `nav_msgs::msg::Odometry`                        | Input odometry (recorded with `ros2 bag record` in launch file) |
+| Name                                                  | Type                                             | Description |
+| ----------------------------------------------------- | ------------------------------------------------ | ----------- |
+| `/localization/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist |
+| `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose  |
 
 #### Output
 
-| Name                                                                      | Type                                             | Description                        |
-| ------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------- |
-| `/localization/deviation_evaluator/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for `ekf_localizer`) |
-| `/localization/deviation_evaluator/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for `ekf_localizer`)  |
+| Name                                                                      | Type                                             | Description                                      |
+| ------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| `/deviation_evaluator/twist_estimator/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for both `ekf_localizer`)          |
+| `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`) |
+| `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)   |
+| `/deviation_evaluator/initialpose3d`                                      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output initial pose (for both `ekf_localizer`)   |
 
 ### Parameters for deviation evaluator
 
-| Name      | Type       | Description                                                                | Default value                                  |
-| --------- | ---------- | -------------------------------------------------------------------------- | ---------------------------------------------- |
-| rviz      | bool       | Show rviz if true                                                          | false                                          |
-| map_path  | string     | Path to the directory where map data (OpenStreetMap or .osm data) is saved | ""                                             |
-| save_dir  | string     | Output directory where figures, parameter files, and scores are saved      | "/home/$(env USER)/deviation_evaluator_sample" |
-| stddev_vx | double     | Standard deviation of vx                                                   | 0.8 (in `config/deviation_evaluator.yaml`)     |
-| stddev_wz | double     | Standard deviation of wz                                                   | 0.01 (in `config/deviation_evaluator.yaml`)    |
-| coef_vx   | double     | Velocity bias                                                              | 1 (in `config/deviation_evaluator.yaml`)       |
-| bias_wz   | double     | Yaw rate bias                                                              | 0 (in `config/deviation_evaluator.yaml`)       |
-| period    | double [s] | Duration of cycle                                                          | 10 (in `config/deviation_evaluator.yaml`)      |
-| cut       | double [s] | Duration of ndt-cut-off                                                    | 9 (in `config/deviation_evaluator.yaml`)       |
+| Name      | Type       | Description                                                                | Default value                               |
+| --------- | ---------- | -------------------------------------------------------------------------- | ------------------------------------------- |
+| rviz      | bool       | Show rviz if true                                                          | false                                       |
+| map_path  | string     | Path to the directory where map data (OpenStreetMap or .osm data) is saved | ""                                          |
+| save_dir  | string     | Output directory where figures, parameter files, and scores are saved      | "$(env HOME)/deviation_evaluator_sample"    |
+| stddev_vx | double     | Standard deviation of vx                                                   | 0.8 (in `config/deviation_evaluator.yaml`)  |
+| stddev_wz | double     | Standard deviation of wz                                                   | 0.01 (in `config/deviation_evaluator.yaml`) |
+| coef_vx   | double     | Velocity bias                                                              | 1 (in `config/deviation_evaluator.yaml`)    |
+| bias_wz   | double     | Yaw rate bias                                                              | 0 (in `config/deviation_evaluator.yaml`)    |
+| period    | double [s] | Duration of cycle                                                          | 10 (in `config/deviation_evaluator.yaml`)   |
+| cut       | double [s] | Duration of ndt-cut-off                                                    | 9 (in `config/deviation_evaluator.yaml`)    |
 
 ## 4. Reflect the estimated parameters in Autoware
 
@@ -289,3 +299,7 @@ You can also find the lower bound of the threshold in the plot. Choose a proper 
 ## 5. Known issues
 
 - The plot of `deviation_evaluator.png` generated by `deviation_evaluation_visualizer` may diverge, possibly due to the large covariance caused by a failure in localization.
+- `ekf_localizer` in `deviation_evaluator` may start properly. As for now, please launch `deviation_evaluator` first and then run `ros2 bag play` to provide pose and twist data.
+- The twist and pose used for the calibration must be estimated with DEFAULT dead reckoning calibration parameters. Using non-default values would result in wrong calibration, since this tool currently assumes that the pose and twist data is estimated using default parameters. In case of `sample_vehicle` in Autoware tutorial, leave the two following parameters as default (e.g. by setting `VEHICLE_ID` to `default`):
+  - `speed_scale_factor` in pacmod interface (default: 1.0)
+  - `angular_velocity_offset_*` in `imu_corrector.param.yaml` (default: 0.0)

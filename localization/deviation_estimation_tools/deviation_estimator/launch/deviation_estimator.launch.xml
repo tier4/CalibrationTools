@@ -7,7 +7,7 @@
   <arg name="predefined_coef_vx" default="1.00"/>
   <arg name="use_predefined_coef_vx" default="true"/>
   <arg name="imu_link_frame" default="tamagawa/imu_link"/>
-  <arg name="results_path" default="/home/$(env USER)/output.txt"/>
+  <arg name="results_path" default="$(env HOME)/output.txt"/>
 
   <arg name="estimation_freq" default="0.25" description="[Hz]"/>
   <arg name="show_debug_info" default="false"/>

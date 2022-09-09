@@ -4,42 +4,45 @@
   <arg name="base_frame"/>
   <arg name="parent_frame"/>
   <arg name="child_frame"/>
-  <arg name="pointcloud_topic"/>
+  <arg name="source_pointcloud_topic"/>
+  <arg name="target_pointcloud_topic"/>
 
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
-    <node pkg="extrinsic_ground_plane_calibrator" exec="extrinsic_ground_plane_calibrator" name="extrinsic_ground_plane_calibrator" output="screen">
+    <node pkg="extrinsic_lidar_to_lidar_2d_calibrator" exec="extrinsic_lidar_to_lidar_2d_calibrator" name="extrinsic_lidar_to_lidar_2d_calibrator" output="screen">
       <param name="base_frame" value="$(var base_frame)"/>
       <param name="parent_frame" value="$(var parent_frame)"/>
       <param name="child_frame" value="$(var child_frame)"/>
-      <param name="marker_size" value="10.0"/>
-      <param name="max_inlier_distance" value="0.01"/>
-      <param name="min_plane_points" value="500"/>
-      <param name="min_plane_points_percentage" value="20.0"/>
-      <param name="max_cos_distance" value="0.2"/>
-      <param name="max_iterations" value="500"/>
-      <param name="verbose" value="true"/>
+
       <param name="broadcast_calibration_tf" value="true"/>
       <param name="filter_estimations" value="true"/>
 
+      <param name="max_calibration_range" value="20.0"/>
+      <param name="max_corr_distance" value="0.5"/>
+      <param name="max_iterations" value="100"/>
+
       <param name="initial_angle_cov" value="5.0"/>
       <!--degrees -->
-      <param name="initial_z_cov" value="0.05"/>
+      <param name="initial_xy_cov" value="0.05"/>
       <!--meters -->
       <param name="angle_measurement_cov" value="0.5"/>
       <!--degrees -->
       <param name="angle_process_cov" value="0.1"/>
       <!--degrees -->
-      <param name="z_measurement_cov" value="0.005"/>
+      <param name="xy_measurement_cov" value="0.005"/>
       <!--meters -->
-      <param name="z_process_cov" value="0.001"/>
+      <param name="xy_process_cov" value="0.001"/>
       <!--meters -->
       <param name="angle_convergence_threshold" value="0.02"/>
       <!--degrees -->
-      <param name="z_convergence_threshold" value="0.0005"/>
+      <param name="xy_convergence_threshold" value="0.0005"/>
       <!--meters -->
 
-      <remap from="input_pointcloud" to="$(var pointcloud_topic)"/>
+      <param name="min_z" value="0.3"/>
+      <param name="max_z" value="1.2"/>
+
+      <remap from="source_input_pointcloud" to="$(var source_pointcloud_topic)"/>
+      <remap from="target_input_pointcloud" to="$(var target_pointcloud_topic)"/>
     </node>
   </group>
 </launch>

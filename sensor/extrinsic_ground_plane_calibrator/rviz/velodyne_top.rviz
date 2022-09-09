@@ -8,7 +8,7 @@ Panels:
         - /Status1
         - /top1/Topic1
         - /initial_base_link1
-        - /inliers1/Topic1
+        - /top_inliers1/Topic1
       Splitter Ratio: 0.500627338886261
     Tree Height: 725
   - Class: rviz_common/Selection
@@ -66,7 +66,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 223
+      Max Intensity: 143
       Min Color: 0; 0; 0
       Min Intensity: 1
       Name: top
@@ -93,12 +93,12 @@ Visualization Manager:
       Reference Frame: base_link
       Value: true
     - Class: rviz_default_plugins/Axes
-      Enabled: true
+      Enabled: false
       Length: 1
       Name: initial_base_link
       Radius: 0.10000000149011612
       Reference Frame: initial_base_link
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Axes
       Enabled: true
       Length: 1
@@ -107,19 +107,19 @@ Visualization Manager:
       Reference Frame: velodyne_top
       Value: true
     - Class: rviz_default_plugins/Axes
-      Enabled: true
+      Enabled: false
       Length: 1.5
       Name: ground_plane
       Radius: 0.05000000074505806
       Reference Frame: ground_plane
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Axes
-      Enabled: true
+      Enabled: false
       Length: 1.5
       Name: ground_plane_raw
       Radius: 0.05000000074505806
       Reference Frame: ground_plane_raw
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: MarkerArray
@@ -150,7 +150,7 @@ Visualization Manager:
       Max Intensity: 100
       Min Color: 0; 0; 0
       Min Intensity: 1
-      Name: inliers
+      Name: top_inliers
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 5
@@ -163,6 +163,108 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /sensor_kit/sensor_kit_base_link/velodyne_top_base_link/inliers
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 100
+      Min Color: 0; 0; 0
+      Min Intensity: 1
+      Name: left_inliers
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 5
+      Size (m): 0.009999999776482582
+      Style: Points
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /sensor_kit/sensor_kit_base_link/livox_front_left_base_link/inliers
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 100
+      Min Color: 0; 0; 0
+      Min Intensity: 1
+      Name: center_inliers
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 5
+      Size (m): 0.009999999776482582
+      Style: Points
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /sensor_kit/sensor_kit_base_link/livox_front_center_base_link/inliers
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 100
+      Min Color: 0; 0; 0
+      Min Intensity: 1
+      Name: right_inliers
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 5
+      Size (m): 0.009999999776482582
+      Style: Points
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /sensor_kit/sensor_kit_base_link/livox_front_right_base_link/inliers
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
