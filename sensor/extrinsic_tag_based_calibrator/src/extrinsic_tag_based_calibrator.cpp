@@ -29,7 +29,7 @@ using namespace std::chrono_literals;
 
 ExtrinsicTagBasedCalibrator::ExtrinsicTagBasedCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_tag_based_calibrator_node", options),
-  tf_broascaster_(this),
+  tf_broadcaster_(this),
   got_initial_transform(false)
 {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -390,7 +390,7 @@ void ExtrinsicTagBasedCalibrator::tfTimerCallback()
   transform_stamped.header.frame_id = parent_frame_;
   transform_stamped.child_frame_id = child_frame_;
   transform_stamped.transform = tf2::toMsg(parent_to_child_tf2);
-  tf_broascaster_.sendTransform(transform_stamped);
+  tf_broadcaster_.sendTransform(transform_stamped);
 }
 
 void ExtrinsicTagBasedCalibrator::automaticCalibrationTimerCallback()

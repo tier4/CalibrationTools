@@ -95,7 +95,7 @@ protected:
   CalibrationEstimator estimator_;
 
   // ROS Interface
-  tf2_ros::StaticTransformBroadcaster tf_broascaster_;
+  tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 

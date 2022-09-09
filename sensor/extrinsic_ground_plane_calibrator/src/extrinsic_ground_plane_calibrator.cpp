@@ -34,7 +34,7 @@ using namespace std::chrono_literals;
 
 ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_ground_plane_calibrator_node", options),
-  tf_broascaster_(this),
+  tf_broadcaster_(this),
   got_initial_transform_(false),
   calibration_done_(false),
   first_observation_(true)
@@ -49,10 +49,12 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
   marker_size_ = this->declare_parameter<double>("marker_size", 20.0);
   max_inlier_distance_ = this->declare_parameter<double>("max_inlier_distance", 0.01);
   min_plane_points_ = this->declare_parameter<int>("min_plane_points", 500);
+  min_plane_points_percentage_ =
+    this->declare_parameter<double>("min_plane_points_percentage", 10.0);
   max_cos_distance_ = this->declare_parameter<double>("max_cos_distance", 0.2);
   max_iterations_ = this->declare_parameter<int>("max_iterations", 500);
   verbose_ = this->declare_parameter<bool>("verbose", false);
-  broacast_calibration_tf_ = this->declare_parameter<bool>("broacast_calibration_tf", false);
+  broadcast_calibration_tf_ = this->declare_parameter<bool>("broadcast_calibration_tf", false);
   filter_estimations_ = this->declare_parameter<bool>("filter_estimations", true);
 
   initial_angle_cov_ = this->declare_parameter<double>("initial_angle_cov", 5.0);
@@ -145,7 +147,9 @@ void ExtrinsicGroundPlaneCalibrator::pointCloudCallback(
 
   // Extract the ground plane model
   Eigen::Vector4d ground_plane_model;
-  bool found = extractGroundPlane(pointcloud, ground_plane_model, inliers_pointcloud);
+  if (!extractGroundPlane(pointcloud, ground_plane_model, inliers_pointcloud)) {
+    return;
+  }
 
   // Obtain the model error for the initial and current calibration
   evaluateModels(ground_plane_model, inliers_pointcloud);
@@ -155,14 +159,11 @@ void ExtrinsicGroundPlaneCalibrator::pointCloudCallback(
   pcl::toROSMsg(*inliers_pointcloud, inliers_msg);
   inliers_msg.header = header_;
   inliers_pub_->publish(inliers_msg);
+  // Create markers to visualize the calibration
+  visualizeCalibration(ground_plane_model);
 
-  if (found) {
-    // Create markers to visualize the calibration
-    visualizeCalibration(ground_plane_model);
-
-    // Obtain the final output tf and publish the lidar -> ground tfs to evaluate the calibration
-    publishTf(ground_plane_model);
-  }
+  // Obtain the final output tf and publish the lidar -> ground tfs to evaluate the calibration
+  publishTf(ground_plane_model);
 }
 
 bool ExtrinsicGroundPlaneCalibrator::checkInitialTransforms()
@@ -269,15 +270,20 @@ bool ExtrinsicGroundPlaneCalibrator::extractGroundPlane(
       coefficients->values[0], coefficients->values[1], coefficients->values[2]);
     float cos_distance = 1.0 - std::abs(rough_normal.dot(normal));
 
+    int inlier_size = static_cast<int>(inliers->indices.size());
+    double inlier_percentage = 100.0 * inlier_size / pointcloud->size();
+
     if (
-      static_cast<int>(inliers->indices.size()) > min_plane_points_ &&
+      inlier_size > min_plane_points_ && inlier_percentage > min_plane_points_percentage_ &&
       cos_distance < max_cos_distance_) {
       model = Eigen::Vector4d(
         coefficients->values[0], coefficients->values[1], coefficients->values[2],
         coefficients->values[3]);
 
       if (verbose_) {
-        RCLCPP_INFO(this->get_logger(), "Plane found: inliers=%ld", inliers->indices.size());
+        RCLCPP_INFO(
+          this->get_logger(), "Plane found: inliers=%ld (%.2f)", inliers->indices.size(),
+          inlier_percentage);
         RCLCPP_INFO(
           this->get_logger(), "Plane model. a=%.2f, b=%.2f, c=%.2f, d=%.2f", model(0), model(1),
           model(2), model(3));
@@ -444,7 +450,7 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
   initial_lidar_to_base_msg.header.stamp = header_.stamp;
   initial_lidar_to_base_msg.header.frame_id = lidar_frame_;
   initial_lidar_to_base_msg.child_frame_id = "initial_base_link";
-  tf_broascaster_.sendTransform(initial_lidar_to_base_msg);
+  tf_broadcaster_.sendTransform(initial_lidar_to_base_msg);
 
   Eigen::Isometry3d raw_lidar_to_base_eigen = modelPlaneToPose(ground_plane_model);
   Eigen::Isometry3d raw_base_to_lidar_eigen = raw_lidar_to_base_eigen.inverse();
@@ -456,8 +462,8 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
     tf2::eigenToTransform(raw_lidar_to_base_eigen);
   raw_lidar_to_base_msg.header.stamp = header_.stamp;
   raw_lidar_to_base_msg.header.frame_id = lidar_frame_;
-  raw_lidar_to_base_msg.child_frame_id = "ground_plane_raw";
-  tf_broascaster_.sendTransform(raw_lidar_to_base_msg);
+  raw_lidar_to_base_msg.child_frame_id = lidar_frame_ + "_ground_plane_raw";
+  tf_broadcaster_.sendTransform(raw_lidar_to_base_msg);
 
   Eigen::Isometry3d raw_sensor_kit_to_lidar_base_eigen = base_to_sensor_kit_eigen_.inverse() *
                                                          raw_base_to_lidar_eigen *
@@ -526,7 +532,7 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
   Eigen::Isometry3d output_sensor_kit_to_lidar_base_eigen;
   tf2::fromMsg(output_sensor_kit_to_lidar_base_msg, output_sensor_kit_to_lidar_base_eigen);
 
-  if (broacast_calibration_tf_) {
+  if (broadcast_calibration_tf_) {
     geometry_msgs::msg::TransformStamped output_tf_msg;
     output_tf_msg.transform.rotation = output_sensor_kit_to_lidar_base_msg.orientation;
     output_tf_msg.transform.translation.x = output_sensor_kit_to_lidar_base_msg.position.x;
@@ -535,11 +541,10 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
     output_tf_msg.header.stamp = header_.stamp;
     output_tf_msg.header.frame_id = sensor_kit_frame_;
     output_tf_msg.child_frame_id = lidar_base_frame_;
-    tf_broascaster_.sendTransform(output_tf_msg);
+    tf_broadcaster_.sendTransform(output_tf_msg);
   }
 
-  // We currently perform no filterging stage and instead just output to the calibration manager the
-  // first valid calibration
+  // We perform basic filtering on the estimated angles
   {
     std::unique_lock<std::mutex> lock(mutex_);
     output_calibration_msg_ = tf2::toMsg(output_sensor_kit_to_lidar_base_eigen);
@@ -579,8 +584,8 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
     tf2::eigenToTransform(output_base_to_lidar_eigen.inverse());
   output_lidar_to_base_msg.header.stamp = header_.stamp;
   output_lidar_to_base_msg.header.frame_id = lidar_frame_;
-  output_lidar_to_base_msg.child_frame_id = "ground_plane";
-  tf_broascaster_.sendTransform(output_lidar_to_base_msg);
+  output_lidar_to_base_msg.child_frame_id = lidar_frame_ + "+ground_plane";
+  tf_broadcaster_.sendTransform(output_lidar_to_base_msg);
 
   // Test correctness of the output lidar -> base tf
   Eigen::Vector4d output_model = poseToPlaneModel(output_base_to_lidar_eigen.inverse());
