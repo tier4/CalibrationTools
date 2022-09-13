@@ -28,17 +28,19 @@ using PointcloudType = pcl::PointCloud<PointType>;
 struct Frame
 {
   using Ptr = std::shared_ptr<Frame>;
-  float distance_;
-  float delta_distance_;
+  using ConstPtr = std::shared_ptr<const Frame>;
+  float distance_{0.f};
+  float delta_distance_{0.f};
   std_msgs::msg::Header header_;
   PointcloudType::Ptr pointcloud_raw_;
   PointcloudType::Ptr pointcloud_subsampled_;
-  int frame_id_;
-  int keyframe_id_;
-  bool processed_;
-  bool is_key_frame_;
-  bool stopped_;
-  int frames_since_stop_;
+  int frame_id_{-1};
+  int keyframe_id_{-1};
+  bool processed_{false};
+  bool is_key_frame_{false};
+  bool stopped_{false};
+  bool lost_{false};
+  int frames_since_stop_{0};
   Eigen::Matrix4f pose_;  // map->lidar
 };
 

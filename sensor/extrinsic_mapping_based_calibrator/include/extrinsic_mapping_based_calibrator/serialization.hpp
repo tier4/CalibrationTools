@@ -20,6 +20,7 @@
 
 #include <std_msgs/msg/header.hpp>
 
+#include <boost/serialization/map.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
@@ -99,6 +100,7 @@ void serialize(Archive & ar, Frame & frame, const unsigned int version)
   ar & frame.processed_;
   ar & frame.is_key_frame_;
   ar & frame.stopped_;
+  ar & frame.lost_;
   ar & frame.frames_since_stop_;
   ar & frame.pose_;
 }

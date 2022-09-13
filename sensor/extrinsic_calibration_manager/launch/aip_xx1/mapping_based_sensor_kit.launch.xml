@@ -5,12 +5,15 @@
   <let name="sensor_model" value="aip_xx1" />
   <let name="parent_frame" value="sensor_kit_base_link" />
   <let name="base_frame" value="base_link" />
-  <let name="calibration_lidar_frame" value="velodyne_left" />
+  <let name="calibration_lidar_frames" value="[velodyne_left, velodyne_right, velodyne_rear]" />
   <let name="mapping_lidar_frame" value="velodyne_top" />
 
 
   <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud" />
-  <let name="calibration_pointcloud" value="/sensing/lidar/left/outlier_filtered/pointcloud" />
+  <let name="calibration_pointcloud_topics" value=
+    "[/sensing/lidar/left/outlier_filtered/pointcloud,
+    /sensing/lidar/right/outlier_filtered/pointcloud,
+    /sensing/lidar/rear/outlier_filtered/pointcloud]" />
 
   <arg name="rviz" />
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/velodyne_top.rviz" />
@@ -27,7 +30,7 @@
   <!-- extrinsic_calibration_manager -->
   <!--node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen" if="$(var calibrate_sensor)">
     <param name="parent_frame" value="$(var parent_frame)" />
-    <param name="child_frames" value="
+    <param name="" value="
     [$(var camera_frame)]" />
   </node-->
 
@@ -42,11 +45,11 @@
     <arg name="parent_frame" value="$(var parent_frame)" />
     <arg name="child_frame" value="SOMELIDARFRAME" />
     <arg name="base_frame" value="$(var base_frame)" />
-    <arg name="calibration_lidar_frame" value="$(var calibration_lidar_frame)" />
+    <arg name="calibration_lidar_frames" value="$(var calibration_lidar_frames)" />
     <arg name="mapping_lidar_frame" value="$(var mapping_lidar_frame)" />
 
     <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)" />
-    <arg name="calibration_pointcloud" value="$(var calibration_pointcloud)" />
+    <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)" />
   </include>
 
   <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)" />

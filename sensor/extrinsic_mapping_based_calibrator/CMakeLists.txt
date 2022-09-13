@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(extrinsic_mapping_based_calibrator)
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DEIGEN_NO_DEBUG -march=native -Wl,--no-as-needed")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 find_package(autoware_cmake REQUIRED)
 find_package(OpenMP)

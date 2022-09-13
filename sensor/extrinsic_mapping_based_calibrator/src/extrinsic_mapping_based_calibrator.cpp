@@ -15,6 +15,7 @@
 #include <extrinsic_mapping_based_calibrator/extrinsic_mapping_based_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/serialization.hpp>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
+#include <extrinsic_mapping_based_calibrator/voxel_grid_filter_wrapper.hpp>
 #include <pcl_ros/transforms.hpp>
 #include <tier4_autoware_utils/tier4_autoware_utils.hpp>
 #include <tier4_pcl_extensions/voxel_grid_triplets.hpp>
@@ -79,7 +80,11 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   sensor_kit_frame_ = this->declare_parameter<std::string>("parent_frame");
   lidar_base_frame_ = this->declare_parameter<std::string>("child_frame");
   map_frame_ = this->declare_parameter<std::string>("map_frame");
-  calibration_lidar_frame_ = this->declare_parameter<std::string>("calibration_lidar_frame");
+  calibration_frame_names_ =
+    this->declare_parameter<std::vector<std::string>>("calibration_lidar_frames");
+  calibration_pointcloud_topics_ =
+    this->declare_parameter<std::vector<std::string>>("calibration_pointcloud_topics");
+
   mapping_lidar_frame_ = this->declare_parameter<std::string>("mapping_lidar_frame");
 
   params_.verbose_ = this->declare_parameter<bool>("verbose", false);
@@ -88,7 +93,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   params_.calibration_num_keyframes_ =
     this->declare_parameter<int>("calibration_num_keyframes_", 10);
   params_.max_pointcloud_range_ = this->declare_parameter<double>(
-    "max_pointcloud_range", 80.0);  // maximum range of pointclouds during mapping
+    "max_pointcloud_range", 60.0);  // maximum range of pointclouds during mapping
 
   // Mapping parameters
   params_.ndt_resolution_ = this->declare_parameter<double>("ndt_resolution", 5.0);
@@ -96,6 +101,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   params_.ndt_max_iterations_ = this->declare_parameter<int>("ndt_max_iterations", 35);
   params_.ndt_num_threads_ = this->declare_parameter<int>("ndt_num_threads", 8);
 
+  params_.leaf_size_viz_ = this->declare_parameter<double>("leaf_size_viz", 0.15);
   params_.leaf_size_input_ = this->declare_parameter<double>("leaf_size_iput", 0.1);
   params_.leaf_size_local_map_ = this->declare_parameter<double>("leaf_size_local_map", 0.1);
   params_.leaf_size_dense_map_ = this->declare_parameter<double>("leaf_size_dense_map", 0.05);
@@ -112,8 +118,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<int>("frames_since_stoped_force_frame", 5);
   params_.calibration_skip_keyframes_ = this->declare_parameter<int>(
     "calibration_skip_keyframes", 5);  // Skip the first frames for calibration
-  params_.calibration_max_frames_  = this->declare_parameter<int>(
-    "calibration_max_frames", 10);
+  params_.calibration_max_frames_ = this->declare_parameter<int>("calibration_max_frames", 10);
 
   // Calibration frames selection criteria and preprocessing parameters
   params_.calibration_max_interpolated_time_ =
@@ -126,10 +131,26 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<double>("calibration_max_interpolated_speed", 3.0);
   params_.calibration_max_interpolated_accel_ =
     this->declare_parameter<double>("calibration_max_interpolated_accel", 0.4);
+
+  params_.calibration_max_interpolated_distance_straight_ =
+    this->declare_parameter<double>("calibration_max_interpolated_distance_straight", 0.08);
+  params_.calibration_max_interpolated_angle_straight_ =
+    this->declare_parameter<double>("calibration_max_interpolated_angle_straight", 0.01);
+  params_.calibration_max_interpolated_speed_straight_ =
+    this->declare_parameter<double>("calibration_max_interpolated_speed_straight", 5.0);
+  params_.calibration_max_interpolated_accel_straight_ =
+    this->declare_parameter<double>("calibration_max_interpolated_accel_straight", 0.1);
+
+  params_.lost_frame_max_angle_diff_ =
+    this->declare_parameter<double>("lost_frame_max_angle_diff", 25.0);  // def
+  params_.lost_frame_interpolation_error_ =
+    this->declare_parameter<double>("lost_frame_interpolation_error", 0.05);
+  params_.lost_frame_skip_frames_ = this->declare_parameter<int>("lost_frame_skip_frames", 10);
   params_.calibration_use_only_stopped_ =
     this->declare_parameter<bool>("calibration_use_only_stopped", false);
   params_.max_calibration_range_ = this->declare_parameter<double>("max_calibration_range", 80.0);
-  params_.calibration_min_pca_eigenvalue_ = this->declare_parameter<double>("calibration_min_pca_eigenvalue", 0.25);
+  params_.calibration_min_pca_eigenvalue_ =
+    this->declare_parameter<double>("calibration_min_pca_eigenvalue", 0.25);
 
   // Calibration parameters
   params_.calibration_solver_iterations_ =
@@ -145,22 +166,37 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   keyframe_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("keyframe_map", 10);
   keyframe_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("keyframe", 10);
 
-  initial_source_aligned_map_pub_ =
-    this->create_publisher<sensor_msgs::msg::PointCloud2>("initial_source_aligned_map", 10);
-  calibrated_source_aligned_map_pub_ =
-    this->create_publisher<sensor_msgs::msg::PointCloud2>("calibrated_source_aligned_map", 10);
-  target_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("target_map_pub", 10);
+  for (const auto & calibration_frame_name : calibration_frame_names_) {
+    initial_source_aligned_map_pub_map_[calibration_frame_name] =
+      this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        calibration_frame_name + "/initial_source_aligned_map", 10);
+    calibrated_source_aligned_map_pub_map_[calibration_frame_name] =
+      this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        calibration_frame_name + "/calibrated_source_aligned_map", 10);
+    target_map_pub_map_[calibration_frame_name] =
+      this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        calibration_frame_name + "/target_map_pub", 10);
+  }
 
   frame_path_pub_ = this->create_publisher<nav_msgs::msg::Path>("frame_path", 10);
   keyframe_path_pub_ = this->create_publisher<nav_msgs::msg::Path>("keyframe_path", 10);
   keyframe_markers_pub_ =
     this->create_publisher<visualization_msgs::msg::MarkerArray>("keyframe_markers", 10);
 
-  calibration_pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-    "calibration_pointcloud", rclcpp::SensorDataQoS(),
-    std::bind(
-      &ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback, this,
-      std::placeholders::_1));
+  assert(calibration_frame_names_.size() == calibration_pointcloud_topics_.size());
+  for (std::size_t i = 0; i < calibration_frame_names_.size(); i++) {
+    const std::string & calibration_pointcloud_topic = calibration_pointcloud_topics_[i];
+    const std::string & calibration_frame_name = calibration_frame_names_[i];
+
+    calibration_pointcloud_subs_[calibration_frame_name] =
+      this->create_subscription<sensor_msgs::msg::PointCloud2>(
+        calibration_pointcloud_topic, rclcpp::SensorDataQoS(),
+        [&](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+          // RCLCPP_WARN(
+          //   get_logger(), "Pre pointcloud callback = %s", calibration_frame_name.c_str());
+          calibrationPointCloudCallback(msg, calibration_frame_name);
+        });
+  }
 
   mapping_pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
     "mapping_pointcloud", rclcpp::SensorDataQoS(),
@@ -177,19 +213,27 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       std::placeholders::_2),
     rmw_qos_profile_services_default);
 
-  single_lidar_calibration_server_ = this->create_service<tier4_calibration_msgs::srv::Frame>(
-    "single_lidar_calibration",
-    std::bind(
-      &ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback, this, std::placeholders::_1,
-      std::placeholders::_2),
-    rmw_qos_profile_services_default);
+  for (auto & calibration_frame_name : calibration_frame_names_) {
+    single_lidar_calibration_server_map_[calibration_frame_name] =
+      this->create_service<tier4_calibration_msgs::srv::Frame>(
+        calibration_frame_name + "/single_lidar_calibration",
+        [&](
+          const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
+          const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) {
+          singleLidarCalibrationCallback(calibration_frame_name, request, response);
+        },
+        rmw_qos_profile_services_default);
 
-  multiple_lidar_calibration_server_ = this->create_service<tier4_calibration_msgs::srv::Frame>(
-    "multiple_lidar_calibration",
-    std::bind(
-      &ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback, this,
-      std::placeholders::_1, std::placeholders::_2),
-    rmw_qos_profile_services_default);
+    multiple_lidar_calibration_server_map_[calibration_frame_name] =
+      this->create_service<tier4_calibration_msgs::srv::Frame>(
+        calibration_frame_name + "/multiple_lidar_calibration",
+        [&](
+          const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
+          const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) {
+          multipleLidarCalibrationCallback(calibration_frame_name, request, response);
+        },
+        rmw_qos_profile_services_default);
+  }
 
   load_database_server_ = this->create_service<tier4_calibration_msgs::srv::CalibrationDatabase>(
     "load_database",
@@ -220,7 +264,9 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     ndt_.setNumThreads(params_.ndt_num_threads_);
   }
 
-  last_unmatched_keyframe_ = params_.calibration_skip_keyframes_;
+  for (auto & calibration_frame_name : calibration_frame_names_) {
+    last_unmatched_keyframe_map_[calibration_frame_name] = params_.calibration_skip_keyframes_;
+  }
 
   std::thread thread = std::thread(&ExtrinsicMappingBasedCalibrator::mappingThreadWorker, this);
   thread.detach();
@@ -271,6 +317,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, ndt_step_size);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, ndt_max_iterations);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, ndt_num_threads);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, leaf_size_viz);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, leaf_size_input);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, leaf_size_local_map);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, leaf_size_dense_map);
@@ -287,6 +334,14 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_angle);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_speed);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_accel);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_distance_straight);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_angle_straight);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_speed_straight);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_max_interpolated_accel_straight);
+
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, lost_frame_max_angle_diff);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, lost_frame_interpolation_error);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, lost_frame_skip_frames);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, max_calibration_range);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_min_pca_eigenvalue);
 
@@ -336,23 +391,30 @@ void ExtrinsicMappingBasedCalibrator::setUpCalibrators(
 }
 
 void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(
-  const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+  const sensor_msgs::msg::PointCloud2::SharedPtr msg, const std::string & frame_name)
 {
-  if (!calibration_lidar_header_) {
-    calibration_lidar_header_ = std::make_shared<std_msgs::msg::Header>(msg->header);
-  }
+  assert(calibration_pointcloud_subs_.find(frame_name) != calibration_pointcloud_subs_.end());
 
-  calibration_pointclouds_queue_.push(msg);
+  // auto & calibration_lidar_header = calibration_lidar_header_map_[frame_name];
+  auto & last_unmatched_keyframe = last_unmatched_keyframe_map_[frame_name];
+  auto & calibration_frames = calibration_frames_map_[frame_name];
+  auto & calibration_pointclouds_queue = calibration_pointclouds_queue_map_[frame_name];
+
+  // if (!calibration_lidar_header) {
+  //   calibration_lidar_header = std::make_shared<std_msgs::msg::Header>(msg->header);
+  // }
+
+  calibration_pointclouds_queue.push(msg);
 
   std::unique_lock<std::mutex> lock(mutex_);
 
-  while (last_unmatched_keyframe_ < static_cast<int>(keyframes_and_stopped_.size()) - 1) {
-    Frame::Ptr keyframe = keyframes_and_stopped_[last_unmatched_keyframe_];
+  while (last_unmatched_keyframe < static_cast<int>(keyframes_and_stopped_.size()) - 1) {
+    Frame::Ptr keyframe = keyframes_and_stopped_[last_unmatched_keyframe];
     auto keyframe_stamp = rclcpp::Time(keyframe->header_.stamp);
 
     if (
-      calibration_pointclouds_queue_.size() < 3 ||
-      rclcpp::Time(calibration_pointclouds_queue_.back()->header.stamp) < keyframe_stamp) {
+      calibration_pointclouds_queue.size() < 3 ||
+      rclcpp::Time(calibration_pointclouds_queue.back()->header.stamp) < keyframe_stamp) {
       return;
     }
 
@@ -364,14 +426,14 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(
 
     // Iterate for all frames between the last keyframe and this one looking for a stopped frame,
     // which we want to use as a calibration frame
-    auto pc_msg_left = calibration_pointclouds_queue_.front();
-    calibration_pointclouds_queue_.pop();
-    auto pc_msg_right = calibration_pointclouds_queue_.front();
+    auto pc_msg_left = calibration_pointclouds_queue.front();
+    calibration_pointclouds_queue.pop();
+    auto pc_msg_right = calibration_pointclouds_queue.front();
 
     while (rclcpp::Time(pc_msg_right->header.stamp) < keyframe_stamp) {
       pc_msg_left = pc_msg_right;
-      calibration_pointclouds_queue_.pop();
-      pc_msg_right = calibration_pointclouds_queue_.front();
+      calibration_pointclouds_queue.pop();
+      pc_msg_right = calibration_pointclouds_queue.front();
     }
 
     double dt_left = (keyframe_stamp - rclcpp::Time(pc_msg_left->header.stamp)).seconds();
@@ -451,8 +513,7 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(
 
     PointcloudType::Ptr pc_ptr(new PointcloudType());
     pcl::fromROSMsg(*pc_msg, *pc_ptr);
-    transformPointcloud<PointcloudType>(
-      pc_msg->header.frame_id, calibration_lidar_frame_, pc_ptr, *tf_buffer_);
+    transformPointcloud<PointcloudType>(pc_msg->header.frame_id, frame_name, pc_ptr, *tf_buffer_);
 
     CalibrationFrame calibration_frame;
 
@@ -469,9 +530,9 @@ void ExtrinsicMappingBasedCalibrator::calibrationPointCloudCallback(
     calibration_frame.estimated_accel_ = interpolated_accel;
     calibration_frame.stopped_ = keyframe->stopped_;
 
-    calibration_frames_.emplace_back(calibration_frame);
+    calibration_frames.emplace_back(calibration_frame);
 
-    last_unmatched_keyframe_ += 1;
+    last_unmatched_keyframe += 1;
   }
 }
 
@@ -490,13 +551,7 @@ void ExtrinsicMappingBasedCalibrator::mappingPointCloudCallback(
   std::unique_lock<std::mutex> lock(mutex_);
   auto frame = std::make_shared<Frame>();
   frame->header_ = msg->header;
-  frame->processed_ = false;
   frame->pointcloud_raw_ = pc_ptr;
-  frame->is_key_frame_ = false;
-  frame->stopped_ = false;
-  frame->frames_since_stop_ = 0;
-  frame->distance_ = 0.f;
-  frame->delta_distance_ = 0.f;
 
   if (
     rclcpp::Time(msg->header.stamp) < rclcpp::Time(mapping_lidar_header_->stamp) ||
@@ -546,7 +601,8 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     }
 
     // Subsample the frame
-    pcl::VoxelGrid<PointType> voxel_grid;
+    //pcl::VoxelGrid<PointType> voxel_grid;
+    VoxelGridWrapper<PointType> voxel_grid;
     frame->pointcloud_subsampled_ = PointcloudType::Ptr(new PointcloudType());
     PointcloudType::Ptr aligned_cloud_ptr(new PointcloudType());
     PointcloudType::Ptr cropped_cloud_ptr =
@@ -556,7 +612,7 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
       params_.leaf_size_input_, params_.leaf_size_input_, params_.leaf_size_input_);
     voxel_grid.setInputCloud(cropped_cloud_ptr);
     voxel_grid.filter(*frame->pointcloud_subsampled_);
-    ;
+
 
     // Register the frame to the map
     ndt_.setInputTarget(local_map_ptr_);
@@ -567,6 +623,8 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     } else {
       ndt_.align(*aligned_cloud_ptr, prev_pose);
       frame->pose_ = ndt_.getFinalTransformation();
+
+      std::cout << "NDT score: " << ndt_.getFitnessScore() << std::endl;
     }
 
     std::unique_lock<std::mutex> lock(mutex_);
@@ -603,6 +661,7 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
         } else if (
           prev_frame->stopped_ &&
           std::abs(prev_frame->frames_since_stop_ - params_.frames_since_stop_force_frame_) > 1) {
+          RCLCPP_INFO(get_logger(), "Dropped frame due to stopped");
           continue;
         }
       } else {
@@ -646,7 +705,104 @@ void ExtrinsicMappingBasedCalibrator::checkKeyframe(Frame::Ptr frame)
     keyframes_and_stopped_.push_back(frame);
     frame->is_key_frame_ = true;
     frame->keyframe_id_ = keyframes_.size();
+    checkKeyframeLost(frame);
     recalculateLocalMap();
+  }
+}
+
+void ExtrinsicMappingBasedCalibrator::checkKeyframeLost(Frame::Ptr keyframe)
+{
+  assert(keyframe->is_key_frame_);
+
+  if (keyframe->keyframe_id_ <= 1) {
+    return;
+  }
+
+  const Frame::Ptr & two_left_frame = keyframes_[keyframe->keyframe_id_ - 2];
+  const Frame::Ptr & left_frame = keyframes_[keyframe->keyframe_id_ - 1];
+  Frame::Ptr & right_frame = keyframe;
+
+  Eigen::Affine3f dpose1(two_left_frame->pose_.inverse() * left_frame->pose_);
+  Eigen::Affine3f dpose2(left_frame->pose_.inverse() * right_frame->pose_);
+  Eigen::Affine3f left_pose(left_frame->pose_);
+  Eigen::Affine3f right_pose(right_frame->pose_);
+
+  auto d1 = dpose1.translation().normalized();
+  auto d2 = dpose2.translation().normalized();
+
+  float trans_angle_diff = (180.0 / M_PI) * std::acos(d1.dot(d2));
+  trans_angle_diff =
+    dpose2.translation().norm() > params_.new_keyframe_min_distance_ ? trans_angle_diff : 0.0;
+
+  float rot_angle_diff =
+    (180.0 / M_PI) * std::acos(std::min(
+                       1.0, 0.5 * ((dpose1.rotation().inverse() * dpose2.rotation()).trace() -
+                                   1.0)));  // Tr(R) = 1 + 2*cos(theta)
+
+  if (
+    std::abs(trans_angle_diff) > params_.lost_frame_max_angle_diff_ ||
+    std::abs(trans_angle_diff) > params_.lost_frame_max_angle_diff_) {
+    keyframe->lost_ = true;
+
+    RCLCPP_WARN(
+      get_logger(),
+      "Mapping failed. Angle between keyframes is too high. a1=%.2f (deg) a2=%.2f (deg) "
+      "theshold=%.2f (deg)",
+      trans_angle_diff, rot_angle_diff, params_.lost_frame_max_angle_diff_);
+
+    return;
+  }
+
+  for (int i = left_frame->frame_id_; i < right_frame->frame_id_; i++) {
+    Frame::Ptr & mid_frame = processed_frames_[i];
+
+    // Interpolate the pose
+    Eigen::Matrix4f interpolated_pose_matrix = poseInterpolation(
+      (rclcpp::Time(mid_frame->header_.stamp) - rclcpp::Time(left_frame->header_.stamp)).seconds(),
+      0.f,
+      (rclcpp::Time(right_frame->header_.stamp) - rclcpp::Time(left_frame->header_.stamp))
+        .seconds(),
+      left_frame->pose_, right_frame->pose_);
+
+    Eigen::Affine3f interpolated_pose(interpolated_pose_matrix);
+    Eigen::Affine3f frame_pose(mid_frame->pose_);
+
+    float trans_diff = (interpolated_pose.inverse() * frame_pose).translation().norm();
+    float rot_angle_diff =
+      (180.0 / M_PI) *
+      std::acos(std::min(
+        1.0, 0.5 * ((interpolated_pose.rotation().inverse() * frame_pose.rotation()).trace() -
+                    1.0)));  // Tr(R) = 1 + 2*cos(theta)
+
+    if (
+      (!left_frame->stopped_ && !right_frame->stopped_) &&
+      (trans_diff > params_.lost_frame_interpolation_error_ ||
+       std::abs(rot_angle_diff) > params_.lost_frame_max_angle_diff_)) {
+      keyframe->lost_ = true;
+
+      RCLCPP_WARN(
+        get_logger(), "Mapping failed. Interpolation error is too high. d=%.2f (m) a=%.2f (deg)",
+        trans_diff, rot_angle_diff);
+
+      return;
+    }
+
+    float frame_left_distance = (frame_pose.translation() - left_pose.translation()).norm();
+    float interpolated_left_distance =
+      (interpolated_pose.translation() - left_pose.translation()).norm();
+    float line_dist_error = std::sqrt(
+      frame_left_distance * frame_left_distance +
+      interpolated_left_distance * interpolated_left_distance);
+
+    if (line_dist_error > params_.lost_frame_interpolation_error_) {
+      keyframe->lost_ = true;
+
+      RCLCPP_WARN(
+        get_logger(), "Mapping failed. Interpolation error is too high. line_dist_error=%.2f (m)",
+        line_dist_error);
+
+      return;
+    }
   }
 }
 
@@ -660,12 +816,16 @@ void ExtrinsicMappingBasedCalibrator::recalculateLocalMap()
        i++) {
     const auto & keyframe = keyframes_[keyframes_.size() - i - 1];
 
+    if (keyframe->lost_ && i != 0) {
+      break;
+    }
+
     PointcloudType::Ptr keyframe_mcs_ptr(new PointcloudType());
     pcl::transformPointCloud(*keyframe->pointcloud_subsampled_, *keyframe_mcs_ptr, keyframe->pose_);
     *tmp_mcs_ptr += *keyframe_mcs_ptr;
   }
 
-  pcl::VoxelGrid<PointType> voxel_grid;
+  VoxelGridWrapper<PointType> voxel_grid;
   voxel_grid.setLeafSize(
     params_.leaf_size_local_map_, params_.leaf_size_local_map_, params_.leaf_size_local_map_);
   voxel_grid.setInputCloud(tmp_mcs_ptr);
@@ -697,8 +857,7 @@ void ExtrinsicMappingBasedCalibrator::timerCallback()
   }
 
   pcl::VoxelGrid<PointType> voxel_grid;
-  voxel_grid.setLeafSize(
-    params_.leaf_size_input_, params_.leaf_size_input_, params_.leaf_size_input_);
+  voxel_grid.setLeafSize(params_.leaf_size_viz_, params_.leaf_size_viz_, params_.leaf_size_viz_);
   voxel_grid.setInputCloud(tmp_mcs_ptr);
   voxel_grid.filter(*subsampled_mcs_ptr);
 
@@ -839,7 +998,28 @@ PointcloudType::Ptr ExtrinsicMappingBasedCalibrator::getDensePointcloudFromMap(
   return subsampled_tcs_ptr;
 }
 
-std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::filterCalibrationFrames(
+std::vector<CalibrationFrame>
+ExtrinsicMappingBasedCalibrator::filterCalibrationFramesByInterpolationError(
+  const std::vector<CalibrationFrame> & calibration_frames)
+{
+  std::vector<CalibrationFrame> filtered_frames;
+
+  // vector with invalid frame ids
+
+  for (auto & frame : calibration_frames) {
+    (void)frame;
+    // if a keyframe, look for the next, and do the in between frame check using the interpolation
+    // formula is not a keyframe. look for the left keyframe and the right, and do the same if is a
+    // stopped frame, skip these checks
+  }
+
+  return filtered_frames;
+
+  // Using the invalid frame ids, filter all calibration frames based on the ids if they are close
+  // enough to ignore
+}
+
+std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::filterCalibrationFramesByDynamics(
   const std::vector<CalibrationFrame> & calibration_frames)
 {
   std::vector<CalibrationFrame> filtered_frames;
@@ -869,12 +1049,28 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::filterCalibration
       get_logger(), "\t - interpolated accel: %.4f m/s2 (%s)", frame.estimated_accel_,
       frame.estimated_accel_ < params_.calibration_max_interpolated_accel_ ? "accepted"
                                                                            : "rejected");
-    if (
+
+    bool standard_criteria =
       frame.interpolated_time_ < params_.calibration_max_interpolated_time_ &&
       frame.interpolated_distance_ < params_.calibration_max_interpolated_distance_ &&
       frame.interpolated_angle_ < params_.calibration_max_interpolated_angle_ &&
       frame.estimated_speed_ < params_.calibration_max_interpolated_speed_ &&
-      frame.estimated_accel_ < params_.calibration_max_interpolated_accel_ &&
+      frame.estimated_accel_ < params_.calibration_max_interpolated_accel_;
+
+    bool straight_criteria =
+      frame.interpolated_time_ < params_.calibration_max_interpolated_time_ &&
+      frame.interpolated_distance_ < params_.calibration_max_interpolated_distance_straight_ &&
+      frame.interpolated_angle_ < params_.calibration_max_interpolated_angle_straight_ &&
+      frame.estimated_speed_ < params_.calibration_max_interpolated_speed_straight_ &&
+      frame.estimated_accel_ < params_.calibration_max_interpolated_accel_straight_;
+
+    RCLCPP_INFO(
+      get_logger(), "\t - standard criteria: %s", standard_criteria ? "accepted" : "rejected");
+    RCLCPP_INFO(
+      get_logger(), "\t - straight criteria: %s", straight_criteria ? "accepted" : "rejected");
+
+    if (
+      (standard_criteria || straight_criteria) &&
       (frame.stopped_ || !params_.calibration_use_only_stopped_)) {
       filtered_frames.emplace_back(frame);
     }
@@ -884,22 +1080,26 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::filterCalibration
 }
 
 std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::selectBestKCalibrationFrames(
-    const std::vector<CalibrationFrame> & calibration_frames, int num_frames)
+  const std::vector<CalibrationFrame> & calibration_frames, int num_frames)
 {
   std::vector<CalibrationFrame> filtered_frames;
 
-  for(auto & frame : calibration_frames) {
+  for (auto & frame : calibration_frames) {
     pcl::PCA<PointType> pca;
     pca.setInputCloud(frame.source_pointcloud_);
 
     float pca_coefficient = std::sqrt(std::abs(pca.getEigenValues().z()));
+
+    RCLCPP_INFO(
+      get_logger(), "\t - pca coeff: %.4f (%s)", pca_coefficient,
+      pca_coefficient >= params_.calibration_min_pca_eigenvalue_ ? "accepted" : "rejected");
 
     if (pca_coefficient >= params_.calibration_min_pca_eigenvalue_) {
       filtered_frames.push_back(frame);
     }
   }
 
-  if(int(filtered_frames.size()) <= num_frames) {
+  if (int(filtered_frames.size()) <= num_frames) {
     return filtered_frames;
   }
 
@@ -912,15 +1112,13 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::selectBestKCalibr
   // Insert a random element from filtered to accepted
   std::random_device rd;
   std::mt19937 rng(rd());
-  std::uniform_int_distribution<std::mt19937::result_type> dist(0, filtered_frames.size());
+  std::uniform_int_distribution<std::mt19937::result_type> dist(0, filtered_frames.size() - 1);
   accepted_frames.push_back(filtered_frames[dist(rng)]);
 
-  for(int k = 1; k < num_frames; k++) {
-
+  for (int k = 1; k < num_frames; k++) {
     int best_candidate_frame_id = -1;
     float best_candidate_frame_distance = 0.f;
-    for(std::size_t i = 0; i < filtered_frames.size(); i ++) {
-
+    for (std::size_t i = 0; i < filtered_frames.size(); i++) {
       if (mask[i]) {
         continue;
       }
@@ -928,8 +1126,9 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::selectBestKCalibr
       auto & candidate_frame = filtered_frames[i];
       float min_distance = std::numeric_limits<float>::max();
 
-      for(auto & accepted_frame : accepted_frames) {
-        float distance = std::abs(candidate_frame.target_frame_->distance_ - accepted_frame.target_frame_->distance_);
+      for (auto & accepted_frame : accepted_frames) {
+        float distance = std::abs(
+          candidate_frame.target_frame_->distance_ - accepted_frame.target_frame_->distance_);
         min_distance = std::min(min_distance, distance);
       }
 
@@ -943,11 +1142,9 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::selectBestKCalibr
     mask[best_candidate_frame_id] = true;
   }
 
-  assert (int(accepted_frames.size()) == num_frames);
+  assert(int(accepted_frames.size()) == num_frames);
   return accepted_frames;
 }
-
-
 
 void ExtrinsicMappingBasedCalibrator::keyFrameCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
@@ -981,6 +1178,7 @@ void ExtrinsicMappingBasedCalibrator::keyFrameCallback(
 #pragma GCC optimize("O0")
 
 void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
+  const std::string & calibration_frame_name,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
 {
@@ -998,7 +1196,7 @@ void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
     Eigen::Affine3d initial_target_to_source_affine;
 
     initial_target_to_source_msg =
-      tf_buffer_->lookupTransform(mapping_lidar_frame_, calibration_lidar_frame_, t, timeout)
+      tf_buffer_->lookupTransform(mapping_lidar_frame_, calibration_frame_name, t, timeout)
         .transform;
 
     initial_target_to_source_affine = tf2::transformToEigen(initial_target_to_source_msg);
@@ -1009,8 +1207,15 @@ void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
     return;
   }
 
+  auto & calibration_frames = calibration_frames_map_[calibration_frame_name];
+  auto & initial_source_aligned_map_pub =
+    initial_source_aligned_map_pub_map_[calibration_frame_name];
+  auto & calibrated_source_aligned_map_pub =
+    calibrated_source_aligned_map_pub_map_[calibration_frame_name];
+  auto & target_map_pub = target_map_pub_map_[calibration_frame_name];
+
   std::vector<CalibrationFrame> filtered_calibration_frames =
-    filterCalibrationFrames(calibration_frames_);
+    filterCalibrationFramesByDynamics(calibration_frames);
 
   if (request->id >= static_cast<int>(filtered_calibration_frames.size())) {
     RCLCPP_WARN(
@@ -1116,14 +1321,15 @@ void ExtrinsicMappingBasedCalibrator::singleLidarCalibrationCallback(
   target_map_msg.header = calibration_frame.target_frame_->header_;
   target_map_msg.header.frame_id = map_frame_;
 
-  initial_source_aligned_map_pub_->publish(initial_source_aligned_map_msg);
-  calibrated_source_aligned_map_pub_->publish(calibrated_source_aligned_map_msg);
-  target_map_pub_->publish(target_map_msg);
+  initial_source_aligned_map_pub->publish(initial_source_aligned_map_msg);
+  calibrated_source_aligned_map_pub->publish(calibrated_source_aligned_map_msg);
+  target_map_pub->publish(target_map_msg);
 
   response->success = true;
 }
 
 void ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback(
+  const std::string & calibration_frame_name,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
 {
@@ -1133,6 +1339,7 @@ void ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback(
   Eigen::Matrix4f initial_calibration_transform;
   float initial_distance;
 
+  RCLCPP_INFO(this->get_logger(), "Calibrating frame: %s", calibration_frame_name.c_str());
   RCLCPP_INFO(this->get_logger(), "Obtaining initial calibration...");
 
   // Get the tf between frames
@@ -1144,7 +1351,7 @@ void ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback(
     Eigen::Affine3d initial_target_to_source_affine;
 
     initial_target_to_source_msg =
-      tf_buffer_->lookupTransform(mapping_lidar_frame_, calibration_lidar_frame_, t, timeout)
+      tf_buffer_->lookupTransform(mapping_lidar_frame_, calibration_frame_name, t, timeout)
         .transform;
 
     initial_target_to_source_affine = tf2::transformToEigen(initial_target_to_source_msg);
@@ -1156,16 +1363,31 @@ void ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback(
     return;
   }
 
-  RCLCPP_INFO(this->get_logger(), "Original calibration frames: %ld", calibration_frames_.size());
+  auto & calibration_frames = calibration_frames_map_[calibration_frame_name];
+  auto & initial_source_aligned_map_pub =
+    initial_source_aligned_map_pub_map_[calibration_frame_name];
+  auto & calibrated_source_aligned_map_pub =
+    calibrated_source_aligned_map_pub_map_[calibration_frame_name];
+  // auto & target_map_pub = target_map_pub_map_[calibration_frame_name];
 
-  std::vector<CalibrationFrame> filtered_calibration_frames =
-    filterCalibrationFrames(calibration_frames_);
+  RCLCPP_INFO(this->get_logger(), "Original calibration frames: %ld", calibration_frames.size());
+
+  std::vector<CalibrationFrame> filtered_calibration_frames_by_interpolation =
+    filterCalibrationFramesByInterpolationError(calibration_frames);
 
   RCLCPP_INFO(
-    this->get_logger(), "Filtered calibration frames: %ld", filtered_calibration_frames.size());
+    this->get_logger(), "Filtered calibration frames by dynamics: %ld",
+    filtered_calibration_frames_by_interpolation.size());
 
-  std::vector<CalibrationFrame> accepted_calibration_frames =
-    selectBestKCalibrationFrames(filtered_calibration_frames, params_.calibration_max_frames_);
+  std::vector<CalibrationFrame> filtered_calibration_frames_by_dynamics =
+    filterCalibrationFramesByDynamics(filtered_calibration_frames_by_interpolation);
+
+  RCLCPP_INFO(
+    this->get_logger(), "Filtered calibration frames by dynamics: %ld",
+    filtered_calibration_frames_by_dynamics.size());
+
+  std::vector<CalibrationFrame> accepted_calibration_frames = selectBestKCalibrationFrames(
+    filtered_calibration_frames_by_dynamics, params_.calibration_max_frames_);
 
   RCLCPP_INFO(
     this->get_logger(), "Accepted calibration frames: %ld", accepted_calibration_frames.size());
@@ -1195,8 +1417,11 @@ void ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback(
   }
 
   // Set all the registrators with the pointclouds
-  for (std::size_t i = 0; i < sources.size(); i++) {
-    for (auto & calibrator : calibration_batch_registrators_) {
+  for (auto & calibrator : calibration_batch_registrators_) {
+    calibrator->clearInputSources();
+    calibrator->clearInputTargets();
+
+    for (std::size_t i = 0; i < sources.size(); i++) {
       calibrator->addInputSource(sources[i]);
       calibrator->addInputTarget(targets[i]);
     }
@@ -1338,8 +1563,8 @@ void ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback(
   calibrated_source_aligned_map_msg.header = accepted_calibration_frames[0].source_header_;
   calibrated_source_aligned_map_msg.header.frame_id = map_frame_;
 
-  initial_source_aligned_map_pub_->publish(initial_source_aligned_map_msg);
-  calibrated_source_aligned_map_pub_->publish(calibrated_source_aligned_map_msg);
+  initial_source_aligned_map_pub->publish(initial_source_aligned_map_msg);
+  calibrated_source_aligned_map_pub->publish(calibrated_source_aligned_map_msg);
 
   response->success = false;
 }
@@ -1353,12 +1578,16 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
   std::ifstream ifs(request->path);
   boost::archive::binary_iarchive ia(ifs);
 
-  calibration_frames_.clear();
+  calibration_frames_map_.clear();
   processed_frames_.clear();
   keyframes_.clear();
 
-  ia >> calibration_frames_;
-  RCLCPP_INFO(this->get_logger(), "Loaded %ld calibration frames...", calibration_frames_.size());
+  ia >> calibration_frames_map_;
+  for (auto it = calibration_frames_map_.begin(); it != calibration_frames_map_.end(); it++) {
+    RCLCPP_INFO(
+      this->get_logger(), "Loaded %ld calibration frames (%s)...", it->second.size(),
+      it->first.c_str());
+  }
 
   ia >> processed_frames_;
   RCLCPP_INFO(this->get_logger(), "Loaded %ld frames...", processed_frames_.size());
@@ -1378,8 +1607,12 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
   std::ofstream ofs(request->path);
   boost::archive::binary_oarchive oa(ofs);
 
-  RCLCPP_INFO(this->get_logger(), "Saving %ld calibration frames...", calibration_frames_.size());
-  oa << calibration_frames_;
+  for (auto it = calibration_frames_map_.begin(); it != calibration_frames_map_.end(); it++) {
+    RCLCPP_INFO(
+      this->get_logger(), "Saving %ld calibration frames (%s)...", it->second.size(),
+      it->first.c_str());
+  }
+  oa << calibration_frames_map_;
 
   RCLCPP_INFO(this->get_logger(), "Saving %ld frames...", processed_frames_.size());
   oa << processed_frames_;

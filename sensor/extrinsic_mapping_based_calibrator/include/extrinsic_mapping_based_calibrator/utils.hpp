@@ -18,6 +18,7 @@
 #include <Eigen/Core>
 #include <rclcpp/rclcpp.hpp>
 
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/crop_box.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
