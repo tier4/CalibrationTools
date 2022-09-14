@@ -35,11 +35,14 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <thread>
+#include <unordered_set>
 
 #define UNUSED(x) (void)x;
 
@@ -147,12 +150,13 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<double>("lost_frame_max_angle_diff", 25.0);  // def
   params_.lost_frame_interpolation_error_ =
     this->declare_parameter<double>("lost_frame_interpolation_error", 0.05);
-  params_.lost_frame_skip_frames_ = this->declare_parameter<int>("lost_frame_skip_frames", 10);
   params_.calibration_use_only_stopped_ =
     this->declare_parameter<bool>("calibration_use_only_stopped", false);
   params_.max_calibration_range_ = this->declare_parameter<double>("max_calibration_range", 80.0);
   params_.calibration_min_pca_eigenvalue_ =
     this->declare_parameter<double>("calibration_min_pca_eigenvalue", 0.25);
+  params_.calibration_min_distance_between_frames_ =
+    this->declare_parameter<double>("calibration_min_distance_between_frames", 5.0);
 
   // Calibration parameters
   params_.calibration_solver_iterations_ =
@@ -349,9 +353,9 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
 
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, lost_frame_max_angle_diff);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, lost_frame_interpolation_error);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(params, lost_frame_skip_frames);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, max_calibration_range);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_min_pca_eigenvalue);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, calibration_min_distance_between_frames);
 
     // transaction succeeds, now assign values
     params_ = params;
@@ -1039,31 +1043,98 @@ PointcloudType::Ptr ExtrinsicMappingBasedCalibrator::getDensePointcloudFromMap(
   return subsampled_tcs_ptr;
 }
 
-std::vector<CalibrationFrame>
-ExtrinsicMappingBasedCalibrator::filterCalibrationFramesByInterpolationError(
+std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::filterCalibrationFramesByLostState(
   const std::vector<CalibrationFrame> & calibration_frames)
 {
   std::vector<CalibrationFrame> filtered_frames;
+  std::vector<int> deleted_keyframe_ids;
 
-  // vector with invalid frame ids
+  std::vector<int> invalid_keyframe_ids;
+  std::unordered_set<int> invalid_keyframe_ids_map;
 
-  for (auto & frame : calibration_frames) {
-    (void)frame;
-    // if a keyframe, look for the next, and do the in between frame check using the interpolation
-    // formula is not a keyframe. look for the left keyframe and the right, and do the same if is a
-    // stopped frame, skip these checks
+  int last_keyframe_id;
+  bool lost = false;
+
+  // Find all keyframes that are either "lost" or have a frame "lost" nearby
+  for (const auto & frame : processed_frames_) {
+    lost |= frame->lost_;
+
+    if (frame->is_key_frame_) {
+      if (invalid_keyframe_ids_map.find(last_keyframe_id) != invalid_keyframe_ids_map.end()) {
+        invalid_keyframe_ids.push_back(last_keyframe_id);
+        invalid_keyframe_ids_map.insert(last_keyframe_id);
+      }
+
+      invalid_keyframe_ids.push_back(frame->keyframe_id_);
+      invalid_keyframe_ids_map.insert(frame->keyframe_id_);
+
+      lost = false;
+      last_keyframe_id = frame->keyframe_id_;
+    }
+  }
+
+  int left_invalid_keyframe_id = 0;
+
+  // Find and separate frames that close enought to "lost" keyframes
+  for (const auto & frame : calibration_frames) {
+    // Check closest keyframe
+    int keyframe_id = frame.target_frame_->keyframe_id_;
+
+    if (!frame.target_frame_->is_key_frame_) {
+      for (int i = 0;; i++) {
+        int left_frame_id = frame.target_frame_->frame_id_ - i;
+        int right_frame_id = frame.target_frame_->frame_id_ + i;
+        if (left_frame_id >= 0 && processed_frames_[left_frame_id]->is_key_frame_) {
+          keyframe_id = processed_frames_[left_frame_id]->keyframe_id_;
+          break;
+        }
+        if (
+          right_frame_id < static_cast<int>(processed_frames_.size()) &&
+          processed_frames_[right_frame_id]->is_key_frame_) {
+          keyframe_id = processed_frames_[right_frame_id]->keyframe_id_;
+          break;
+        }
+      }
+    }
+
+    while (left_invalid_keyframe_id < static_cast<int>(invalid_keyframe_ids.size()) - 1 &&
+           invalid_keyframe_ids[left_invalid_keyframe_id] <
+             keyframe_id + params_.calibration_num_keyframes_) {
+      left_invalid_keyframe_id++;
+    }
+
+    if (
+      left_invalid_keyframe_id < static_cast<int>(invalid_keyframe_ids.size()) - 1 &&
+      std::abs(
+        invalid_keyframe_ids[left_invalid_keyframe_id + 1] - keyframe_id <=
+        params_.calibration_num_keyframes_)) {
+      deleted_keyframe_ids.push_back(keyframe_id);
+    } else {
+      filtered_frames.push_back(frame);
+    }
+  }
+
+  std::stringstream ss;
+  ss << "Invalid keyframes due to being associated with 'lost' frames: ";
+
+  for (const auto & id : deleted_keyframe_ids) {
+    ss << id << " ";
+  }
+
+  if (deleted_keyframe_ids.size() > 0) {
+    RCLCPP_WARN(get_logger(), "%s\n", ss.str().c_str());
   }
 
   return filtered_frames;
-
-  // Using the invalid frame ids, filter all calibration frames based on the ids if they are close
-  // enough to ignore
 }
 
 std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::filterCalibrationFramesByDynamics(
   const std::vector<CalibrationFrame> & calibration_frames)
 {
   std::vector<CalibrationFrame> filtered_frames;
+
+  std::stringstream ss;
+  ss << "Accepted kyframes due to dynamics & interpolation: ";
 
   for (auto & frame : calibration_frames) {
     RCLCPP_INFO(
@@ -1114,7 +1185,12 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::filterCalibration
       (standard_criteria || straight_criteria) &&
       (frame.stopped_ || !params_.calibration_use_only_stopped_)) {
       filtered_frames.emplace_back(frame);
+      ss << frame.target_frame_->frame_id_ << "/" << frame.target_frame_->keyframe_id_ << " ";
     }
+  }
+
+  if (filtered_frames.size() > 0) {
+    RCLCPP_INFO(get_logger(), "%s\n", ss.str().c_str());
   }
 
   return filtered_frames;
@@ -1125,7 +1201,11 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::selectBestKCalibr
 {
   std::vector<CalibrationFrame> filtered_frames;
 
-  for (auto & frame : calibration_frames) {
+  std::vector<std::pair<float, std::size_t>> pca_coeff_calibration_id_pairs;
+
+  for (std::size_t i = 0; i < calibration_frames.size(); i++) {
+    auto & frame = calibration_frames[i];
+
     pcl::PCA<PointType> pca;
     pca.setInputCloud(frame.source_pointcloud_);
 
@@ -1136,55 +1216,47 @@ std::vector<CalibrationFrame> ExtrinsicMappingBasedCalibrator::selectBestKCalibr
       pca_coefficient >= params_.calibration_min_pca_eigenvalue_ ? "accepted" : "rejected");
 
     if (pca_coefficient >= params_.calibration_min_pca_eigenvalue_) {
-      filtered_frames.push_back(frame);
+      pca_coeff_calibration_id_pairs.push_back(std::make_pair<>(pca_coefficient, i));
     }
   }
 
-  if (int(filtered_frames.size()) <= num_frames) {
-    return filtered_frames;
-  }
+  std::sort(
+    pca_coeff_calibration_id_pairs.begin(), pca_coeff_calibration_id_pairs.end(),
+    [](auto & lhs, auto & rhs) { return lhs.first > rhs.first; });
 
-  std::vector<bool> mask;
-  std::vector<CalibrationFrame> accepted_frames;
+  std::stringstream ss;
+  ss << "Final selected keyframes: ";
 
-  mask.resize(filtered_frames.size());
-  std::fill(mask.begin(), mask.end(), false);
-
-  // Insert a random element from filtered to accepted
-  std::random_device rd;
-  std::mt19937 rng(rd());
-  std::uniform_int_distribution<std::mt19937::result_type> dist(0, filtered_frames.size() - 1);
-  accepted_frames.push_back(filtered_frames[dist(rng)]);
-
-  for (int k = 1; k < num_frames; k++) {
-    int best_candidate_frame_id = -1;
-    float best_candidate_frame_distance = 0.f;
-    for (std::size_t i = 0; i < filtered_frames.size(); i++) {
-      if (mask[i]) {
-        continue;
-      }
-
-      auto & candidate_frame = filtered_frames[i];
-      float min_distance = std::numeric_limits<float>::max();
-
-      for (auto & accepted_frame : accepted_frames) {
-        float distance = std::abs(
-          candidate_frame.target_frame_->distance_ - accepted_frame.target_frame_->distance_);
-        min_distance = std::min(min_distance, distance);
-      }
-
-      if (min_distance > best_candidate_frame_distance) {
-        best_candidate_frame_id = i;
-        best_candidate_frame_distance = min_distance;
+  for (auto & pair : pca_coeff_calibration_id_pairs) {
+    bool accepted = true;
+    for (auto & accepted_frame : filtered_frames) {
+      if (
+        std::abs(
+          calibration_frames[pair.second].target_frame_->distance_ -
+          accepted_frame.target_frame_->distance_) <
+        params_.calibration_min_distance_between_frames_) {
+        accepted = false;
+        break;
       }
     }
 
-    accepted_frames.push_back(filtered_frames[best_candidate_frame_id]);
-    mask[best_candidate_frame_id] = true;
+    if (accepted) {
+      auto & accepted_frame = calibration_frames[pair.second];
+      filtered_frames.push_back(accepted_frame);
+      ss << accepted_frame.target_frame_->frame_id_ << "/"
+         << accepted_frame.target_frame_->keyframe_id_ << " ";
+    }
+
+    if (static_cast<int>(filtered_frames.size()) == num_frames) {
+      break;
+    }
   }
 
-  assert(int(accepted_frames.size()) == num_frames);
-  return accepted_frames;
+  if (filtered_frames.size() > 0) {
+    RCLCPP_INFO(get_logger(), "%s\n", ss.str().c_str());
+  }
+
+  return filtered_frames;
 }
 
 void ExtrinsicMappingBasedCalibrator::keyFrameCallback(
@@ -1413,22 +1485,22 @@ void ExtrinsicMappingBasedCalibrator::multipleLidarCalibrationCallback(
 
   RCLCPP_INFO(this->get_logger(), "Original calibration frames: %ld", calibration_frames.size());
 
-  std::vector<CalibrationFrame> filtered_calibration_frames_by_interpolation =
-    filterCalibrationFramesByInterpolationError(calibration_frames);
+  std::vector<CalibrationFrame> filtered_calibration_frames_1 =
+    filterCalibrationFramesByLostState(calibration_frames);
 
   RCLCPP_INFO(
     this->get_logger(), "Filtered calibration frames by dynamics: %ld",
-    filtered_calibration_frames_by_interpolation.size());
+    filtered_calibration_frames_1.size());
 
-  std::vector<CalibrationFrame> filtered_calibration_frames_by_dynamics =
-    filterCalibrationFramesByDynamics(filtered_calibration_frames_by_interpolation);
+  std::vector<CalibrationFrame> filtered_calibration_frames_2 =
+    filterCalibrationFramesByDynamics(filtered_calibration_frames_1);
 
   RCLCPP_INFO(
     this->get_logger(), "Filtered calibration frames by dynamics: %ld",
-    filtered_calibration_frames_by_dynamics.size());
+    filtered_calibration_frames_2.size());
 
-  std::vector<CalibrationFrame> accepted_calibration_frames = selectBestKCalibrationFrames(
-    filtered_calibration_frames_by_dynamics, params_.calibration_max_frames_);
+  std::vector<CalibrationFrame> accepted_calibration_frames =
+    selectBestKCalibrationFrames(filtered_calibration_frames_2, params_.calibration_max_frames_);
 
   RCLCPP_INFO(
     this->get_logger(), "Accepted calibration frames: %ld", accepted_calibration_frames.size());

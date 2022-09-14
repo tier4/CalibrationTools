@@ -28,6 +28,8 @@
 #else
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
+#include <rosbag2_interfaces/srv/pause.hpp>
+#include <rosbag2_interfaces/srv/resume.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <tier4_pcl_extensions/joint_icp_extended.hpp>
 
@@ -49,9 +51,6 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-#include <rosbag2_interfaces/srv/resume.hpp>
-#include <rosbag2_interfaces/srv/pause.hpp>
 
 #include <map>
 #include <mutex>
@@ -176,10 +175,10 @@ protected:
     const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
 
   /*!
-   * Filter calibration frames to avoid high speed, acceleration, interpolation, etc
+   * Filter calibration frames that are close to frames where the robot is assumes to be lost
    * @param[in] calibration_frames The raw calibrated frames
    */
-  std::vector<CalibrationFrame> filterCalibrationFramesByInterpolationError(
+  std::vector<CalibrationFrame> filterCalibrationFramesByLostState(
     const std::vector<CalibrationFrame> & calibration_frames);
 
   /*!
@@ -246,11 +245,11 @@ protected:
 
     double lost_frame_max_angle_diff_;
     double lost_frame_interpolation_error_;
-    int lost_frame_skip_frames_;
 
     bool calibration_use_only_stopped_;
     double max_calibration_range_;
     double calibration_min_pca_eigenvalue_;
+    double calibration_min_distance_between_frames_;
 
     // Calibration parameters
     int calibration_solver_iterations_;
