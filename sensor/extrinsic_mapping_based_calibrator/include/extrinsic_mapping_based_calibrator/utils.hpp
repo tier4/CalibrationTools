@@ -89,6 +89,9 @@ pcl::PointCloud<PointType>::Ptr cropPointCloud(
     }
   }
 
+  tmp_ptr->width = tmp_ptr->points.size();
+  tmp_ptr->height = 1;
+
   return tmp_ptr;
 }
 
