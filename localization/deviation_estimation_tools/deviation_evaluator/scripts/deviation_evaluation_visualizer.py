@@ -378,7 +378,7 @@ class BagFileEvaluator:
         timestamp = self.ekf_pose_list[self.allowed_idxs, 0]
         expected_error_long_radius = self.stddev_long_2d[self.allowed_idxs] * 3
         expected_error_lateral = self.stddev_lateral_2d[self.allowed_idxs] * 3
-        expected_error_frontal = self.stddev_frontal_2d[self.allowed_idxs] * 3 
+        expected_error_frontal = self.stddev_frontal_2d[self.allowed_idxs] * 3
         error_maximum = np.max(
             np.hstack(
                 [
