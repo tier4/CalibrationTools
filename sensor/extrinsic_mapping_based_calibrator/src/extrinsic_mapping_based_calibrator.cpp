@@ -70,6 +70,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   const rclcpp::NodeOptions & options)
 : Node("extrinsic_mapping_based_calibrator_node", options),
   tf_broascaster_(this),
+  delta_pose_(Eigen::Matrix4f::Identity()),
   selected_keyframe_(-1),
   n_processed_frames_(0)
 {
@@ -88,6 +89,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   mapping_lidar_frame_ = this->declare_parameter<std::string>("mapping_lidar_frame");
 
   params_.verbose_ = this->declare_parameter<bool>("verbose", false);
+  params_.use_rosbag_ = this->declare_parameter<bool>("use_rosbag", true);
   params_.max_frames_ = this->declare_parameter<int>("max_frames", 500);
   params_.local_map_num_keyframes_ = this->declare_parameter<int>("local_map_num_keyframes", 15);
   params_.calibration_num_keyframes_ =
@@ -248,6 +250,11 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       std::placeholders::_2),
     rmw_qos_profile_services_default);
 
+  rosbag2_pause_client_ = this->create_client<rosbag2_interfaces::srv::Pause>(
+    "/rosbag2_player/pause", rmw_qos_profile_services_default);
+  rosbag2_resume_client_ = this->create_client<rosbag2_interfaces::srv::Resume>(
+    "/rosbag2_player/resume", rmw_qos_profile_services_default);
+
   timer_ = rclcpp::create_timer(
     this, get_clock(), 10s, std::bind(&ExtrinsicMappingBasedCalibrator::timerCallback, this));
 
@@ -308,6 +315,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
   Params params = params_;
 
   try {
+    UPDATE_MAPPING_CALIBRATOR_PARAM(params, use_rosbag);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, verbose);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, max_frames);
     UPDATE_MAPPING_CALIBRATOR_PARAM(params, local_map_num_keyframes);
@@ -559,6 +567,19 @@ void ExtrinsicMappingBasedCalibrator::mappingPointCloudCallback(
     return;
   }
 
+  if (params_.use_rosbag_ && !bag_paused_ && unprocessed_frames_.size() > 0) {
+    auto cb = [&](rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedFuture response_client) {
+      auto res = response_client.get();
+      (void)res;
+      std::unique_lock<std::mutex> lock(mutex_);
+      bag_paused_ = true;
+      RCLCPP_WARN_STREAM(this->get_logger(), "Received pause response:");
+    };
+    RCLCPP_WARN_STREAM(this->get_logger(), "Send pause call:");
+    auto request = std::make_shared<rosbag2_interfaces::srv::Pause::Request>();
+    rosbag2_pause_client_->async_send_request(request, cb);
+  }
+
   unprocessed_frames_.push(frame);
   RCLCPP_INFO(
     get_logger(), "ROS: New pointcloud. Unprocessed=%lu Frames=%lu Keyframes=%lu",
@@ -579,6 +600,21 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
       std::unique_lock<std::mutex> lock(mutex_);
 
       if (unprocessed_frames_.size() == 0) {
+        if (params_.use_rosbag_ && bag_paused_) {
+          auto cb =
+            [&](rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedFuture response_client) {
+              auto res = response_client.get();
+              (void)res;
+              std::unique_lock<std::mutex> lock(mutex_);
+              bag_paused_ = false;
+              RCLCPP_WARN_STREAM(this->get_logger(), "Received resume response:");
+            };
+
+          RCLCPP_WARN_STREAM(this->get_logger(), "Sending resume call:");
+          auto request = std::make_shared<rosbag2_interfaces::srv::Resume::Request>();
+          rosbag2_resume_client_->async_send_request(request, cb);
+        }
+
         lock.unlock();
         rclcpp::sleep_for(10ms);
         continue;
@@ -601,7 +637,7 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     }
 
     // Subsample the frame
-    //pcl::VoxelGrid<PointType> voxel_grid;
+    // pcl::VoxelGrid<PointType> voxel_grid;
     VoxelGridWrapper<PointType> voxel_grid;
     frame->pointcloud_subsampled_ = PointcloudType::Ptr(new PointcloudType());
     PointcloudType::Ptr aligned_cloud_ptr(new PointcloudType());
@@ -613,7 +649,6 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     voxel_grid.setInputCloud(cropped_cloud_ptr);
     voxel_grid.filter(*frame->pointcloud_subsampled_);
 
-
     // Register the frame to the map
     ndt_.setInputTarget(local_map_ptr_);
     ndt_.setInputSource(frame->pointcloud_subsampled_);
@@ -621,8 +656,10 @@ void ExtrinsicMappingBasedCalibrator::mappingThreadWorker()
     if (first_iteration) {
       frame->pose_ = Eigen::Matrix4f::Identity();
     } else {
-      ndt_.align(*aligned_cloud_ptr, prev_pose);
+      Eigen::Matrix4f guess = prev_pose * delta_pose_;
+      ndt_.align(*aligned_cloud_ptr, guess);
       frame->pose_ = ndt_.getFinalTransformation();
+      delta_pose_ = prev_pose.inverse() * frame->pose_;
 
       std::cout << "NDT score: " << ndt_.getFitnessScore() << std::endl;
     }
@@ -855,6 +892,10 @@ void ExtrinsicMappingBasedCalibrator::timerCallback()
     pcl::transformPointCloud(*frame->pointcloud_subsampled_, *frame_mcs_ptr, frame->pose_);
     *tmp_mcs_ptr += *frame_mcs_ptr;
   }
+
+  pcl::transformPointCloud(*tmp_mcs_ptr, *tmp_mcs_ptr, processed_frames_.back()->pose_.inverse());
+  tmp_mcs_ptr = cropPointCloud(tmp_mcs_ptr, params_.max_calibration_range_);
+  pcl::transformPointCloud(*tmp_mcs_ptr, *tmp_mcs_ptr, processed_frames_.back()->pose_);
 
   pcl::VoxelGrid<PointType> voxel_grid;
   voxel_grid.setLeafSize(params_.leaf_size_viz_, params_.leaf_size_viz_, params_.leaf_size_viz_);

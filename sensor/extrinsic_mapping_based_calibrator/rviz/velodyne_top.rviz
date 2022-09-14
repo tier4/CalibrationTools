@@ -61,7 +61,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 0
@@ -82,7 +82,7 @@ Visualization Manager:
         Value: /sensing/lidar/top/outlier_filtered/pointcloud
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Axes
       Enabled: true
       Length: 1

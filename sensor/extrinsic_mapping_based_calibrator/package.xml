@@ -33,6 +33,7 @@
   <depend>visualization_msgs</depend>
   <depend>libboost-serialization</depend>
   <depend>libboost-filesystem</depend>
+  <depend>rosbag2_interfaces</depend>
 
   <depend>nav_msgs</depend>
   <depend>tf2_sensor_msgs</depend>

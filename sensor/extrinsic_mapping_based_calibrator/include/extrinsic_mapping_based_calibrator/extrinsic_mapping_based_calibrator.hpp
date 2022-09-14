@@ -50,6 +50,9 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <rosbag2_interfaces/srv/resume.hpp>
+#include <rosbag2_interfaces/srv/pause.hpp>
+
 #include <map>
 #include <mutex>
 #include <queue>
@@ -207,6 +210,7 @@ protected:
 
   struct Params
   {
+    bool use_rosbag_;
     bool verbose_;
     int max_frames_;
     int local_map_num_keyframes_;
@@ -289,6 +293,9 @@ protected:
   rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
     save_database_server_;
 
+  rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedPtr rosbag2_pause_client_;
+  rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedPtr rosbag2_resume_client_;
+
   rclcpp::TimerBase::SharedPtr timer_;
 
   pclomp::NormalDistributionsTransform<PointType, PointType> ndt_;
@@ -329,6 +336,7 @@ protected:
     calibration_batch_icp_ultrafine_;
 
   // Mapping data
+  Eigen::Matrix4f delta_pose_;
   int selected_keyframe_;
   int n_processed_frames_;
   std::queue<Frame::Ptr> unprocessed_frames_;
@@ -337,6 +345,9 @@ protected:
   std::vector<Frame::Ptr> keyframes_and_stopped_;
   pcl::PointCloud<PointType>::Ptr local_map_ptr_;
   std::vector<geometry_msgs::msg::PoseStamped> trajectory_;
+
+  // Rosbag interface
+  bool bag_paused_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
