@@ -375,12 +375,16 @@ class BagFileEvaluator:
 
     def plot_bag_compare(self, save_path):
         # Ignore the first 20 steps (=1 sec in 20 Hz) as this part may be noisy
+        timestamp = self.ekf_pose_list[self.allowed_idxs, 0]
+        expected_error_long_radius = self.stddev_long_2d[self.allowed_idxs] * 3
+        expected_error_lateral = self.stddev_lateral_2d[self.allowed_idxs] * 3
+        expected_error_frontal = self.stddev_frontal_2d[self.allowed_idxs] * 3 
         error_maximum = np.max(
             np.hstack(
                 [
-                    self.stddev_long_2d[self.allowed_idxs][20:] * 3,
-                    self.stddev_lateral_2d[self.allowed_idxs][20:] * 3,
-                    self.stddev_frontal_2d[self.allowed_idxs][20:] * 3,
+                    expected_error_long_radius[20:],
+                    expected_error_lateral[20:],
+                    expected_error_frontal[20:],
                 ]
             )
         )
@@ -389,13 +393,13 @@ class BagFileEvaluator:
 
         ax1 = fig.add_subplot(411, xlabel="time [s]", ylabel="error [m]")
         ax1.plot(
-            self.ekf_pose_list[self.allowed_idxs, 0],
+            timestamp,
             np.linalg.norm(self.error_vec, axis=1)[self.allowed_idxs],
             label="error",
         )
         ax1.plot(
-            self.ekf_pose_list[self.allowed_idxs, 0],
-            self.stddev_long_2d[self.allowed_idxs] * 3,
+            timestamp,
+            expected_error_long_radius,
             label="expected error (long radius)",
             linestyle="--",
             color="gray",
@@ -407,23 +411,22 @@ class BagFileEvaluator:
         # Plot error along body-frame-y-axis
         ax2 = fig.add_subplot(412, xlabel="time [s]", ylabel="error [m]")
         ax2.plot(
-            self.ekf_pose_list[self.allowed_idxs, 0],
+            timestamp,
             self.error_vec_body_frame[self.allowed_idxs, 1],
-            label="error along body-frame-y-axis",
+            label="error along lateral direction",
         )
 
-        limit = self.stddev_lateral_2d[self.allowed_idxs] * 3
-        idxs = self.error_vec_body_frame[self.allowed_idxs, 1] > limit
+        idxs = self.error_vec_body_frame[self.allowed_idxs, 1] > expected_error_lateral
         ax2.vlines(
             self.ekf_pose_list[self.allowed_idxs, :][idxs, 0],
             0,
-            max(limit),
+            max(expected_error_lateral),
             color=(1, 0.7, 0.7),
             label="Danger zone",
         )
         ax2.plot(
-            self.ekf_pose_list[self.allowed_idxs, 0],
-            limit,
+            timestamp,
+            expected_error_lateral,
             label=r"expected error (3-sigma)",
             linestyle="--",
             color="gray",
@@ -435,22 +438,21 @@ class BagFileEvaluator:
         # Plot error along body-frame-x-axis
         ax3 = fig.add_subplot(413, xlabel="time [s]", ylabel="error [m]")
         ax3.plot(
-            self.ekf_pose_list[self.allowed_idxs, 0],
+            timestamp,
             self.error_vec_body_frame[self.allowed_idxs, 0],
-            label="error along body-frame-x-axis",
+            label="error along frontal direction",
         )
-        limit = self.stddev_frontal_2d[self.allowed_idxs] * 3
-        idxs = self.error_vec_body_frame[self.allowed_idxs, 0] > limit
+        idxs = self.error_vec_body_frame[self.allowed_idxs, 0] > expected_error_frontal
         ax3.vlines(
             self.ekf_pose_list[self.allowed_idxs, :][idxs, 0],
             0,
-            max(limit),
+            max(expected_error_frontal),
             color=(1, 0.7, 0.7),
             label="Danger zone",
         )
         ax3.plot(
-            self.ekf_pose_list[self.allowed_idxs, 0],
-            limit,
+            timestamp,
+            expected_error_frontal,
             label=r"expected error (3-sigma)",
             linestyle="--",
             color="gray",
