@@ -374,11 +374,24 @@ class BagFileEvaluator:
             print("NDT is not cut")
 
     def plot_bag_compare(self, save_path):
-        # Ignore the first 20 steps (=1 sec in 20 Hz) as this part may be noisy
         timestamp = self.ekf_pose_list[self.allowed_idxs, 0]
+
+        error_long_radius = np.linalg.norm(self.error_vec, axis=1)[self.allowed_idxs]
         expected_error_long_radius = self.stddev_long_2d[self.allowed_idxs] * 3
+
+        error_lateral = self.error_vec_body_frame[self.allowed_idxs, 1]
         expected_error_lateral = self.stddev_lateral_2d[self.allowed_idxs] * 3
-        expected_error_frontal = self.stddev_frontal_2d[self.allowed_idxs] * 3 
+        lateral_warning_timestamps = timestamp[error_lateral > expected_error_lateral]
+
+        error_frontal = self.error_vec_body_frame[self.allowed_idxs, 0]
+        expected_error_frontal = self.stddev_frontal_2d[self.allowed_idxs] * 3
+        frontal_warning_timestamps = timestamp[error_frontal > expected_error_frontal]
+
+        timestamp_twist = twist_list[:, 0]
+        velocity = twist_list[:, 1]
+        yaw_rate = twist_list[:, 2]
+
+        # Ignore the first 20 steps (=1 sec in 20 Hz) as this part may be noisy
         error_maximum = np.max(
             np.hstack(
                 [
@@ -394,7 +407,7 @@ class BagFileEvaluator:
         ax1 = fig.add_subplot(411, xlabel="time [s]", ylabel="error [m]")
         ax1.plot(
             timestamp,
-            np.linalg.norm(self.error_vec, axis=1)[self.allowed_idxs],
+            error_long_radius,
             label="error",
         )
         ax1.plot(
@@ -412,13 +425,12 @@ class BagFileEvaluator:
         ax2 = fig.add_subplot(412, xlabel="time [s]", ylabel="error [m]")
         ax2.plot(
             timestamp,
-            self.error_vec_body_frame[self.allowed_idxs, 1],
+            error_lateral,
             label="error along lateral direction",
         )
 
-        idxs = self.error_vec_body_frame[self.allowed_idxs, 1] > expected_error_lateral
         ax2.vlines(
-            self.ekf_pose_list[self.allowed_idxs, :][idxs, 0],
+            lateral_warning_timestamps,
             0,
             max(expected_error_lateral),
             color=(1, 0.7, 0.7),
@@ -439,12 +451,11 @@ class BagFileEvaluator:
         ax3 = fig.add_subplot(413, xlabel="time [s]", ylabel="error [m]")
         ax3.plot(
             timestamp,
-            self.error_vec_body_frame[self.allowed_idxs, 0],
+            error_frontal,
             label="error along frontal direction",
         )
-        idxs = self.error_vec_body_frame[self.allowed_idxs, 0] > expected_error_frontal
         ax3.vlines(
-            self.ekf_pose_list[self.allowed_idxs, :][idxs, 0],
+            frontal_warning_timestamps,,
             0,
             max(expected_error_frontal),
             color=(1, 0.7, 0.7),
@@ -464,12 +475,12 @@ class BagFileEvaluator:
         # Plot velocity and yaw_rate
         ax4_vel = fig.add_subplot(414, xlabel="time [s]", ylabel="velocity [m/s]")
         ax4_vel.plot(
-            self.twist_list[:, 0], self.twist_list[:, 1], label=r"velocity (left axis)", color="c"
+            timestamp_twist, velocity, label=r"velocity (left axis)", color="c"
         )
         ax4_yaw_rate = ax4_vel.twinx()
         ax4_yaw_rate.plot(
-            self.twist_list[:, 0],
-            self.twist_list[:, 2],
+            timestamp_twist,
+            yaw_rate,
             label=r"yaw rate (right axis)",
             color="red",
         )
