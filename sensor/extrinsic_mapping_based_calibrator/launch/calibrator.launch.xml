@@ -31,15 +31,19 @@
       <param name="calibration_max_frames" value="2" /-->
 
       <!-- BS circuit -->
-      <param name="calibration_min_pca_eigenvalue" value="0.05" />
+      <param name="calibration_min_pca_eigenvalue" value="0.015" /> <!-- only coz the right lidar does not see much -->
       <param name="max_frames" value="2000" />
       <param name="marker_size" value="10.0" />
       <param name="ndt_resolution" value="1.0" />
       <param name="ndt_step_size" value="0.1" />
       <param name="ndt_max_iterations" value="200" />
-      <param name="calibration_max_frames" value="10" />
+      <param name="calibration_max_frames" value="5" />
       <param name="max_pointcloud_range" value="100.0" />
+      <param name="calibration_solver_iterations" value="50" />
 
+      <param name="leaf_size_viz" value="0.1" />
+
+      <param name="use_rosbag" value="false" />
 
     </node>
   </group>

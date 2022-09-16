@@ -31,6 +31,9 @@ struct Frame
   using ConstPtr = std::shared_ptr<const Frame>;
   float distance_{0.f};
   float delta_distance_{0.f};
+  float rough_speed_{
+    0.f};          // do not stream until we release the tool to avoid breaking the current dbs
+  float dt_{0.f};  // do not stream until we release the tool to avoid breaking the current dbs
   std_msgs::msg::Header header_;
   PointcloudType::Ptr pointcloud_raw_;
   PointcloudType::Ptr pointcloud_subsampled_;

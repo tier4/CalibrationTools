@@ -52,9 +52,9 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <list>
 #include <map>
 #include <mutex>
-#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -114,7 +114,17 @@ protected:
   /*!
    * Timer callback. Publishes a 'sparse' map and the trajectory of the mapping
    */
-  void timerCallback();
+  void publisherTimerCallback();
+
+  /*!
+   * Timer callback. Matches mapping keyframes with calibration lidars
+   */
+  void dataMatchingTimerCallback();
+
+  /*!
+   * Matches mapping keyframes with a singular calibration lidar
+   */
+  void mappingCalibrationDatamatching(const std::string & calibration_frame);
 
   // Mapping methods
 
@@ -295,7 +305,8 @@ protected:
   rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedPtr rosbag2_pause_client_;
   rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedPtr rosbag2_resume_client_;
 
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr publisher_timer_;
+  rclcpp::TimerBase::SharedPtr data_matching_timer_;
 
   pclomp::NormalDistributionsTransform<PointType, PointType> ndt_;
 
@@ -312,8 +323,8 @@ protected:
   visualization_msgs::msg::MarkerArray published_keyframes_markers_;
 
   // Calibration matching data
-  std::map<std::string, std::queue<sensor_msgs::msg::PointCloud2::SharedPtr>>
-    calibration_pointclouds_queue_map_;
+  std::map<std::string, std::list<sensor_msgs::msg::PointCloud2::SharedPtr>>
+    calibration_pointclouds_list_map_;
   std::map<std::string, std_msgs::msg::Header::SharedPtr> calibration_lidar_header_map_;
   std::map<std::string, int> last_unmatched_keyframe_map_;
 
@@ -338,7 +349,7 @@ protected:
   Eigen::Matrix4f delta_pose_;
   int selected_keyframe_;
   int n_processed_frames_;
-  std::queue<Frame::Ptr> unprocessed_frames_;
+  std::list<Frame::Ptr> unprocessed_frames_;
   std::vector<Frame::Ptr> processed_frames_;
   std::vector<Frame::Ptr> keyframes_;
   std::vector<Frame::Ptr> keyframes_and_stopped_;
