@@ -16,7 +16,7 @@
       <param name="parent_frame" value="$(var parent_frame)" />
       <param name="child_frame" value="$(var child_frame)" />
       <param name="map_frame" value="calibration_map" />
-      <param name="calibration_lidar_frames" value="$(var calibration_lidar_frames)" />
+      <param name="calibration_lidar_frame_names" value="$(var calibration_lidar_frames)" />
       <param name="mapping_lidar_frame" value="$(var mapping_lidar_frame)" />
       <param name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
       <remap from="mapping_pointcloud" to="$(var mapping_pointcloud)"/>
@@ -32,14 +32,17 @@
 
       <!-- BS circuit -->
       <param name="calibration_min_pca_eigenvalue" value="0.015" /> <!-- only coz the right lidar does not see much -->
-      <param name="max_frames" value="2000" />
+      <param name="mapping_max_frames" value="2000" />
       <param name="marker_size" value="10.0" />
       <param name="ndt_resolution" value="1.0" />
       <param name="ndt_step_size" value="0.1" />
-      <param name="ndt_max_iterations" value="200" />
+      <param name="ndt_max_iterations" value="100" />
+      <param name="ndt_epsilon" value="0.005" />
+      <param name="ndt_num_threads" value="12" />
+
       <param name="calibration_max_frames" value="5" />
-      <param name="max_pointcloud_range" value="100.0" />
-      <param name="calibration_solver_iterations" value="50" />
+      <param name="mapping_max_range" value="100.0" />
+      <param name="solver_iterations" value="200" />
 
       <param name="leaf_size_viz" value="0.1" />
 

@@ -32,9 +32,11 @@ ament_export_include_directories(
 # ========================================================================
 
 ament_auto_add_executable(extrinsic_mapping_based_calibrator
+  src/calibration_mapper.cpp
   src/extrinsic_mapping_based_calibrator.cpp
+  src/lidar_calibrator.cpp
   src/main.cpp
-  #src/test.cpp
+  src/utils.cpp
 )
 
 target_link_libraries(extrinsic_mapping_based_calibrator

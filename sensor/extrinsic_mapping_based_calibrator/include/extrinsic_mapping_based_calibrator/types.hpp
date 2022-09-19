@@ -17,10 +17,16 @@
 
 #include <Eigen/Dense>
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/header.hpp>
 
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
+
+#include <list>
+#include <map>
+#include <mutex>
 
 using PointType = pcl::PointXYZ;
 using PointcloudType = pcl::PointCloud<PointType>;
@@ -31,9 +37,7 @@ struct Frame
   using ConstPtr = std::shared_ptr<const Frame>;
   float distance_{0.f};
   float delta_distance_{0.f};
-  float rough_speed_{
-    0.f};          // do not stream until we release the tool to avoid breaking the current dbs
-  float dt_{0.f};  // do not stream until we release the tool to avoid breaking the current dbs
+  float rough_speed_{0.f};
   std_msgs::msg::Header header_;
   PointcloudType::Ptr pointcloud_raw_;
   PointcloudType::Ptr pointcloud_subsampled_;
@@ -49,20 +53,115 @@ struct Frame
 
 struct CalibrationFrame
 {
+  using Ptr = std::shared_ptr<CalibrationFrame>;
+  using ConstPtr = std::shared_ptr<const CalibrationFrame>;
+
   PointcloudType::Ptr source_pointcloud_;
-  // PointcloudType::Ptr target_pointcloud_;  // we may not be able to store the pointcloud since it
-  // is
   std_msgs::msg::Header source_header_;
 
   Frame::Ptr target_frame_;
-  Eigen::Matrix4f local_map_pose_;  // pose in the map from the target lidar
+  Eigen::Matrix4f local_map_pose_;
 
   double interpolated_distance_;
-  double interpolated_angle_;  // det(rot * inv rot) o algo asi
+  double interpolated_angle_;
   double interpolated_time_;
   double estimated_speed_;
   double estimated_accel_;
   bool stopped_;
+};
+
+struct MappingData
+{
+  using Ptr = std::shared_ptr<MappingData>;
+  using ConstPtr = std::shared_ptr<const MappingData>;
+
+  std::string map_frame_;
+  std::string mapping_lidar_frame_;
+  std::vector<std::string> calibration_lidar_frame_names_;
+
+  std::mutex mutex_;
+  int n_processed_frames_{0};
+  std::list<Frame::Ptr> unprocessed_frames_;
+  std::vector<Frame::Ptr> processed_frames_;
+  std::vector<Frame::Ptr> keyframes_;
+  std::vector<Frame::Ptr> keyframes_and_stopped_;
+  pcl::PointCloud<PointType>::Ptr local_map_ptr_;
+  std::vector<geometry_msgs::msg::PoseStamped> trajectory_;
+
+  // Calibration matching data
+  std::map<std::string, std::list<sensor_msgs::msg::PointCloud2::SharedPtr>>
+    calibration_pointclouds_list_map_;
+  std::map<std::string, std_msgs::msg::Header::SharedPtr> calibration_lidar_header_map_;
+  std::map<std::string, int> last_unmatched_keyframe_map_;
+  std::map<std::string, std::vector<CalibrationFrame>> calibration_frames_map_;
+};
+
+struct MappingParameters
+{
+  using Ptr = std::shared_ptr<MappingParameters>;
+  using ConstPtr = std::shared_ptr<const MappingParameters>;
+
+  bool mapping_verbose_;
+  bool use_rosbag_;
+  int mapping_max_frames_;
+  int local_map_num_keyframes_;
+  double mapping_max_range_;
+  double viz_max_range_;
+  double mapping_viz_leaf_size_;
+
+  double ndt_resolution_;
+  double ndt_step_size_;
+  int ndt_max_iterations_;
+  double ndt_epsilon_;
+  int ndt_num_threads_;
+
+  double leaf_size_input_;
+  double leaf_size_local_map_;
+
+  double new_keyframe_min_distance_;
+  double new_frame_min_distance_;
+  double frame_stopped_distance_;
+  int frames_since_stop_force_frame_;
+
+  int calibration_skip_keyframes_;
+  double lost_frame_max_angle_diff_;
+  double lost_frame_interpolation_error_;
+  double lost_frame_max_acceleration_;
+};
+
+struct LidarCalibrationParameters
+{
+  using Ptr = std::shared_ptr<LidarCalibrationParameters>;
+  using ConstPtr = std::shared_ptr<const LidarCalibrationParameters>;
+
+  bool calibration_verbose_;
+  double leaf_size_dense_map_;
+  int dense_pointcloud_num_keyframes_;
+  int calibration_max_frames_;
+  double calibration_viz_leaf_size_;
+
+  // Calibration preprocessing
+  double max_allowed_interpolated_time_;
+  double max_allowed_interpolated_distance_;
+  double max_allowed_interpolated_angle_;
+  double max_allowed_interpolated_speed_;
+  double max_allowed_interpolated_accel_;
+
+  double max_allowed_interpolated_distance_straight_;
+  double max_allowed_interpolated_angle_straight_;
+  double max_allowed_interpolated_speed_straight_;
+  double max_allowed_interpolated_accel_straight_;
+
+  // Calibration parameters
+  int solver_iterations_;
+  double max_corr_dist_coarse_;
+  double max_corr_dist_fine_;
+  double max_corr_dist_ultrafine_;
+
+  bool calibration_use_only_stopped_;
+  double max_calibration_range_;
+  double calibration_min_pca_eigenvalue_;
+  double calibration_min_distance_between_frames_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_TYPES_HPP_

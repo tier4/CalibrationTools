@@ -39,7 +39,7 @@
     /sensing/lidar/top/pointcloud_raw
   -->
 
-  <!-- tag based calibrator -->
+  <!-- mapping based calibrator -->
   <include file="$(find-pkg-share extrinsic_mapping_based_calibrator)/launch/calibrator.launch.xml">
     <arg name="ns" value="$(var parent_frame)" />
     <arg name="parent_frame" value="$(var parent_frame)" />

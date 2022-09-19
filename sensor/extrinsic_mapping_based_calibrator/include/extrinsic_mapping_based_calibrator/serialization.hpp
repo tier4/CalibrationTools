@@ -92,6 +92,7 @@ void serialize(Archive & ar, Frame & frame, const unsigned int version)
   (void)version;
   ar & frame.distance_;
   ar & frame.delta_distance_;
+  ar & frame.rough_speed_;
   ar & frame.header_;
   ar & frame.pointcloud_raw_;
   ar & frame.pointcloud_subsampled_;
