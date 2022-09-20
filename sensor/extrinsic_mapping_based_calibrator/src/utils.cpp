@@ -58,7 +58,7 @@ void transformPointcloud(
 
 template <typename PointcloudType>
 typename PointcloudType::Ptr cropPointCloud(
-  typename PointcloudType::Ptr & pointcloud, double max_range)
+  const typename PointcloudType::Ptr & pointcloud, double max_range)
 {
   typename PointcloudType::Ptr tmp_ptr(new PointcloudType());
   tmp_ptr->reserve(pointcloud->size());
@@ -263,7 +263,7 @@ template float sourceTargetDistance<PointType>(
   const Eigen::Matrix4f & transform);
 
 template PointcloudType::Ptr cropPointCloud<PointcloudType>(
-  PointcloudType::Ptr & pointcloud, double max_range);
+  const PointcloudType::Ptr & pointcloud, double max_range);
 
 template void findBestTransform<pcl::Registration<PointType, PointType>, PointType>(
   const std::vector<Eigen::Matrix4f> & input_transforms,

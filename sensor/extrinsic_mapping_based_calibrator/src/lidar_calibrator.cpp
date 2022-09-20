@@ -101,7 +101,7 @@ void LidarCalibrator::setUpCalibrators(
 }
 
 PointcloudType::Ptr LidarCalibrator::getDensePointcloudFromMap(
-  const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range)
+  const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double max_range)
 {
   int frame_id = frame->frame_id_;
 
@@ -400,6 +400,37 @@ std::vector<CalibrationFrame> LidarCalibrator::selectBestKCalibrationFrames(
   return filtered_frames;
 }
 
+std::vector<CalibrationFrame> LidarCalibrator::filterCalibrationFrames(
+  const std::vector<CalibrationFrame> & calibration_frames)
+{
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "Original calibration frames: %ld",
+    calibration_frames.size());
+
+  std::vector<CalibrationFrame> filtered_calibration_frames_1 =
+    filterCalibrationFramesByLostState(calibration_frames);
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "Filtered calibration frames by dynamics: %ld",
+    filtered_calibration_frames_1.size());
+
+  std::vector<CalibrationFrame> filtered_calibration_frames_2 =
+    filterCalibrationFramesByDynamics(filtered_calibration_frames_1);
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "Filtered calibration frames by dynamics: %ld",
+    filtered_calibration_frames_2.size());
+
+  std::vector<CalibrationFrame> accepted_calibration_frames = selectBestKCalibrationFrames(
+    filtered_calibration_frames_2, parameters_->calibration_max_frames_);
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "Accepted calibration frames: %ld",
+    accepted_calibration_frames.size());
+
+  return accepted_calibration_frames;
+}
+
 void LidarCalibrator::singleLidarCalibrationCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
@@ -558,111 +589,53 @@ void LidarCalibrator::multipleLidarCalibrationCallback(
 {
   UNUSED(request);
 
-  Eigen::Matrix4f result = calibrate();
-
-  if (result == Eigen::Matrix4f::Identity()) {
-    response->success = false;
-  } else {
-    response->success = true;
-  }
-
-  // TODO KL: better way to set succes, and also get the score
+  Eigen::Matrix4f result;
+  float score;
+  response->success = calibrate(result, score);
 }
 
-Eigen::Matrix4f LidarCalibrator::calibrate()
+bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_score)
 {
   std::unique_lock<std::mutex> lock(data_->mutex_);
 
   Eigen::Matrix4f initial_calibration_transform;
   float initial_distance;
+  std::string map_frame = data_->map_frame_;
 
   RCLCPP_INFO(
     rclcpp::get_logger(calibrator_name_), "Calibrating frame: %s",
     calibration_lidar_frame_.c_str());
   RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "Obtaining initial calibration...");
 
-  // Get the tf between frames
+  // Get the initial tf between mapping and calibration lidars
   try {
     rclcpp::Time t = rclcpp::Time(0);
     rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
 
-    geometry_msgs::msg::Transform initial_target_to_source_msg;
-    Eigen::Affine3d initial_target_to_source_affine;
-
-    initial_target_to_source_msg =
+    auto initial_target_to_source_affine = tf2::transformToEigen(
       tf_buffer_->lookupTransform(data_->mapping_lidar_frame_, calibration_lidar_frame_, t, timeout)
-        .transform;
+        .transform);
 
-    initial_target_to_source_affine = tf2::transformToEigen(initial_target_to_source_msg);
-    initial_distance = initial_target_to_source_affine.translation().norm();
     initial_calibration_transform = initial_target_to_source_affine.matrix().cast<float>();
+    initial_distance = initial_target_to_source_affine.translation().norm();
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "could not get initial tf. %s", ex.what());
 
-    return Eigen::Matrix4f::Identity();
+    return false;
   }
 
-  auto & calibration_frames = data_->calibration_frames_map_[calibration_lidar_frame_];
+  // Filter calibration frames using several criteria and select the best ones suited for
+  // calibration
+  std::vector<CalibrationFrame> calibration_frames =
+    filterCalibrationFrames(data_->calibration_frames_map_[calibration_lidar_frame_]);
 
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Original calibration frames: %ld",
-    calibration_frames.size());
-
-  std::vector<CalibrationFrame> filtered_calibration_frames_1 =
-    filterCalibrationFramesByLostState(calibration_frames);
-
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Filtered calibration frames by dynamics: %ld",
-    filtered_calibration_frames_1.size());
-
-  std::vector<CalibrationFrame> filtered_calibration_frames_2 =
-    filterCalibrationFramesByDynamics(filtered_calibration_frames_1);
-
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Filtered calibration frames by dynamics: %ld",
-    filtered_calibration_frames_2.size());
-
-  std::vector<CalibrationFrame> accepted_calibration_frames = selectBestKCalibrationFrames(
-    filtered_calibration_frames_2, parameters_->calibration_max_frames_);
-
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Accepted calibration frames: %ld",
-    accepted_calibration_frames.size());
-
+  // Prepate augmented calibration pointclouds
   std::vector<pcl::PointCloud<PointType>::Ptr> sources, targets, targets_thin;
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_),
-    "Preparing dense calibration pointclouds from the map...");
+  prepareCalibrationData(
+    calibration_frames, initial_distance, initial_calibration_transform, sources, targets,
+    targets_thin);
 
-  // Prepare pointclouds for calibration
-  for (auto & calibration_frame : accepted_calibration_frames) {
-    PointcloudType::Ptr source_pc_ptr = cropPointCloud<PointcloudType>(
-      calibration_frame.source_pointcloud_, parameters_->max_calibration_range_);
-
-    PointcloudType::Ptr target_pc_ptr = getDensePointcloudFromMap(
-      calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
-      parameters_->leaf_size_dense_map_, parameters_->max_calibration_range_ + initial_distance);
-
-    PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(
-      calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
-      parameters_->calibration_viz_leaf_size_,
-      parameters_->max_calibration_range_ + initial_distance);
-
-    // Transfor the source to target frame to crop it later
-    PointcloudType::Ptr initial_source_aligned_pc_ptr(new PointcloudType());
-    pcl::transformPointCloud(
-      *source_pc_ptr, *initial_source_aligned_pc_ptr, initial_calibration_transform);
-
-    // Crop unused areas of the target pointcloud to save processing time
-    cropTargetPointcloud<PointType>(initial_source_aligned_pc_ptr, target_pc_ptr, initial_distance);
-    cropTargetPointcloud<PointType>(
-      initial_source_aligned_pc_ptr, target_thin_pc_ptr, initial_distance);
-
-    sources.push_back(source_pc_ptr);
-    targets.push_back(target_pc_ptr);
-    targets_thin.push_back(target_thin_pc_ptr);
-  }
-
+  // We no lnoger used the shared data
   lock.unlock();
 
   // Set all the registrators with the pointclouds
@@ -676,23 +649,18 @@ Eigen::Matrix4f LidarCalibrator::calibrate()
     }
   }
 
-  // Perform single-frame calibration for all frames
-  std::vector<float> initial_calibration_single_frame_score(accepted_calibration_frames.size());
-  std::vector<float> single_frame_calibration_multi_frame_score(accepted_calibration_frames.size());
-  std::vector<float> single_frame_calibration_single_frame_score(
-    accepted_calibration_frames.size());
-  std::vector<Eigen::Matrix4f> best_single_frame_transforms(accepted_calibration_frames.size());
+  // Single-frame calibration for all frames
+  std::vector<float> initial_calibration_single_frame_score(calibration_frames.size());
+  std::vector<float> single_frame_calibration_multi_frame_score(calibration_frames.size());
+  std::vector<float> single_frame_calibration_single_frame_score(calibration_frames.size());
+  std::vector<Eigen::Matrix4f> best_single_frame_transforms(calibration_frames.size());
 
   RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "Calibration using single frames...");
-  for (std::size_t i = 0; i < accepted_calibration_frames.size(); i++) {
-    // start
-
+  for (std::size_t i = 0; i < calibration_frames.size(); i++) {
     PointcloudType::Ptr initial_source_aligned_pc_ptr(new PointcloudType());
     pcl::transformPointCloud(
       *sources[i], *initial_source_aligned_pc_ptr, initial_calibration_transform);
 
-    // Evaluate the initial calibration
-    // setUpCalibrators(sources[i], targets[i]);
     for (auto & calibrator : calibration_registrators_) {
       calibrator->setInputSource(sources[i]);
       calibrator->setInputTarget(targets[i]);
@@ -723,9 +691,8 @@ Eigen::Matrix4f LidarCalibrator::calibrate()
       rclcpp::get_logger(calibrator_name_),
       "Calibration frame=%ld Keyframe=%d Initial single-frame score= %.4f Single-frame score=%.4f "
       "Multi-frame score=%.4f",
-      i, accepted_calibration_frames[i].target_frame_->keyframe_id_, initial_score,
+      i, calibration_frames[i].target_frame_->keyframe_id_, initial_score,
       best_single_frame_transform_score, best_single_frame_transform_multi_frame_score);
-    // finish
   }
 
   // Choose the best sigle-frame calibration
@@ -742,10 +709,11 @@ Eigen::Matrix4f LidarCalibrator::calibrate()
     "Single-frame calibration results:\n  Best Calibration frame=%d Keyframe=%d Multi-frame "
     "score=%.4f",
     best_single_frame_calibration_multi_frame_score_index,
-    accepted_calibration_frames[best_single_frame_calibration_multi_frame_score_index]
+    calibration_frames[best_single_frame_calibration_multi_frame_score_index]
       .target_frame_->keyframe_id_,
     *best_single_frame_calibration_multi_frame_score_it);
 
+  // Multi-frame calibration using all frames
   RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "Calibration using multiple frames...");
   std::vector<Eigen::Matrix4f> candidate_transforms = {
     initial_calibration_transform,
@@ -779,27 +747,84 @@ Eigen::Matrix4f LidarCalibrator::calibrate()
     best_multi_frame_calibration_multi_frame_score,
     std::sqrt(best_multi_frame_calibration_multi_frame_score), parameters_->leaf_size_dense_map_);
 
-  lock.lock();
+  // Publish the calbiraton resullts
+  publishResults(
+    calibration_frames, sources, targets_thin, initial_calibration_transform,
+    best_multi_frame_calibration_transform, map_frame);
 
+  best_transform = best_multi_frame_calibration_transform;
+  best_score = std::sqrt(best_multi_frame_calibration_multi_frame_score);
+
+  return true;
+}
+
+void LidarCalibrator::prepareCalibrationData(
+  const std::vector<CalibrationFrame> & calibration_frames, const float initial_distance,
+  const Eigen::Matrix4f & initial_calibration_transform,
+  std::vector<pcl::PointCloud<PointType>::Ptr> & sources,
+  std::vector<pcl::PointCloud<PointType>::Ptr> & targets,
+  std::vector<pcl::PointCloud<PointType>::Ptr> & targets_thin)
+{
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_),
+    "Preparing dense calibration pointclouds from the map...");
+
+  // Prepare pointclouds for calibration
+  for (auto & calibration_frame : calibration_frames) {
+    PointcloudType::Ptr source_pc_ptr = cropPointCloud<PointcloudType>(
+      calibration_frame.source_pointcloud_, parameters_->max_calibration_range_);
+
+    PointcloudType::Ptr target_pc_ptr = getDensePointcloudFromMap(
+      calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
+      parameters_->leaf_size_dense_map_, parameters_->max_calibration_range_ + initial_distance);
+
+    PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(
+      calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
+      parameters_->calibration_viz_leaf_size_,
+      parameters_->max_calibration_range_ + initial_distance);
+
+    // Transfor the source to target frame to crop it later
+    PointcloudType::Ptr initial_source_aligned_pc_ptr(new PointcloudType());
+    pcl::transformPointCloud(
+      *source_pc_ptr, *initial_source_aligned_pc_ptr, initial_calibration_transform);
+
+    // Crop unused areas of the target pointcloud to save processing time
+    cropTargetPointcloud<PointType>(initial_source_aligned_pc_ptr, target_pc_ptr, initial_distance);
+    cropTargetPointcloud<PointType>(
+      initial_source_aligned_pc_ptr, target_thin_pc_ptr, initial_distance);
+
+    sources.push_back(source_pc_ptr);
+    targets.push_back(target_pc_ptr);
+    targets_thin.push_back(target_thin_pc_ptr);
+  }
+}
+
+void LidarCalibrator::publishResults(
+  const std::vector<CalibrationFrame> & calibration_frames,
+  const std::vector<pcl::PointCloud<PointType>::Ptr> & sources,
+  const std::vector<pcl::PointCloud<PointType>::Ptr> & targets,
+  const Eigen::Matrix4f & initial_transform, const Eigen::Matrix4f & calibrated_transform,
+  const std::string & map_frame)
+{
   // Publish ROS data
   PointcloudType::Ptr initial_source_aligned_map_ptr(new PointcloudType());
   PointcloudType::Ptr calibrated_source_aligned_map_ptr(new PointcloudType());
   PointcloudType::Ptr target_thin_map_ptr(new PointcloudType());
 
-  for (std::size_t i = 0; i < accepted_calibration_frames.size(); i++) {
+  for (std::size_t i = 0; i < calibration_frames.size(); i++) {
     PointcloudType::Ptr initial_tmp_ptr(new PointcloudType());
     PointcloudType::Ptr calibrated_tmp_ptr(new PointcloudType());
     PointcloudType::Ptr target_thin_tmp_ptr(new PointcloudType());
 
     pcl::transformPointCloud(
       *sources[i], *initial_tmp_ptr,
-      accepted_calibration_frames[i].target_frame_->pose_ * initial_calibration_transform);
+      calibration_frames[i].target_frame_->pose_ * initial_transform);
     pcl::transformPointCloud(
       *sources[i], *calibrated_tmp_ptr,
-      accepted_calibration_frames[i].target_frame_->pose_ * best_multi_frame_calibration_transform);
+      calibration_frames[i].target_frame_->pose_ * calibrated_transform);
 
     pcl::transformPointCloud(
-      *targets_thin[i], *target_thin_tmp_ptr, accepted_calibration_frames[i].target_frame_->pose_);
+      *targets[i], *target_thin_tmp_ptr, calibration_frames[i].target_frame_->pose_);
 
     *initial_source_aligned_map_ptr += *initial_tmp_ptr;
     *calibrated_source_aligned_map_ptr += *calibrated_tmp_ptr;
@@ -819,17 +844,14 @@ Eigen::Matrix4f LidarCalibrator::calibrate()
   pcl::toROSMsg(*calibrated_source_aligned_map_ptr, calibrated_source_aligned_map_msg);
   pcl::toROSMsg(*target_thin_map_ptr, target_map_msg);
 
-  initial_source_aligned_map_msg.header = accepted_calibration_frames[0].source_header_;
-  initial_source_aligned_map_msg.header.frame_id = data_->map_frame_;
-  calibrated_source_aligned_map_msg.header = accepted_calibration_frames[0].source_header_;
-  calibrated_source_aligned_map_msg.header.frame_id = data_->map_frame_;
-  target_map_msg.header = accepted_calibration_frames[0].source_header_;
-  target_map_msg.header.frame_id = data_->map_frame_;
+  initial_source_aligned_map_msg.header = calibration_frames[0].source_header_;
+  initial_source_aligned_map_msg.header.frame_id = map_frame;
+  calibrated_source_aligned_map_msg.header = calibration_frames[0].source_header_;
+  calibrated_source_aligned_map_msg.header.frame_id = map_frame;
+  target_map_msg.header = calibration_frames[0].source_header_;
+  target_map_msg.header.frame_id = map_frame;
 
   initial_source_aligned_map_pub_->publish(initial_source_aligned_map_msg);
   calibrated_source_aligned_map_pub_->publish(calibrated_source_aligned_map_msg);
   target_map_pub_->publish(target_map_msg);
-
-  // TODO KL: reformat this into more methods. Kill the single frame
-  return best_multi_frame_calibration_transform;
 }

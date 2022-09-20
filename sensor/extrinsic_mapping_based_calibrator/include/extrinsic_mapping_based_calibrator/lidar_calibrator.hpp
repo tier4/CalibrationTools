@@ -54,7 +54,7 @@ public:
   /*!
    * Calibrate the ldiar
    */
-  Eigen::Matrix4f calibrate();
+  bool calibrate(Eigen::Matrix4f & best_transform, float & best_score);
 
   /*!
    * Configure the calibrator parameters
@@ -81,7 +81,7 @@ protected:
    * @retval Source to distance pointcloud distance
    */
   PointcloudType::Ptr getDensePointcloudFromMap(
-    const Eigen::Matrix4f & pose, Frame::Ptr & frame, double resolution, double max_range);
+    const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double max_range);
 
   /*!
    * Filter calibration frames that are close to frames where the robot is assumes to be lost
@@ -103,6 +103,38 @@ protected:
    */
   std::vector<CalibrationFrame> selectBestKCalibrationFrames(
     const std::vector<CalibrationFrame> & calibration_frames, int num_frames);
+
+  /*!
+   * Select best K calibration frames based on information and spatial correlation
+   * @param[in] calibration_frames The raw calibrated frames
+   */
+  std::vector<CalibrationFrame> filterCalibrationFrames(
+    const std::vector<CalibrationFrame> & calibration_frames);
+
+  /*!
+   * Prepare the augmented calibration data
+   * @param[in] calibration_frames The calibrated frames
+   * @param[in] initial_distance The initial distance between frames
+   * @param[out] sources The calibrated frames
+   * @param[out] targets The calibrated frames
+   * @param[out] targets_thin The calibrated frames
+   */
+  void prepareCalibrationData(
+    const std::vector<CalibrationFrame> & calibration_frames, const float initial_distance,
+    const Eigen::Matrix4f & initial_calibration_transform,
+    std::vector<pcl::PointCloud<PointType>::Ptr> & sources,
+    std::vector<pcl::PointCloud<PointType>::Ptr> & targets,
+    std::vector<pcl::PointCloud<PointType>::Ptr> & targets_thin);
+
+  /*!
+   * Publish the calibration results
+   */
+  void publishResults(
+    const std::vector<CalibrationFrame> & calibration_frames,
+    const std::vector<pcl::PointCloud<PointType>::Ptr> & sources,
+    const std::vector<pcl::PointCloud<PointType>::Ptr> & targets,
+    const Eigen::Matrix4f & initial_transform, const Eigen::Matrix4f & calibrated_transform,
+    const std::string & map_frame);
 
   std::string calibration_lidar_frame_;
   std::string calibrator_name_;

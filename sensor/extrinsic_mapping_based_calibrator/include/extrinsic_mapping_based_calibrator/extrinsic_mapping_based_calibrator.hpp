@@ -89,6 +89,7 @@ protected:
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   std::map<std::string, FrameService::SharedPtr> single_lidar_calibration_server_map_;
   std::map<std::string, FrameService::SharedPtr> multiple_lidar_calibration_server_map_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stop_mapping_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
     load_database_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
@@ -104,6 +105,7 @@ protected:
   // Calibration API
   std::map<std::string, bool> calibration_status_map_;
   std::map<std::string, Eigen::Matrix4f> calibration_results_map_;
+  std::map<std::string, float> calibration_scores_map_;
   std::map<std::string, std::string> sensor_kit_frame_map_;              // calibration parent frame
   std::map<std::string, std::string> calibration_lidar_base_frame_map_;  // calibration child frame
   std::mutex service_mutex_;

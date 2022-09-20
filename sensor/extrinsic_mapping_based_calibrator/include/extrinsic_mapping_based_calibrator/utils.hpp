@@ -48,7 +48,7 @@ void transformPointcloud(
  */
 template <typename PointcloudType>
 typename PointcloudType::Ptr cropPointCloud(
-  typename PointcloudType::Ptr & pointcloud, double max_range);
+  const typename PointcloudType::Ptr & pointcloud, double max_range);
 
 /*!
  * Interpolate a transform between two points in time

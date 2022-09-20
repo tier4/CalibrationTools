@@ -20,6 +20,8 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
+#include <tf2_eigen/tf2_eigen.h>
+
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -250,6 +252,19 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
         rmw_qos_profile_services_default);
   }
 
+  stop_mapping_server_ = this->create_service<std_srvs::srv::Empty>(
+    "stop_mapping",
+    [&](
+      const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+      const std::shared_ptr<std_srvs::srv::Empty::Response> response) {
+      UNUSED(request);
+      UNUSED(response);
+      std::unique_lock<std::mutex> data_lock(mapping_data_->mutex_);
+      mapper_->stop();
+      RCLCPP_INFO_STREAM(this->get_logger(), "Mapper stopped through service");
+    },
+    rmw_qos_profile_services_default);
+
   load_database_server_ = this->create_service<tier4_calibration_msgs::srv::CalibrationDatabase>(
     "load_database",
     std::bind(
@@ -268,12 +283,6 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   data_matching_timer_ = rclcpp::create_timer(
     this, get_clock(), 1s, std::bind(&CalibrationMapper::dataMatchingTimerCallback, mapper_));
-
-  std::thread::id this_id = std::this_thread::get_id();
-
-  service_mutex_.lock();
-  RCLCPP_INFO_STREAM(this->get_logger(), "ROS constructor. Thread id = " << this_id);
-  service_mutex_.unlock();
 }
 
 rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramCallback(
@@ -285,6 +294,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
 
   MappingParameters mapping_parameters = *mapping_parameters_;
   LidarCalibrationParameters calibration_parameters = *calibration_parameters_;
+  std::unique_lock<std::mutex> lock(mapping_data_->mutex_);
 
   try {
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, use_rosbag);
@@ -353,36 +363,63 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   (void)request;
-  std::thread::id this_id = std::this_thread::get_id();
+
+  Eigen::Isometry3d parent_to_mapping_lidar_eigen_;
+  Eigen::Isometry3d lidar_base_to_lidar_eigen_;
 
   {
-    std::unique_lock<std::mutex> lock(service_mutex_);
-    RCLCPP_INFO_STREAM(this->get_logger(), "Thread id = " << this_id);
+    std::unique_lock<std::mutex> service_lock(service_mutex_);
+    std::unique_lock<std::mutex> data_lock(mapping_data_->mutex_);
+
+    calibration_status_map_[calibration_lidar_frame] = false;
+    calibration_results_map_[calibration_lidar_frame] = Eigen::Matrix4f::Identity();
+
+    RCLCPP_INFO_STREAM(this->get_logger(), "Calibration request received");
     RCLCPP_INFO_STREAM(this->get_logger(), "\t\tparent_frame = " << parent_frame);
     RCLCPP_INFO_STREAM(
       this->get_logger(), "\t\tcalibration_lidar_base_frame = " << calibration_lidar_base_frame);
     RCLCPP_INFO_STREAM(
       this->get_logger(), "\t\tcalibration_lidar_frame = " << calibration_lidar_frame);
-  }
 
-  calibration_status_map_[calibration_lidar_frame] = false;
-  calibration_results_map_[calibration_lidar_frame] = Eigen::Matrix4f::Identity();
+    try {
+      rclcpp::Time t = rclcpp::Time(0);
+      rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
+
+      geometry_msgs::msg::Transform parent_to_mapping_lidar_msg_ =
+        tf_buffer_->lookupTransform(parent_frame, mapping_data_->mapping_lidar_frame_, t, timeout)
+          .transform;
+
+      parent_to_mapping_lidar_eigen_ = tf2::transformToEigen(parent_to_mapping_lidar_msg_);
+
+      geometry_msgs::msg::Transform lidar_base_to_lidar_msg_ =
+        tf_buffer_
+          ->lookupTransform(calibration_lidar_base_frame, calibration_lidar_frame, t, timeout)
+          .transform;
+
+      lidar_base_to_lidar_eigen_ = tf2::transformToEigen(lidar_base_to_lidar_msg_);
+    } catch (tf2::TransformException & ex) {
+      RCLCPP_WARN(
+        this->get_logger(), "could not get initial tfs. Aborting calibration. %s", ex.what());
+      response->success = false;
+      return;
+    }
+  }
 
   // Start monitoring and calibration frame
   std::thread t([&]() {
-    RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for the mapper to stop");
-
     while (!mapper_->stopped() && rclcpp::ok()) {
       rclcpp::sleep_for(1000ms);
-      RCLCPP_INFO_STREAM(this->get_logger(), "thread mapper sleep");
     }
 
-    RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for calibrator to end");
-    Eigen::Matrix4f result = lidar_calibrators_[calibration_lidar_frame]->calibrate();
+    Eigen::Matrix4f calibration_result;
+    float calibration_score;
+    bool calibration_status =
+      lidar_calibrators_[calibration_lidar_frame]->calibrate(calibration_result, calibration_score);
 
     std::unique_lock<std::mutex> lock(service_mutex_);
-    calibration_status_map_[calibration_lidar_frame] = true;
-    calibration_results_map_[calibration_lidar_frame] = result;
+    calibration_status_map_[calibration_lidar_frame] = calibration_status;
+    calibration_results_map_[calibration_lidar_frame] = calibration_result;
+    calibration_scores_map_[calibration_lidar_frame] = calibration_score;
   });
 
   while (rclcpp::ok()) {
@@ -394,17 +431,25 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
       }
     }
 
-    // /RCLCPP_INFO_STREAM(this->get_logger(), "service callback sleep");
     rclcpp::sleep_for(1000ms);
   }
 
   std::unique_lock<std::mutex> lock(service_mutex_);
   t.join();
 
+  Eigen::Isometry3d mapping_to_calibration_lidar_lidar_eigen =
+    Eigen::Isometry3d(calibration_results_map_[calibration_lidar_frame].cast<double>());
+  Eigen::Isometry3d parent_to_lidar_base_eigen =
+    parent_to_mapping_lidar_eigen_ * mapping_to_calibration_lidar_lidar_eigen.inverse() *
+    lidar_base_to_lidar_eigen_.inverse();
+
+  response->result_pose = tf2::toMsg(parent_to_lidar_base_eigen);
+  response->score = calibration_scores_map_[calibration_lidar_frame];
+  response->success = calibration_status_map_[calibration_lidar_frame];
+
   // Convert  raw calibration to the output tf
   RCLCPP_INFO_STREAM(this->get_logger(), "Sending the tesults to the calibrator manager");
 
-  response->success = false;
   std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
