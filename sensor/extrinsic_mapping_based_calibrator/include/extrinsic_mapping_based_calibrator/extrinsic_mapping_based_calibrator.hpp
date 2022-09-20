@@ -49,9 +49,11 @@ public:
   ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
-  // void requestReceivedCallback(
-  //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-  //  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+  void requestReceivedCallback(
+    const std::string & parent_frame, const std::string & calibration_lidar_base_frame,
+    const std::string & calibration_lidar_frame,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
   /*!
    * Callback to set parameters using the ROS interface
@@ -72,23 +74,18 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
-  // Parameters
-  std::string base_frame_;
-  std::string sensor_kit_frame_;  // calibration parent frame
-  std::string lidar_base_frame_;  // calibration child frame
-
-  MappingParameters::Ptr mapping_parameters_;
-  LidarCalibrationParameters::Ptr calibration_parameters_;
-
   OnSetParametersCallbackHandle::SharedPtr set_param_res_;
 
   rclcpp::CallbackGroup::SharedPtr subs_callback_group_;
-  rclcpp::CallbackGroup::SharedPtr srv_callback_group_;
+  std::map<std::string, rclcpp::CallbackGroup::SharedPtr> srv_callback_groups_map_;
 
   std::map<std::string, PointSubscription::SharedPtr> calibration_pointcloud_subs_;
   PointSubscription::SharedPtr mapping_pointcloud_sub_;
 
-  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
+  // rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
+  std::map<
+    std::string, rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr>
+    calibration_api_server_map_;
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   std::map<std::string, FrameService::SharedPtr> single_lidar_calibration_server_map_;
   std::map<std::string, FrameService::SharedPtr> multiple_lidar_calibration_server_map_;
@@ -100,14 +97,22 @@ protected:
   rclcpp::TimerBase::SharedPtr publisher_timer_;
   rclcpp::TimerBase::SharedPtr data_matching_timer_;
 
-  // ROS Data
-  std_msgs::msg::Header::SharedPtr mapping_lidar_header_;
+  // Parameters
+  MappingParameters::Ptr mapping_parameters_;
+  LidarCalibrationParameters::Ptr calibration_parameters_;
 
-  // Mapping
+  // Calibration API
+  std::map<std::string, bool> calibration_status_map_;
+  std::map<std::string, Eigen::Matrix4f> calibration_results_map_;
+  std::map<std::string, std::string> sensor_kit_frame_map_;              // calibration parent frame
+  std::map<std::string, std::string> calibration_lidar_base_frame_map_;  // calibration child frame
+  std::mutex service_mutex_;
+
+  // Mapper
   CalibrationMapper::Ptr mapper_;
   MappingData::Ptr mapping_data_;
 
-  // Calibration
+  // Calibrators
   std::map<std::string, LidarCalibrator::Ptr> lidar_calibrators_;
 };
 

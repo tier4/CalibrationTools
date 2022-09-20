@@ -52,6 +52,11 @@ public:
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
 
   /*!
+   * Calibrate the ldiar
+   */
+  Eigen::Matrix4f calibrate();
+
+  /*!
    * Configure the calibrator parameters
    */
   void configureCalibrators();

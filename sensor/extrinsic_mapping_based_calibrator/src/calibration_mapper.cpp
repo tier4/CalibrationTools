@@ -45,7 +45,8 @@ CalibrationMapper::CalibrationMapper(
   keyframe_markers_pub_(keyframe_markers_pub),
   rosbag2_pause_client_(rosbag2_pause_client),
   rosbag2_resume_client_(rosbag2_resume_client),
-  tf_buffer_(tf_buffer)
+  tf_buffer_(tf_buffer),
+  stopped_(false)
 {
   published_map_pointcloud_ptr_.reset(new PointcloudType());
 
@@ -69,9 +70,25 @@ CalibrationMapper::CalibrationMapper(
   thread.detach();
 }
 
+bool CalibrationMapper::stopped()
+{
+  std::unique_lock<std::mutex> lock(data_->mutex_);
+  return stopped_;
+}
+
+void CalibrationMapper::stop() { stopped_ = true; }
+
 void CalibrationMapper::calibrationPointCloudCallback(
   const sensor_msgs::msg::PointCloud2::SharedPtr msg, const std::string & frame_name)
 {
+  if (stopped_) {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Reveived a calibration pc while not mapping. Ignoring it");
+    return;
+  }
+
   auto & calibration_pointclouds_list = data_->calibration_pointclouds_list_map_[frame_name];
 
   calibration_pointclouds_list.push_back(msg);
@@ -80,6 +97,14 @@ void CalibrationMapper::calibrationPointCloudCallback(
 void CalibrationMapper::mappingPointCloudCallback(
   const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
+  if (stopped_) {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Reveived a cmapping pc while not mapping. Ignoring it");
+    return;
+  }
+
   if (!mapping_lidar_header_) {
     mapping_lidar_header_ = std::make_shared<std_msgs::msg::Header>(msg->header);
   }
@@ -97,6 +122,10 @@ void CalibrationMapper::mappingPointCloudCallback(
   if (
     rclcpp::Time(msg->header.stamp) < rclcpp::Time(mapping_lidar_header_->stamp) ||
     static_cast<int>(data_->processed_frames_.size()) >= parameters_->mapping_max_frames_) {
+    stop();
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Stopping mapper due to enough frames being collected");
     return;
   }
 
@@ -122,7 +151,7 @@ void CalibrationMapper::mappingThreadWorker()
 {
   Eigen::Matrix4f delta_pose = Eigen::Matrix4f::Identity();
 
-  while (rclcpp::ok()) {
+  while (rclcpp::ok() && !stopped_) {
     Frame::Ptr frame, prev_frame;
     Eigen::Matrix4f prev_pose = Eigen::Matrix4f::Identity();
     float prev_distance = 0.f;
@@ -225,6 +254,8 @@ void CalibrationMapper::mappingThreadWorker()
       "New frame. Distance=%.2f Unprocessed=%lu Frames=%lu Keyframes=%lu", frame->distance_,
       data_->unprocessed_frames_.size(), data_->processed_frames_.size(), data_->keyframes_.size());
   }
+
+  RCLCPP_WARN(rclcpp::get_logger("calibration_mapper"), "Mapping thread is exiting");
 }
 
 void CalibrationMapper::initLocalMap(Frame::Ptr frame)

@@ -73,6 +73,16 @@ public:
    */
   void dataMatchingTimerCallback();
 
+  /*!
+   * Whether or not map has stopped
+   */
+  bool stopped();
+
+  /*!
+   * Stop the mapper
+   */
+  void stop();
+
 protected:
   /*!
    * Matches mapping keyframes with a singular calibration lidar
@@ -146,6 +156,9 @@ protected:
 
   // Rosbag interface
   bool bag_paused_;
+
+  // External interface
+  bool stopped_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_CALIBRATION_MAPPER_HPP_

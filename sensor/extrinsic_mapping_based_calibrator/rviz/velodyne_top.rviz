@@ -120,7 +120,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/output_map
+        Value: /output_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -150,7 +150,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/frame_path
+        Value: /frame_path
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -178,7 +178,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/keyframe_path
+        Value: /keyframe_path
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
@@ -190,7 +190,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/keyframe_markers
+        Value: /keyframe_markers
       Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -222,7 +222,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_left/initial_source_aligned_map
+        Value: /velodyne_left/initial_source_aligned_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -256,7 +256,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_left/calibrated_source_aligned_map
+        Value: /velodyne_left/calibrated_source_aligned_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -290,7 +290,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_left/target_map
+        Value: /velodyne_left/target_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -324,7 +324,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_right/initial_source_aligned_map
+        Value: /velodyne_right/initial_source_aligned_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -358,7 +358,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_right/calibrated_source_aligned_map
+        Value: /velodyne_right/calibrated_source_aligned_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -392,7 +392,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_right/target_map
+        Value: /velodyne_right/target_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -426,7 +426,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_rear/initial_source_aligned_map
+        Value: /velodyne_rear/initial_source_aligned_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -460,7 +460,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_rear/calibrated_source_aligned_map
+        Value: /velodyne_rear/calibrated_source_aligned_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -494,7 +494,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /sensor_kit/sensor_kit_base_link/velodyne_rear/target_map
+        Value: /velodyne_rear/target_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true

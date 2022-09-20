@@ -3,15 +3,75 @@
 
   <arg name="vehicle_id" default="default" />
   <let name="sensor_model" value="aip_xx1" />
-  <arg name="rviz" default="false"/>
+
+  <let name="calibration_service_names" value=
+    "[/sensor_kit/sensor_kit_base_link/velodyne_left_base_link,
+    /sensor_kit/sensor_kit_base_link/velodyne_right_base_link,
+    /sensors/base_link/velodyne_rear_base_link]" />
+  <let name="sensor_kit_frames" value="[sensor_kit_base_link, sensor_kit_base_link, base_link]" />
+  <let name="calibration_lidar_base_frames" value="[velodyne_left_base_link, velodyne_right_base_link, velodyne_rear_base_link]" />
+  <let name="calibration_lidar_frames" value="[velodyne_left, velodyne_right, velodyne_rear]" />
+  <let name="mapping_lidar_frame" value="velodyne_top" />
+  <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud" />
+  <let name="calibration_pointcloud_topics" value=
+    "[/sensing/lidar/left/outlier_filtered/pointcloud,
+    /sensing/lidar/right/outlier_filtered/pointcloud,
+    /sensing/lidar/rear/outlier_filtered/pointcloud]" />
+
+  <arg name="rviz" />
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/velodyne_top.rviz" />
+
+
+  <arg name="sensors_src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensors_calibration.yaml" />
+  <arg name="sensors_dst_yaml" default="$(env HOME)/sensors_calibration.yaml" />
+
+  <arg name="sensor_kit_src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensor_kit_calibration.yaml" />
+  <arg name="sensor_kit_dst_yaml" default="$(env HOME)/sensor_kit_calibration.yaml" />
 
   <group>
-    <push-ros-namespace namespace="sensor_kit" />
-    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/mapping_based_sensor_kit.launch.xml">
-      <arg name="vehicle_id" value="$(var vehicle_id)" />
-      <arg name="camera_name" value="$(var camera_name)" />
-      <arg name="rviz" value="$(var rviz)" />
-    </include>
+    <!-- extrinsic_calibration_client -->
+    <push-ros-namespace namespace="sensors" />
+    <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="extrinsic_calibration_client" output="screen">
+      <param name="src_path" value="$(var sensors_src_yaml)" />
+      <param name="dst_path" value="$(var sensors_dst_yaml)" />
+    </node>
+
+    <!-- extrinsic_calibration_manager -->
+    <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
+      <param name="parent_frame" value="base_link" />
+      <param name="child_frames" value="[velodyne_rear_base_link]" />
+    </node>
   </group>
+
+  <group>
+    <!-- extrinsic_calibration_client -->
+    <push-ros-namespace namespace="sensor_kit" />
+    <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="extrinsic_calibration_client" output="screen">
+      <param name="src_path" value="$(var sensor_kit_src_yaml)" />
+      <param name="dst_path" value="$(var sensor_kit_dst_yaml)" />
+    </node>
+
+    <!-- extrinsic_calibration_manager -->
+    <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
+      <param name="parent_frame" value="sensor_kit_base_link" />
+      <param name="child_frames" value="[velodyne_left_base_link, velodyne_right_base_link]" />
+    </node>
+  </group>
+
+  <!-- mapping based calibrator -->
+  <include file="$(find-pkg-share extrinsic_mapping_based_calibrator)/launch/calibrator.launch.xml">
+    <arg name="ns" value="" />
+
+    <arg name="calibration_service_names" value="$(var calibration_service_names)" />
+    <arg name="sensor_kit_frames" value="$(var sensor_kit_frames)" />
+    <arg name="calibration_lidar_base_frames" value="$(var calibration_lidar_base_frames)" />
+    <arg name="calibration_lidar_frames" value="$(var calibration_lidar_frames)" />
+    <arg name="mapping_lidar_frame" value="$(var mapping_lidar_frame)" />
+
+    <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)" />
+    <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)" />
+  </include>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)" />
 
 </launch>

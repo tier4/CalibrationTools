@@ -557,6 +557,20 @@ void LidarCalibrator::multipleLidarCalibrationCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
 {
   UNUSED(request);
+
+  Eigen::Matrix4f result = calibrate();
+
+  if (result == Eigen::Matrix4f::Identity()) {
+    response->success = false;
+  } else {
+    response->success = true;
+  }
+
+  // TODO KL: better way to set succes, and also get the score
+}
+
+Eigen::Matrix4f LidarCalibrator::calibrate()
+{
   std::unique_lock<std::mutex> lock(data_->mutex_);
 
   Eigen::Matrix4f initial_calibration_transform;
@@ -584,8 +598,8 @@ void LidarCalibrator::multipleLidarCalibrationCallback(
     initial_calibration_transform = initial_target_to_source_affine.matrix().cast<float>();
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "could not get initial tf. %s", ex.what());
-    response->success = false;
-    return;
+
+    return Eigen::Matrix4f::Identity();
   }
 
   auto & calibration_frames = data_->calibration_frames_map_[calibration_lidar_frame_];
@@ -648,6 +662,8 @@ void LidarCalibrator::multipleLidarCalibrationCallback(
     targets.push_back(target_pc_ptr);
     targets_thin.push_back(target_thin_pc_ptr);
   }
+
+  lock.unlock();
 
   // Set all the registrators with the pointclouds
   for (auto & calibrator : calibration_batch_registrators_) {
@@ -763,6 +779,8 @@ void LidarCalibrator::multipleLidarCalibrationCallback(
     best_multi_frame_calibration_multi_frame_score,
     std::sqrt(best_multi_frame_calibration_multi_frame_score), parameters_->leaf_size_dense_map_);
 
+  lock.lock();
+
   // Publish ROS data
   PointcloudType::Ptr initial_source_aligned_map_ptr(new PointcloudType());
   PointcloudType::Ptr calibrated_source_aligned_map_ptr(new PointcloudType());
@@ -812,5 +830,6 @@ void LidarCalibrator::multipleLidarCalibrationCallback(
   calibrated_source_aligned_map_pub_->publish(calibrated_source_aligned_map_msg);
   target_map_pub_->publish(target_map_msg);
 
-  response->success = false;
+  // TODO KL: reformat this into more methods. Kill the single frame
+  return best_multi_frame_calibration_transform;
 }
