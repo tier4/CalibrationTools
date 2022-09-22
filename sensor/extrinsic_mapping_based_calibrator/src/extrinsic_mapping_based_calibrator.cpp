@@ -114,6 +114,8 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<int>("frames_since_stoped_force_frame", 5);
   mapping_parameters_->calibration_skip_keyframes_ =
     this->declare_parameter<int>("calibration_skip_keyframes", 5);
+  calibration_parameters_->calibration_min_frames_ =
+    this->declare_parameter<int>("calibration_min_frames", 2);
   calibration_parameters_->calibration_max_frames_ =
     this->declare_parameter<int>("calibration_max_frames", 10);
 
@@ -317,6 +319,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, frames_since_stop_force_frame);
 
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, calibration_skip_keyframes);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, calibration_min_frames);
     UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, calibration_max_frames);
 
     UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, max_allowed_interpolated_time);

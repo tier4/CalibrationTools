@@ -629,6 +629,11 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
   std::vector<CalibrationFrame> calibration_frames =
     filterCalibrationFrames(data_->calibration_frames_map_[calibration_lidar_frame_]);
 
+  if (static_cast<int>(calibration_frames.size()) < parameters_->calibration_min_frames_) {
+    RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "Insufficient calibration frames. aborting.");
+    return false;
+  }
+
   // Prepate augmented calibration pointclouds
   std::vector<pcl::PointCloud<PointType>::Ptr> sources, targets, targets_thin;
   prepareCalibrationData(

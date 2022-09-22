@@ -137,6 +137,7 @@ struct LidarCalibrationParameters
   bool calibration_verbose_;
   double leaf_size_dense_map_;
   int dense_pointcloud_num_keyframes_;
+  int calibration_min_frames_;
   int calibration_max_frames_;
   double calibration_viz_leaf_size_;
 
