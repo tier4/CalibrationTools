@@ -15,6 +15,7 @@
 #ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_LIDAR_CALIBRATOR_HPP_
 #define EXTRINSIC_MAPPING_BASED_CALIBRATOR_LIDAR_CALIBRATOR_HPP_
 
+#include <extrinsic_mapping_based_calibrator/filters/filter.hpp>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tier4_pcl_extensions/joint_icp_extended.hpp>
@@ -84,34 +85,6 @@ protected:
     const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double max_range);
 
   /*!
-   * Filter calibration frames that are close to frames where the robot is assumes to be lost
-   * @param[in] calibration_frames The raw calibrated frames
-   */
-  std::vector<CalibrationFrame> filterCalibrationFramesByLostState(
-    const std::vector<CalibrationFrame> & calibration_frames);
-
-  /*!
-   * Filter calibration frames to avoid high speed, acceleration, interpolation, etc
-   * @param[in] calibration_frames The raw calibrated frames
-   */
-  std::vector<CalibrationFrame> filterCalibrationFramesByDynamics(
-    const std::vector<CalibrationFrame> & calibration_frames);
-
-  /*!
-   * Select best K calibration frames based on information and spatial correlation
-   * @param[in] calibration_frames The raw calibrated frames
-   */
-  std::vector<CalibrationFrame> selectBestKCalibrationFrames(
-    const std::vector<CalibrationFrame> & calibration_frames, int num_frames);
-
-  /*!
-   * Select best K calibration frames based on information and spatial correlation
-   * @param[in] calibration_frames The raw calibrated frames
-   */
-  std::vector<CalibrationFrame> filterCalibrationFrames(
-    const std::vector<CalibrationFrame> & calibration_frames);
-
-  /*!
    * Prepare the augmented calibration data
    * @param[in] calibration_frames The calibrated frames
    * @param[in] initial_distance The initial distance between frames
@@ -145,6 +118,9 @@ protected:
   PointPublisher::SharedPtr initial_source_aligned_map_pub_;
   PointPublisher::SharedPtr calibrated_source_aligned_map_pub_;
   PointPublisher::SharedPtr target_map_pub_;
+
+  // Filters
+  Filter::Ptr filter_;
 
   // Calibration
   std::vector<pcl::Registration<PointType, PointType>::Ptr> calibration_registrators_;

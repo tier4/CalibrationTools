@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <extrinsic_mapping_based_calibrator/filters/best_frames_filter.hpp>
+#include <extrinsic_mapping_based_calibrator/filters/dynamics_filter.hpp>
+#include <extrinsic_mapping_based_calibrator/filters/lost_state_filter.hpp>
+#include <extrinsic_mapping_based_calibrator/filters/sequential_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/lidar_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <extrinsic_mapping_based_calibrator/voxel_grid_filter_wrapper.hpp>
@@ -23,8 +27,6 @@
 #else
 #include <tf2_eigen/tf2_eigen.hpp>
 #endif
-
-#include <pcl/common/pca.h>
 
 #define UNUSED(x) (void)x;
 
@@ -43,6 +45,14 @@ LidarCalibrator::LidarCalibrator(
   calibrated_source_aligned_map_pub_(calibrated_source_aligned_map_pub),
   target_map_pub_(target_map_pub)
 {
+  // Filter configuration
+  std::shared_ptr<Filter> lost_state_filter(new LostStateFilter(calibrator_name_, parameters));
+  std::shared_ptr<Filter> dynamics_filter(new DynamicsFilter(calibrator_name_, parameters));
+  std::shared_ptr<Filter> best_frames_filter(new BestFramesFilter(calibrator_name_, parameters));
+
+  filter_.reset(new SequentialFilter(
+    calibrator_name_, parameters, {lost_state_filter, dynamics_filter, best_frames_filter}));
+
   // Calibration configuration
   correspondence_estimator_ =
     pcl::make_shared<pcl::registration::CorrespondenceEstimation<PointType, PointType>>();
@@ -173,264 +183,6 @@ PointcloudType::Ptr LidarCalibrator::getDensePointcloudFromMap(
   return subsampled_tcs_ptr;
 }
 
-std::vector<CalibrationFrame> LidarCalibrator::filterCalibrationFramesByLostState(
-  const std::vector<CalibrationFrame> & calibration_frames)
-{
-  std::vector<CalibrationFrame> filtered_frames;
-  std::vector<int> deleted_keyframe_ids;
-
-  std::vector<int> invalid_keyframe_ids;
-  std::unordered_set<int> invalid_keyframe_ids_map;
-
-  int last_keyframe_id = -1;
-  bool lost = false;
-
-  // Find all keyframes that are either "lost" or have a frame "lost" nearby
-  for (const auto & frame : data_->processed_frames_) {
-    lost |= frame->lost_;
-
-    if (frame->is_key_frame_ && lost) {
-      if (
-        last_keyframe_id != -1 &&
-        invalid_keyframe_ids_map.find(last_keyframe_id) != invalid_keyframe_ids_map.end()) {
-        invalid_keyframe_ids.push_back(last_keyframe_id);
-        invalid_keyframe_ids_map.insert(last_keyframe_id);
-      }
-
-      invalid_keyframe_ids.push_back(frame->keyframe_id_);
-      invalid_keyframe_ids_map.insert(frame->keyframe_id_);
-
-      lost = false;
-      last_keyframe_id = frame->keyframe_id_;
-    }
-  }
-
-  int left_invalid_keyframe_id = 0;
-
-  // Find and separate frames that close enought to "lost" keyframes
-  for (const auto & frame : calibration_frames) {
-    // Check closest keyframe
-    int keyframe_id = frame.target_frame_->keyframe_id_;
-
-    if (!frame.target_frame_->is_key_frame_) {
-      for (int i = 0;; i++) {
-        int left_frame_id = frame.target_frame_->frame_id_ - i;
-        int right_frame_id = frame.target_frame_->frame_id_ + i;
-        if (left_frame_id >= 0 && data_->processed_frames_[left_frame_id]->is_key_frame_) {
-          keyframe_id = data_->processed_frames_[left_frame_id]->keyframe_id_;
-          break;
-        }
-        if (
-          right_frame_id < static_cast<int>(data_->processed_frames_.size()) &&
-          data_->processed_frames_[right_frame_id]->is_key_frame_) {
-          keyframe_id = data_->processed_frames_[right_frame_id]->keyframe_id_;
-          break;
-        }
-      }
-    }
-
-    while (left_invalid_keyframe_id < static_cast<int>(invalid_keyframe_ids.size()) - 1 &&
-           invalid_keyframe_ids[left_invalid_keyframe_id] <
-             keyframe_id + parameters_->dense_pointcloud_num_keyframes_) {
-      left_invalid_keyframe_id++;
-    }
-
-    if (
-      left_invalid_keyframe_id < static_cast<int>(invalid_keyframe_ids.size()) - 1 &&
-      std::abs(
-        invalid_keyframe_ids[left_invalid_keyframe_id + 1] - keyframe_id <=
-        parameters_->dense_pointcloud_num_keyframes_)) {
-      deleted_keyframe_ids.push_back(keyframe_id);
-    } else {
-      filtered_frames.push_back(frame);
-    }
-  }
-
-  std::stringstream ss;
-  ss << "Invalid keyframes due to being associated with 'lost' frames: ";
-
-  for (const auto & id : deleted_keyframe_ids) {
-    ss << id << " ";
-  }
-
-  if (deleted_keyframe_ids.size() > 0) {
-    RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "%s\n", ss.str().c_str());
-  }
-
-  return filtered_frames;
-}
-
-std::vector<CalibrationFrame> LidarCalibrator::filterCalibrationFramesByDynamics(
-  const std::vector<CalibrationFrame> & calibration_frames)
-{
-  std::vector<CalibrationFrame> filtered_frames;
-
-  std::stringstream ss;
-  ss << "Accepted kyframes due to dynamics & interpolation: ";
-
-  for (auto & frame : calibration_frames) {
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_),
-      "Attempting to add keyframe id=%d to the calibration list",
-      frame.target_frame_->keyframe_id_);
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - stopped: %s", frame.stopped_ ? " true" : "false");
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - interpolated time: %.4f s (%s)",
-      frame.interpolated_time_,
-      frame.interpolated_time_ < parameters_->max_allowed_interpolated_time_ ? "accepted"
-                                                                             : "rejected");
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - interpolated distance: %.4f m (%s)",
-      frame.interpolated_distance_,
-      frame.interpolated_distance_ < parameters_->max_allowed_interpolated_distance_ ? "accepted"
-                                                                                     : "rejected");
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - interpolated angle: %.4f deg (%s)",
-      frame.interpolated_angle_,
-      frame.interpolated_angle_ < parameters_->max_allowed_interpolated_angle_ ? "accepted"
-                                                                               : "rejected");
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - interpolated speed: %.4f m/s (%s)",
-      frame.estimated_speed_,
-      frame.estimated_speed_ < parameters_->max_allowed_interpolated_speed_ ? "accepted"
-                                                                            : "rejected");
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - interpolated accel: %.4f m/s2 (%s)",
-      frame.estimated_accel_,
-      frame.estimated_accel_ < parameters_->max_allowed_interpolated_accel_ ? "accepted"
-                                                                            : "rejected");
-
-    bool standard_criteria =
-      frame.interpolated_time_ < parameters_->max_allowed_interpolated_time_ &&
-      frame.interpolated_distance_ < parameters_->max_allowed_interpolated_distance_ &&
-      frame.interpolated_angle_ < parameters_->max_allowed_interpolated_angle_ &&
-      frame.estimated_speed_ < parameters_->max_allowed_interpolated_speed_ &&
-      frame.estimated_accel_ < parameters_->max_allowed_interpolated_accel_;
-
-    bool straight_criteria =
-      frame.interpolated_time_ < parameters_->max_allowed_interpolated_time_ &&
-      frame.interpolated_distance_ < parameters_->max_allowed_interpolated_distance_straight_ &&
-      frame.interpolated_angle_ < parameters_->max_allowed_interpolated_angle_straight_ &&
-      frame.estimated_speed_ < parameters_->max_allowed_interpolated_speed_straight_ &&
-      frame.estimated_accel_ < parameters_->max_allowed_interpolated_accel_straight_;
-
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - standard criteria: %s",
-      standard_criteria ? "accepted" : "rejected");
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - straight criteria: %s",
-      straight_criteria ? "accepted" : "rejected");
-
-    if (
-      (standard_criteria || straight_criteria) &&
-      (frame.stopped_ || !parameters_->calibration_use_only_stopped_)) {
-      filtered_frames.emplace_back(frame);
-      ss << frame.target_frame_->frame_id_ << "/" << frame.target_frame_->keyframe_id_ << " ";
-    }
-  }
-
-  if (filtered_frames.size() > 0) {
-    RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "%s\n", ss.str().c_str());
-  }
-
-  return filtered_frames;
-}
-
-std::vector<CalibrationFrame> LidarCalibrator::selectBestKCalibrationFrames(
-  const std::vector<CalibrationFrame> & calibration_frames, int num_frames)
-{
-  std::vector<CalibrationFrame> filtered_frames;
-
-  std::vector<std::pair<float, std::size_t>> pca_coeff_calibration_id_pairs;
-
-  for (std::size_t i = 0; i < calibration_frames.size(); i++) {
-    auto & frame = calibration_frames[i];
-
-    pcl::PCA<PointType> pca;
-    pca.setInputCloud(frame.source_pointcloud_);
-
-    float pca_coefficient = std::sqrt(std::abs(pca.getEigenValues().z()));
-
-    RCLCPP_INFO(
-      rclcpp::get_logger(calibrator_name_), "\t - pca coeff: %.4f (%s)", pca_coefficient,
-      pca_coefficient >= parameters_->calibration_min_pca_eigenvalue_ ? "accepted" : "rejected");
-
-    if (pca_coefficient >= parameters_->calibration_min_pca_eigenvalue_) {
-      pca_coeff_calibration_id_pairs.push_back(std::make_pair<>(pca_coefficient, i));
-    }
-  }
-
-  std::sort(
-    pca_coeff_calibration_id_pairs.begin(), pca_coeff_calibration_id_pairs.end(),
-    [](auto & lhs, auto & rhs) { return lhs.first > rhs.first; });
-
-  std::stringstream ss;
-  ss << "Final selected keyframes: ";
-
-  for (auto & pair : pca_coeff_calibration_id_pairs) {
-    bool accepted = true;
-    for (auto & accepted_frame : filtered_frames) {
-      if (
-        std::abs(
-          calibration_frames[pair.second].target_frame_->distance_ -
-          accepted_frame.target_frame_->distance_) <
-        parameters_->calibration_min_distance_between_frames_) {
-        accepted = false;
-        break;
-      }
-    }
-
-    if (accepted) {
-      auto & accepted_frame = calibration_frames[pair.second];
-      filtered_frames.push_back(accepted_frame);
-      ss << accepted_frame.target_frame_->frame_id_ << "/"
-         << accepted_frame.target_frame_->keyframe_id_ << " ";
-    }
-
-    if (static_cast<int>(filtered_frames.size()) == num_frames) {
-      break;
-    }
-  }
-
-  if (filtered_frames.size() > 0) {
-    RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "%s\n", ss.str().c_str());
-  }
-
-  return filtered_frames;
-}
-
-std::vector<CalibrationFrame> LidarCalibrator::filterCalibrationFrames(
-  const std::vector<CalibrationFrame> & calibration_frames)
-{
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Original calibration frames: %ld",
-    calibration_frames.size());
-
-  std::vector<CalibrationFrame> filtered_calibration_frames_1 =
-    filterCalibrationFramesByLostState(calibration_frames);
-
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Filtered calibration frames by dynamics: %ld",
-    filtered_calibration_frames_1.size());
-
-  std::vector<CalibrationFrame> filtered_calibration_frames_2 =
-    filterCalibrationFramesByDynamics(filtered_calibration_frames_1);
-
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Filtered calibration frames by dynamics: %ld",
-    filtered_calibration_frames_2.size());
-
-  std::vector<CalibrationFrame> accepted_calibration_frames = selectBestKCalibrationFrames(
-    filtered_calibration_frames_2, parameters_->calibration_max_frames_);
-
-  RCLCPP_INFO(
-    rclcpp::get_logger(calibrator_name_), "Accepted calibration frames: %ld",
-    accepted_calibration_frames.size());
-
-  return accepted_calibration_frames;
-}
-
 void LidarCalibrator::singleLidarCalibrationCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
@@ -468,7 +220,7 @@ void LidarCalibrator::singleLidarCalibrationCallback(
   // auto & target_map_pub = target_map_pub_map_[calibration_lidar_frame_];
 
   std::vector<CalibrationFrame> filtered_calibration_frames =
-    filterCalibrationFramesByDynamics(calibration_frames);
+    filter_->filter(calibration_frames, data_);
 
   if (request->id >= static_cast<int>(filtered_calibration_frames.size())) {
     RCLCPP_WARN(
@@ -627,7 +379,7 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
   // Filter calibration frames using several criteria and select the best ones suited for
   // calibration
   std::vector<CalibrationFrame> calibration_frames =
-    filterCalibrationFrames(data_->calibration_frames_map_[calibration_lidar_frame_]);
+    filter_->filter(data_->calibration_frames_map_[calibration_lidar_frame_], data_);
 
   if (static_cast<int>(calibration_frames.size()) < parameters_->calibration_min_frames_) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "Insufficient calibration frames. aborting.");

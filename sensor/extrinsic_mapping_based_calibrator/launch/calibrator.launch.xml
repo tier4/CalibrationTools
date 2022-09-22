@@ -2,6 +2,8 @@
 <launch>
   <arg name="ns" />
   <arg name="mapping_pointcloud" />
+  <arg name="detected_objects" default="detected_objects" />
+  <arg name="predicted_objects"  default="predicted_objects" />
   <arg name="calibration_pointcloud_topics" />
   <arg name="calibration_service_names" />
   <arg name="sensor_kit_frames" />
@@ -21,6 +23,8 @@
       <param name="mapping_lidar_frame" value="$(var mapping_lidar_frame)" />
       <param name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
       <remap from="mapping_pointcloud" to="$(var mapping_pointcloud)"/>
+      <remap from="detected_objects" to="$(var detected_objects)"/>
+      <remap from="predicted_objects" to="$(var predicted_objects)"/>
 
       <!-- default -->
       <!--param name="calibration_min_pca_eigenvalue" value="0.25" />

@@ -236,6 +236,18 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     "mapping_pointcloud", rclcpp::SensorDataQoS().keep_all(),
     std::bind(&CalibrationMapper::mappingPointCloudCallback, mapper_, std::placeholders::_1));
 
+  detected_objects_sub_ =
+    this->create_subscription<autoware_auto_perception_msgs::msg::DetectedObjects>(
+      "detected_objects", rclcpp::SensorDataQoS().keep_all(),
+      std::bind(
+        &ExtrinsicMappingBasedCalibrator::detectedObjectsCallback, this, std::placeholders::_1));
+
+  predicted_objects_sub_ =
+    this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>(
+      "predicted_objects", rclcpp::SensorDataQoS().keep_all(),
+      std::bind(
+        &ExtrinsicMappingBasedCalibrator::predictedObjectsCallback, this, std::placeholders::_1));
+
   for (auto & calibration_frame_name : mapping_data_->calibration_lidar_frame_names_) {
     single_lidar_calibration_server_map_[calibration_frame_name] =
       this->create_service<tier4_calibration_msgs::srv::Frame>(
@@ -456,6 +468,56 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
   std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
+void ExtrinsicMappingBasedCalibrator::detectedObjectsCallback(
+  const autoware_auto_perception_msgs::msg::DetectedObjects::SharedPtr objects)
+{
+  // Convert objects into ObjectBB
+  ObjectsBB new_objects;
+  new_objects.header_ = objects->header;
+
+  for (auto & object : objects->objects) {
+    ObjectBB new_object;
+    Eigen::Affine3d pose_affine;
+    tf2::fromMsg(object.kinematics.pose_with_covariance.pose, pose_affine);
+    new_object.pose_ = pose_affine.matrix().cast<float>();
+    new_object.size_ = Eigen::Vector3f(
+      object.shape.dimensions.x, object.shape.dimensions.y, object.shape.dimensions.z);
+
+    new_objects.objects_.push_back(new_object);
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Adding %ld detections", new_objects.objects_.size());
+
+  // Add them to the data
+  std::unique_lock<std::mutex> lock(mapping_data_->mutex_);
+  mapping_data_->detected_objects_.push_back(new_objects);
+}
+
+void ExtrinsicMappingBasedCalibrator::predictedObjectsCallback(
+  const autoware_auto_perception_msgs::msg::PredictedObjects::SharedPtr objects)
+{
+  // Convert objects into ObjectBB
+  ObjectsBB new_objects;
+  new_objects.header_ = objects->header;
+
+  for (auto & object : objects->objects) {
+    ObjectBB new_object;
+    Eigen::Affine3d pose_affine;
+    tf2::fromMsg(object.kinematics.initial_pose_with_covariance.pose, pose_affine);
+    new_object.pose_ = pose_affine.matrix().cast<float>();
+    new_object.size_ = Eigen::Vector3f(
+      object.shape.dimensions.x, object.shape.dimensions.y, object.shape.dimensions.z);
+
+    new_objects.objects_.push_back(new_object);
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Adding %ld detections", new_objects.objects_.size());
+
+  // Add them to the data
+  std::unique_lock<std::mutex> lock(mapping_data_->mutex_);
+  mapping_data_->detected_objects_.push_back(new_objects);
+}
+
 void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response)
@@ -482,6 +544,9 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
 
   ia >> mapping_data_->keyframes_;
   RCLCPP_INFO(this->get_logger(), "Loaded %ld keyframes...", mapping_data_->keyframes_.size());
+
+  ia >> mapping_data_->detected_objects_;
+  RCLCPP_INFO(this->get_logger(), "Loaded %ld objects...", mapping_data_->detected_objects_.size());
 
   mapper_->stop();
 
@@ -512,6 +577,9 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
 
   RCLCPP_INFO(this->get_logger(), "Saving %ld keyframes...", mapping_data_->keyframes_.size());
   oa << mapping_data_->keyframes_;
+
+  RCLCPP_INFO(this->get_logger(), "Saving %ld objects...", mapping_data_->detected_objects_.size());
+  oa << mapping_data_->detected_objects_;
 
   mapper_->stop();
 

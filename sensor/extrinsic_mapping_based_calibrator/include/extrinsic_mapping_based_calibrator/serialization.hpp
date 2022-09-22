@@ -87,6 +87,22 @@ inline void serialize(
 }
 
 template <class Archive>
+void serialize(Archive & ar, ObjectBB & object, const unsigned int version)
+{
+  (void)version;
+  ar & object.pose_;
+  ar & object.size_;
+}
+
+template <class Archive>
+void serialize(Archive & ar, ObjectsBB & objects, const unsigned int version)
+{
+  (void)version;
+  ar & objects.header_;
+  ar & objects.objects_;
+}
+
+template <class Archive>
 void serialize(Archive & ar, Frame & frame, const unsigned int version)
 {
   (void)version;

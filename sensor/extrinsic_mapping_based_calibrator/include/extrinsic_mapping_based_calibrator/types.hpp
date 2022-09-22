@@ -31,6 +31,24 @@
 using PointType = pcl::PointXYZ;
 using PointcloudType = pcl::PointCloud<PointType>;
 
+struct ObjectBB
+{
+  using Ptr = std::shared_ptr<ObjectBB>;
+  using ConstPtr = std::shared_ptr<const ObjectBB>;
+
+  Eigen::Matrix4f pose_;
+  Eigen::Vector3f size_;
+};
+
+struct ObjectsBB
+{
+  using Ptr = std::shared_ptr<ObjectsBB>;
+  using ConstPtr = std::shared_ptr<const ObjectsBB>;
+
+  std_msgs::msg::Header header_;
+  std::vector<ObjectBB> objects_;
+};
+
 struct Frame
 {
   using Ptr = std::shared_ptr<Frame>;
@@ -94,6 +112,9 @@ struct MappingData
   std::map<std::string, std_msgs::msg::Header::SharedPtr> calibration_lidar_header_map_;
   std::map<std::string, int> last_unmatched_keyframe_map_;
   std::map<std::string, std::vector<CalibrationFrame>> calibration_frames_map_;
+
+  // Object recognition results
+  std::vector<ObjectsBB> detected_objects_;
 };
 
 struct MappingParameters
