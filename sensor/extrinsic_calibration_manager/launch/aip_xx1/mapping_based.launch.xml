@@ -13,7 +13,10 @@
   <let name="calibration_lidar_frames" value="[velodyne_left, velodyne_right, velodyne_rear]" />
   <let name="mapping_lidar_frame" value="velodyne_top" />
   <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud" />
-  <let name="predicted_objects" value="/perception/object_recognition/objects" />
+  <!--let name="predicted_objects" value="/perception/object_recognition/objects" /-->
+  <let name="detected_objects" value="/perception/object_recognition/detection/objects" />
+
+
   <let name="calibration_pointcloud_topics" value=
     "[/sensing/lidar/left/outlier_filtered/pointcloud,
     /sensing/lidar/right/outlier_filtered/pointcloud,
@@ -70,7 +73,8 @@
     <arg name="mapping_lidar_frame" value="$(var mapping_lidar_frame)" />
 
     <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)" />
-    <arg name="predicted_objects" value="$(var predicted_objects)" />
+    <!--arg name="predicted_objects" value="$(var predicted_objects)" /-->
+    <arg name="detected_objects" value="$(var detected_objects)" />
     <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)" />
   </include>
 

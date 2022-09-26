@@ -15,6 +15,7 @@
 #include <extrinsic_mapping_based_calibrator/filters/best_frames_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/filters/dynamics_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/filters/lost_state_filter.hpp>
+#include <extrinsic_mapping_based_calibrator/filters/object_detection_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/filters/sequential_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/lidar_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
@@ -49,9 +50,16 @@ LidarCalibrator::LidarCalibrator(
   std::shared_ptr<Filter> lost_state_filter(new LostStateFilter(calibrator_name_, parameters));
   std::shared_ptr<Filter> dynamics_filter(new DynamicsFilter(calibrator_name_, parameters));
   std::shared_ptr<Filter> best_frames_filter(new BestFramesFilter(calibrator_name_, parameters));
+  std::shared_ptr<Filter> object_detection_filter(
+    new ObjectDetectionFilter(calibrator_name_, parameters, tf_buffer_));
+  std::vector<std::shared_ptr<Filter>> filters =
+    parameters_->filter_detections_
+      ? std::vector<std::shared_ptr<
+          Filter>>{lost_state_filter, dynamics_filter, best_frames_filter, object_detection_filter}
+      : std::vector<std::shared_ptr<Filter>>{
+          lost_state_filter, dynamics_filter, best_frames_filter};
 
-  filter_.reset(new SequentialFilter(
-    calibrator_name_, parameters, {lost_state_filter, dynamics_filter, best_frames_filter}));
+  filter_.reset(new SequentialFilter(calibrator_name_, parameters, filters));
 
   // Calibration configuration
   correspondence_estimator_ =
@@ -213,11 +221,6 @@ void LidarCalibrator::singleLidarCalibrationCallback(
   }
 
   auto & calibration_frames = data_->calibration_frames_map_[calibration_lidar_frame_];
-  // auto & initial_source_aligned_map_pub =
-  //   initial_source_aligned_map_pub_map_[calibration_lidar_frame_];
-  // auto & calibrated_source_aligned_map_pub =
-  //   calibrated_source_aligned_map_pub_map_[calibration_lidar_frame_];
-  // auto & target_map_pub = target_map_pub_map_[calibration_lidar_frame_];
 
   std::vector<CalibrationFrame> filtered_calibration_frames =
     filter_->filter(calibration_frames, data_);

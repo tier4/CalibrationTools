@@ -174,6 +174,10 @@ struct LidarCalibrationParameters
   double max_allowed_interpolated_speed_straight_;
   double max_allowed_interpolated_accel_straight_;
 
+  bool filter_detections_;
+  double detection_max_time_tolerance_;
+  double detection_size_tolerance_;
+
   // Calibration parameters
   int solver_iterations_;
   double max_corr_dist_coarse_;

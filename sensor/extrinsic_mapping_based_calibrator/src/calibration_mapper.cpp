@@ -17,7 +17,6 @@
 #include <extrinsic_mapping_based_calibrator/voxel_grid_filter_wrapper.hpp>
 
 #include <pcl_conversions/pcl_conversions.h>
-//#include <pcl_ros/transforms.hpp>
 #include <tf2/utils.h>
 
 #ifdef ROS_DISTRO_GALACTIC
@@ -51,10 +50,10 @@ CalibrationMapper::CalibrationMapper(
   published_map_pointcloud_ptr_.reset(new PointcloudType());
 
   assert(parameters_);
-  ndt_.setResolution(parameters_->ndt_resolution_);             // 1.0
-  ndt_.setStepSize(parameters_->ndt_step_size_);                // 0.1
-  ndt_.setMaximumIterations(parameters_->ndt_max_iterations_);  // 35
-  ndt_.setTransformationEpsilon(parameters_->ndt_epsilon_);     // 0.01
+  ndt_.setResolution(parameters_->ndt_resolution_);
+  ndt_.setStepSize(parameters_->ndt_step_size_);
+  ndt_.setMaximumIterations(parameters_->ndt_max_iterations_);
+  ndt_.setTransformationEpsilon(parameters_->ndt_epsilon_);
   ndt_.setNeighborhoodSearchMethod(pclomp::DIRECT7);
 
   if (parameters_->ndt_num_threads_ > 0) {
@@ -577,12 +576,13 @@ void CalibrationMapper::dataMatchingTimerCallback()
   }
 }
 
-void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calibration_frame)
+void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calibration_frame_name)
 {
   std::unique_lock<std::mutex> lock(data_->mutex_);
-  auto & last_unmatched_keyframe = data_->last_unmatched_keyframe_map_[calibration_frame];
-  auto & calibration_frames = data_->calibration_frames_map_[calibration_frame];
-  auto & calibration_pointclouds_list = data_->calibration_pointclouds_list_map_[calibration_frame];
+  auto & last_unmatched_keyframe = data_->last_unmatched_keyframe_map_[calibration_frame_name];
+  auto & calibration_frames = data_->calibration_frames_map_[calibration_frame_name];
+  auto & calibration_pointclouds_list =
+    data_->calibration_pointclouds_list_map_[calibration_frame_name];
 
   while (last_unmatched_keyframe < static_cast<int>(data_->keyframes_and_stopped_.size()) - 1) {
     Frame::Ptr keyframe = data_->keyframes_and_stopped_[last_unmatched_keyframe];
@@ -690,12 +690,13 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
     PointcloudType::Ptr pc_ptr(new PointcloudType());
     pcl::fromROSMsg(*pc_msg, *pc_ptr);
     transformPointcloud<PointcloudType>(
-      pc_msg->header.frame_id, calibration_frame, pc_ptr, *tf_buffer_);
+      pc_msg->header.frame_id, calibration_frame_name, pc_ptr, *tf_buffer_);
 
     CalibrationFrame calibration_frame;
 
     calibration_frame.source_pointcloud_ = pc_ptr;
     calibration_frame.source_header_ = pc_msg->header;
+    calibration_frame.source_header_.frame_id = calibration_frame_name;
 
     calibration_frame.target_frame_ = keyframe;
     calibration_frame.local_map_pose_ = interpolated_pose;

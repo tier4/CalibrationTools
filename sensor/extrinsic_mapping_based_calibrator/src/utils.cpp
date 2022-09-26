@@ -27,6 +27,8 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #endif
 
+#include <limits>
+
 template <typename PointcloudType>
 void transformPointcloud(
   const std::string & source_frame, const std::string & target_frame,
@@ -224,8 +226,8 @@ void cropTargetPointcloud(
 {
   // Obtain data ranges from the source
   Eigen::Array4f min_p, max_p;
-  min_p.setConstant(FLT_MAX);
-  max_p.setConstant(-FLT_MAX);
+  min_p.setConstant(std::numeric_limits<float>::max());
+  max_p.setConstant(-std::numeric_limits<float>::max());
 
   for (const auto & point : *initial_source_aligned_pc_ptr) {
     pcl::Array4fMapConst pt = point.getArray4fMap();

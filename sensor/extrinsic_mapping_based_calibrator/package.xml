@@ -12,7 +12,6 @@
 
   <build_depend>autoware_cmake</build_depend>
 
-  <depend>backward_ros</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>image_geometry</depend>
@@ -35,7 +34,6 @@
   <depend>libboost-filesystem</depend>
   <depend>rosbag2_interfaces</depend>
   <depend>autoware_auto_perception_msgs</depend>
-
   <depend>nav_msgs</depend>
   <depend>tf2_sensor_msgs</depend>
   <depend>tf2_eigen</depend>

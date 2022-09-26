@@ -17,19 +17,23 @@
 
 #include <extrinsic_mapping_based_calibrator/filters/filter.hpp>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
+#include <tf2_ros/buffer.h>
 
 #include <vector>
 
 class ObjectDetectionFilter : public Filter
 {
 public:
-  ObjectDetectionFilter(const LidarCalibrationParameters::Ptr & parameters) : Filter(parameters)
+  ObjectDetectionFilter(const LidarCalibrationParameters::Ptr & parameters, const std::shared_ptr<tf2_ros::Buffer> & tf_buffer) :
+  Filter(parameters),
+  tf_buffer_(tf_buffer)
   {
     name_ = "ObjectDetectionFilter";
   }
   ObjectDetectionFilter(
-    const std::string & name, const LidarCalibrationParameters::Ptr & parameters)
-  : Filter(parameters)
+    const std::string & name, const LidarCalibrationParameters::Ptr & parameters, const std::shared_ptr<tf2_ros::Buffer> & tf_buffer)
+  : Filter(parameters),
+  tf_buffer_(tf_buffer)
   {
     setName(name);
   }
@@ -41,13 +45,22 @@ public:
   virtual void setName(const std::string & name) override;
 
 protected:
-  void filter(const CalibrationFrame & calibration_frame, MappingData::Ptr & mapping_data);
+
+  void filter(const CalibrationFrame & calibration_frame, MappingData::Ptr & mapping_data,
+  const Eigen::Affine3f & source_lidar_to_mapping_lidar_transform,
+  const Eigen::Affine3f & mapping_to_detection_frame_transform);
   void filter(
     const CalibrationFrame & calibration_frame, MappingData::Ptr & mapping_data,
-    const ObjectsBB & objects);
+    const ObjectsBB & objects,
+    const Eigen::Affine3f & source_lidar_to_mapping_lidar_transform,
+    const Eigen::Affine3f & mapping_to_detection_frame_transform,
+    const Eigen::Vector4f & min_p, const Eigen::Vector4f & max_p);
   void filter(
-    const CalibrationFrame & calibration_frame, MappingData::Ptr & mapping_data,
-    const ObjectBB & object);
+    const CalibrationFrame & calibration_frame,
+    const ObjectBB & object, const Eigen::Affine3f & source_to_detections_transform,
+    const Eigen::Vector4f & min_p, const Eigen::Vector4f & max_p);
+
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__FILTERS__OBJECT_DETECTION_FILTER_HPP_
