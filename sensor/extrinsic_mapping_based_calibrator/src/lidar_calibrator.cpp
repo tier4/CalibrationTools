@@ -259,7 +259,8 @@ void LidarCalibrator::singleLidarCalibrationCallback(
 
   correspondence_estimator_->setInputSource(initial_source_aligned_pc_ptr);
   correspondence_estimator_->setInputTarget(target_dense_pc_ptr);
-  double initial_score = sourceTargetDistance(*correspondence_estimator_);
+  double initial_score = sourceTargetDistance(
+    *correspondence_estimator_, parameters_->calibration_eval_max_corr_distance_);
 
   RCLCPP_WARN(
     rclcpp::get_logger(calibrator_name_),
@@ -273,7 +274,8 @@ void LidarCalibrator::singleLidarCalibrationCallback(
   float best_score;
 
   findBestTransform<pcl::Registration<PointType, PointType>, PointType>(
-    candidate_transforms, calibration_registrators_, parameters_->calibration_verbose_,
+    candidate_transforms, calibration_registrators_,
+    parameters_->calibration_eval_max_corr_distance_, parameters_->calibration_verbose_,
     best_transform, best_score);
 
   PointcloudType::Ptr calibrated_source_aligned_pc_ptr(new PointcloudType());
@@ -290,7 +292,8 @@ void LidarCalibrator::singleLidarCalibrationCallback(
 
   correspondence_estimator_->setInputSource(test_aligned_pc_ptr);
   correspondence_estimator_->setInputTarget(target_dense_pc_ptr);
-  double test_score = sourceTargetDistance(*correspondence_estimator_);
+  double test_score = sourceTargetDistance(
+    *correspondence_estimator_, parameters_->calibration_eval_max_corr_distance_);
 
   RCLCPP_WARN(
     rclcpp::get_logger(calibrator_name_),
@@ -428,7 +431,8 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
 
     correspondence_estimator_->setInputSource(initial_source_aligned_pc_ptr);
     correspondence_estimator_->setInputTarget(targets[i]);
-    double initial_score = sourceTargetDistance(*correspondence_estimator_);
+    double initial_score = sourceTargetDistance(
+      *correspondence_estimator_, parameters_->calibration_eval_max_corr_distance_);
 
     // Find best calibration using an "ensemble" of calibrators
     std::vector<Eigen::Matrix4f> candidate_transforms = {initial_calibration_transform};
@@ -436,11 +440,13 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
     float best_single_frame_transform_score;
 
     findBestTransform<pcl::Registration<PointType, PointType>, PointType>(
-      candidate_transforms, calibration_registrators_, parameters_->calibration_verbose_,
+      candidate_transforms, calibration_registrators_,
+      parameters_->calibration_eval_max_corr_distance_, parameters_->calibration_verbose_,
       best_single_frame_transform, best_single_frame_transform_score);
 
-    float best_single_frame_transform_multi_frame_score =
-      sourceTargetDistance<PointType>(sources, targets, best_single_frame_transform);
+    float best_single_frame_transform_multi_frame_score = sourceTargetDistance<PointType>(
+      sources, targets, best_single_frame_transform,
+      parameters_->calibration_eval_max_corr_distance_);
 
     initial_calibration_single_frame_score[i] = initial_score;
     single_frame_calibration_multi_frame_score[i] = best_single_frame_transform_multi_frame_score;
@@ -482,13 +488,16 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
   float best_multi_frame_calibration_multi_frame_score;
 
   findBestTransform<pcl::JointIterativeClosestPointExtended<PointType, PointType>, PointType>(
-    candidate_transforms, calibration_batch_registrators_, parameters_->calibration_verbose_,
+    candidate_transforms, calibration_batch_registrators_,
+    parameters_->calibration_eval_max_corr_distance_, parameters_->calibration_verbose_,
     best_multi_frame_calibration_transform, best_multi_frame_calibration_multi_frame_score);
 
-  float initial_score =
-    sourceTargetDistance<PointType>(sources, targets, initial_calibration_transform);
-  float final_score =
-    sourceTargetDistance<PointType>(sources, targets, best_multi_frame_calibration_transform);
+  float initial_score = sourceTargetDistance<PointType>(
+    sources, targets, initial_calibration_transform,
+    parameters_->calibration_eval_max_corr_distance_);
+  float final_score = sourceTargetDistance<PointType>(
+    sources, targets, best_multi_frame_calibration_transform,
+    parameters_->calibration_eval_max_corr_distance_);
 
   RCLCPP_INFO(
     rclcpp::get_logger(calibrator_name_),

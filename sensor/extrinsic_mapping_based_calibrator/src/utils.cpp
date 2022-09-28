@@ -102,10 +102,11 @@ Eigen::Matrix4f poseInterpolation(
 
 template <class PointType>
 float sourceTargetDistance(
-  pcl::registration::CorrespondenceEstimation<PointType, PointType> & estimator)
+  pcl::registration::CorrespondenceEstimation<PointType, PointType> & estimator,
+  float max_corr_distance)
 {
   pcl::Correspondences correspondences;
-  estimator.determineCorrespondences(correspondences);
+  estimator.determineCorrespondences(correspondences, max_corr_distance);
 
   int n_points = static_cast<int>(correspondences.size());
   float sum = 0;
@@ -121,7 +122,8 @@ float sourceTargetDistance(
 template <class PointType>
 float sourceTargetDistance(
   const typename pcl::PointCloud<PointType>::Ptr & source,
-  const typename pcl::PointCloud<PointType>::Ptr & target, const Eigen::Matrix4f & transform)
+  const typename pcl::PointCloud<PointType>::Ptr & target, const Eigen::Matrix4f & transform,
+  float max_corr_distance)
 {
   typename pcl::PointCloud<PointType>::Ptr source_aligned(new pcl::PointCloud<PointType>());
   transformPointCloud(*source, *source_aligned, transform);
@@ -130,14 +132,14 @@ float sourceTargetDistance(
   estimator.setInputSource(source_aligned);
   estimator.setInputTarget(target);
 
-  return sourceTargetDistance(estimator);
+  return sourceTargetDistance(estimator, max_corr_distance);
 }
 
 template <class PointType>
 float sourceTargetDistance(
   const std::vector<typename pcl::PointCloud<PointType>::Ptr> & sources,
   const std::vector<typename pcl::PointCloud<PointType>::Ptr> & targets,
-  const Eigen::Matrix4f & transform)
+  const Eigen::Matrix4f & transform, float max_corr_distance)
 {
   double distance = 0.0;
   int n = 0;
@@ -154,7 +156,7 @@ float sourceTargetDistance(
     estimator.setInputTarget(targets[i]);
 
     n += sources[i]->size();
-    distance += sources[i]->size() * sourceTargetDistance(estimator);
+    distance += sources[i]->size() * sourceTargetDistance(estimator, max_corr_distance);
   }
 
   return distance / n;
@@ -163,8 +165,8 @@ float sourceTargetDistance(
 template <class RegistratorPtrType, class PointType>
 void findBestTransform(
   const std::vector<Eigen::Matrix4f> & input_transforms,
-  std::vector<typename RegistratorPtrType::Ptr> & registrators, bool verbose,
-  Eigen::Matrix4f & best_transform, float & best_score)
+  std::vector<typename RegistratorPtrType::Ptr> & registrators, float eval_max_corr_distance,
+  bool verbose, Eigen::Matrix4f & best_transform, float & best_score)
 {
   std::vector<Eigen::Matrix4f> transforms = input_transforms;
   std::vector<std::string> transforms_names;
@@ -190,7 +192,8 @@ void findBestTransform(
       registrator->align(*aligned_cloud_ptr, transform);
 
       Eigen::Matrix4f candidate_transform = registrator->getFinalTransformation();
-      float candidate_score = registrator->getFitnessScore();
+      float candidate_score =
+        registrator->getFitnessScore(eval_max_corr_distance * eval_max_corr_distance);
       std::string candidate_name = registrator->getClassName() + " (" + transform_name + ")";
 
       if (verbose) {
@@ -253,30 +256,31 @@ template void transformPointcloud<PointcloudType>(
   typename PointcloudType::Ptr & pc_ptr, tf2_ros::Buffer & buffer);
 
 template float sourceTargetDistance<PointType>(
-  pcl::registration::CorrespondenceEstimation<PointType, PointType> & estimator);
+  pcl::registration::CorrespondenceEstimation<PointType, PointType> & estimator,
+  float max_corr_distance);
 
 template float sourceTargetDistance<PointType>(
   const pcl::PointCloud<PointType>::Ptr & source, const pcl::PointCloud<PointType>::Ptr & target,
-  const Eigen::Matrix4f & transform);
+  const Eigen::Matrix4f & transform, float max_corr_distance);
 
 template float sourceTargetDistance<PointType>(
   const std::vector<typename pcl::PointCloud<PointType>::Ptr> & sources,
   const std::vector<typename pcl::PointCloud<PointType>::Ptr> & targets,
-  const Eigen::Matrix4f & transform);
+  const Eigen::Matrix4f & transform, float max_corr_distance);
 
 template PointcloudType::Ptr cropPointCloud<PointcloudType>(
   const PointcloudType::Ptr & pointcloud, double max_range);
 
 template void findBestTransform<pcl::Registration<PointType, PointType>, PointType>(
   const std::vector<Eigen::Matrix4f> & input_transforms,
-  std::vector<pcl::Registration<PointType, PointType>::Ptr> & registrators, bool verbose,
-  Eigen::Matrix4f & best_transform, float & best_score);
+  std::vector<pcl::Registration<PointType, PointType>::Ptr> & registrators,
+  float eval_max_corr_distance, bool verbose, Eigen::Matrix4f & best_transform, float & best_score);
 
 template void
 findBestTransform<pcl::JointIterativeClosestPointExtended<PointType, PointType>, PointType>(
   const std::vector<Eigen::Matrix4f> & input_transforms,
   std::vector<pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr> & registrators,
-  bool verbose, Eigen::Matrix4f & best_transform, float & best_score);
+  float eval_max_corr_distance, bool verbose, Eigen::Matrix4f & best_transform, float & best_score);
 
 template void cropTargetPointcloud<PointType>(
   const pcl::PointCloud<PointType>::Ptr & initial_source_aligned_pc_ptr,

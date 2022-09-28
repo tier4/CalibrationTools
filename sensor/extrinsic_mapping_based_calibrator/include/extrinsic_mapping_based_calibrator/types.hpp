@@ -188,6 +188,7 @@ struct LidarCalibrationParameters
   double max_calibration_range_;
   double calibration_min_pca_eigenvalue_;
   double calibration_min_distance_between_frames_;
+  double calibration_eval_max_corr_distance_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_TYPES_HPP_

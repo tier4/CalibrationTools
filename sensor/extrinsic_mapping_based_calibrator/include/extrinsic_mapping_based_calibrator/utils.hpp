@@ -65,36 +65,41 @@ Eigen::Matrix4f poseInterpolation(
 /*!
  * Compute the source to distance pointcloud distance
  * @param[in] estimator Correspondence estimator between source and target
+ * @param[in] max_corr_distance Maximum distance allowed to be considered a correspondence [m]
  * @retval Source to distance pointcloud distance
  */
 template <class PointType>
 float sourceTargetDistance(
-  pcl::registration::CorrespondenceEstimation<PointType, PointType> & estimator);
+  pcl::registration::CorrespondenceEstimation<PointType, PointType> & estimator,
+  float max_corr_distance);
 
 /*!
  * Estimate the source->target distance
  * @param[in] source Source pointcloud
  * @param[in] target Target pointcloud
  * @param[in] transform Target to input frame transform
+ * @param[in] max_corr_distance Maximum distance allowed to be considered a correspondence [m]
  * @retval Source to distance pointcloud distance
  */
 template <class PointType>
 float sourceTargetDistance(
   const typename pcl::PointCloud<PointType>::Ptr & source,
-  const typename pcl::PointCloud<PointType>::Ptr & target, const Eigen::Matrix4f & transform);
+  const typename pcl::PointCloud<PointType>::Ptr & target, const Eigen::Matrix4f & transform,
+  float max_corr_distance);
 
 /*!
  * Estimate the source->target distance
  * @param[in] source Source pointcloud
  * @param[in] target Target pointcloud
  * @param[in] transform Target to input frame transform
+ * @param[in] max_corr_distance Maximum distance allowed to be considered a correspondence [m]
  * @retval Source to distance pointcloud distance
  */
 template <class PointType>
 float sourceTargetDistance(
   const std::vector<typename pcl::PointCloud<PointType>::Ptr> & sources,
   const std::vector<typename pcl::PointCloud<PointType>::Ptr> & targets,
-  const Eigen::Matrix4f & transform);
+  const Eigen::Matrix4f & transform, float max_corr_distance);
 
 /*!
  * Find the best transform between pointclouds using a set of registrators and a set
@@ -108,8 +113,8 @@ float sourceTargetDistance(
 template <class RegistratorPtrType, class PointType>
 void findBestTransform(
   const std::vector<Eigen::Matrix4f> & input_transforms,
-  std::vector<typename RegistratorPtrType::Ptr> & registrators, bool verbose,
-  Eigen::Matrix4f & best_transform, float & best_score);
+  std::vector<typename RegistratorPtrType::Ptr> & registrators, float eval_max_corr_distance,
+  bool verbose, Eigen::Matrix4f & best_transform, float & best_score);
 
 /*!
  * Crop a target pointcloud to the ranges of a sorce one

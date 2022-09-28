@@ -23,7 +23,7 @@
     /sensing/lidar/rear/outlier_filtered/pointcloud]" />
 
   <arg name="rviz" />
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/velodyne_top.rviz" />
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/xx1.rviz" />
 
 
   <arg name="sensors_src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensors_calibration.yaml" />

@@ -121,7 +121,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   // Calibration frames selection criteria and preprocessing parameters
   calibration_parameters_->max_allowed_interpolated_time_ =
-    this->declare_parameter<double>("max_allowed_interpolated_time", 0.03);
+    this->declare_parameter<double>("max_allowed_interpolated_time", 0.04);
   calibration_parameters_->max_allowed_interpolated_distance_ =
     this->declare_parameter<double>("max_allowed_interpolated_distance", 0.05);
   calibration_parameters_->max_allowed_interpolated_angle_ =
@@ -162,6 +162,8 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<double>("calibration_min_pca_eigenvalue", 0.25);
   calibration_parameters_->calibration_min_distance_between_frames_ =
     this->declare_parameter<double>("calibration_min_distance_between_frames", 5.0);
+  calibration_parameters_->calibration_eval_max_corr_distance_ =
+    this->declare_parameter<double>("calibration_eval_max_corr_distance", 0.1);
 
   // Calibration parameters
   calibration_parameters_->solver_iterations_ =
