@@ -15,12 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import os
 from pathlib import Path
 
 from bag_load_utils import *
+import numpy as np
 from plot_utils import *
+import rclpy
+from rclpy.node import Node
 
 PARAMS = {
     "twist_topic": "/deviation_evaluator/twist_estimator/twist_with_covariance",

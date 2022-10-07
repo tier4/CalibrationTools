@@ -24,8 +24,6 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 import numpy as np
-import rclpy
-from rclpy.node import Node
 from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 from scipy.spatial.transform import Rotation
@@ -192,8 +190,8 @@ class BagFileEvaluator:
             ekf_gt_pose_list,
         )
 
-        stddev_long_2d, stddev_short_2d = self.calc_long_short_radius(ekf_dr_pose_cov_list)
-        stddev_long_2d_gt, stddev_short_2d_gt = self.calc_long_short_radius(ekf_gt_pose_cov_list)
+        stddev_long_2d, stddev_short_2d = calc_long_short_radius(ekf_dr_pose_cov_list)
+        stddev_long_2d_gt, stddev_short_2d_gt = calc_long_short_radius(ekf_gt_pose_cov_list)
 
         self.timestamps = ekf_dr_pose_list[valid_idxs, 0]
         self.ndt_timestamps = pose_list[:, 0]
