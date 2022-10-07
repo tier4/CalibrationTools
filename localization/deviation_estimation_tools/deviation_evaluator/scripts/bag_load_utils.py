@@ -31,6 +31,7 @@ from rosidl_runtime_py.utilities import get_message
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
 
+
 def calc_stddev_rotated(P, theta):
     e_vec = np.array([[np.cos(theta)], [np.sin(theta)]])
     d = np.sqrt(np.dot(np.dot(e_vec.T, P), e_vec) / np.linalg.det(P))
@@ -166,16 +167,20 @@ class BagFileEvaluator:
         ekf_gt_pose_list, ekf_gt_pose_cov_list = bag_parser.get_messages(
             params["ekf_gt_odom_topic"]
         )
-        ekf_dr_pose_list, ekf_dr_pose_cov_list = bag_parser.get_messages(params["ekf_dr_odom_topic"])
+        ekf_dr_pose_list, ekf_dr_pose_cov_list = bag_parser.get_messages(
+            params["ekf_dr_odom_topic"]
+        )
 
         ekf_gt_pose_list_interpolated, valid_idxs = self.calc_interpolate(
-            ekf_gt_pose_list[:, 1:3], ekf_gt_pose_list[:, 0].tolist(), ekf_dr_pose_list[:, 0].tolist()
+            ekf_gt_pose_list[:, 1:3],
+            ekf_gt_pose_list[:, 0].tolist(),
+            ekf_dr_pose_list[:, 0].tolist(),
         )
         error_vec_xy, error_vec, error_vec_body_frame = self.calc_errors(
             ekf_dr_pose_list[:, 1:3],
             ekf_dr_pose_list[:, 4],
             ekf_dr_pose_cov_list[:, :2, :2],
-            ekf_gt_pose_list[:, 1:3]
+            ekf_gt_pose_list[:, 1:3],
         )
 
         stddev_frontal_2d, stddev_lateral_2d = self.calc_body_frame_length(
@@ -187,12 +192,8 @@ class BagFileEvaluator:
             ekf_gt_pose_list,
         )
 
-        stddev_long_2d, stddev_short_2d = self.calc_long_short_radius(
-            ekf_dr_pose_cov_list
-        )
-        stddev_long_2d_gt, stddev_short_2d_gt = self.calc_long_short_radius(
-            ekf_gt_pose_cov_list
-        )
+        stddev_long_2d, stddev_short_2d = self.calc_long_short_radius(ekf_dr_pose_cov_list)
+        stddev_long_2d_gt, stddev_short_2d_gt = self.calc_long_short_radius(ekf_gt_pose_cov_list)
 
         self.timestamps = ekf_dr_pose_list[valid_idxs, 0]
         self.ndt_timestamps = pose_list[:, 0]
@@ -208,7 +209,9 @@ class BagFileEvaluator:
 
         self.twist_list = bag_parser.get_messages(params["twist_topic"])
 
-        self.lower_bound_long_radius = np.max(self.expected_error_long_radius[50:]) / params["scale"]
+        self.lower_bound_long_radius = (
+            np.max(self.expected_error_long_radius[50:]) / params["scale"]
+        )
         self.lower_bound_lateral = np.max(self.expected_error_lateral[50:]) / params["scale"]
 
     def calc_interpolate(self, poses, timestamps, timestamps_target):
@@ -246,8 +249,7 @@ class BagFileEvaluator:
 
         # calculate body_frame error
         cos_val = (
-            error_vec_xy[:, 0] * np.cos(yaws)
-            + error_vec_xy[:, 1] * np.sin(yaws)
+            error_vec_xy[:, 0] * np.cos(yaws) + error_vec_xy[:, 1] * np.sin(yaws)
         ) / error_scalar
         sin_val = np.sqrt(1 - cos_val * cos_val)
         error_vec_body_frame = np.abs((error_scalar * np.array([cos_val, sin_val])).T)
@@ -276,16 +278,13 @@ class BagFileEvaluator:
         return stddev_long_2d, stddev_short_2d
 
     def calc_roc_curve_lateral(self, a_th):
-        recall_list = calc_roc_curve(
-            a_th, self.error_lateral, self.expected_error_lateral
-        )
+        recall_list = calc_roc_curve(a_th, self.error_lateral, self.expected_error_lateral)
         return recall_list
 
     def calc_roc_curve_long_radius(self, a_th):
-        recall_list = calc_roc_curve(
-            a_th, self.error_long_radius, self.expected_error_long_radius
-        )
+        recall_list = calc_roc_curve(a_th, self.error_long_radius, self.expected_error_long_radius)
         return recall_list
+
 
 def calc_roc_curve(threshold_error, error, stddev):
     a = error
@@ -301,6 +300,7 @@ def calc_roc_curve(threshold_error, error, stddev):
         recall_list.append([threshold_stddev, recall])
     return np.array(recall_list)
 
+
 # ToDo: Calculation algorithm for threshold lower bound should be updated. Currently the
 # threshold lower bound is determined using EKF output based on default parameter in
 # Autoware.
@@ -314,7 +314,7 @@ def calc_roc_curve(threshold_error, error, stddev):
 #         if timestamp - ndt_timestamps[idx_ndt - 3] < 4.0 / ndt_freq:
 #             thres_lower_bound = max(thres_lower_bound, stddev_xy_gt[idx])
 #     return thres_lower_bound
-  
+
 
 def get_duration_to_error(timestamps, ndt_timestamps, error_lateral, ndt_freq=10):
     duration_to_error = []

@@ -19,8 +19,8 @@ import argparse
 import os
 from pathlib import Path
 
-from plot_utils import *
 from bag_load_utils import *
+from plot_utils import *
 
 PARAMS = {
     "twist_topic": "/deviation_evaluator/twist_estimator/twist_with_covariance",
@@ -28,8 +28,9 @@ PARAMS = {
     "ekf_gt_odom_topic": "/deviation_evaluator/ground_truth/ekf_localizer/kinematic_state",
     "ekf_dr_odom_topic": "/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic_state",
     "scale": 3,
-    "ndt_freq": 10
+    "ndt_freq": 10,
 }
+
 
 class DeviationEvaluationVisualizer(Node):
     def __init__(self):
@@ -45,36 +46,43 @@ class DeviationEvaluationVisualizer(Node):
 
         os.makedirs(output_dir / "body_frame", exist_ok=True)
         for thres in np.arange(0.1, 0.4, 0.05):
-            plot_thresholds(bag_analyzer.calc_roc_curve_lateral(thres),
-                            bag_analyzer.lower_bound_lateral,
-                            thres,
-                            PARAMS["scale"],
-                            save_path=output_dir / "body_frame/thres2recall_{:.2f}.png".format(thres),)
+            plot_thresholds(
+                bag_analyzer.calc_roc_curve_lateral(thres),
+                bag_analyzer.lower_bound_lateral,
+                thres,
+                PARAMS["scale"],
+                save_path=output_dir / "body_frame/thres2recall_{:.2f}.png".format(thres),
+            )
 
         os.makedirs(output_dir / "long_radius", exist_ok=True)
         for thres in np.arange(0.1, 1.0, 0.05):
-            plot_thresholds(bag_analyzer.calc_roc_curve_long_radius(thres),
-                            bag_analyzer.lower_bound_long_radius,
-                            thres,
-                            PARAMS["scale"],
-                            save_path=output_dir / "long_radius/thres2recall_{:.2f}.png".format(thres))
+            plot_thresholds(
+                bag_analyzer.calc_roc_curve_long_radius(thres),
+                bag_analyzer.lower_bound_long_radius,
+                thres,
+                PARAMS["scale"],
+                save_path=output_dir / "long_radius/thres2recall_{:.2f}.png".format(thres),
+            )
 
         # ToDo: This causes error when cut=0
-        duration_to_error = get_duration_to_error(bag_analyzer.timestamps,
-                                                  bag_analyzer.ndt_timestamps,
-                                                  bag_analyzer.error_lateral)
-        plot_duration_to_error(duration_to_error, save_path=output_dir / "body_frame/duration2error.png")
+        duration_to_error = get_duration_to_error(
+            bag_analyzer.timestamps, bag_analyzer.ndt_timestamps, bag_analyzer.error_lateral
+        )
+        plot_duration_to_error(
+            duration_to_error, save_path=output_dir / "body_frame/duration2error.png"
+        )
 
-
-        fig = plot_bag_compare(output_dir / "deviation_evaluator.png",
-                               bag_analyzer.timestamps,
-                               bag_analyzer.error_long_radius,
-                               bag_analyzer.expected_error_long_radius,
-                               bag_analyzer.error_lateral,
-                               bag_analyzer.expected_error_lateral,
-                               bag_analyzer.error_frontal,
-                               bag_analyzer.expected_error_frontal,
-                               bag_analyzer.twist_list)
+        fig = plot_bag_compare(
+            output_dir / "deviation_evaluator.png",
+            bag_analyzer.timestamps,
+            bag_analyzer.error_long_radius,
+            bag_analyzer.expected_error_long_radius,
+            bag_analyzer.error_lateral,
+            bag_analyzer.expected_error_lateral,
+            bag_analyzer.error_frontal,
+            bag_analyzer.expected_error_frontal,
+            bag_analyzer.twist_list,
+        )
         plt.show()
         print("Visualization completed! Press ctrl-C to exit.")
 
