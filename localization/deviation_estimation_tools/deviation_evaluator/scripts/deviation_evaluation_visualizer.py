@@ -44,7 +44,6 @@ class DeviationEvaluationVisualizer(Node):
 
         bag_analyzer = BagFileEvaluator(str(bagfile), PARAMS)
 
-
         os.makedirs(output_dir / "body_frame", exist_ok=True)
         for thres in np.arange(0.1, 0.4, 0.05):
             plot_thresholds(

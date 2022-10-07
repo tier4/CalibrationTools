@@ -171,15 +171,10 @@ class BagFileEvaluator:
             params["ekf_dr_odom_topic"]
         )
 
-<<<<<<< HEAD
         ekf_gt_pose_list_interpolated, valid_idxs = calc_interpolate(
-            ekf_gt_pose_list[:, 1:3], ekf_gt_pose_list[:, 0].tolist(), ekf_dr_pose_list[:, 0].tolist()
-=======
-        ekf_gt_pose_list_interpolated, valid_idxs = self.calc_interpolate(
             ekf_gt_pose_list[:, 1:3],
             ekf_gt_pose_list[:, 0].tolist(),
             ekf_dr_pose_list[:, 0].tolist(),
->>>>>>> 5401bc64caf3522390b6d1552c97d685b62678d1
         )
         error_vec_xy, error_vec, error_vec_body_frame = calc_errors(
             ekf_dr_pose_list[:, 1:3],
@@ -197,17 +192,8 @@ class BagFileEvaluator:
             ekf_gt_pose_list,
         )
 
-<<<<<<< HEAD
-        stddev_long_2d, stddev_short_2d = calc_long_short_radius(
-            ekf_dr_pose_cov_list
-        )
-        stddev_long_2d_gt, stddev_short_2d_gt = calc_long_short_radius(
-            ekf_gt_pose_cov_list
-        )
-=======
         stddev_long_2d, stddev_short_2d = self.calc_long_short_radius(ekf_dr_pose_cov_list)
         stddev_long_2d_gt, stddev_short_2d_gt = self.calc_long_short_radius(ekf_gt_pose_cov_list)
->>>>>>> 5401bc64caf3522390b6d1552c97d685b62678d1
 
         self.timestamps = ekf_dr_pose_list[valid_idxs, 0]
         self.ndt_timestamps = pose_list[:, 0]
@@ -223,78 +209,8 @@ class BagFileEvaluator:
 
         self.twist_list = bag_parser.get_messages(params["twist_topic"])
 
-<<<<<<< HEAD
         self.lower_bound_long_radius = np.max(stddev_long_2d_gt[50:]) * params["scale"]
         self.lower_bound_lateral = np.max(stddev_lateral_2d_gt[50:]) * params["scale"]
-=======
-        self.lower_bound_long_radius = (
-            np.max(self.expected_error_long_radius[50:]) / params["scale"]
-        )
-        self.lower_bound_lateral = np.max(self.expected_error_lateral[50:]) / params["scale"]
-
-    def calc_interpolate(self, poses, timestamps, timestamps_target):
-        poses_interpolated = []
-
-        for i in range(len(timestamps)):
-            t = timestamps[i]
-            idx = bisect.bisect_left(timestamps_target, t, 0, -1)
-            if idx < 0:
-                interpolated = poses[0]
-            elif idx >= len(timestamps_target):
-                interpolated = poses[-1]
-            else:
-                t0 = timestamps_target[idx - 1]
-                t1 = timestamps_target[idx]
-                x0 = poses[idx - 1]
-                x1 = poses[idx]
-
-                interpolated = ((t1 - t) * x0 + (t - t0) * x1) / (t1 - t0)
-            poses_interpolated.append([t, interpolated[0], interpolated[1]])
-        poses_interpolated = np.array(poses_interpolated)
-
-        valid_idxs = np.array(timestamps) < min(timestamps[-1], timestamps_target[-1]) * (
-            np.array(timestamps) > max(timestamps[0], timestamps_target[0])
-        )
-        return poses_interpolated, valid_idxs
-
-    def calc_errors(self, poses_xy, yaws, covs_xy, poses_target_xy):
-        error_vec_xy = poses_target_xy - poses_xy
-        error_scalar = np.linalg.norm(poses_target_xy - poses_xy, axis=1)
-
-        # calculate error along long & short axis of confidence ellipse
-        long_axis_direction = np.linalg.eig(covs_xy)[1][:, :, 1]
-        error_vec = np.abs((error_scalar * long_axis_direction.T).T)
-
-        # calculate body_frame error
-        cos_val = (
-            error_vec_xy[:, 0] * np.cos(yaws) + error_vec_xy[:, 1] * np.sin(yaws)
-        ) / error_scalar
-        sin_val = np.sqrt(1 - cos_val * cos_val)
-        error_vec_body_frame = np.abs((error_scalar * np.array([cos_val, sin_val])).T)
-        return error_vec_xy, error_vec, error_vec_body_frame
-
-    def calc_body_frame_length(self, cov_list, pose_list):
-        inv_2d = np.linalg.inv(cov_list[:, :2, :2])
-        stddev_frontal_2d = []
-        stddev_lateral_2d = []
-
-        for i in range(len(cov_list)):
-            cov_matrix = inv_2d[i]
-            yaw = pose_list[i, 4]
-            stddev_frontal_2d.append(calc_stddev_rotated(cov_matrix, yaw - np.pi / 2))
-            stddev_lateral_2d.append(calc_stddev_rotated(cov_matrix, yaw))
-
-        stddev_frontal_2d = np.array(stddev_frontal_2d)
-        stddev_lateral_2d = np.array(stddev_lateral_2d)
-        return stddev_frontal_2d, stddev_lateral_2d
-
-    def calc_long_short_radius(self, cov_list):
-        cov_eig_val_list = np.linalg.eig(cov_list[:, :2, :2])[0]
-        cov_eig_val_list[cov_eig_val_list < 0] = 1e-5
-        stddev_long_2d = np.sqrt(np.max(cov_eig_val_list, axis=1))
-        stddev_short_2d = np.sqrt(np.min(cov_eig_val_list, axis=1))
-        return stddev_long_2d, stddev_short_2d
->>>>>>> 5401bc64caf3522390b6d1552c97d685b62678d1
 
     def calc_roc_curve_lateral(self, a_th):
         recall_list = calc_roc_curve(a_th, self.error_lateral, self.expected_error_lateral)
@@ -304,7 +220,7 @@ class BagFileEvaluator:
         recall_list = calc_roc_curve(a_th, self.error_long_radius, self.expected_error_long_radius)
         return recall_list
 
-<<<<<<< HEAD
+
 def calc_interpolate(poses, timestamps, timestamps_target):
     poses_interpolated = []
 
@@ -330,6 +246,7 @@ def calc_interpolate(poses, timestamps, timestamps_target):
     )
     return poses_interpolated, valid_idxs
 
+
 def calc_errors(poses_xy, yaws, covs_xy, poses_target_xy):
     error_vec_xy = poses_target_xy - poses_xy
     error_scalar = np.linalg.norm(poses_target_xy - poses_xy, axis=1)
@@ -339,13 +256,11 @@ def calc_errors(poses_xy, yaws, covs_xy, poses_target_xy):
     error_vec = np.abs((error_scalar * long_axis_direction.T).T)
 
     # calculate body_frame error
-    cos_val = (
-        error_vec_xy[:, 0] * np.cos(yaws)
-        + error_vec_xy[:, 1] * np.sin(yaws)
-    ) / error_scalar
+    cos_val = (error_vec_xy[:, 0] * np.cos(yaws) + error_vec_xy[:, 1] * np.sin(yaws)) / error_scalar
     sin_val = np.sqrt(1 - cos_val * cos_val)
     error_vec_body_frame = np.abs((error_scalar * np.array([cos_val, sin_val])).T)
     return error_vec_xy, error_vec, error_vec_body_frame
+
 
 def calc_body_frame_length(cov_list, pose_list):
     inv_2d = np.linalg.inv(cov_list[:, :2, :2])
@@ -362,14 +277,14 @@ def calc_body_frame_length(cov_list, pose_list):
     stddev_lateral_2d = np.array(stddev_lateral_2d)
     return stddev_frontal_2d, stddev_lateral_2d
 
+
 def calc_long_short_radius(cov_list):
     cov_eig_val_list = np.linalg.eig(cov_list[:, :2, :2])[0]
     cov_eig_val_list[cov_eig_val_list < 0] = 1e-5
     stddev_long_2d = np.sqrt(np.max(cov_eig_val_list, axis=1))
     stddev_short_2d = np.sqrt(np.min(cov_eig_val_list, axis=1))
     return stddev_long_2d, stddev_short_2d
-=======
->>>>>>> 5401bc64caf3522390b6d1552c97d685b62678d1
+
 
 def calc_roc_curve(threshold_error, error, stddev):
     a = error
@@ -385,25 +300,7 @@ def calc_roc_curve(threshold_error, error, stddev):
         recall_list.append([threshold_stddev, recall])
     return np.array(recall_list)
 
-<<<<<<< HEAD
-=======
 
-# ToDo: Calculation algorithm for threshold lower bound should be updated. Currently the
-# threshold lower bound is determined using EKF output based on default parameter in
-# Autoware.
-# def calc_thres_lower_bound(stddev_xy_gt, gt_timestamps, ndt_timestamps, ndt_freq=10):
-#     thres_lower_bound = 0
-#     for idx in range(len(stddev_xy_gt)):
-#         if idx < 100:  # ignore first 10[s]
-#             continue
-#         timestamp = gt_timestamps[idx]
-#         idx_ndt = bisect.bisect_left(ndt_timestamps, timestamp)
-#         if timestamp - ndt_timestamps[idx_ndt - 3] < 4.0 / ndt_freq:
-#             thres_lower_bound = max(thres_lower_bound, stddev_xy_gt[idx])
-#     return thres_lower_bound
-
-
->>>>>>> 5401bc64caf3522390b6d1552c97d685b62678d1
 def get_duration_to_error(timestamps, ndt_timestamps, error_lateral, ndt_freq=10):
     duration_to_error = []
     for timestamp, error in zip(timestamps, error_lateral):
