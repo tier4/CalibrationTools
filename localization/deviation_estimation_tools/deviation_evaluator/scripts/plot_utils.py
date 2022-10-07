@@ -18,6 +18,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def plot_thresholds(recall_list, lower_bound, threshold, scale, save_path=None):
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, xlabel="threshold [m]", ylabel="recall")
@@ -39,6 +40,7 @@ def plot_thresholds(recall_list, lower_bound, threshold, scale, save_path=None):
         plt.savefig(save_path)
     plt.close()
 
+
 def plot_duration_to_error(duration_to_error, save_path=None):
     if len(duration_to_error) > 0:
         fig = plt.figure(figsize=(8, 6))
@@ -52,15 +54,18 @@ def plot_duration_to_error(duration_to_error, save_path=None):
     else:
         print("NDT is not cut")
 
-def plot_bag_compare(save_path,
-                     timestamp,
-                     error_long_radius,
-                     expected_error_long_radius,
-                     error_lateral,
-                     expected_error_lateral,
-                     error_frontal,
-                     expected_error_frontal,
-                     twist_list):
+
+def plot_bag_compare(
+    save_path,
+    timestamp,
+    error_long_radius,
+    expected_error_long_radius,
+    error_lateral,
+    expected_error_lateral,
+    error_frontal,
+    expected_error_frontal,
+    twist_list,
+):
 
     lateral_warning_timestamps = timestamp[error_lateral > expected_error_lateral]
     frontal_warning_timestamps = timestamp[error_frontal > expected_error_frontal]
@@ -152,9 +157,7 @@ def plot_bag_compare(save_path,
 
     # Plot velocity and yaw_rate
     ax4_vel = fig.add_subplot(414, xlabel="time [s]", ylabel="velocity [m/s]")
-    ax4_vel.plot(
-        timestamp_twist, velocity, label=r"velocity (left axis)", color="c"
-    )
+    ax4_vel.plot(timestamp_twist, velocity, label=r"velocity (left axis)", color="c")
     ax4_yaw_rate = ax4_vel.twinx()
     ax4_yaw_rate.plot(
         timestamp_twist,
