@@ -178,7 +178,7 @@ class BagFileEvaluator:
             ekf_dr_pose_list[:, 1:3],
             ekf_dr_pose_list[:, 4],
             ekf_dr_pose_cov_list[:, :2, :2],
-            ekf_gt_pose_list[:, 1:3],
+            ekf_gt_pose_list_interpolated[:, 1:3],
         )
 
         stddev_frontal_2d, stddev_lateral_2d = calc_body_frame_length(
@@ -222,16 +222,16 @@ class BagFileEvaluator:
 def calc_interpolate(poses, timestamps, timestamps_target):
     poses_interpolated = []
 
-    for i in range(len(timestamps)):
-        t = timestamps[i]
-        idx = bisect.bisect_left(timestamps_target, t, 0, -1)
+    for i in range(len(timestamps_target)):
+        t = timestamps_target[i]
+        idx = bisect.bisect_left(timestamps, t, 0, -1)
         if idx < 0:
             interpolated = poses[0]
-        elif idx >= len(timestamps_target):
+        elif idx >= len(timestamps):
             interpolated = poses[-1]
         else:
-            t0 = timestamps_target[idx - 1]
-            t1 = timestamps_target[idx]
+            t0 = timestamps[idx - 1]
+            t1 = timestamps[idx]
             x0 = poses[idx - 1]
             x1 = poses[idx]
 
@@ -239,8 +239,8 @@ def calc_interpolate(poses, timestamps, timestamps_target):
         poses_interpolated.append([t, interpolated[0], interpolated[1]])
     poses_interpolated = np.array(poses_interpolated)
 
-    valid_idxs = np.array(timestamps) < min(timestamps[-1], timestamps_target[-1]) * (
-        np.array(timestamps) > max(timestamps[0], timestamps_target[0])
+    valid_idxs = np.array(timestamps_target) < min(timestamps[-1], timestamps_target[-1]) * (
+        np.array(timestamps_target) > max(timestamps[0], timestamps_target[0])
     )
     return poses_interpolated, valid_idxs
 
