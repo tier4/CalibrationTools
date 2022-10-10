@@ -16,13 +16,14 @@
 # limitations under the License.
 
 import os
-from pathlib import Path
-
-from bag_load_utils import *
 import numpy as np
+from pathlib import Path
+from bag_load_utils import *
 from plot_utils import *
+
 import rclpy
 from rclpy.node import Node
+
 
 PARAMS = {
     "twist_topic": "/deviation_evaluator/twist_estimator/twist_with_covariance",
@@ -44,13 +45,13 @@ class DeviationEvaluationVisualizer(Node):
         bagfile = Path(save_dir) / "ros2bag/ros2bag_0.db3"
         output_dir = Path(save_dir)
 
-        bag_analyzer = BagFileEvaluator(str(bagfile), PARAMS)
+        bag_file_evaluator = BagFileEvaluator(str(bagfile), PARAMS)
 
         os.makedirs(output_dir / "body_frame", exist_ok=True)
         for thres in np.arange(0.1, 0.4, 0.05):
             plot_thresholds(
-                bag_analyzer.calc_roc_curve_lateral(thres),
-                bag_analyzer.lower_bound_lateral,
+                bag_file_evaluator.calc_roc_curve_lateral(thres),
+                bag_file_evaluator.results.lateral.lower_bound,
                 thres,
                 PARAMS["scale"],
                 save_path=output_dir / "body_frame/thres2recall_{:.2f}.png".format(thres),
@@ -59,31 +60,16 @@ class DeviationEvaluationVisualizer(Node):
         os.makedirs(output_dir / "long_radius", exist_ok=True)
         for thres in np.arange(0.1, 1.0, 0.05):
             plot_thresholds(
-                bag_analyzer.calc_roc_curve_long_radius(thres),
-                bag_analyzer.lower_bound_long_radius,
+                bag_file_evaluator.calc_roc_curve_long_radius(thres),
+                bag_file_evaluator.results.long_radius.lower_bound,
                 thres,
                 PARAMS["scale"],
                 save_path=output_dir / "long_radius/thres2recall_{:.2f}.png".format(thres),
             )
 
-        # ToDo: This causes error when cut=0
-        duration_to_error = get_duration_to_error(
-            bag_analyzer.timestamps, bag_analyzer.ndt_timestamps, bag_analyzer.error_lateral
-        )
-        plot_duration_to_error(
-            duration_to_error, save_path=output_dir / "body_frame/duration2error.png"
-        )
-
         fig = plot_bag_compare(
             output_dir / "deviation_evaluator.png",
-            bag_analyzer.timestamps,
-            bag_analyzer.error_long_radius,
-            bag_analyzer.expected_error_long_radius,
-            bag_analyzer.error_lateral,
-            bag_analyzer.expected_error_lateral,
-            bag_analyzer.error_frontal,
-            bag_analyzer.expected_error_frontal,
-            bag_analyzer.twist_list,
+            bag_file_evaluator.results,
         )
         plt.show()
         print("Visualization completed! Press ctrl-C to exit.")

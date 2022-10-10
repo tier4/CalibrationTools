@@ -18,17 +18,33 @@
 
 import bisect
 import sqlite3
-from threading import Thread
+import dataclasses
+import numpy as np
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
-import numpy as np
 from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
 
+
+@dataclasses.dataclass
+class ErrorResults:
+    direction_name: str
+    error: np.ndarray
+    expected_error: np.ndarray
+    lower_bound: float = None
+
+@dataclasses.dataclass
+class DeviationEvaluatorResults:
+    long_radius: ErrorResults
+    lateral: ErrorResults
+    longitudinal: ErrorResults
+    timestamps: np.ndarray
+    ndt_timestamps: np.ndarray
+    twist_list: np.ndarray
 
 def calc_stddev_rotated(P, theta):
     e_vec = np.array([[np.cos(theta)], [np.sin(theta)]])
@@ -181,11 +197,11 @@ class BagFileEvaluator:
             ekf_gt_pose_list_interpolated[:, 1:3],
         )
 
-        stddev_frontal_2d, stddev_lateral_2d = calc_body_frame_length(
+        stddev_longitudinal_2d, stddev_lateral_2d = calc_body_frame_length(
             ekf_dr_pose_cov_list,
             ekf_dr_pose_list,
         )
-        stddev_frontal_2d_gt, stddev_lateral_2d_gt = calc_body_frame_length(
+        stddev_longitudinal_2d_gt, stddev_lateral_2d_gt = calc_body_frame_length(
             ekf_gt_pose_cov_list,
             ekf_gt_pose_list,
         )
@@ -193,29 +209,39 @@ class BagFileEvaluator:
         stddev_long_2d, stddev_short_2d = calc_long_short_radius(ekf_dr_pose_cov_list)
         stddev_long_2d_gt, stddev_short_2d_gt = calc_long_short_radius(ekf_gt_pose_cov_list)
 
-        self.timestamps = ekf_dr_pose_list[valid_idxs, 0]
-        self.ndt_timestamps = pose_list[:, 0]
+        long_radius_results = ErrorResults(
+            "long_radius",
+            np.linalg.norm(error_vec, axis=1)[valid_idxs],
+            stddev_long_2d[valid_idxs] * params["scale"],
+            np.max(stddev_long_2d_gt[50:]) * params["scale"]
+        )
+        lateral_results = ErrorResults(
+            "lateral",
+            error_vec_body_frame[valid_idxs, 1],
+            stddev_lateral_2d[valid_idxs] * params["scale"],
+            np.max(stddev_lateral_2d_gt[50:]) * params["scale"]
+        )
+        longitudinal_results = ErrorResults(
+            "longitudinal",
+            error_vec_body_frame[valid_idxs, 0],
+            stddev_longitudinal_2d[valid_idxs] * params["scale"]
+        )
 
-        self.error_long_radius = np.linalg.norm(error_vec, axis=1)[valid_idxs]
-        self.expected_error_long_radius = stddev_long_2d[valid_idxs] * params["scale"]
+        self.results = DeviationEvaluatorResults(
+            long_radius_results,
+            lateral_results,
+            longitudinal_results,
+            ekf_dr_pose_list[valid_idxs, 0],
+            pose_list[:, 0],
+            bag_parser.get_messages(params["twist_topic"])
+        )
 
-        self.error_lateral = error_vec_body_frame[valid_idxs, 1]
-        self.expected_error_lateral = stddev_lateral_2d[valid_idxs] * params["scale"]
-
-        self.error_frontal = error_vec_body_frame[valid_idxs, 0]
-        self.expected_error_frontal = stddev_frontal_2d[valid_idxs] * params["scale"]
-
-        self.twist_list = bag_parser.get_messages(params["twist_topic"])
-
-        self.lower_bound_long_radius = np.max(stddev_long_2d_gt[50:]) * params["scale"]
-        self.lower_bound_lateral = np.max(stddev_lateral_2d_gt[50:]) * params["scale"]
-
-    def calc_roc_curve_lateral(self, a_th):
-        recall_list = calc_roc_curve(a_th, self.error_lateral, self.expected_error_lateral)
+    def calc_roc_curve_lateral(self, threshold):
+        recall_list = calc_roc_curve(threshold, self.results.lateral)
         return recall_list
 
-    def calc_roc_curve_long_radius(self, a_th):
-        recall_list = calc_roc_curve(a_th, self.error_long_radius, self.expected_error_long_radius)
+    def calc_roc_curve_long_radius(self, threshold):
+        recall_list = calc_roc_curve(threshold, self.results.long_radius)
         return recall_list
 
 
@@ -262,18 +288,18 @@ def calc_errors(poses_xy, yaws, covs_xy, poses_target_xy):
 
 def calc_body_frame_length(cov_list, pose_list):
     inv_2d = np.linalg.inv(cov_list[:, :2, :2])
-    stddev_frontal_2d = []
+    stddev_longitudinal_2d = []
     stddev_lateral_2d = []
 
     for i in range(len(cov_list)):
         cov_matrix = inv_2d[i]
         yaw = pose_list[i, 4]
-        stddev_frontal_2d.append(calc_stddev_rotated(cov_matrix, yaw - np.pi / 2))
+        stddev_longitudinal_2d.append(calc_stddev_rotated(cov_matrix, yaw - np.pi / 2))
         stddev_lateral_2d.append(calc_stddev_rotated(cov_matrix, yaw))
 
-    stddev_frontal_2d = np.array(stddev_frontal_2d)
+    stddev_longitudinal_2d = np.array(stddev_longitudinal_2d)
     stddev_lateral_2d = np.array(stddev_lateral_2d)
-    return stddev_frontal_2d, stddev_lateral_2d
+    return stddev_longitudinal_2d, stddev_lateral_2d
 
 
 def calc_long_short_radius(cov_list):
@@ -284,17 +310,16 @@ def calc_long_short_radius(cov_list):
     return stddev_long_2d, stddev_short_2d
 
 
-def calc_roc_curve(threshold_error, error, stddev):
-    a = error
-    b = stddev
-
-    is_error_large = error > threshold_error
+def calc_roc_curve(threshold_error, error_results: ErrorResults):
+    is_error_positive = error_results.error > threshold_error
+    if not is_error_positive.any():
+        return None
 
     recall_list = []
     threshold_stddev_list = np.arange(0, 0.8, 0.02)
     for threshold_stddev in threshold_stddev_list:
-        is_stddev_large = stddev > threshold_stddev
-        recall = np.sum(is_error_large & is_stddev_large) * 1.0 / np.sum(is_error_large)
+        is_stddev_large = error_results.expected_error > threshold_stddev
+        recall = np.sum(is_error_positive & is_stddev_large) * 1.0 / np.sum(is_error_positive)
         recall_list.append([threshold_stddev, recall])
     return np.array(recall_list)
 
