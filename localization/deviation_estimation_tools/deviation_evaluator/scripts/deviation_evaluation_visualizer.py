@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 import os
 from pathlib import Path
 from threading import Thread
-from enum import Enum
 
 from bag_load_utils import *
 import numpy as np
@@ -35,15 +35,19 @@ PARAMS = {
     "ndt_freq": 10,
 }
 
+
 class ThresholdState(Enum):
     GOOD = 0
     TOO_SMALL = 1
     TOO_LARGE = 2
     UNDETERMINABLE = 3
 
+
 def validate_threshold(recall: float, threshold: float, lowerbound: float) -> ThresholdState:
     if threshold < lowerbound:
-        print("Threshold is too small for this vehicle. Consider increasing the threshold and tolerate larger localization error.")
+        print(
+            "Threshold is too small for this vehicle. Consider increasing the threshold and tolerate larger localization error."
+        )
         return ThresholdState.TOO_SMALL
     elif recall == np.inf:
         print("No error larger than {:.3f} [m] observed. Increase cut duration.".format(threshold))
@@ -52,8 +56,11 @@ def validate_threshold(recall: float, threshold: float, lowerbound: float) -> Th
         print("Valid threhsold!")
         return ThresholdState.GOOD
     else:
-        print("Covariance seems to be too optimistic. Consider increasing the covariances of the dead reckoning sensors.")
+        print(
+            "Covariance seems to be too optimistic. Consider increasing the covariances of the dead reckoning sensors."
+        )
         return ThresholdState.TOO_LARGE
+
 
 class DeviationEvaluationVisualizer(Node):
     def __init__(self):
@@ -63,8 +70,14 @@ class DeviationEvaluationVisualizer(Node):
         self.declare_parameter("warn_ellipse_size_lateral_direction", 0.0)
 
         save_dir = self.get_parameter("save_dir").get_parameter_value().string_value
-        threshold_long_radius = self.get_parameter("warn_ellipse_size").get_parameter_value().double_value
-        threshold_lateral = self.get_parameter("warn_ellipse_size_lateral_direction").get_parameter_value().double_value
+        threshold_long_radius = (
+            self.get_parameter("warn_ellipse_size").get_parameter_value().double_value
+        )
+        threshold_lateral = (
+            self.get_parameter("warn_ellipse_size_lateral_direction")
+            .get_parameter_value()
+            .double_value
+        )
 
         bagfile = Path(save_dir) / "ros2bag/ros2bag_0.db3"
         output_dir = Path(save_dir)
@@ -72,10 +85,16 @@ class DeviationEvaluationVisualizer(Node):
         bag_file_evaluator = BagFileEvaluator(str(bagfile), PARAMS)
 
         recall_lateral = bag_file_evaluator.calc_recall_lateral(threshold_lateral)
-        threshold_state_lateral = validate_threshold(recall_lateral, threshold_lateral, bag_file_evaluator.results.lateral.lower_bound)
+        threshold_state_lateral = validate_threshold(
+            recall_lateral, threshold_lateral, bag_file_evaluator.results.lateral.lower_bound
+        )
 
         recall_long_radius = bag_file_evaluator.calc_recall_long_radius(threshold_long_radius)
-        threshold_state_long_radius = validate_threshold(recall_long_radius, threshold_long_radius, bag_file_evaluator.results.long_radius.lower_bound)
+        threshold_state_long_radius = validate_threshold(
+            recall_long_radius,
+            threshold_long_radius,
+            bag_file_evaluator.results.long_radius.lower_bound,
+        )
 
         fig = plot_bag_compare(
             output_dir / "deviation_evaluator.png",

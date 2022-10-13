@@ -54,10 +54,11 @@ private:
   using PoseStamped = geometry_msgs::msg::PoseStamped;
   using Odometry = nav_msgs::msg::Odometry;
 
-  struct Errors {
+  struct Errors
+  {
     double lateral;
     double long_radius;
-    Errors(): lateral(0), long_radius(0) {};
+    Errors() : lateral(0), long_radius(0){};
   };
 
 public:
@@ -71,8 +72,7 @@ private:
   rclcpp::Publisher<TwistWithCovarianceStamped>::SharedPtr pub_twist_with_cov_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
-  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr
-    pub_init_pose_with_cov_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_init_pose_with_cov_;
 
   bool show_debug_info_;
   std::string save_dir_;
@@ -94,14 +94,12 @@ private:
   /**
    * @brief set twistWithCovariance measurement
    */
-  void callbackTwistWithCovariance(
-    const TwistWithCovarianceStamped::SharedPtr msg);
+  void callbackTwistWithCovariance(const TwistWithCovarianceStamped::SharedPtr msg);
 
   /**
    * @brief set NDT poseWithCovariance measurement
    */
-  void callbackNDTPoseWithCovariance(
-    const PoseWithCovarianceStamped::SharedPtr msg);
+  void callbackNDTPoseWithCovariance(const PoseWithCovarianceStamped::SharedPtr msg);
 
   /**
    * @brief set NDT poseWithCovariance measurement

@@ -9,4 +9,3 @@
     # Dead Reckoning configuration
     wait_duration: 2.0 # [s]
     wait_scale: 1.5
-
