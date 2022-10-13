@@ -22,7 +22,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <algorithm>
 
 // clang-format off
 #define PRINT_MAT(X) std::cout << #X << ":\n" << X << std::endl << std::endl
