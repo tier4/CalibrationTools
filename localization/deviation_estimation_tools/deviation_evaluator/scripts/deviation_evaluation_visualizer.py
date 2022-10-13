@@ -46,7 +46,7 @@ class ThresholdState(Enum):
 def validate_threshold(recall: float, threshold: float, lowerbound: float) -> ThresholdState:
     if threshold < lowerbound:
         print(
-            "Threshold is too small for this vehicle. Consider increasing the threshold and tolerate larger localization error."
+            "Threshold is too small for this vehicle. lowerbound: {:.3f} [m]".format(lowerbound)
         )
         return ThresholdState.TOO_SMALL
     elif recall == np.inf:

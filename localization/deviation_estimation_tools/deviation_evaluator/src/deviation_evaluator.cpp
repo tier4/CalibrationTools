@@ -110,8 +110,8 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   if (!has_published_initial_pose_) {
     PoseWithCovarianceStamped pose_with_cov;
     pose_with_cov = *msg;
-    pose_with_cov.pose.covariance[0] = 0.01;
-    pose_with_cov.pose.covariance[1 * 6 + 1] = 0.01;
+    pose_with_cov.pose.covariance[0] = 0.001;
+    pose_with_cov.pose.covariance[1 * 6 + 1] = 0.001;
     pose_with_cov.pose.covariance[2 * 6 + 2] = 0.01;
     pose_with_cov.pose.covariance[3 * 6 + 3] = 0.01;
     pose_with_cov.pose.covariance[4 * 6 + 4] = 0.01;
