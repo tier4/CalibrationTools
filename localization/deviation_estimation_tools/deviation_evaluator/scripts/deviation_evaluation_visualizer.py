@@ -33,6 +33,15 @@ PARAMS = {
     "ndt_freq": 10,
 }
 
+def validate_threshold(recall, threshold, lowerbound):
+    if threshold < lowerbound:
+        print("Threshold is too small for this vehicle. Consider increasing the threshold and tolerate larger localization error.")
+    elif recall == np.inf:
+        print("No error larger than %f observed. Increase cut duration." % threshold)
+    elif recall > 0.99:
+        print("Valid threhsold!")
+    else:
+        print("Covariance seems to be too optimistic. Consider increasing the covariances of the dead reckoning sensors.")
 
 class DeviationEvaluationVisualizer(Node):
     def __init__(self):
@@ -50,29 +59,17 @@ class DeviationEvaluationVisualizer(Node):
         HARD_CODED_long_threshold = 0.3
 
         recall_lateral = bag_file_evaluator.calc_recall_lateral(HARD_CODED_lateral_threshold)
-        if recall_lateral == np.inf and HARD_CODED_lateral_threshold > bag_file_evaluator.results.lateral.lower_bound:
-            print("Valid... no large error observed")
-        elif recall_lateral > 0.95 and HARD_CODED_lateral_threshold > bag_file_evaluator.results.lateral.lower_bound:
-            print("lateral threshold is valid")
-        else:
-            print("lateral threshold is INVALID")
-            print(recall_lateral, bag_file_evaluator.results.lateral.lower_bound)
+        validate_threshold(recall_lateral, HARD_CODED_lateral_threshold, bag_file_evaluator.results.lateral.lower_bound)
 
         recall_long_radius = bag_file_evaluator.calc_recall_long_radius(HARD_CODED_long_threshold)
-        if recall_long_radius == np.inf and HARD_CODED_long_threshold > bag_file_evaluator.results.long_radius.lower_bound:
-            print("Valid... no large error observed")
-        elif recall_long_radius > 0.95 and HARD_CODED_long_threshold > bag_file_evaluator.results.long_radius.lower_bound:
-            print("long radius threshold is valid")
-        else:
-            print("long radius threshold is INVALID")
-            print(recall_long_radius, bag_file_evaluator.results.long_radius.lower_bound)
+        validate_threshold(recall_long_radius, HARD_CODED_long_threshold, bag_file_evaluator.results.long_radius.lower_bound)
 
-        fig = plot_bag_compare(
-            output_dir / "deviation_evaluator.png",
-            bag_file_evaluator.results,
-        )
-        plt.show()
-        print("Visualization completed! Press ctrl-C to exit.")
+        # fig = plot_bag_compare(
+        #     output_dir / "deviation_evaluator.png",
+        #     bag_file_evaluator.results,
+        # )
+        # plt.show()
+        # print("Visualization completed! Press ctrl-C to exit.")
 
 
 def main(args=None):
