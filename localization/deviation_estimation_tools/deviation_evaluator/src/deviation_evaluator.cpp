@@ -41,12 +41,8 @@ double norm_xy(const geometry_msgs::msg::Point & p1, const geometry_msgs::msg::P
   return std::sqrt(dx * dx + dy * dy);
 }
 
-<<<<<<< HEAD
-double norm_xy_lateral(const geometry_msgs::msg::Point & p1, const geometry_msgs::msg::Point & p2, const double yaw)
-=======
 double norm_xy_lateral(
   const geometry_msgs::msg::Point & p1, const geometry_msgs::msg::Point & p2, const double yaw)
->>>>>>> 4bfe900f8d11cf08acf9d0ffe97e0eec10cfb3c4
 {
   double dx = p1.x - p2.x;
   double dy = p1.y - p2.y;
@@ -65,12 +61,8 @@ DeviationEvaluator::DeviationEvaluator(
   save_dir_ = declare_parameter<std::string>("save_dir");
   wait_duration_ = declare_parameter<double>("wait_duration");
   double wait_scale = declare_parameter<double>("wait_scale");
-<<<<<<< HEAD
-  errors_threshold_.lateral = declare_parameter<double>("warn_ellipse_size_lateral_direction") * wait_scale;
-=======
   errors_threshold_.lateral =
     declare_parameter<double>("warn_ellipse_size_lateral_direction") * wait_scale;
->>>>>>> 4bfe900f8d11cf08acf9d0ffe97e0eec10cfb3c4
   errors_threshold_.long_radius = declare_parameter<double>("warn_ellipse_size") * wait_scale;
 
   save2YamlFile();
@@ -82,22 +74,6 @@ DeviationEvaluator::DeviationEvaluator(
     "in_ndt_pose_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackNDTPoseWithCovariance, this, _1));
   sub_dr_odom_ = create_subscription<Odometry>(
-<<<<<<< HEAD
-    "in_ekf_dr_odom", 1,
-    std::bind(&DeviationEvaluator::callbackEKFDROdom, this, _1));
-  sub_gt_odom_ = create_subscription<Odometry>(
-    "in_ekf_gt_odom", 1,
-    std::bind(&DeviationEvaluator::callbackEKFGTOdom, this, _1));
-
-  pub_twist_with_cov_ = create_publisher<TwistWithCovarianceStamped>(
-    "out_twist_with_covariance", 1);
-  pub_pose_with_cov_dr_ = create_publisher<PoseWithCovarianceStamped>(
-    "out_pose_with_covariance_dr", 1);
-  pub_pose_with_cov_gt_ = create_publisher<PoseWithCovarianceStamped>(
-    "out_pose_with_covariance_gt", 1);
-  pub_init_pose_with_cov_ = create_publisher<PoseWithCovarianceStamped>(
-    "out_initial_pose_with_covariance", 1);
-=======
     "in_ekf_dr_odom", 1, std::bind(&DeviationEvaluator::callbackEKFDROdom, this, _1));
   sub_gt_odom_ = create_subscription<Odometry>(
     "in_ekf_gt_odom", 1, std::bind(&DeviationEvaluator::callbackEKFGTOdom, this, _1));
@@ -110,7 +86,6 @@ DeviationEvaluator::DeviationEvaluator(
     create_publisher<PoseWithCovarianceStamped>("out_pose_with_covariance_gt", 1);
   pub_init_pose_with_cov_ =
     create_publisher<PoseWithCovarianceStamped>("out_initial_pose_with_covariance", 1);
->>>>>>> 4bfe900f8d11cf08acf9d0ffe97e0eec10cfb3c4
 
   has_published_initial_pose_ = false;
   last_gt_pose_ptr_ = nullptr;
