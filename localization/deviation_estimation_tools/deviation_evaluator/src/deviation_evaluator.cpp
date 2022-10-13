@@ -41,7 +41,12 @@ double norm_xy(const geometry_msgs::msg::Point & p1, const geometry_msgs::msg::P
   return std::sqrt(dx * dx + dy * dy);
 }
 
+<<<<<<< HEAD
 double norm_xy_lateral(const geometry_msgs::msg::Point & p1, const geometry_msgs::msg::Point & p2, const double yaw)
+=======
+double norm_xy_lateral(
+  const geometry_msgs::msg::Point & p1, const geometry_msgs::msg::Point & p2, const double yaw)
+>>>>>>> 4bfe900f8d11cf08acf9d0ffe97e0eec10cfb3c4
 {
   double dx = p1.x - p2.x;
   double dy = p1.y - p2.y;
@@ -60,7 +65,12 @@ DeviationEvaluator::DeviationEvaluator(
   save_dir_ = declare_parameter<std::string>("save_dir");
   wait_duration_ = declare_parameter<double>("wait_duration");
   double wait_scale = declare_parameter<double>("wait_scale");
+<<<<<<< HEAD
   errors_threshold_.lateral = declare_parameter<double>("warn_ellipse_size_lateral_direction") * wait_scale;
+=======
+  errors_threshold_.lateral =
+    declare_parameter<double>("warn_ellipse_size_lateral_direction") * wait_scale;
+>>>>>>> 4bfe900f8d11cf08acf9d0ffe97e0eec10cfb3c4
   errors_threshold_.long_radius = declare_parameter<double>("warn_ellipse_size") * wait_scale;
 
   save2YamlFile();
@@ -72,6 +82,7 @@ DeviationEvaluator::DeviationEvaluator(
     "in_ndt_pose_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackNDTPoseWithCovariance, this, _1));
   sub_dr_odom_ = create_subscription<Odometry>(
+<<<<<<< HEAD
     "in_ekf_dr_odom", 1,
     std::bind(&DeviationEvaluator::callbackEKFDROdom, this, _1));
   sub_gt_odom_ = create_subscription<Odometry>(
@@ -86,12 +97,25 @@ DeviationEvaluator::DeviationEvaluator(
     "out_pose_with_covariance_gt", 1);
   pub_init_pose_with_cov_ = create_publisher<PoseWithCovarianceStamped>(
     "out_initial_pose_with_covariance", 1);
+=======
+    "in_ekf_dr_odom", 1, std::bind(&DeviationEvaluator::callbackEKFDROdom, this, _1));
+  sub_gt_odom_ = create_subscription<Odometry>(
+    "in_ekf_gt_odom", 1, std::bind(&DeviationEvaluator::callbackEKFGTOdom, this, _1));
+
+  pub_twist_with_cov_ =
+    create_publisher<TwistWithCovarianceStamped>("out_twist_with_covariance", 1);
+  pub_pose_with_cov_dr_ =
+    create_publisher<PoseWithCovarianceStamped>("out_pose_with_covariance_dr", 1);
+  pub_pose_with_cov_gt_ =
+    create_publisher<PoseWithCovarianceStamped>("out_pose_with_covariance_gt", 1);
+  pub_init_pose_with_cov_ =
+    create_publisher<PoseWithCovarianceStamped>("out_initial_pose_with_covariance", 1);
+>>>>>>> 4bfe900f8d11cf08acf9d0ffe97e0eec10cfb3c4
 
   has_published_initial_pose_ = false;
   last_gt_pose_ptr_ = nullptr;
   dr_pose_queue_.clear();
 }
-
 
 void DeviationEvaluator::callbackTwistWithCovariance(
   const TwistWithCovarianceStamped::SharedPtr msg)
@@ -105,7 +129,6 @@ void DeviationEvaluator::callbackTwistWithCovariance(
   msg->twist.covariance[5 * 6 + 5] = stddev_wz_ * stddev_wz_;
   pub_twist_with_cov_->publish(*msg);
 }
-
 
 void DeviationEvaluator::callbackNDTPoseWithCovariance(
   const PoseWithCovarianceStamped::SharedPtr msg)
@@ -133,8 +156,7 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
 
   if (
     (current_errors_.lateral > errors_threshold_.lateral) &
-    (current_errors_.long_radius > errors_threshold_.long_radius))
-  {
+    (current_errors_.long_radius > errors_threshold_.long_radius)) {
     RCLCPP_INFO(this->get_logger(), "Error got large enough! Initialize EKF");
     start_time_ = msg_time;
     has_published_initial_pose_ = false;
@@ -147,11 +169,10 @@ void DeviationEvaluator::callbackEKFDROdom(const Odometry::SharedPtr msg)
   PoseStamped::SharedPtr pose_ptr(new PoseStamped);
   pose_ptr->pose = msg->pose.pose;
   pose_ptr->header = msg->header;
-  if (!dr_pose_queue_.empty()) 
-  {
-    if (rclcpp::Time(dr_pose_queue_.back()->header.stamp).seconds() > 
-      rclcpp::Time(pose_ptr->header.stamp).seconds())
-    {
+  if (!dr_pose_queue_.empty()) {
+    if (
+      rclcpp::Time(dr_pose_queue_.back()->header.stamp).seconds() >
+      rclcpp::Time(pose_ptr->header.stamp).seconds()) {
       dr_pose_queue_.clear();
       RCLCPP_ERROR_STREAM(this->get_logger(), "Timestampe jump detected!");
     }
@@ -182,21 +203,19 @@ void DeviationEvaluator::callbackEKFGTOdom(const Odometry::SharedPtr msg)
     return;
   }
   current_errors_.long_radius = norm_xy(target_pose.position, last_gt_pose_ptr_->pose.position);
-  current_errors_.lateral = norm_xy_lateral(target_pose.position, last_gt_pose_ptr_->pose.position,
-    tf2::getYaw(target_pose.orientation));
+  current_errors_.lateral = norm_xy_lateral(
+    target_pose.position, last_gt_pose_ptr_->pose.position, tf2::getYaw(target_pose.orientation));
   last_gt_pose_ptr_ = nullptr;
   dr_pose_queue_.clear();
 }
 
-geometry_msgs::msg::Pose DeviationEvaluator::interpolatePose(
-  const double time)
+geometry_msgs::msg::Pose DeviationEvaluator::interpolatePose(const double time)
 {
   const auto iter_next = std::upper_bound(
     dr_pose_queue_.begin(), dr_pose_queue_.end(), time,
     [](double const & t1, geometry_msgs::msg::PoseStamped::SharedPtr const & t2) -> bool {
       return t1 < rclcpp::Time(t2->header.stamp).seconds();
-    }
-  );
+    });
 
   if ((iter_next == dr_pose_queue_.begin()) | (iter_next == dr_pose_queue_.end())) {
     throw std::runtime_error("Interpolation failed");
