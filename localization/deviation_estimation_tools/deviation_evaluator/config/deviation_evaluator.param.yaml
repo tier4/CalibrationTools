@@ -1,12 +1,10 @@
 /**:
   ros__parameters:
     # Parameters that you want to evaluate
-    # Results expressed in base_link
-    # Copy the following to deviation_evaluator.param.yaml
-    stddev_vx: 0.25309
-    stddev_wz: 0.00191
-    coef_vx: 1.01624
-    bias_wz: -0.00631
+    stddev_vx: 0.3 # [m/s]
+    stddev_wz: 0.02 # [rad/s]
+    coef_vx: 1.0 # [.]
+    bias_wz: 0.0 # [rad/s]
 
     # Dead Reckoning configuration
     period: 10.0 # [s]
