@@ -16,6 +16,7 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 find_package(Eigen3 REQUIRED)
+autoware_package()
 
 ament_auto_add_executable(deviation_evaluator
   src/deviation_evaluator_node.cpp
