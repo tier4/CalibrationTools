@@ -44,7 +44,7 @@ class ThresholdState(Enum):
 
 def validate_threshold(recall: float, threshold: float, lowerbound: float) -> ThresholdState:
     if threshold < lowerbound:
-        print("Threshold is too small for this vehicle. Consider increasing the threshold and tolerate larger localization error.")
+        print("Threshold is too small for the vehicle. (current lowerbound: {:.3f})".format(lowerbound))
         return ThresholdState.TOO_SMALL
     elif recall == np.inf:
         print("No error larger than {:.3f} [m] observed. Increase cut duration.".format(threshold))
@@ -55,32 +55,6 @@ def validate_threshold(recall: float, threshold: float, lowerbound: float) -> Th
     else:
         print("Covariance seems to be too optimistic. Consider increasing the covariances of the dead reckoning sensors.")
         return ThresholdState.TOO_LARGE
-
-class ThresholdState(Enum):
-    GOOD = 0
-    TOO_SMALL = 1
-    TOO_LARGE = 2
-    UNDETERMINABLE = 3
-
-
-def validate_threshold(recall: float, threshold: float, lowerbound: float) -> ThresholdState:
-    if threshold < lowerbound:
-        print(
-            "Threshold is too small for this vehicle. Consider increasing the threshold and tolerate larger localization error."
-        )
-        return ThresholdState.TOO_SMALL
-    elif recall == np.inf:
-        print("No error larger than {:.3f} [m] observed. Increase cut duration.".format(threshold))
-        return ThresholdState.UNDETERMINABLE
-    elif recall > 0.99:
-        print("Valid threhsold!")
-        return ThresholdState.GOOD
-    else:
-        print(
-            "Covariance seems to be too optimistic. Consider increasing the covariances of the dead reckoning sensors."
-        )
-        return ThresholdState.TOO_LARGE
-
 
 class DeviationEvaluationVisualizer(Node):
     def __init__(self):
