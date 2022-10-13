@@ -238,13 +238,19 @@ class BagFileEvaluator:
             bag_parser.get_messages(params["twist_topic"]),
         )
 
-    def calc_roc_curve_lateral(self, threshold):
-        recall_list = calc_roc_curve(threshold, self.results.lateral)
-        return recall_list
+    def calc_recall_lateral(self, threshold):
+        positives = self.results.lateral.error > threshold
+        if np.sum(positives) == 0:
+            return np.inf
+        true_positives = positives & (self.results.lateral.expected_error > threshold)
+        return np.sum(true_positives) / np.sum(positives)
 
-    def calc_roc_curve_long_radius(self, threshold):
-        recall_list = calc_roc_curve(threshold, self.results.long_radius)
-        return recall_list
+    def calc_recall_long_radius(self, threshold):
+        positives = self.results.long_radius.error > threshold
+        if np.sum(positives) == 0:
+            return np.inf
+        true_positives = positives & (self.results.long_radius.expected_error > threshold)
+        return np.sum(true_positives) / np.sum(positives)
 
 
 def calc_interpolate(poses, timestamps, timestamps_target):
@@ -310,19 +316,6 @@ def calc_long_short_radius(cov_list):
     stddev_long_2d = np.sqrt(np.max(cov_eig_val_list, axis=1))
     stddev_short_2d = np.sqrt(np.min(cov_eig_val_list, axis=1))
     return stddev_long_2d, stddev_short_2d
-
-
-def calc_roc_curve(threshold_error, error_results: ErrorResults):
-    positives = error_results.error > threshold_error
-    if not positives.any():
-        return None
-    recall_list = []
-    threshold_stddev_list = np.arange(0, 0.8, 0.02)
-    for threshold_stddev in threshold_stddev_list:
-        true_positives = positives & (error_results.expected_error > threshold_stddev)
-        recall = np.sum(true_positives) / np.sum(positives)
-        recall_list.append([threshold_stddev, recall])
-    return np.array(recall_list)
 
 
 def get_duration_to_error(timestamps, ndt_timestamps, error_lateral, ndt_freq=10):

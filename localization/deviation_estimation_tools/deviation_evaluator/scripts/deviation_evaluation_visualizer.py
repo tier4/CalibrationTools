@@ -47,25 +47,26 @@ class DeviationEvaluationVisualizer(Node):
 
         bag_file_evaluator = BagFileEvaluator(str(bagfile), PARAMS)
 
-        os.makedirs(output_dir / "body_frame", exist_ok=True)
-        for thres in np.arange(0.1, 0.4, 0.05):
-            plot_thresholds(
-                bag_file_evaluator.calc_roc_curve_lateral(thres),
-                bag_file_evaluator.results.lateral.lower_bound,
-                thres,
-                PARAMS["scale"],
-                save_path=output_dir / "body_frame/thres2recall_{:.2f}.png".format(thres),
-            )
+        HARD_CODED_lateral_threshold = 0.25
+        HARD_CODED_long_threshold = 0.3
 
-        os.makedirs(output_dir / "long_radius", exist_ok=True)
-        for thres in np.arange(0.1, 1.0, 0.05):
-            plot_thresholds(
-                bag_file_evaluator.calc_roc_curve_long_radius(thres),
-                bag_file_evaluator.results.long_radius.lower_bound,
-                thres,
-                PARAMS["scale"],
-                save_path=output_dir / "long_radius/thres2recall_{:.2f}.png".format(thres),
-            )
+        recall_lateral = bag_file_evaluator.calc_recall_lateral(HARD_CODED_lateral_threshold)
+        if recall_lateral == np.inf and HARD_CODED_lateral_threshold > bag_file_evaluator.results.lateral.lower_bound:
+            print("Valid... no large error observed")
+        elif recall_lateral > 0.95 and HARD_CODED_lateral_threshold > bag_file_evaluator.results.lateral.lower_bound:
+            print("lateral threshold is valid")
+        else:
+            print("lateral threshold is INVALID")
+            print(recall_lateral, bag_file_evaluator.results.lateral.lower_bound)
+
+        recall_long_radius = bag_file_evaluator.calc_recall_long_radius(HARD_CODED_long_threshold)
+        if recall_long_radius == np.inf and HARD_CODED_long_threshold > bag_file_evaluator.results.long_radius.lower_bound:
+            print("Valid... no large error observed")
+        elif recall_long_radius > 0.95 and HARD_CODED_long_threshold > bag_file_evaluator.results.long_radius.lower_bound:
+            print("long radius threshold is valid")
+        else:
+            print("long radius threshold is INVALID")
+            print(recall_long_radius, bag_file_evaluator.results.long_radius.lower_bound)
 
         fig = plot_bag_compare(
             output_dir / "deviation_evaluator.png",
