@@ -313,15 +313,14 @@ def calc_long_short_radius(cov_list):
 
 
 def calc_roc_curve(threshold_error, error_results: ErrorResults):
-    is_error_positive = error_results.error > threshold_error
-    if not is_error_positive.any():
+    positives = error_results.error > threshold_error
+    if not positives.any():
         return None
-
     recall_list = []
     threshold_stddev_list = np.arange(0, 0.8, 0.02)
     for threshold_stddev in threshold_stddev_list:
-        is_stddev_large = error_results.expected_error > threshold_stddev
-        recall = np.sum(is_error_positive & is_stddev_large) * 1.0 / np.sum(is_error_positive)
+        true_positives = positives & (error_results.expected_error > threshold_stddev)
+        recall = np.sum(true_positives) / np.sum(positives)
         recall_list.append([threshold_stddev, recall])
     return np.array(recall_list)
 
