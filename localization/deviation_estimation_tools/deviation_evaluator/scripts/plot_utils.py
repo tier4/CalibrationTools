@@ -22,16 +22,15 @@ import numpy as np
 def plot_thresholds(recall_list, lower_bound, threshold, scale, save_path=None):
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, xlabel="threshold [m]", ylabel="recall")
-    ax.text(0.1, 0.1,
-            "Threshold lower bound = {:.3f} [m]".format(lower_bound),
-            transform=ax.transAxes)
+    ax.text(
+        0.1, 0.1, "Threshold lower bound = {:.3f} [m]".format(lower_bound), transform=ax.transAxes
+    )
 
     if recall_list is not None:
         ax.plot(recall_list[:, 0], recall_list[:, 1], label="Upper bound")
         ax.legend()
     else:
-        ax.text(0.3, 0.5,
-                "Error larger than {:.3f} [m] was not observed".format(threshold))
+        ax.text(0.3, 0.5, "Error larger than {:.3f} [m] was not observed".format(threshold))
     ax.grid()
     ax.set_title(
         "Recall for detecting localization anomalies (over {0:.3f} [m], {1}-sigma)".format(
@@ -57,24 +56,15 @@ def plot_bag_compare(save_path, results):
 
     fig = plt.figure(figsize=(12, 12))
     ax1 = fig.add_subplot(411, xlabel="time [s]", ylabel="error [m]")
-    plot_error_analysis(ax1,
-                        results.timestamps,
-                        results.long_radius,
-                        error_maximum)
+    plot_error_analysis(ax1, results.timestamps, results.long_radius, error_maximum)
 
     # Plot error along body-frame-y-axis
     ax2 = fig.add_subplot(412, xlabel="time [s]", ylabel="error [m]")
-    plot_error_analysis(ax2,
-                        results.timestamps,
-                        results.lateral,
-                        error_maximum)
+    plot_error_analysis(ax2, results.timestamps, results.lateral, error_maximum)
 
     # Plot error along body-frame-x-axis
     ax3 = fig.add_subplot(413, xlabel="time [s]", ylabel="error [m]")
-    plot_error_analysis(ax3,
-                        results.timestamps,
-                        results.longitudinal,
-                        error_maximum)
+    plot_error_analysis(ax3, results.timestamps, results.longitudinal, error_maximum)
 
     # Plot velocity and yaw_rate
     timestamp_twist = results.twist_list[:, 0]

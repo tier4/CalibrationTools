@@ -17,13 +17,13 @@
 
 
 import bisect
-import sqlite3
 import dataclasses
-import numpy as np
+import sqlite3
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
+import numpy as np
 from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 from scipy.spatial.transform import Rotation
@@ -37,6 +37,7 @@ class ErrorResults:
     expected_error: np.ndarray
     lower_bound: float = None
 
+
 @dataclasses.dataclass
 class DeviationEvaluatorResults:
     long_radius: ErrorResults
@@ -45,6 +46,7 @@ class DeviationEvaluatorResults:
     timestamps: np.ndarray
     ndt_timestamps: np.ndarray
     twist_list: np.ndarray
+
 
 def calc_stddev_rotated(P, theta):
     e_vec = np.array([[np.cos(theta)], [np.sin(theta)]])
@@ -213,18 +215,18 @@ class BagFileEvaluator:
             "long_radius",
             np.linalg.norm(error_vec, axis=1)[valid_idxs],
             stddev_long_2d[valid_idxs] * params["scale"],
-            np.max(stddev_long_2d_gt[50:]) * params["scale"]
+            np.max(stddev_long_2d_gt[50:]) * params["scale"],
         )
         lateral_results = ErrorResults(
             "lateral",
             error_vec_body_frame[valid_idxs, 1],
             stddev_lateral_2d[valid_idxs] * params["scale"],
-            np.max(stddev_lateral_2d_gt[50:]) * params["scale"]
+            np.max(stddev_lateral_2d_gt[50:]) * params["scale"],
         )
         longitudinal_results = ErrorResults(
             "longitudinal",
             error_vec_body_frame[valid_idxs, 0],
-            stddev_longitudinal_2d[valid_idxs] * params["scale"]
+            stddev_longitudinal_2d[valid_idxs] * params["scale"],
         )
 
         self.results = DeviationEvaluatorResults(
@@ -233,7 +235,7 @@ class BagFileEvaluator:
             longitudinal_results,
             ekf_dr_pose_list[valid_idxs, 0],
             pose_list[:, 0],
-            bag_parser.get_messages(params["twist_topic"])
+            bag_parser.get_messages(params["twist_topic"]),
         )
 
     def calc_roc_curve_lateral(self, threshold):
