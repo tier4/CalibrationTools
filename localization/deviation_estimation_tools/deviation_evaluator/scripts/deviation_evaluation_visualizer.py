@@ -120,7 +120,7 @@ class DeviationEvaluationVisualizer(Node):
             output_dir / "deviation_evaluator.png",
             bag_file_evaluator.results,
         )
-        plt.show()
+        # plt.show()
         print("Visualization completed! Press ctrl-C to exit.")
 
 
