@@ -104,7 +104,7 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
         return target_client.estimated;
       });
     if (done) {break;}
-    rclcpp::sleep_for(5s);
+    rclcpp::sleep_for(60s);
     RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for responses...");
   }
 

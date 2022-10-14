@@ -28,7 +28,6 @@ std::vector<CalibrationFrame> LostStateFilter::filter(
   std::vector<int> invalid_keyframe_ids;
   std::unordered_set<int> invalid_keyframe_ids_map;
 
-  int last_keyframe_id = -1;
   bool lost = false;
 
   // Find all keyframes that are either "lost" or have a frame "lost" nearby
@@ -36,24 +35,18 @@ std::vector<CalibrationFrame> LostStateFilter::filter(
     lost |= frame->lost_;
 
     if (frame->is_key_frame_ && lost) {
-      if (
-        last_keyframe_id != -1 &&
-        invalid_keyframe_ids_map.find(last_keyframe_id) != invalid_keyframe_ids_map.end()) {
-        invalid_keyframe_ids.push_back(last_keyframe_id);
-        invalid_keyframe_ids_map.insert(last_keyframe_id);
+      if (invalid_keyframe_ids_map.find(frame->keyframe_id_) == invalid_keyframe_ids_map.end()) {
+        invalid_keyframe_ids.push_back(frame->keyframe_id_);
+        invalid_keyframe_ids_map.insert(frame->keyframe_id_);
       }
 
-      invalid_keyframe_ids.push_back(frame->keyframe_id_);
-      invalid_keyframe_ids_map.insert(frame->keyframe_id_);
-
       lost = false;
-      last_keyframe_id = frame->keyframe_id_;
     }
   }
 
   int left_invalid_keyframe_id = 0;
 
-  // Find and separate frames that close enought to "lost" keyframes
+  // Find and separate frames that close enough to "lost" keyframes
   for (const auto & frame : calibration_frames) {
     // Check closest keyframe
     int keyframe_id = frame.target_frame_->keyframe_id_;
@@ -76,16 +69,16 @@ std::vector<CalibrationFrame> LostStateFilter::filter(
     }
 
     while (left_invalid_keyframe_id < static_cast<int>(invalid_keyframe_ids.size()) - 1 &&
-           invalid_keyframe_ids[left_invalid_keyframe_id] <
-             keyframe_id + parameters_->dense_pointcloud_num_keyframes_) {
+           invalid_keyframe_ids[left_invalid_keyframe_id + 1] < keyframe_id) {
       left_invalid_keyframe_id++;
     }
 
     if (
-      left_invalid_keyframe_id < static_cast<int>(invalid_keyframe_ids.size()) - 1 &&
-      std::abs(
-        invalid_keyframe_ids[left_invalid_keyframe_id + 1] - keyframe_id <=
-        parameters_->dense_pointcloud_num_keyframes_)) {
+      std::abs(invalid_keyframe_ids[left_invalid_keyframe_id] - keyframe_id) <=
+        parameters_->dense_pointcloud_num_keyframes_ ||
+      (left_invalid_keyframe_id < static_cast<int>(invalid_keyframe_ids.size()) - 1 &&
+       std::abs(invalid_keyframe_ids[left_invalid_keyframe_id + 1] - keyframe_id) <=
+         parameters_->dense_pointcloud_num_keyframes_)) {
       deleted_keyframe_ids.push_back(keyframe_id);
     } else {
       filtered_frames.push_back(frame);

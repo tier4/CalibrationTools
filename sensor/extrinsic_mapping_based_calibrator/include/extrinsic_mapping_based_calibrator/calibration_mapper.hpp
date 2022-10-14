@@ -43,6 +43,7 @@ public:
     MappingParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
     PointPublisher::SharedPtr & map_pub,
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr & frame_path_pub,
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr & frame_predicted_path_pub,
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr & keyframe_path_pub,
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr & keyframe_markers_pub,
     rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedPtr & rosbag2_pause_client,
@@ -124,7 +125,7 @@ protected:
    * Check whether a frame should be dropped
    * @param[in] frame frame candidate
    */
-  bool shouldDropFrame(const Frame::Ptr & prev_frame, Frame::Ptr & frame, float delta_distance);
+  bool shouldDropFrame(const Frame::Ptr & prev_frame, Frame::Ptr & frame);
 
   /*!
    * Recalculate the mapping local map based on the latest keyframes
@@ -136,6 +137,7 @@ protected:
 
   PointPublisher::SharedPtr map_pub_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr frame_path_pub_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr frame_predicted_path_pub_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr keyframe_path_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr keyframe_markers_pub_;
 
@@ -151,6 +153,7 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   PointcloudType::Ptr published_map_pointcloud_ptr_;
   nav_msgs::msg::Path published_frames_path_;
+  nav_msgs::msg::Path published_frames_predicted_path_;
   nav_msgs::msg::Path published_keyframes_path_;
   visualization_msgs::msg::MarkerArray published_keyframes_markers_;
 

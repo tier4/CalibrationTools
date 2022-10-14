@@ -59,6 +59,18 @@ typename PointcloudType::Ptr cropPointCloud(
  * @param[in] m2 Transformation at time t2
  * @retval Interpolated transform at time t
  */
+Eigen::Matrix4f poseInterpolationBase(
+  double t, double t1, double t2, Eigen::Matrix4f const & m1, Eigen::Matrix4f const & m2);
+
+/*!
+ * Interpolate a transform between two points in time
+ * @param[in] t Interpolation time (can be greater than t2 -> extrapolation)
+ * @param[in] t1 Left interpolation time
+ * @param[in] t2 Righti interpolation time
+ * @param[in] m1 Transformation at time t1
+ * @param[in] m2 Transformation at time t2
+ * @retval Interpolated transform at time t
+ */
 Eigen::Matrix4f poseInterpolation(
   double t, double t1, double t2, Eigen::Matrix4f const & m1, Eigen::Matrix4f const & m2);
 

@@ -129,8 +129,8 @@ Visualization Manager:
       Class: rviz_default_plugins/Path
       Color: 255; 0; 0
       Enabled: true
-      Head Diameter: 0.20000000298023224
-      Head Length: 0.10000000149011612
+      Head Diameter: 0.10000000149011612
+      Head Length: 0.12999999523162842
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
@@ -142,7 +142,7 @@ Visualization Manager:
       Pose Color: 255; 0; 0
       Pose Style: Arrows
       Radius: 0.029999999329447746
-      Shaft Diameter: 0.10000000149011612
+      Shaft Diameter: 0.019999999552965164
       Shaft Length: 0.05000000074505806
       Topic:
         Depth: 5
@@ -155,9 +155,37 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
+      Color: 255; 255; 255
+      Enabled: true
+      Head Diameter: 0.07999999821186066
+      Head Length: 0.12999999523162842
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Frame Predicted Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 255; 255
+      Pose Style: Arrows
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.019999999552965164
+      Shaft Length: 0.03999999910593033
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /frame_predicted_path
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
       Color: 25; 255; 0
       Enabled: true
-      Head Diameter: 0.30000001192092896
+      Head Diameter: 0.10000000149011612
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Lines
@@ -170,7 +198,7 @@ Visualization Manager:
       Pose Color: 0; 255; 0
       Pose Style: Arrows
       Radius: 0.029999999329447746
-      Shaft Diameter: 0.10000000149011612
+      Shaft Diameter: 0.05999999865889549
       Shaft Length: 0.10000000149011612
       Topic:
         Depth: 5

@@ -31,6 +31,7 @@ CalibrationMapper::CalibrationMapper(
   MappingParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
   PointPublisher::SharedPtr & map_pub,
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr & frame_path_pub,
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr & frame_predicted_path_pub,
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr & keyframe_path_pub,
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr & keyframe_markers_pub,
   rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedPtr & rosbag2_pause_client,
@@ -40,6 +41,7 @@ CalibrationMapper::CalibrationMapper(
   data_(mapping_data),
   map_pub_(map_pub),
   frame_path_pub_(frame_path_pub),
+  frame_predicted_path_pub_(frame_predicted_path_pub),
   keyframe_path_pub_(keyframe_path_pub),
   keyframe_markers_pub_(keyframe_markers_pub),
   rosbag2_pause_client_(rosbag2_pause_client),
@@ -100,7 +102,7 @@ void CalibrationMapper::mappingPointCloudCallback(
     std::unique_lock<std::mutex> lock(data_->mutex_);
     RCLCPP_WARN(
       rclcpp::get_logger("calibration_mapper"),
-      "Reveived a cmapping pc while not mapping. Ignoring it");
+      "Reveived a mapping pc while not mapping. Ignoring it");
     return;
   }
 
@@ -110,6 +112,14 @@ void CalibrationMapper::mappingPointCloudCallback(
 
   PointcloudType::Ptr pc_ptr(new PointcloudType());
   pcl::fromROSMsg(*msg, *pc_ptr);
+
+  if (static_cast<int>(pc_ptr->size()) < parameters_->min_pointcloud_size_) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Received a unusually small  mapping pc (size=%lu). Skipping it", pc_ptr->size());
+    return;
+  }
+
   transformPointcloud<PointcloudType>(
     msg->header.frame_id, data_->mapping_lidar_frame_, pc_ptr, *tf_buffer_);
 
@@ -148,11 +158,13 @@ void CalibrationMapper::mappingPointCloudCallback(
 
 void CalibrationMapper::mappingThreadWorker()
 {
-  Eigen::Matrix4f delta_pose = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4f last_pose =
+    Eigen::Matrix4f::Identity();  // not necessarily assciated with a frame
+  builtin_interfaces::msg::Time last_stamp;
 
   while (rclcpp::ok() && !stopped_) {
-    Frame::Ptr frame, prev_frame;
-    Eigen::Matrix4f prev_pose = Eigen::Matrix4f::Identity();
+    Frame::Ptr frame, prev_frame, prev_frame_not_last;
+
     float prev_distance = 0.f;
 
     // Locked section
@@ -185,8 +197,16 @@ void CalibrationMapper::mappingThreadWorker()
 
       if (data_->processed_frames_.size() > 0) {
         prev_frame = data_->processed_frames_.back();
-        prev_pose = prev_frame->pose_;
+        prev_frame_not_last = data_->processed_frames_.back();
         prev_distance = prev_frame->distance_;
+
+        for (auto it = data_->processed_frames_.rbegin(); it != data_->processed_frames_.rend();
+             it++) {
+          if ((*it)->header_.stamp != last_stamp) {
+            prev_frame_not_last = *it;
+            break;
+          }
+        }
       }
     }
 
@@ -209,16 +229,65 @@ void CalibrationMapper::mappingThreadWorker()
     ndt_.setInputTarget(data_->local_map_ptr_);
     ndt_.setInputSource(frame->pointcloud_subsampled_);
 
+    Eigen::Matrix4f guess = last_pose;
+    double dt_since_last =
+      (rclcpp::Time(frame->header_.stamp) - rclcpp::Time(last_stamp)).seconds();
+
     if (!prev_frame) {
       frame->pose_ = Eigen::Matrix4f::Identity();
+      last_stamp = frame->header_.stamp;
     } else {
-      Eigen::Matrix4f guess = prev_pose * delta_pose;
+      if (prev_frame->lost_) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("calibration_mapper"), "Using last pose as guess since it is lost");
+        guess = last_pose;
+      }
+      if (prev_frame->stopped_) {
+        RCLCPP_INFO(
+          rclcpp::get_logger("calibration_mapper"), "Using last pose as guess since it is stopped");
+        guess = last_pose;
+      } else if (prev_frame->dt_ > 0) {
+        // We can improve the guess with extrapolation
+        double dt1 =
+          (rclcpp::Time(last_stamp) - rclcpp::Time(prev_frame_not_last->header_.stamp)).seconds();
+        double dt2 =
+          (rclcpp::Time(frame->header_.stamp) - rclcpp::Time(prev_frame_not_last->header_.stamp))
+            .seconds();
+        Eigen::Matrix4f interpolated_pose = poseInterpolation(
+          dt2, 0, dt1, Eigen::Matrix4f::Identity(),
+          prev_frame_not_last->pose_.inverse() * last_pose);
+        guess = prev_frame_not_last->pose_ * interpolated_pose;
+      }
+
       ndt_.align(*aligned_cloud_ptr, guess);
-      frame->pose_ = ndt_.getFinalTransformation();
-      delta_pose = prev_pose.inverse() * frame->pose_;
+      last_pose = ndt_.getFinalTransformation();
+
+      float innovation = Eigen::Affine3f(guess.inverse() * last_pose).translation().norm();
+      float score = ndt_.getFitnessScore();
+
+      RCLCPP_INFO(
+        rclcpp::get_logger("calibration_mapper"), "NDT Innovation=%.2f. Score=%.2f", innovation,
+        score);
+      last_stamp = frame->header_.stamp;
     }
 
     std::unique_lock<std::mutex> lock(data_->mutex_);
+
+    // Fill the frame information
+    frame->pose_ = last_pose;
+    frame->predicted_pose_ = guess;
+    frame->frame_id_ = data_->processed_frames_.size();
+    frame->processed_ = true;
+    frame->distance_ = prev_distance;
+
+    if (prev_frame) {
+      frame->dt_ =
+        (rclcpp::Time(frame->header_.stamp) - rclcpp::Time(prev_frame->header_.stamp)).seconds();
+      frame->delta_translation_ =
+        Eigen::Affine3f(prev_frame->pose_.inverse() * last_pose).translation();
+      frame->distance_ += frame->delta_translation_.norm();
+      frame->rough_speed_ = Eigen::Vector3f(frame->delta_translation_) / frame->dt_;
+    }
 
     // We record the whole trajectory
     geometry_msgs::msg::PoseStamped pose_msg;
@@ -227,21 +296,7 @@ void CalibrationMapper::mappingThreadWorker()
     pose_msg.pose = tf2::toMsg(Eigen::Affine3d(frame->pose_.cast<double>()));
     data_->trajectory_.push_back(pose_msg);
 
-    // Fill the frame information
-    Eigen::Vector3f translation = Eigen::Affine3f(frame->pose_.inverse() * prev_pose).translation();
-    float delta_distance = translation.norm();
-    float dt =
-      prev_frame
-        ? (rclcpp::Time(frame->header_.stamp) - rclcpp::Time(prev_frame->header_.stamp)).seconds()
-        : 0.f;
-    frame->distance_ = prev_distance + delta_distance;
-    frame->rough_speed_ = prev_frame ? delta_distance / dt : 0.f;
-    frame->frame_id_ = data_->processed_frames_.size();
-    frame->processed_ = true;
-
-    if (
-      !checkFrameLost(prev_frame, frame, dt) &&
-      shouldDropFrame(prev_frame, frame, delta_distance)) {
+    if (!checkFrameLost(prev_frame, frame, dt_since_last) && shouldDropFrame(prev_frame, frame)) {
       continue;
     }
 
@@ -250,8 +305,11 @@ void CalibrationMapper::mappingThreadWorker()
 
     RCLCPP_INFO(
       rclcpp::get_logger("calibration_mapper"),
-      "New frame. Distance=%.2f Unprocessed=%lu Frames=%lu Keyframes=%lu", frame->distance_,
-      data_->unprocessed_frames_.size(), data_->processed_frames_.size(), data_->keyframes_.size());
+      "New frame (id=%d | kid=%d). Distance=%.2f Delta_distance%.2f Delta_time%.2f. "
+      "Unprocessed=%lu Frames=%lu Keyframes=%lu",
+      frame->frame_id_, frame->keyframe_id_, frame->distance_, frame->delta_translation_.norm(),
+      frame->dt_, data_->unprocessed_frames_.size(), data_->processed_frames_.size(),
+      data_->keyframes_.size());
   }
 
   RCLCPP_WARN(rclcpp::get_logger("calibration_mapper"), "Mapping thread is exiting");
@@ -386,31 +444,42 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
 
 bool CalibrationMapper::checkFrameLost(const Frame::Ptr & prev_frame, Frame::Ptr & frame, float dt)
 {
-  float acceleration = prev_frame && !prev_frame->lost_
-                         ? std::abs(frame->rough_speed_ - prev_frame->rough_speed_) / dt
-                         : 0.f;
+  if (!prev_frame || prev_frame->lost_) {
+    return false;
+  }
+
+  if (dt >= parameters_->mapping_lost_timeout_) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"), "Mapping failed. sensor timeout dt=%.2fs", dt);
+    frame->lost_ = true;
+  }
+
+  float acceleration = (frame->rough_speed_ - prev_frame->rough_speed_).norm() / frame->dt_;
 
   if (acceleration > parameters_->lost_frame_max_acceleration_) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Mapping failed. Acceleration is too high. acc=%.2f (m/s2)", acceleration);
     frame->lost_ = true;
   }
 
   return frame->lost_;
 }
 
-bool CalibrationMapper::shouldDropFrame(
-  const Frame::Ptr & prev_frame, Frame::Ptr & frame, float delta_distance)
+bool CalibrationMapper::shouldDropFrame(const Frame::Ptr & prev_frame, Frame::Ptr & frame)
 {
-  if (!prev_frame || delta_distance > parameters_->new_frame_min_distance_) {
+  if (!prev_frame || frame->delta_translation_.norm() > parameters_->new_frame_min_distance_) {
     return false;
   }
 
   if (
-    std::abs(delta_distance - prev_frame->delta_distance_) < parameters_->frame_stopped_distance_) {
+    std::abs(frame->delta_translation_.norm() - prev_frame->aux_delta_translation_.norm()) <
+    parameters_->frame_stopped_distance_) {
     // When the vehicle is stopped, we may either skip the frame, record it as a normal frame,
     // or even save it for calibration
 
     prev_frame->frames_since_stop_ += 1;
-    prev_frame->delta_distance_ = delta_distance;
+    prev_frame->aux_delta_translation_ = frame->delta_translation_;
 
     frame->frames_since_stop_ = prev_frame->frames_since_stop_;
     frame->stopped_ = true;
@@ -474,32 +543,41 @@ void CalibrationMapper::publisherTimerCallback()
     return;
   }
 
-  // Process the new keyframes into the map
-  PointcloudType::Ptr tmp_mcs_ptr(new PointcloudType());
-  PointcloudType::Ptr subsampled_mcs_ptr(new PointcloudType());
-  *tmp_mcs_ptr += *published_map_pointcloud_ptr_;
+  auto processed_frames_it = data_->processed_frames_.begin() + published_keyframes;
 
-  for (auto it = data_->processed_frames_.begin() + published_keyframes;
-       it != data_->processed_frames_.end(); ++it) {
-    Frame::Ptr frame = *it;
-    PointcloudType::Ptr frame_mcs_ptr(new PointcloudType());
-    pcl::transformPointCloud(*frame->pointcloud_subsampled_, *frame_mcs_ptr, frame->pose_);
-    *tmp_mcs_ptr += *frame_mcs_ptr;
+  while (processed_frames_it != data_->processed_frames_.end()) {
+    // Process the new keyframes into the map
+    PointcloudType::Ptr tmp_mcs_ptr(new PointcloudType());
+    PointcloudType::Ptr subsampled_mcs_ptr(new PointcloudType());
+    *tmp_mcs_ptr += *published_map_pointcloud_ptr_;
+
+    for (int i = 0; i < 100;
+         i++) {  // arbitrary number since large unprocessed frames lead to gigantic memory usages
+      Frame::Ptr frame = *processed_frames_it;
+      PointcloudType::Ptr frame_mcs_ptr(new PointcloudType());
+      pcl::transformPointCloud(*frame->pointcloud_subsampled_, *frame_mcs_ptr, frame->pose_);
+      *tmp_mcs_ptr += *frame_mcs_ptr;
+
+      processed_frames_it++;
+      if (processed_frames_it == data_->processed_frames_.end()) {
+        break;
+      }
+    }
+
+    pcl::transformPointCloud(
+      *tmp_mcs_ptr, *tmp_mcs_ptr, data_->processed_frames_.back()->pose_.inverse());
+    tmp_mcs_ptr = cropPointCloud<PointcloudType>(tmp_mcs_ptr, parameters_->viz_max_range_);
+    pcl::transformPointCloud(*tmp_mcs_ptr, *tmp_mcs_ptr, data_->processed_frames_.back()->pose_);
+
+    pcl::VoxelGrid<PointType> voxel_grid;
+    voxel_grid.setLeafSize(
+      parameters_->mapping_viz_leaf_size_, parameters_->mapping_viz_leaf_size_,
+      parameters_->mapping_viz_leaf_size_);
+    voxel_grid.setInputCloud(tmp_mcs_ptr);
+    voxel_grid.filter(*subsampled_mcs_ptr);
+
+    published_map_pointcloud_ptr_.swap(subsampled_mcs_ptr);
   }
-
-  pcl::transformPointCloud(
-    *tmp_mcs_ptr, *tmp_mcs_ptr, data_->processed_frames_.back()->pose_.inverse());
-  tmp_mcs_ptr = cropPointCloud<PointcloudType>(tmp_mcs_ptr, parameters_->viz_max_range_);
-  pcl::transformPointCloud(*tmp_mcs_ptr, *tmp_mcs_ptr, data_->processed_frames_.back()->pose_);
-
-  pcl::VoxelGrid<PointType> voxel_grid;
-  voxel_grid.setLeafSize(
-    parameters_->mapping_viz_leaf_size_, parameters_->mapping_viz_leaf_size_,
-    parameters_->mapping_viz_leaf_size_);
-  voxel_grid.setInputCloud(tmp_mcs_ptr);
-  voxel_grid.filter(*subsampled_mcs_ptr);
-
-  published_map_pointcloud_ptr_.swap(subsampled_mcs_ptr);
 
   // Process the new keyframes and frames into the paths
   for (auto it = data_->keyframes_.begin() + published_keyframes; it != data_->keyframes_.end();
@@ -519,10 +597,10 @@ void CalibrationMapper::publisherTimerCallback()
     keyframe_marker.ns = "keyframe_id";
     keyframe_marker.id = keyframe->keyframe_id_;
     keyframe_marker.color.r = 1.0;
-    keyframe_marker.color.g = 1.0;
-    keyframe_marker.color.b = 1.0;
+    keyframe_marker.color.g = keyframe->lost_ ? 0.0 : 1.0;
+    keyframe_marker.color.b = keyframe->lost_ ? 0.0 : 1.0;
     keyframe_marker.color.a = 1.0;
-    keyframe_marker.scale.x = 0.03;
+    keyframe_marker.scale.x = keyframe->lost_ ? 0.06 : 0.03;
 
     keyframe_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
     keyframe_marker.text = std::to_string(keyframe->keyframe_id_);
@@ -535,13 +613,35 @@ void CalibrationMapper::publisherTimerCallback()
   for (auto it = data_->processed_frames_.begin() + published_frames;
        it != data_->processed_frames_.end(); ++it) {
     Frame::Ptr frame = *it;
-    Eigen::Matrix4d pose_matrix = frame->pose_.cast<double>();
-    Eigen::Isometry3d pose_isometry(pose_matrix);
+    Eigen::Isometry3d pose_isometry(frame->pose_.cast<double>());
+    Eigen::Isometry3d predicted_pose_isometry(frame->predicted_pose_.cast<double>());
     geometry_msgs::msg::PoseStamped pose_msg;
     pose_msg.header = frame->header_;
     pose_msg.header.frame_id = data_->map_frame_;
     pose_msg.pose = tf2::toMsg(pose_isometry);
     published_frames_path_.poses.push_back(pose_msg);
+
+    pose_msg.pose = tf2::toMsg(predicted_pose_isometry);
+    published_frames_predicted_path_.poses.push_back(pose_msg);
+
+    visualization_msgs::msg::Marker frame_marker;
+
+    frame_marker.header = frame->header_;
+    frame_marker.header.frame_id = data_->map_frame_;
+    frame_marker.ns = "frame_id";
+    frame_marker.id = frame->frame_id_;
+    frame_marker.color.r = 1.0;
+    frame_marker.color.g = frame->lost_ ? 0.0 : 1.0;
+    frame_marker.color.b = 1.0;
+    frame_marker.color.a = 1.0;
+    frame_marker.scale.x = frame->lost_ ? 0.03 : 0.005;
+
+    frame_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+    frame_marker.text = std::to_string(frame->frame_id_);
+    frame_marker.scale.z = frame->lost_ ? 0.1 : 0.03;
+    frame_marker.pose = pose_msg.pose;
+    frame_marker.pose.position.z += 0.1;
+    published_keyframes_markers_.markers.push_back(frame_marker);
   }
 
   published_frames = data_->processed_frames_.size();
@@ -555,15 +655,18 @@ void CalibrationMapper::publisherTimerCallback()
     published_map_msg.header.stamp = mapping_lidar_header_->stamp;
     published_keyframes_path_.header.stamp = mapping_lidar_header_->stamp;
     published_frames_path_.header.stamp = mapping_lidar_header_->stamp;
+    published_frames_predicted_path_.header.stamp = mapping_lidar_header_->stamp;
   }
 
   published_map_msg.header.frame_id = data_->map_frame_;
   published_keyframes_path_.header.frame_id = data_->map_frame_;
   published_frames_path_.header.frame_id = data_->map_frame_;
+  published_frames_predicted_path_.header.frame_id = data_->map_frame_;
 
   map_pub_->publish(published_map_msg);
   keyframe_path_pub_->publish(published_keyframes_path_);
   frame_path_pub_->publish(published_frames_path_);
+  frame_predicted_path_pub_->publish(published_frames_predicted_path_);
   keyframe_markers_pub_->publish(published_keyframes_markers_);
 
   return;
@@ -708,7 +811,9 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
     calibration_frame.estimated_accel_ = interpolated_accel;
     calibration_frame.stopped_ = keyframe->stopped_;
 
-    calibration_frames.emplace_back(calibration_frame);
+    if (static_cast<int>(pc_ptr->size()) >= parameters_->min_pointcloud_size_) {
+      calibration_frames.emplace_back(calibration_frame);
+    }
 
     last_unmatched_keyframe += 1;
   }

@@ -87,6 +87,10 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<int>("dense_pointcloud_num_keyframes_", 10);
   mapping_parameters_->mapping_max_range_ =
     this->declare_parameter<double>("mapping_max_range", 60.0);
+  mapping_parameters_->min_pointcloud_size_ =
+    this->declare_parameter<int>("min_pointcloud_size", 10000);
+  mapping_parameters_->mapping_lost_timeout_ =
+    this->declare_parameter<double>("mapping_lost_timeout", 1.0);
 
   // Mapping parameters
   mapping_parameters_->ndt_resolution_ = this->declare_parameter<double>("ndt_resolution", 5.0);
@@ -178,6 +182,8 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   auto map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("output_map", 10);
 
   auto frame_path_pub = this->create_publisher<nav_msgs::msg::Path>("frame_path", 10);
+  auto frame_predicted_path_pub =
+    this->create_publisher<nav_msgs::msg::Path>("frame_predicted_path", 10);
   auto keyframe_path_pub = this->create_publisher<nav_msgs::msg::Path>("keyframe_path", 10);
   auto keyframe_markers_pub =
     this->create_publisher<visualization_msgs::msg::MarkerArray>("keyframe_markers", 10);
@@ -189,8 +195,9 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   // Set up mapper
   mapper_ = std::make_shared<CalibrationMapper>(
-    mapping_parameters_, mapping_data_, map_pub, frame_path_pub, keyframe_path_pub,
-    keyframe_markers_pub, rosbag2_pause_client_, rosbag2_resume_client_, tf_buffer_);
+    mapping_parameters_, mapping_data_, map_pub, frame_path_pub, frame_predicted_path_pub,
+    keyframe_path_pub, keyframe_markers_pub, rosbag2_pause_client_, rosbag2_resume_client_,
+    tf_buffer_);
 
   // Set up lidar calibrators
   for (const auto & frame_name : mapping_data_->calibration_lidar_frame_names_) {
@@ -302,7 +309,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     rmw_qos_profile_services_default);
 
   publisher_timer_ = rclcpp::create_timer(
-    this, get_clock(), 10s, std::bind(&CalibrationMapper::publisherTimerCallback, mapper_));
+    this, get_clock(), 5s, std::bind(&CalibrationMapper::publisherTimerCallback, mapper_));
 
   data_matching_timer_ = rclcpp::create_timer(
     this, get_clock(), 1s, std::bind(&CalibrationMapper::dataMatchingTimerCallback, mapper_));
@@ -325,6 +332,8 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_max_frames);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, local_map_num_keyframes);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_max_range);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, min_pointcloud_size);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_lost_timeout);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_resolution);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_step_size);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_max_iterations);
@@ -388,8 +397,8 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
 {
   (void)request;
 
-  Eigen::Isometry3d parent_to_mapping_lidar_eigen_;
-  Eigen::Isometry3d lidar_base_to_lidar_eigen_;
+  Eigen::Isometry3d parent_to_mapping_lidar_eigen;
+  Eigen::Isometry3d lidar_base_to_lidar_eigen;
 
   {
     std::unique_lock<std::mutex> service_lock(service_mutex_);
@@ -409,18 +418,18 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
       rclcpp::Time t = rclcpp::Time(0);
       rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
 
-      geometry_msgs::msg::Transform parent_to_mapping_lidar_msg_ =
+      geometry_msgs::msg::Transform parent_to_mapping_lidar_msg =
         tf_buffer_->lookupTransform(parent_frame, mapping_data_->mapping_lidar_frame_, t, timeout)
           .transform;
 
-      parent_to_mapping_lidar_eigen_ = tf2::transformToEigen(parent_to_mapping_lidar_msg_);
+      parent_to_mapping_lidar_eigen = tf2::transformToEigen(parent_to_mapping_lidar_msg);
 
-      geometry_msgs::msg::Transform lidar_base_to_lidar_msg_ =
+      geometry_msgs::msg::Transform lidar_base_to_lidar_msg =
         tf_buffer_
           ->lookupTransform(calibration_lidar_base_frame, calibration_lidar_frame, t, timeout)
           .transform;
 
-      lidar_base_to_lidar_eigen_ = tf2::transformToEigen(lidar_base_to_lidar_msg_);
+      lidar_base_to_lidar_eigen = tf2::transformToEigen(lidar_base_to_lidar_msg);
     } catch (tf2::TransformException & ex) {
       RCLCPP_WARN(
         this->get_logger(), "could not get initial tfs. Aborting calibration. %s", ex.what());
@@ -463,9 +472,9 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
 
   Eigen::Isometry3d mapping_to_calibration_lidar_lidar_eigen =
     Eigen::Isometry3d(calibration_results_map_[calibration_lidar_frame].cast<double>());
-  Eigen::Isometry3d parent_to_lidar_base_eigen =
-    parent_to_mapping_lidar_eigen_ * mapping_to_calibration_lidar_lidar_eigen.inverse() *
-    lidar_base_to_lidar_eigen_.inverse();
+  Eigen::Isometry3d parent_to_lidar_base_eigen = parent_to_mapping_lidar_eigen *
+                                                 mapping_to_calibration_lidar_lidar_eigen *
+                                                 lidar_base_to_lidar_eigen.inverse();
 
   response->result_pose = tf2::toMsg(parent_to_lidar_base_eigen);
   response->score = calibration_scores_map_[calibration_lidar_frame];
@@ -473,8 +482,6 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
 
   // Convert  raw calibration to the output tf
   RCLCPP_INFO_STREAM(this->get_logger(), "Sending the tesults to the calibrator manager");
-
-  std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
 void ExtrinsicMappingBasedCalibrator::detectedObjectsCallback(

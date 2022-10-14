@@ -53,9 +53,14 @@ struct Frame
 {
   using Ptr = std::shared_ptr<Frame>;
   using ConstPtr = std::shared_ptr<const Frame>;
-  float distance_{0.f};
-  float delta_distance_{0.f};
-  float rough_speed_{0.f};
+  float distance_{0.f};  // line integration of the trajectory starting from the the origin
+  Eigen::Vector3f delta_translation_{
+    Eigen::Vector3f::Zero()};  // translation component of the difference between the last pose and
+                               // this
+  Eigen::Vector3f rough_speed_{Eigen::Vector3f::Zero()};
+  Eigen::Vector3f aux_delta_translation_{
+    Eigen::Vector3f::Zero()};  // delta translation from  the current frame to the latest non
+                               // accepted frame
   std_msgs::msg::Header header_;
   PointcloudType::Ptr pointcloud_raw_;
   PointcloudType::Ptr pointcloud_subsampled_;
@@ -66,7 +71,9 @@ struct Frame
   bool stopped_{false};
   bool lost_{false};
   int frames_since_stop_{0};
-  Eigen::Matrix4f pose_;  // map->lidar
+  Eigen::Matrix4f pose_;            // map->lidar
+  Eigen::Matrix4f predicted_pose_;  // map->lidar
+  float dt_{-1};
 };
 
 struct CalibrationFrame
@@ -127,6 +134,8 @@ struct MappingParameters
   int mapping_max_frames_;
   int local_map_num_keyframes_;
   double mapping_max_range_;
+  int min_pointcloud_size_;
+  double mapping_lost_timeout_;
   double viz_max_range_;
   double mapping_viz_leaf_size_;
 

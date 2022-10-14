@@ -76,7 +76,7 @@ typename PointcloudType::Ptr cropPointCloud(
   return tmp_ptr;
 }
 
-Eigen::Matrix4f poseInterpolation(
+Eigen::Matrix4f poseInterpolationBase(
   double t, double t1, double t2, Eigen::Matrix4f const & m1, Eigen::Matrix4f const & m2)
 {
   assert(t >= t1 && t <= t2);
@@ -98,6 +98,30 @@ Eigen::Matrix4f poseInterpolation(
   result.linear() = rot1.slerp(alpha, rot2).toRotationMatrix();
 
   return result.matrix();
+}
+
+Eigen::Matrix4f poseInterpolation(
+  double t, double t1, double t2, Eigen::Matrix4f const & m1, Eigen::Matrix4f const & m2)
+{
+  assert(t1 < t2);
+
+  if (t >= t1 && t <= t2) {
+    return poseInterpolationBase(t, t1, t2, m1, m2);
+  }
+
+  double dt = t2 - t1;
+  double te = t - t2;
+  Eigen::Matrix4f m = m2;
+  Eigen::Matrix4f dm = m1.inverse() * m2;
+
+  while (te >= dt) {
+    m = m * dm;
+    te -= dt;
+  }
+
+  auto asd = poseInterpolationBase(te, 0, dt, Eigen::Matrix4f::Identity(), dm);
+
+  return m * asd;
 }
 
 template <class PointType>

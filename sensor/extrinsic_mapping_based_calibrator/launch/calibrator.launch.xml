@@ -26,7 +26,7 @@
       <remap from="detected_objects" to="$(var detected_objects)"/>
       <remap from="predicted_objects" to="$(var predicted_objects)"/>
 
-      <param name="mapping_max_frames" value="2000" />
+      <param name="mapping_max_frames" value="5000" />
       <param name="mapping_max_range" value="100.0" />
       <param name="marker_size" value="10.0" />
       <param name="ndt_resolution" value="1.0" />
@@ -35,12 +35,12 @@
       <param name="ndt_epsilon" value="0.005" />
       <param name="ndt_num_threads" value="12" />
 
-      <param name="calibration_max_frames" value="10" />
-      <param name="calibration_min_pca_eigenvalue" value="0.015" />
+      <param name="calibration_max_frames" value="5" />
+      <param name="calibration_min_pca_eigenvalue" value="0.02" />
       <param name="calibration_eval_max_corr_distance" value="0.2" />
       <param name="solver_iterations" value="100" />
+      <param name="calibration_skip_keyframes" value="2" />
 
-      <param name="leaf_size_viz" value="0.1" />
       <param name="use_rosbag" value="false" />
 
     </node>

@@ -516,6 +516,14 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
     best_multi_frame_calibration_multi_frame_score,
     std::sqrt(best_multi_frame_calibration_multi_frame_score), parameters_->leaf_size_dense_map_);
 
+  RCLCPP_INFO_STREAM(
+    rclcpp::get_logger(calibrator_name_), "Initial calibration matrix =\n"
+                                            << initial_calibration_transform);
+
+  RCLCPP_INFO_STREAM(
+    rclcpp::get_logger(calibrator_name_), "Best calibration matrix =\n"
+                                            << best_multi_frame_calibration_transform);
+
   // Publish the calbiraton resullts
   publishResults(
     calibration_frames, sources, targets_thin, initial_calibration_transform,
