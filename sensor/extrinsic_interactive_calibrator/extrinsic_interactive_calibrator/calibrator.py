@@ -53,7 +53,7 @@ class Calibrator:
         if method == "sqpnp":
             self.flags = cv2.SOLVEPNP_SQPNP
         else:
-            self.flags = None
+            self.flags = cv2.SOLVEPNP_ITERATIVE
 
     def set_ransac(self, use_ransac):
         self.use_ransac = use_ransac
@@ -84,7 +84,7 @@ class Calibrator:
                 object_points, image_points, self.k, self.d, flags=self.flags
             )
         except Exception as e:
-            pass
+            print(e)
 
         camera_to_lidar_transform = cv_to_transformation_matrix(tvec, rvec)
 
@@ -92,14 +92,14 @@ class Calibrator:
 
     def calibrate_ransac(self, object_points, image_points):
 
-        num_points, dim = object_points.shape
+        num_points, _ = object_points.shape
 
         best_tvec = np.zeros((3,))
         best_rvec = np.zeros((3, 3))
         best_inliers = -1
         best_error = np.inf
 
-        for iter in range(self.ransac_iters):
+        for _ in range(self.ransac_iters):
 
             indexes = np.random.choice(num_points, min(num_points, self.min_points))
             object_points_iter = object_points[indexes, :]
@@ -110,6 +110,7 @@ class Calibrator:
                     object_points_iter, image_points_iter, self.k, self.d, flags=self.flags
                 )
             except Exception as e:
+                print(e)
                 continue
 
             reproj_error_iter, inliers = self.calculate_reproj_error(
