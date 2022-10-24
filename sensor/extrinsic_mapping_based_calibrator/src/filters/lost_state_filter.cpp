@@ -44,6 +44,11 @@ std::vector<CalibrationFrame> LostStateFilter::filter(
     }
   }
 
+  if (invalid_keyframe_ids.size() == 0) {
+    return calibration_frames;
+  }
+
+
   int left_invalid_keyframe_id = 0;
 
   // Find and separate frames that close enough to "lost" keyframes
