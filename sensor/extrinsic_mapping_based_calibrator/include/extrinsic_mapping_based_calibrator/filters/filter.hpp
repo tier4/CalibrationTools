@@ -25,8 +25,7 @@ public:
   using Ptr = std::shared_ptr<Filter>;
   using ConstPtr = std::shared_ptr<const Filter>;
 
-  Filter(const LidarCalibrationParameters::Ptr & parameters)
-  : parameters_(parameters), name_("filter")
+  Filter(const CalibrationParameters::Ptr & parameters) : parameters_(parameters), name_("filter")
   {
   }
   virtual ~Filter() {}
@@ -36,7 +35,7 @@ public:
   virtual void setName(const std::string & name) { name_ = name + " filter"; }
 
 protected:
-  const LidarCalibrationParameters::Ptr parameters_;
+  const CalibrationParameters::Ptr parameters_;
   std::string name_;
 };
 

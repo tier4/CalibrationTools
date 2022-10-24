@@ -26,14 +26,14 @@ class ObjectDetectionFilter : public Filter
 {
 public:
   ObjectDetectionFilter(
-    const LidarCalibrationParameters::Ptr & parameters,
+    const CalibrationParameters::Ptr & parameters,
     const std::shared_ptr<tf2_ros::Buffer> & tf_buffer)
   : Filter(parameters), tf_buffer_(tf_buffer)
   {
     name_ = "ObjectDetectionFilter";
   }
   ObjectDetectionFilter(
-    const std::string & name, const LidarCalibrationParameters::Ptr & parameters,
+    const std::string & name, const CalibrationParameters::Ptr & parameters,
     const std::shared_ptr<tf2_ros::Buffer> & tf_buffer)
   : Filter(parameters), tf_buffer_(tf_buffer)
   {

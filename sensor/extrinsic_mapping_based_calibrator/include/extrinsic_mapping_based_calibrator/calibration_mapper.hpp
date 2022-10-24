@@ -22,6 +22,8 @@
 #include <rosbag2_interfaces/srv/resume.hpp>
 
 #include <nav_msgs/msg/path.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tier4_calibration_msgs/srv/frame.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -30,6 +32,8 @@
 #include <pclomp/ndt_omp.h>
 #include <pclomp/voxel_grid_covariance_omp.h>
 #include <tf2_ros/buffer.h>
+
+#include <functional>
 
 class CalibrationMapper
 {
@@ -49,6 +53,21 @@ public:
     rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedPtr & rosbag2_pause_client,
     rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedPtr & rosbag2_resume_client,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer);
+
+  /*!
+   * Message callback for calibration pointclouds (pointclouds in the frame to calibrate)
+   * @param[in] pc Calibration pointcloud msg
+   */
+  void calibrationCameraInfoCallback(
+    const sensor_msgs::msg::CameraInfo::SharedPtr camera_info, const std::string & frame_name);
+
+  /*!
+   * Message callback for calibration pointclouds (pointclouds in the frame to calibrate)
+   * @param[in] pc Calibration pointcloud msg
+   */
+  void calibrationImageCallback(
+    const sensor_msgs::msg::CompressedImage::SharedPtr compressed_image,
+    const std::string & frame_name);
 
   /*!
    * Message callback for calibration pointclouds (pointclouds in the frame to calibrate)
@@ -86,9 +105,38 @@ public:
 
 protected:
   /*!
-   * Matches mapping keyframes with a singular calibration lidar
+   * Method to match source-target data
+   * @param[in] calibration_frame_name the name of the calibration frame
+   * @param[in] calibration_msg_list the list of data to pair
+   * @param[in] add_frame_function the specialized function to add specific sensors
    */
-  void mappingCalibrationDatamatching(const std::string & calibration_frame);
+
+  template <class MsgType>
+  void mappingCalibrationDatamatching(
+    const std::string & calibration_frame_name,
+    std::list<typename MsgType::SharedPtr> & calibration_msg_list,
+    std::function<bool(const std::string &, typename MsgType::SharedPtr &, CalibrationFrame &)>
+      addFrameFunction);
+
+  /*!
+   * Auxiliar method to add a camera calibration frame
+   * @param[in] calibration_frame_name the name of the calibration frame
+   * @param[in] msg the compressed image in msg format
+   * @param[in] base_calibration_frame the partially filled calibration frame
+   */
+  bool addNewCameraCalibrationFrame(
+    const std::string & calibration_frame_name, sensor_msgs::msg::CompressedImage::SharedPtr & msg,
+    CalibrationFrame & base_calibration_frame);
+
+  /*!
+   * Auxiliar method to add a lidar calibration frame
+   * @param[in] calibration_frame_name the name of the calibration frame
+   * @param[in] msg the pc in pcl format
+   * @param[in] base_calibration_frame the partially filled calibration frame
+   */
+  bool addNewLidarCalibrationFrame(
+    const std::string & calibration_frame_name, sensor_msgs::msg::PointCloud2::SharedPtr & msg,
+    CalibrationFrame & base_calibration_frame);
 
   // Mapping methods
 
@@ -148,6 +196,13 @@ protected:
 
   // ROS Data
   std_msgs::msg::Header::SharedPtr mapping_lidar_header_;
+
+  std::map<std::string, sensor_msgs::msg::CameraInfo::SharedPtr>
+    latest_calibration_camera_infos_map_;
+  std::map<std::string, std::list<sensor_msgs::msg::CompressedImage::SharedPtr>>
+    calibration_images_list_map_;
+  std::map<std::string, std::list<sensor_msgs::msg::PointCloud2::SharedPtr>>
+    calibration_pointclouds_list_map_;
 
   // ROS Publishers buffers
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

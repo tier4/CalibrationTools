@@ -4,9 +4,16 @@
   <arg name="mapping_pointcloud" />
   <arg name="detected_objects" default="detected_objects" />
   <arg name="predicted_objects"  default="predicted_objects" />
+  <arg name="calibration_camera_info_topics" />
+  <arg name="calibration_image_topics" />
   <arg name="calibration_pointcloud_topics" />
-  <arg name="calibration_service_names" />
-  <arg name="sensor_kit_frames" />
+  <arg name="camera_calibration_service_names" />
+  <arg name="lidar_calibration_service_names" />
+  <arg name="camera_calibration_sensor_kit_frames" />
+  <arg name="lidar_calibration_sensor_kit_frames" />
+  <arg name="calibration_camera_frames" />
+  <arg name="calibration_camera_optical_link_frames" />
+
   <arg name="calibration_lidar_base_frames" />
   <arg name="calibration_lidar_frames" />
   <arg name="mapping_lidar_frame" />
@@ -16,11 +23,17 @@
     <node pkg="extrinsic_mapping_based_calibrator" exec="extrinsic_mapping_based_calibrator" name="extrinsic_mapping_based_calibrator_node" output="screen">
       <param name="map_frame" value="calibration_map" />
 
-      <param name="calibration_service_names" value="$(var calibration_service_names)" />
-      <param name="sensor_kit_frames" value="$(var sensor_kit_frames)" />
+      <param name="camera_calibration_service_names" value="$(var camera_calibration_service_names)" />
+      <param name="lidar_calibration_service_names" value="$(var lidar_calibration_service_names)" />
+      <param name="camera_calibration_sensor_kit_frames" value="$(var camera_calibration_sensor_kit_frames)" />
+      <param name="lidar_calibration_sensor_kit_frames" value="$(var lidar_calibration_sensor_kit_frames)" />
+      <param name="calibration_camera_frames" value="$(var calibration_camera_frames)" />
+      <param name="calibration_camera_optical_link_frames" value="$(var calibration_camera_optical_link_frames)" />
       <param name="calibration_lidar_base_frames" value="$(var calibration_lidar_base_frames)" />
       <param name="calibration_lidar_frames" value="$(var calibration_lidar_frames)" />
       <param name="mapping_lidar_frame" value="$(var mapping_lidar_frame)" />
+      <param name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
+      <param name="calibration_image_topics" value="$(var calibration_image_topics)"/>
       <param name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
       <remap from="mapping_pointcloud" to="$(var mapping_pointcloud)"/>
       <remap from="detected_objects" to="$(var detected_objects)"/>

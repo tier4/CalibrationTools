@@ -38,7 +38,9 @@ ament_auto_add_executable(extrinsic_mapping_based_calibrator
   src/filters/object_detection_filter.cpp
   src/calibration_mapper.cpp
   src/extrinsic_mapping_based_calibrator.cpp
+  src/camera_calibrator.cpp
   src/lidar_calibrator.cpp
+  src/sensor_calibrator.cpp
   src/main.cpp
   src/utils.cpp
 )

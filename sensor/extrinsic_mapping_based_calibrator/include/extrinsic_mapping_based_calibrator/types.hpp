@@ -18,6 +18,8 @@
 #include <Eigen/Dense>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/header.hpp>
 
@@ -81,6 +83,8 @@ struct CalibrationFrame
   using Ptr = std::shared_ptr<CalibrationFrame>;
   using ConstPtr = std::shared_ptr<const CalibrationFrame>;
 
+  sensor_msgs::msg::CameraInfo::SharedPtr source_camera_info;
+  sensor_msgs::msg::CompressedImage::SharedPtr source_image;
   PointcloudType::Ptr source_pointcloud_;
   std_msgs::msg::Header source_header_;
 
@@ -102,6 +106,7 @@ struct MappingData
 
   std::string map_frame_;
   std::string mapping_lidar_frame_;
+  std::vector<std::string> calibration_camera_optical_link_frame_names;
   std::vector<std::string> calibration_lidar_frame_names_;
 
   std::mutex mutex_;
@@ -114,11 +119,10 @@ struct MappingData
   std::vector<geometry_msgs::msg::PoseStamped> trajectory_;
 
   // Calibration matching data
-  std::map<std::string, std::list<sensor_msgs::msg::PointCloud2::SharedPtr>>
-    calibration_pointclouds_list_map_;
   std::map<std::string, std_msgs::msg::Header::SharedPtr> calibration_lidar_header_map_;
   std::map<std::string, int> last_unmatched_keyframe_map_;
-  std::map<std::string, std::vector<CalibrationFrame>> calibration_frames_map_;
+  std::map<std::string, std::vector<CalibrationFrame>> camera_calibration_frames_map_;
+  std::map<std::string, std::vector<CalibrationFrame>> lidar_calibration_frames_map_;
 
   // Object recognition results
   std::vector<ObjectsBB> detected_objects_;
@@ -159,10 +163,10 @@ struct MappingParameters
   double lost_frame_max_acceleration_;
 };
 
-struct LidarCalibrationParameters
+struct CalibrationParameters
 {
-  using Ptr = std::shared_ptr<LidarCalibrationParameters>;
-  using ConstPtr = std::shared_ptr<const LidarCalibrationParameters>;
+  using Ptr = std::shared_ptr<CalibrationParameters>;
+  using ConstPtr = std::shared_ptr<const CalibrationParameters>;
 
   bool calibration_verbose_;
   double leaf_size_dense_map_;

@@ -23,11 +23,11 @@
 class BestFramesFilter : public Filter
 {
 public:
-  BestFramesFilter(const LidarCalibrationParameters::Ptr & parameters) : Filter(parameters)
+  BestFramesFilter(const CalibrationParameters::Ptr & parameters) : Filter(parameters)
   {
     name_ = "BestFramesFilter";
   }
-  BestFramesFilter(const std::string & name, const LidarCalibrationParameters::Ptr & parameters)
+  BestFramesFilter(const std::string & name, const CalibrationParameters::Ptr & parameters)
   : Filter(parameters)
   {
     setName(name);

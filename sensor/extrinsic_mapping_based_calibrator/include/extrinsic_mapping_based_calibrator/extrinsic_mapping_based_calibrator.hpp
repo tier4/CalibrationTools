@@ -17,6 +17,7 @@
 
 #include <Eigen/Dense>
 #include <extrinsic_mapping_based_calibrator/calibration_mapper.hpp>
+#include <extrinsic_mapping_based_calibrator/camera_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/lidar_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
 #include <rclcpp/logging.hpp>
@@ -26,6 +27,9 @@
 
 #include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
 #include <autoware_auto_perception_msgs/msg/predicted_objects.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tier4_calibration_msgs/srv/calibration_database.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/frame.hpp>
@@ -44,6 +48,8 @@
 class ExtrinsicMappingBasedCalibrator : public rclcpp::Node
 {
 public:
+  using CameraInfoSubscription = rclcpp::Subscription<sensor_msgs::msg::CameraInfo>;
+  using ImageSubscription = rclcpp::Subscription<sensor_msgs::msg::CompressedImage>;
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
   using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
@@ -51,7 +57,13 @@ public:
   ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
-  void requestReceivedCallback(
+  void cameraCalibrationRequestReceivedCallback(
+    const std::string & parent_frame, const std::string & calibration_camera_frame,
+    const std::string & calibration_camera_optical_frame,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+
+  void lidarCalibrationRequestReceivedCallback(
     const std::string & parent_frame, const std::string & calibration_lidar_base_frame,
     const std::string & calibration_lidar_frame,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
@@ -95,6 +107,8 @@ protected:
   rclcpp::CallbackGroup::SharedPtr subs_callback_group_;
   std::map<std::string, rclcpp::CallbackGroup::SharedPtr> srv_callback_groups_map_;
 
+  std::map<std::string, CameraInfoSubscription::SharedPtr> calibration_camera_info_subs_;
+  std::map<std::string, ImageSubscription::SharedPtr> calibration_image_subs_;
   std::map<std::string, PointSubscription::SharedPtr> calibration_pointcloud_subs_;
   PointSubscription::SharedPtr mapping_pointcloud_sub_;
   rclcpp::Subscription<autoware_auto_perception_msgs::msg::DetectedObjects>::SharedPtr
@@ -119,14 +133,16 @@ protected:
 
   // Parameters
   MappingParameters::Ptr mapping_parameters_;
-  LidarCalibrationParameters::Ptr calibration_parameters_;
+  CalibrationParameters::Ptr calibration_parameters_;
 
   // Calibration API
+  std::map<std::string, bool> calibration_pending_map_;
   std::map<std::string, bool> calibration_status_map_;
   std::map<std::string, Eigen::Matrix4f> calibration_results_map_;
   std::map<std::string, float> calibration_scores_map_;
   std::map<std::string, std::string> sensor_kit_frame_map_;              // calibration parent frame
   std::map<std::string, std::string> calibration_lidar_base_frame_map_;  // calibration child frame
+  std::map<std::string, std::string> calibration_camera_frame_map_;      // calibration child frame
   std::mutex service_mutex_;
 
   // Mapper
@@ -134,6 +150,7 @@ protected:
   MappingData::Ptr mapping_data_;
 
   // Calibrators
+  std::map<std::string, CameraCalibrator::Ptr> camera_calibrators_;
   std::map<std::string, LidarCalibrator::Ptr> lidar_calibrators_;
 };
 

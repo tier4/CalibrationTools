@@ -67,6 +67,11 @@ CalibrationMapper::CalibrationMapper(
       parameters_->calibration_skip_keyframes_;
   }
 
+  for (auto & calibration_frame_name : data_->calibration_camera_optical_link_frame_names) {
+    data_->last_unmatched_keyframe_map_[calibration_frame_name] =
+      parameters_->calibration_skip_keyframes_;
+  }
+
   std::thread thread = std::thread(&CalibrationMapper::mappingThreadWorker, this);
   thread.detach();
 }
@@ -79,6 +84,34 @@ bool CalibrationMapper::stopped()
 
 void CalibrationMapper::stop() { stopped_ = true; }
 
+void CalibrationMapper::calibrationCameraInfoCallback(
+  const sensor_msgs::msg::CameraInfo::SharedPtr msg, const std::string & frame_name)
+{
+  if (stopped_) {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Reveived a calibration camera info while not mapping. Ignoring it");
+    return;
+  }
+
+  latest_calibration_camera_infos_map_[frame_name] = msg;
+}
+
+void CalibrationMapper::calibrationImageCallback(
+  const sensor_msgs::msg::CompressedImage::SharedPtr msg, const std::string & frame_name)
+{
+  if (stopped_) {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Reveived a calibration image while not mapping. Ignoring it");
+    return;
+  }
+
+  calibration_images_list_map_[frame_name].push_back(msg);
+}
+
 void CalibrationMapper::calibrationPointCloudCallback(
   const sensor_msgs::msg::PointCloud2::SharedPtr msg, const std::string & frame_name)
 {
@@ -90,9 +123,7 @@ void CalibrationMapper::calibrationPointCloudCallback(
     return;
   }
 
-  auto & calibration_pointclouds_list = data_->calibration_pointclouds_list_map_[frame_name];
-
-  calibration_pointclouds_list.push_back(msg);
+  calibration_pointclouds_list_map_[frame_name].push_back(msg);
 }
 
 void CalibrationMapper::mappingPointCloudCallback(
@@ -674,26 +705,40 @@ void CalibrationMapper::publisherTimerCallback()
 
 void CalibrationMapper::dataMatchingTimerCallback()
 {
+  for (const auto & frame_name : data_->calibration_camera_optical_link_frame_names) {
+    mappingCalibrationDatamatching<sensor_msgs::msg::CompressedImage>(
+      frame_name, calibration_images_list_map_[frame_name],
+      std::bind(
+        &CalibrationMapper::addNewCameraCalibrationFrame, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3));
+  }
+
   for (const auto & frame_name : data_->calibration_lidar_frame_names_) {
-    mappingCalibrationDatamatching(frame_name);
+    mappingCalibrationDatamatching<sensor_msgs::msg::PointCloud2>(
+      frame_name, calibration_pointclouds_list_map_[frame_name],
+      std::bind(
+        &CalibrationMapper::addNewLidarCalibrationFrame, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3));
   }
 }
 
-void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calibration_frame_name)
+template <class MsgType>
+void CalibrationMapper::mappingCalibrationDatamatching(
+  const std::string & calibration_frame_name,
+  std::list<typename MsgType::SharedPtr> & calibration_msg_list,
+  std::function<bool(const std::string &, typename MsgType::SharedPtr &, CalibrationFrame &)>
+    add_frame_function)
 {
   std::unique_lock<std::mutex> lock(data_->mutex_);
   auto & last_unmatched_keyframe = data_->last_unmatched_keyframe_map_[calibration_frame_name];
-  auto & calibration_frames = data_->calibration_frames_map_[calibration_frame_name];
-  auto & calibration_pointclouds_list =
-    data_->calibration_pointclouds_list_map_[calibration_frame_name];
 
   while (last_unmatched_keyframe < static_cast<int>(data_->keyframes_and_stopped_.size()) - 1) {
     Frame::Ptr keyframe = data_->keyframes_and_stopped_[last_unmatched_keyframe];
     auto keyframe_stamp = rclcpp::Time(keyframe->header_.stamp);
 
     if (
-      calibration_pointclouds_list.size() < 3 ||
-      rclcpp::Time(calibration_pointclouds_list.back()->header.stamp) < keyframe_stamp) {
+      calibration_msg_list.size() < 3 ||
+      rclcpp::Time(calibration_msg_list.back()->header.stamp) < keyframe_stamp) {
       return;
     }
 
@@ -705,21 +750,20 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
 
     // Iterate for all frames between the last keyframe and this one looking for a stopped frame,
     // which we want to use as a calibration frame
-    auto pc_msg_left = calibration_pointclouds_list.front();
-    calibration_pointclouds_list.pop_front();
-    auto pc_msg_right = calibration_pointclouds_list.front();
+    auto msg_left = calibration_msg_list.front();
+    calibration_msg_list.pop_front();
+    auto msg_right = calibration_msg_list.front();
 
-    while (rclcpp::Time(pc_msg_right->header.stamp) < keyframe_stamp) {
-      pc_msg_left = pc_msg_right;
-      calibration_pointclouds_list.pop_front();
-      pc_msg_right = calibration_pointclouds_list.front();
+    while (rclcpp::Time(msg_right->header.stamp) < keyframe_stamp) {
+      msg_left = msg_right;
+      calibration_msg_list.pop_front();
+      msg_right = calibration_msg_list.front();
     }
 
-    double dt_left = (keyframe_stamp - rclcpp::Time(pc_msg_left->header.stamp)).seconds();
-    double dt_right = (rclcpp::Time(pc_msg_right->header.stamp) - keyframe_stamp).seconds();
+    double dt_left = (keyframe_stamp - rclcpp::Time(msg_left->header.stamp)).seconds();
+    double dt_right = (rclcpp::Time(msg_right->header.stamp) - keyframe_stamp).seconds();
 
-    // Drop all the pointcloud messages until we
-    sensor_msgs::msg::PointCloud2::SharedPtr pc_msg;
+    typename MsgType::SharedPtr msg;
     Frame::Ptr frame_left, frame_right, frame_aux;
     double interpolated_distance;
     double interpolated_time;
@@ -728,7 +772,7 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
 
     // Compute first and second order derivates with finite differences
     if (dt_left < dt_right) {
-      pc_msg = pc_msg_left;
+      msg = msg_left;
 
       frame_left = data_->processed_frames_[keyframe->frame_id_ - 1];
       frame_right = keyframe;
@@ -748,7 +792,7 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
 
       interpolated_time = dt_left;
     } else {
-      pc_msg = pc_msg_right;
+      msg = msg_right;
 
       frame_aux = data_->processed_frames_[keyframe->frame_id_ - 1];
       frame_left = keyframe;
@@ -776,7 +820,7 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
 
     // Interpolate the pose
     Eigen::Matrix4f interpolated_pose = poseInterpolation(
-      (rclcpp::Time(pc_msg->header.stamp) - rclcpp::Time(frame_left->header_.stamp)).seconds(), 0.f,
+      (rclcpp::Time(msg->header.stamp) - rclcpp::Time(frame_left->header_.stamp)).seconds(), 0.f,
       (rclcpp::Time(frame_right->header_.stamp) - rclcpp::Time(frame_left->header_.stamp))
         .seconds(),
       frame_left->pose_, frame_right->pose_);
@@ -790,15 +834,9 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
       std::abs(std::acos(std::min(std::max(0.5 * aux_affine.linear().trace() - 0.5, -1.0), 1.0))) /
       3.1416;
 
-    PointcloudType::Ptr pc_ptr(new PointcloudType());
-    pcl::fromROSMsg(*pc_msg, *pc_ptr);
-    transformPointcloud<PointcloudType>(
-      pc_msg->header.frame_id, calibration_frame_name, pc_ptr, *tf_buffer_);
-
     CalibrationFrame calibration_frame;
 
-    calibration_frame.source_pointcloud_ = pc_ptr;
-    calibration_frame.source_header_ = pc_msg->header;
+    calibration_frame.source_header_ = msg->header;
     calibration_frame.source_header_.frame_id = calibration_frame_name;
 
     calibration_frame.target_frame_ = keyframe;
@@ -811,10 +849,52 @@ void CalibrationMapper::mappingCalibrationDatamatching(const std::string & calib
     calibration_frame.estimated_accel_ = interpolated_accel;
     calibration_frame.stopped_ = keyframe->stopped_;
 
-    if (static_cast<int>(pc_ptr->size()) >= parameters_->min_pointcloud_size_) {
-      calibration_frames.emplace_back(calibration_frame);
-    }
+    add_frame_function(calibration_frame_name, msg, calibration_frame);
 
     last_unmatched_keyframe += 1;
   }
 }
+
+bool CalibrationMapper::addNewCameraCalibrationFrame(
+  const std::string & calibration_frame_name, sensor_msgs::msg::CompressedImage::SharedPtr & msg,
+  CalibrationFrame & calibration_frame)
+{
+  calibration_frame.source_camera_info =
+    latest_calibration_camera_infos_map_[calibration_frame_name];
+  calibration_frame.source_image = msg;
+  data_->camera_calibration_frames_map_[calibration_frame_name].emplace_back(calibration_frame);
+
+  return true;
+}
+
+bool CalibrationMapper::addNewLidarCalibrationFrame(
+  const std::string & calibration_frame_name, sensor_msgs::msg::PointCloud2::SharedPtr & msg,
+  CalibrationFrame & calibration_frame)
+{
+  PointcloudType::Ptr pc_ptr(new PointcloudType());
+  pcl::fromROSMsg(*msg, *pc_ptr);
+  transformPointcloud<PointcloudType>(
+    msg->header.frame_id, calibration_frame_name, pc_ptr, *tf_buffer_);
+
+  calibration_frame.source_pointcloud_ = pc_ptr;
+
+  if (static_cast<int>(pc_ptr->size()) >= parameters_->min_pointcloud_size_) {
+    data_->lidar_calibration_frames_map_[calibration_frame_name].emplace_back(calibration_frame);
+    return true;
+  }
+
+  return false;
+}
+
+template void CalibrationMapper::mappingCalibrationDatamatching<sensor_msgs::msg::CompressedImage>(
+  const std::string & calibration_frame,
+  std::list<sensor_msgs::msg::CompressedImage::SharedPtr> & calibration_msg_list,
+  std::function<
+    bool(const std::string &, sensor_msgs::msg::CompressedImage::SharedPtr &, CalibrationFrame &)>
+    add_frame_function);
+template void CalibrationMapper::mappingCalibrationDatamatching<sensor_msgs::msg::PointCloud2>(
+  const std::string & calibration_frame,
+  std::list<sensor_msgs::msg::PointCloud2::SharedPtr> & calibration_msg_list,
+  std::function<
+    bool(const std::string &, sensor_msgs::msg::PointCloud2::SharedPtr &, CalibrationFrame &)>
+    add_frame_function);

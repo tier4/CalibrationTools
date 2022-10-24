@@ -32,16 +32,14 @@
 #define UNUSED(x) (void)x;
 
 LidarCalibrator::LidarCalibrator(
-  const std::string & calibration_lidar_frame, LidarCalibrationParameters::Ptr & parameters,
+  const std::string & calibration_lidar_frame, CalibrationParameters::Ptr & parameters,
   MappingData::Ptr & mapping_data, std::shared_ptr<tf2_ros::Buffer> & tf_buffer,
   PointPublisher::SharedPtr & initial_source_aligned_map_pub,
   PointPublisher::SharedPtr & calibrated_source_aligned_map_pub,
   PointPublisher::SharedPtr & target_map_pub)
-: calibration_lidar_frame_(calibration_lidar_frame),
-  calibrator_name_("lidar_calibrator(" + calibration_lidar_frame + ")"),
-  parameters_(parameters),
-  data_(mapping_data),
-  tf_buffer_(tf_buffer),
+: SensorCalibrator(
+    calibration_lidar_frame, "lidar_calibrator(" + calibration_lidar_frame + ")", parameters,
+    mapping_data, tf_buffer),
   initial_source_aligned_map_pub_(initial_source_aligned_map_pub),
   calibrated_source_aligned_map_pub_(calibrated_source_aligned_map_pub),
   target_map_pub_(target_map_pub)
@@ -118,80 +116,7 @@ void LidarCalibrator::setUpCalibrators(
   }
 }
 
-PointcloudType::Ptr LidarCalibrator::getDensePointcloudFromMap(
-  const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double max_range)
-{
-  int frame_id = frame->frame_id_;
-
-  // Find the closest keyframe to the requested keyframe
-  Frame::Ptr keyframe_left, keyframe_right, keyframe;
-
-  for (auto it = data_->processed_frames_.begin() + frame_id;
-       it != data_->processed_frames_.begin(); it--) {
-    if ((*it)->is_key_frame_) {
-      keyframe_left = *it;
-      break;
-    }
-  }
-
-  for (auto it = data_->processed_frames_.begin() + frame_id; it != data_->processed_frames_.end();
-       it++) {
-    if ((*it)->is_key_frame_) {
-      keyframe_right = *it;
-      break;
-    }
-  }
-
-  if (keyframe_left && keyframe_right) {
-    keyframe =
-      (keyframe_right->frame_id_ - frame->frame_id_ < frame->frame_id_ - keyframe_left->frame_id_)
-        ? keyframe_right
-        : keyframe_left;
-  } else if (keyframe_left) {
-    keyframe = keyframe_left;
-  } else if (keyframe_right) {
-    keyframe = keyframe_right;
-  } else {
-    assert(false);
-  }
-
-  int min_keyframe_id =
-    std::max<int>(0, keyframe->keyframe_id_ - parameters_->dense_pointcloud_num_keyframes_);
-  int max_keyframe_id = std::min<int>(
-    data_->keyframes_.size() - 1,
-    keyframe->keyframe_id_ + parameters_->dense_pointcloud_num_keyframes_);
-
-  int min_frame_id = data_->keyframes_[min_keyframe_id]->frame_id_;
-  int max_frame_id = data_->keyframes_[max_keyframe_id]->frame_id_;
-
-  auto target_map_pose = pose.inverse();
-
-  // Sum all frames in the target coordinate system (tcs)
-  PointcloudType::Ptr tmp_tcs_ptr(new PointcloudType());
-  PointcloudType::Ptr subsampled_tcs_ptr(new PointcloudType());
-
-  for (int i = min_frame_id; i <= max_frame_id; i++) {
-    Frame::Ptr frame = data_->processed_frames_[i];
-    PointcloudType::Ptr frame_tcs_ptr(new PointcloudType());
-
-    auto map_frame_pose = frame->pose_;
-    auto target_frame_pose = target_map_pose * map_frame_pose;
-
-    pcl::transformPointCloud(*frame->pointcloud_raw_, *frame_tcs_ptr, target_frame_pose);
-    *tmp_tcs_ptr += *frame_tcs_ptr;
-  }
-
-  PointcloudType::Ptr cropped_tcd_ptr = cropPointCloud<PointcloudType>(tmp_tcs_ptr, max_range);
-
-  pcl::VoxelGridTriplets<PointType> voxel_grid;
-  voxel_grid.setLeafSize(resolution, resolution, resolution);
-  voxel_grid.setInputCloud(cropped_tcd_ptr);
-  voxel_grid.filter(*subsampled_tcs_ptr);
-
-  return subsampled_tcs_ptr;
-}
-
-void LidarCalibrator::singleLidarCalibrationCallback(
+void LidarCalibrator::singleSensorCalibrationCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
 {
@@ -209,7 +134,7 @@ void LidarCalibrator::singleLidarCalibrationCallback(
     Eigen::Affine3d initial_target_to_source_affine;
 
     initial_target_to_source_msg =
-      tf_buffer_->lookupTransform(data_->mapping_lidar_frame_, calibration_lidar_frame_, t, timeout)
+      tf_buffer_->lookupTransform(data_->mapping_lidar_frame_, calibrator_sensor_frame_, t, timeout)
         .transform;
 
     initial_target_to_source_affine = tf2::transformToEigen(initial_target_to_source_msg);
@@ -220,7 +145,7 @@ void LidarCalibrator::singleLidarCalibrationCallback(
     return;
   }
 
-  auto & calibration_frames = data_->calibration_frames_map_[calibration_lidar_frame_];
+  auto & calibration_frames = data_->lidar_calibration_frames_map_[calibrator_sensor_frame_];
 
   std::vector<CalibrationFrame> filtered_calibration_frames =
     filter_->filter(calibration_frames, data_);
@@ -341,7 +266,7 @@ void LidarCalibrator::singleLidarCalibrationCallback(
   response->success = true;
 }
 
-void LidarCalibrator::multipleLidarCalibrationCallback(
+void LidarCalibrator::multipleSensorCalibrationCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
 {
@@ -362,7 +287,7 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
 
   RCLCPP_INFO(
     rclcpp::get_logger(calibrator_name_), "Calibrating frame: %s",
-    calibration_lidar_frame_.c_str());
+    calibrator_sensor_frame_.c_str());
   RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "Obtaining initial calibration...");
 
   // Get the initial tf between mapping and calibration lidars
@@ -371,7 +296,7 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
     rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
 
     auto initial_target_to_source_affine = tf2::transformToEigen(
-      tf_buffer_->lookupTransform(data_->mapping_lidar_frame_, calibration_lidar_frame_, t, timeout)
+      tf_buffer_->lookupTransform(data_->mapping_lidar_frame_, calibrator_sensor_frame_, t, timeout)
         .transform);
 
     initial_calibration_transform = initial_target_to_source_affine.matrix().cast<float>();
@@ -385,7 +310,7 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
   // Filter calibration frames using several criteria and select the best ones suited for
   // calibration
   std::vector<CalibrationFrame> calibration_frames =
-    filter_->filter(data_->calibration_frames_map_[calibration_lidar_frame_], data_);
+    filter_->filter(data_->lidar_calibration_frames_map_[calibrator_sensor_frame_], data_);
 
   if (static_cast<int>(calibration_frames.size()) < parameters_->calibration_min_frames_) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "Insufficient calibration frames. aborting.");

@@ -16,6 +16,7 @@
 #define EXTRINSIC_MAPPING_BASED_CALIBRATOR_LIDAR_CALIBRATOR_HPP_
 
 #include <extrinsic_mapping_based_calibrator/filters/filter.hpp>
+#include <extrinsic_mapping_based_calibrator/sensor_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tier4_pcl_extensions/joint_icp_extended.hpp>
@@ -30,7 +31,7 @@
 #include <pclomp/ndt_omp.h>
 #include <tf2_ros/buffer.h>
 
-class LidarCalibrator
+class LidarCalibrator : public SensorCalibrator
 {
 public:
   using Ptr = std::shared_ptr<LidarCalibrator>;
@@ -39,28 +40,28 @@ public:
   using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
 
   LidarCalibrator(
-    const std::string & calibration_lidar_frame, LidarCalibrationParameters::Ptr & parameters,
+    const std::string & calibration_lidar_frame, CalibrationParameters::Ptr & parameters,
     MappingData::Ptr & mapping_data, std::shared_ptr<tf2_ros::Buffer> & tf_buffer,
     PointPublisher::SharedPtr & initial_source_aligned_map_pub,
     PointPublisher::SharedPtr & calibrated_source_aligned_map_pub,
     PointPublisher::SharedPtr & target_map_pub);
 
-  void singleLidarCalibrationCallback(
+  virtual void singleSensorCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
-  void multipleLidarCalibrationCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
+  virtual void multipleSensorCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
 
   /*!
-   * Calibrate the ldiar
+   * Calibrate the lidar
    */
-  bool calibrate(Eigen::Matrix4f & best_transform, float & best_score);
+  virtual bool calibrate(Eigen::Matrix4f & best_transform, float & best_score) override;
 
   /*!
    * Configure the calibrator parameters
    */
-  void configureCalibrators();
+  virtual void configureCalibrators() override;
 
 protected:
   /*!
@@ -72,17 +73,6 @@ protected:
     PointcloudType::Ptr & source_pointcloud_ptr, PointcloudType::Ptr & target_pointcloud_ptr);
 
   // General methods
-
-  /*!
-   * Compute a map with a user-defined resolution around a certain frame centered in `pose`
-   * @param[in] pose The pose in map coordinates the pointcloud should be centered in
-   * @param[in] frame Frame to use as a center for constructing the pointcloud
-   * @param[in] resolution Max resolution of the resulting pointcloud
-   * @param[in] max_range Max range of the resulting pointcloud
-   * @retval Source to distance pointcloud distance
-   */
-  PointcloudType::Ptr getDensePointcloudFromMap(
-    const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double max_range);
 
   /*!
    * Prepare the augmented calibration data
@@ -109,12 +99,6 @@ protected:
     const Eigen::Matrix4f & initial_transform, const Eigen::Matrix4f & calibrated_transform,
     const std::string & map_frame);
 
-  std::string calibration_lidar_frame_;
-  std::string calibrator_name_;
-  LidarCalibrationParameters::Ptr parameters_;
-  MappingData::Ptr data_;
-
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   PointPublisher::SharedPtr initial_source_aligned_map_pub_;
   PointPublisher::SharedPtr calibrated_source_aligned_map_pub_;
   PointPublisher::SharedPtr target_map_pub_;

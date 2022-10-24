@@ -23,11 +23,11 @@
 class LostStateFilter : public Filter
 {
 public:
-  LostStateFilter(const LidarCalibrationParameters::Ptr & parameters) : Filter(parameters)
+  LostStateFilter(const CalibrationParameters::Ptr & parameters) : Filter(parameters)
   {
     name_ = "LostStateFilter";
   }
-  LostStateFilter(const std::string & name, const LidarCalibrationParameters::Ptr & parameters)
+  LostStateFilter(const std::string & name, const CalibrationParameters::Ptr & parameters)
   : Filter(parameters)
   {
     setName(name);

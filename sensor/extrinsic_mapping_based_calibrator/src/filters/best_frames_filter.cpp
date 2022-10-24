@@ -33,6 +33,11 @@ std::vector<CalibrationFrame> BestFramesFilter::filter(
   for (std::size_t i = 0; i < calibration_frames.size(); i++) {
     auto & frame = calibration_frames[i];
 
+    if (!frame.source_pointcloud_) {
+      pca_coeff_calibration_id_pairs.push_back(std::make_pair<>(0.f, i));
+      continue;
+    }
+
     pcl::PCA<PointType> pca;
     pca.setInputCloud(frame.source_pointcloud_);
 

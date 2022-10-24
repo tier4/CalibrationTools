@@ -58,18 +58,39 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   tf_buffer_(std::make_shared<tf2_ros::Buffer>(this->get_clock())),
   transform_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_)),
   mapping_parameters_(std::make_shared<MappingParameters>()),
-  calibration_parameters_(std::make_shared<LidarCalibrationParameters>()),
+  calibration_parameters_(std::make_shared<CalibrationParameters>()),
   mapping_data_(std::make_shared<MappingData>())
 {
-  std::vector<std::string> calibration_service_names =
-    this->declare_parameter<std::vector<std::string>>("calibration_service_names");
-  std::vector<std::string> sensor_kit_frames =
-    this->declare_parameter<std::vector<std::string>>("sensor_kit_frames");
+  std::vector<std::string> camera_calibration_service_names =
+    this->declare_parameter<std::vector<std::string>>("camera_calibration_service_names");
+  std::vector<std::string> lidar_calibration_service_names =
+    this->declare_parameter<std::vector<std::string>>("lidar_calibration_service_names");
+
+  std::vector<std::string> camera_calibration_sensor_kit_frames =
+    this->declare_parameter<std::vector<std::string>>("camera_calibration_sensor_kit_frames");
+  std::vector<std::string> lidar_calibration_sensor_kit_frames =
+    this->declare_parameter<std::vector<std::string>>("lidar_calibration_sensor_kit_frames");
+
+  std::vector<std::string> calibration_camera_frames =
+    this->declare_parameter<std::vector<std::string>>("calibration_camera_frames");
+
   std::vector<std::string> calibration_lidar_base_frames =
     this->declare_parameter<std::vector<std::string>>("calibration_lidar_base_frames");
+
   mapping_data_->map_frame_ = this->declare_parameter<std::string>("map_frame");
+
+  mapping_data_->calibration_camera_optical_link_frame_names =
+    this->declare_parameter<std::vector<std::string>>("calibration_camera_optical_link_frames");
+
   mapping_data_->calibration_lidar_frame_names_ =
     this->declare_parameter<std::vector<std::string>>("calibration_lidar_frames");
+
+  std::vector<std::string> calibration_camera_info_topics =
+    this->declare_parameter<std::vector<std::string>>("calibration_camera_info_topics");
+
+  std::vector<std::string> calibration_image_topics =
+    this->declare_parameter<std::vector<std::string>>("calibration_image_topics");
+
   std::vector<std::string> calibration_pointcloud_topics =
     this->declare_parameter<std::vector<std::string>>("calibration_pointcloud_topics");
 
@@ -200,6 +221,14 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     tf_buffer_);
 
   // Set up lidar calibrators
+  for (const auto & frame_name : mapping_data_->calibration_camera_optical_link_frame_names) {
+    auto target_map_pub_ =
+      this->create_publisher<sensor_msgs::msg::PointCloud2>(frame_name + "/target_map", 10);
+
+    camera_calibrators_[frame_name] = std::make_shared<CameraCalibrator>(
+      frame_name, calibration_parameters_, mapping_data_, tf_buffer_, target_map_pub_);
+  }
+
   for (const auto & frame_name : mapping_data_->calibration_lidar_frame_names_) {
     auto initial_source_aligned_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       frame_name + "/initial_source_aligned_map", 10);
@@ -215,12 +244,58 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   // Set up sensor callbacks
   assert(
+    mapping_data_->calibration_camera_optical_link_frame_names.size() ==
+    calibration_image_topics.size());
+  assert(calibration_camera_info_topics.size() == calibration_image_topics.size());
+  for (std::size_t i = 0; i < mapping_data_->calibration_camera_optical_link_frame_names.size();
+       i++) {
+    const std::string & calibration_camera_info_topic = calibration_camera_info_topics[i];
+    const std::string & calibration_image_topic = calibration_image_topics[i];
+    const std::string & calibration_frame_name =
+      mapping_data_->calibration_camera_optical_link_frame_names[i];
+
+    sensor_kit_frame_map_[calibration_frame_name] = camera_calibration_sensor_kit_frames[i];
+    calibration_camera_frame_map_[calibration_frame_name] = calibration_camera_frames[i];
+
+    srv_callback_groups_map_[calibration_frame_name] =
+      create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+    calibration_api_server_map_[calibration_frame_name] =
+      this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+        camera_calibration_service_names[i] + "/extrinsic_calibration",
+        [&](
+          const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+          const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
+            response) {
+          cameraCalibrationRequestReceivedCallback(
+            sensor_kit_frame_map_[calibration_frame_name],
+            calibration_camera_frame_map_[calibration_frame_name], calibration_frame_name, request,
+            response);
+        },
+        rmw_qos_profile_services_default, srv_callback_groups_map_[calibration_frame_name]);
+
+    calibration_camera_info_subs_[calibration_frame_name] =
+      this->create_subscription<sensor_msgs::msg::CameraInfo>(
+        calibration_camera_info_topic, rclcpp::SensorDataQoS().keep_all(),
+        [&](const sensor_msgs::msg::CameraInfo::SharedPtr msg) {
+          mapper_->calibrationCameraInfoCallback(msg, calibration_frame_name);
+        });
+
+    calibration_image_subs_[calibration_frame_name] =
+      this->create_subscription<sensor_msgs::msg::CompressedImage>(
+        calibration_image_topic, rclcpp::SensorDataQoS().keep_all(),
+        [&](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
+          mapper_->calibrationImageCallback(msg, calibration_frame_name);
+        });
+  }
+
+  assert(
     mapping_data_->calibration_lidar_frame_names_.size() == calibration_pointcloud_topics.size());
   for (std::size_t i = 0; i < mapping_data_->calibration_lidar_frame_names_.size(); i++) {
     const std::string & calibration_pointcloud_topic = calibration_pointcloud_topics[i];
     const std::string & calibration_frame_name = mapping_data_->calibration_lidar_frame_names_[i];
 
-    sensor_kit_frame_map_[calibration_frame_name] = sensor_kit_frames[i];
+    sensor_kit_frame_map_[calibration_frame_name] = lidar_calibration_sensor_kit_frames[i];
     calibration_lidar_base_frame_map_[calibration_frame_name] = calibration_lidar_base_frames[i];
 
     srv_callback_groups_map_[calibration_frame_name] =
@@ -228,12 +303,12 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
     calibration_api_server_map_[calibration_frame_name] =
       this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
-        calibration_service_names[i] + "/extrinsic_calibration",
+        lidar_calibration_service_names[i] + "/extrinsic_calibration",
         [&](
           const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
           const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
             response) {
-          requestReceivedCallback(
+          lidarCalibrationRequestReceivedCallback(
             sensor_kit_frame_map_[calibration_frame_name],
             calibration_lidar_base_frame_map_[calibration_frame_name], calibration_frame_name,
             request, response);
@@ -269,7 +344,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       this->create_service<tier4_calibration_msgs::srv::Frame>(
         calibration_frame_name + "/single_lidar_calibration",
         std::bind(
-          &LidarCalibrator::singleLidarCalibrationCallback,
+          &LidarCalibrator::singleSensorCalibrationCallback,
           lidar_calibrators_[calibration_frame_name], std::placeholders::_1, std::placeholders::_2),
         rmw_qos_profile_services_default);
 
@@ -277,7 +352,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       this->create_service<tier4_calibration_msgs::srv::Frame>(
         calibration_frame_name + "/multiple_lidar_calibration",
         std::bind(
-          &LidarCalibrator::multipleLidarCalibrationCallback,
+          &LidarCalibrator::multipleSensorCalibrationCallback,
           lidar_calibrators_[calibration_frame_name], std::placeholders::_1, std::placeholders::_2),
         rmw_qos_profile_services_default);
   }
@@ -323,7 +398,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
   result.reason = "success";
 
   MappingParameters mapping_parameters = *mapping_parameters_;
-  LidarCalibrationParameters calibration_parameters = *calibration_parameters_;
+  CalibrationParameters lidar_calibration_parameters = *calibration_parameters_;
   std::unique_lock<std::mutex> lock(mapping_data_->mutex_);
 
   try {
@@ -339,44 +414,45 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_max_iterations);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_num_threads);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_viz_leaf_size);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, calibration_viz_leaf_size);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_viz_leaf_size);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, leaf_size_input);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, leaf_size_local_map);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, leaf_size_dense_map);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, leaf_size_dense_map);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, new_keyframe_min_distance);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, new_frame_min_distance);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, frame_stopped_distance);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, frames_since_stop_force_frame);
 
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, calibration_skip_keyframes);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, calibration_min_frames);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, calibration_max_frames);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_min_frames);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_max_frames);
 
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, max_allowed_interpolated_time);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, max_allowed_interpolated_distance);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, max_allowed_interpolated_angle);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, max_allowed_interpolated_speed);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, max_allowed_interpolated_accel);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_time);
     UPDATE_MAPPING_CALIBRATOR_PARAM(
-      calibration_parameters, max_allowed_interpolated_distance_straight);
+      lidar_calibration_parameters, max_allowed_interpolated_distance);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_angle);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_speed);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_accel);
     UPDATE_MAPPING_CALIBRATOR_PARAM(
-      calibration_parameters, max_allowed_interpolated_angle_straight);
+      lidar_calibration_parameters, max_allowed_interpolated_distance_straight);
     UPDATE_MAPPING_CALIBRATOR_PARAM(
-      calibration_parameters, max_allowed_interpolated_speed_straight);
+      lidar_calibration_parameters, max_allowed_interpolated_angle_straight);
     UPDATE_MAPPING_CALIBRATOR_PARAM(
-      calibration_parameters, max_allowed_interpolated_accel_straight);
+      lidar_calibration_parameters, max_allowed_interpolated_speed_straight);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(
+      lidar_calibration_parameters, max_allowed_interpolated_accel_straight);
 
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, lost_frame_max_angle_diff);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, lost_frame_interpolation_error);
     UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, lost_frame_max_acceleration);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, max_calibration_range);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(calibration_parameters, calibration_min_pca_eigenvalue);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_calibration_range);
+    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_min_pca_eigenvalue);
     UPDATE_MAPPING_CALIBRATOR_PARAM(
-      calibration_parameters, calibration_min_distance_between_frames);
+      lidar_calibration_parameters, calibration_min_distance_between_frames);
 
     // transaction succeeds, now assign values
     *mapping_parameters_ = mapping_parameters;
-    *calibration_parameters_ = calibration_parameters;
+    *calibration_parameters_ = lidar_calibration_parameters;
   } catch (const rclcpp::exceptions::InvalidParameterTypeException & e) {
     result.successful = false;
     result.reason = e.what();
@@ -389,7 +465,107 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
   return result;
 }
 
-void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
+void ExtrinsicMappingBasedCalibrator::cameraCalibrationRequestReceivedCallback(
+  const std::string & parent_frame, const std::string & calibration_camera_frame,
+  const std::string & calibration_camera_optical_link_frame,
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+{
+  (void)request;
+
+  Eigen::Isometry3d parent_to_mapping_lidar_eigen;
+  Eigen::Isometry3d camera_to_camera_optical_link_eigen;
+
+  {
+    std::unique_lock<std::mutex> service_lock(service_mutex_);
+    std::unique_lock<std::mutex> data_lock(mapping_data_->mutex_);
+
+    calibration_pending_map_[calibration_camera_optical_link_frame] = true;
+    calibration_status_map_[calibration_camera_optical_link_frame] = false;
+    calibration_results_map_[calibration_camera_optical_link_frame] = Eigen::Matrix4f::Identity();
+
+    RCLCPP_INFO_STREAM(this->get_logger(), "Calibration request received");
+    RCLCPP_INFO_STREAM(this->get_logger(), "\t\tparent_frame = " << parent_frame);
+    RCLCPP_INFO_STREAM(
+      this->get_logger(), "\t\tcalibration_camera_frame = " << calibration_camera_frame);
+    RCLCPP_INFO_STREAM(
+      this->get_logger(),
+      "\t\tcalibration_camera_optical_link_frame = " << calibration_camera_optical_link_frame);
+
+    try {
+      rclcpp::Time t = rclcpp::Time(0);
+      rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
+
+      geometry_msgs::msg::Transform parent_to_mapping_lidar_msg =
+        tf_buffer_->lookupTransform(parent_frame, mapping_data_->mapping_lidar_frame_, t, timeout)
+          .transform;
+
+      parent_to_mapping_lidar_eigen = tf2::transformToEigen(parent_to_mapping_lidar_msg);
+
+      geometry_msgs::msg::Transform camera_to_camera_optical_link_msg =
+        tf_buffer_
+          ->lookupTransform(
+            calibration_camera_frame, calibration_camera_optical_link_frame, t, timeout)
+          .transform;
+
+      camera_to_camera_optical_link_eigen =
+        tf2::transformToEigen(camera_to_camera_optical_link_msg);
+    } catch (tf2::TransformException & ex) {
+      RCLCPP_WARN(
+        this->get_logger(), "could not get initial tfs. Aborting calibration. %s", ex.what());
+      response->success = false;
+      return;
+    }
+  }
+
+  // Start monitoring and calibration frame
+  std::thread t([&]() {
+    while (!mapper_->stopped() && rclcpp::ok()) {
+      rclcpp::sleep_for(1000ms);
+    }
+
+    Eigen::Matrix4f calibration_result;
+    float calibration_score;
+    bool calibration_status = camera_calibrators_[calibration_camera_optical_link_frame]->calibrate(
+      calibration_result, calibration_score);
+
+    std::unique_lock<std::mutex> lock(service_mutex_);
+    calibration_pending_map_[calibration_camera_optical_link_frame] = false;
+    calibration_status_map_[calibration_camera_optical_link_frame] = calibration_status;
+    calibration_results_map_[calibration_camera_optical_link_frame] = calibration_result;
+    calibration_scores_map_[calibration_camera_optical_link_frame] = calibration_score;
+  });
+
+  while (rclcpp::ok()) {
+    {
+      std::unique_lock<std::mutex> lock(service_mutex_);
+
+      if (!calibration_pending_map_[calibration_camera_optical_link_frame]) {
+        break;
+      }
+    }
+
+    rclcpp::sleep_for(1000ms);
+  }
+
+  std::unique_lock<std::mutex> lock(service_mutex_);
+  t.join();
+
+  Eigen::Isometry3d mapping_to_calibration_lidar_lidar_eigen = Eigen::Isometry3d(
+    calibration_results_map_[calibration_camera_optical_link_frame].cast<double>());
+  Eigen::Isometry3d parent_to_lidar_base_eigen = parent_to_mapping_lidar_eigen *
+                                                 mapping_to_calibration_lidar_lidar_eigen *
+                                                 camera_to_camera_optical_link_eigen.inverse();
+
+  response->result_pose = tf2::toMsg(parent_to_lidar_base_eigen);
+  response->score = calibration_scores_map_[calibration_camera_optical_link_frame];
+  response->success = calibration_status_map_[calibration_camera_optical_link_frame];
+
+  // Convert  raw calibration to the output tf
+  RCLCPP_INFO_STREAM(this->get_logger(), "Sending the tesults to the calibrator manager");
+}
+
+void ExtrinsicMappingBasedCalibrator::lidarCalibrationRequestReceivedCallback(
   const std::string & parent_frame, const std::string & calibration_lidar_base_frame,
   const std::string & calibration_lidar_frame,
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
@@ -404,6 +580,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
     std::unique_lock<std::mutex> service_lock(service_mutex_);
     std::unique_lock<std::mutex> data_lock(mapping_data_->mutex_);
 
+    calibration_pending_map_[calibration_lidar_frame] = true;
     calibration_status_map_[calibration_lidar_frame] = false;
     calibration_results_map_[calibration_lidar_frame] = Eigen::Matrix4f::Identity();
 
@@ -450,6 +627,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
       lidar_calibrators_[calibration_lidar_frame]->calibrate(calibration_result, calibration_score);
 
     std::unique_lock<std::mutex> lock(service_mutex_);
+    calibration_pending_map_[calibration_lidar_frame] = false;
     calibration_status_map_[calibration_lidar_frame] = calibration_status;
     calibration_results_map_[calibration_lidar_frame] = calibration_result;
     calibration_scores_map_[calibration_lidar_frame] = calibration_score;
@@ -459,7 +637,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
     {
       std::unique_lock<std::mutex> lock(service_mutex_);
 
-      if (calibration_status_map_[calibration_lidar_frame]) {
+      if (!calibration_pending_map_[calibration_lidar_frame]) {
         break;
       }
     }
@@ -543,15 +721,24 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
 
   std::unique_lock<std::mutex> lock(mapping_data_->mutex_);
 
-  mapping_data_->calibration_frames_map_.clear();
+  mapping_data_->camera_calibration_frames_map_.clear();
+  mapping_data_->lidar_calibration_frames_map_.clear();
   mapping_data_->processed_frames_.clear();
   mapping_data_->keyframes_.clear();
 
-  ia >> mapping_data_->calibration_frames_map_;
-  for (auto it = mapping_data_->calibration_frames_map_.begin();
-       it != mapping_data_->calibration_frames_map_.end(); it++) {
+  ia >> mapping_data_->camera_calibration_frames_map_;
+  for (auto it = mapping_data_->camera_calibration_frames_map_.begin();
+       it != mapping_data_->camera_calibration_frames_map_.end(); it++) {
     RCLCPP_INFO(
-      this->get_logger(), "Loaded %ld calibration frames (%s)...", it->second.size(),
+      this->get_logger(), "Loaded %ld camera calibration frames (%s)...", it->second.size(),
+      it->first.c_str());
+  }
+
+  ia >> mapping_data_->lidar_calibration_frames_map_;
+  for (auto it = mapping_data_->lidar_calibration_frames_map_.begin();
+       it != mapping_data_->lidar_calibration_frames_map_.end(); it++) {
+    RCLCPP_INFO(
+      this->get_logger(), "Loaded %ld lidar calibration frames (%s)...", it->second.size(),
       it->first.c_str());
   }
 
@@ -580,13 +767,21 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
 
   std::unique_lock<std::mutex> lock(mapping_data_->mutex_);
 
-  for (auto it = mapping_data_->calibration_frames_map_.begin();
-       it != mapping_data_->calibration_frames_map_.end(); it++) {
+  for (auto it = mapping_data_->camera_calibration_frames_map_.begin();
+       it != mapping_data_->camera_calibration_frames_map_.end(); it++) {
     RCLCPP_INFO(
-      this->get_logger(), "Saving %ld calibration frames (%s)...", it->second.size(),
+      this->get_logger(), "Saving %ld camera calibration frames (%s)...", it->second.size(),
       it->first.c_str());
   }
-  oa << mapping_data_->calibration_frames_map_;
+  oa << mapping_data_->camera_calibration_frames_map_;
+
+  for (auto it = mapping_data_->lidar_calibration_frames_map_.begin();
+       it != mapping_data_->lidar_calibration_frames_map_.end(); it++) {
+    RCLCPP_INFO(
+      this->get_logger(), "Saving %ld lidar calibration frames (%s)...", it->second.size(),
+      it->first.c_str());
+  }
+  oa << mapping_data_->lidar_calibration_frames_map_;
 
   RCLCPP_INFO(this->get_logger(), "Saving %ld frames...", mapping_data_->processed_frames_.size());
   oa << mapping_data_->processed_frames_;

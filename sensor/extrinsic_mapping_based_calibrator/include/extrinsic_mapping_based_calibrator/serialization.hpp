@@ -18,8 +18,12 @@
 #include <Eigen/Core>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
 
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
+#include <sensor_msgs/msg/region_of_interest.hpp>
 #include <std_msgs/msg/header.hpp>
 
+#include <boost/serialization/array.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/shared_ptr.hpp>
@@ -128,6 +132,8 @@ template <class Archive>
 void serialize(Archive & ar, CalibrationFrame & frame, const unsigned int version)
 {
   (void)version;
+  ar & frame.source_camera_info;
+  ar & frame.source_image;
   ar & frame.source_pointcloud_;
   ar & frame.source_header_;
 
@@ -156,6 +162,42 @@ void serialize(Archive & ar, builtin_interfaces::msg::Time & stamp, const unsign
   (void)version;
   ar & stamp.nanosec;
   ar & stamp.sec;
+}
+
+template <class Archive>
+void serialize(Archive & ar, sensor_msgs::msg::RegionOfInterest & roi, const unsigned int version)
+{
+  (void)version;
+  ar & roi.do_rectify;
+  ar & roi.height;
+  ar & roi.width;
+  ar & roi.x_offset;
+  ar & roi.y_offset;
+}
+
+template <class Archive>
+void serialize(Archive & ar, sensor_msgs::msg::CameraInfo & camera_info, const unsigned int version)
+{
+  (void)version;
+  ar & camera_info.binning_x;
+  ar & camera_info.binning_y;
+  ar & camera_info.d;
+  ar & camera_info.distortion_model;
+  ar & camera_info.header;
+  ar & camera_info.height;
+  ar & camera_info.k;
+  ar & camera_info.p;
+  ar & camera_info.roi;
+  ar & camera_info.width;
+}
+
+template <class Archive>
+void serialize(Archive & ar, sensor_msgs::msg::CompressedImage & image, const unsigned int version)
+{
+  (void)version;
+  ar & image.data;
+  ar & image.format;
+  ar & image.header;
 }
 
 }  // namespace serialization

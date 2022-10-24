@@ -23,21 +23,21 @@
 class SequentialFilter : public Filter
 {
 public:
-  SequentialFilter(const LidarCalibrationParameters::Ptr & parameters) : Filter(parameters) {}
-  SequentialFilter(const std::string & name, const LidarCalibrationParameters::Ptr & parameters)
+  SequentialFilter(const CalibrationParameters::Ptr & parameters) : Filter(parameters) {}
+  SequentialFilter(const std::string & name, const CalibrationParameters::Ptr & parameters)
   : Filter(parameters)
   {
     setName(name);
   }
   SequentialFilter(
-    const std::string & name, const LidarCalibrationParameters::Ptr & parameters,
+    const std::string & name, const CalibrationParameters::Ptr & parameters,
     const std::vector<Filter::Ptr> & filters)
   : Filter(parameters), filters_(filters)
   {
     setName(name);
   }
   SequentialFilter(
-    const LidarCalibrationParameters::Ptr & parameters, const std::vector<Filter::Ptr> & filters)
+    const CalibrationParameters::Ptr & parameters, const std::vector<Filter::Ptr> & filters)
   : Filter(parameters), filters_(filters)
   {
   }
