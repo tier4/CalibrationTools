@@ -336,10 +336,7 @@ class RosInterface(Node):
 
         self.lidar_frame = pointcloud_msg.header.frame_id
         self.pointcloud_queue.append(pointcloud_msg)
-
-        t0 = time.time()
         self.check_sync()
-        t1 = time.time()
 
     def image_callback(self, image_msg):
 
@@ -394,6 +391,7 @@ class RosInterface(Node):
             if "intensity" in pc_data.dtype.names
             else np.zeros_like(pc_data["x"])
         )
+        points = points.reshape(-1, 4)
 
         with self.lock:
             self.camera_info_sync = self.camera_info_queue[-1]
