@@ -7,8 +7,9 @@
   <arg name="camera_name"/>
   <arg name="rviz"/>
 
-  <let name="image_topic" value="/sensing/camera/$(var camera_name)/image_raw"/>
-  <let name="image_topic" value="/sensing/camera/traffic_light/image_raw" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <!-- we do not use the standard image_raw name to avoid naming conflicts -->
+  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
+  <let name="image_decompressed_topic" value="/sensing/camera/traffic_light/image_raw/decompressed" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
 
   <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
   <let name="image_compressed_topic" value="/sensing/camera/traffic_light/image_raw/compressed" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
@@ -72,12 +73,18 @@
     [$(var camera_frame)]"/>
   </node>
 
+  <!-- image decompressor -->
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+    <remap from="decompressor/input/compressed_image" to="$(var image_compressed_topic)"/>
+    <remap from="decompressor/output/raw_image" to="$(var image_decompressed_topic)"/>
+  </node>
+
   <!-- tag based calibrator -->
   <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/calibrator.launch.xml" if="$(var calibrate_sensor)">
     <arg name="ns" value="$(var parent_frame)/$(var camera_name)/camera_link"/>
     <arg name="parent_frame" value="$(var parent_frame)"/>
     <arg name="child_frame" value="$(var camera_frame)"/>
-    <arg name="image_topic" value="$(var image_topic)"/>
+    <arg name="image_topic" value="$(var image_decompressed_topic)"/>
     <arg name="camera_info_topic" value="$(var camera_info_topic)"/>
     <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
     <arg name="pointcloud_topic_ex" value="$(var camera_info_topic)"/>
