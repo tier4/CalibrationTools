@@ -90,7 +90,7 @@ class CameraIntrinsicsOptimizer(Node):
             raise NotImplementedError
 
         # Advertise service
-        self.opt_serice = self.create_service(
+        self.opt_service = self.create_service(
             IntrinsicsOptimizer, "optimize_intrinsics", self.service_callback
         )
 
