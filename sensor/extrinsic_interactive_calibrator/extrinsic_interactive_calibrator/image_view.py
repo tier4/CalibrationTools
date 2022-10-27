@@ -17,7 +17,6 @@
 
 import copy
 import threading
-import time
 
 from PySide2.QtCore import QObject
 from PySide2.QtCore import QPoint
@@ -32,7 +31,6 @@ from PySide2.QtGui import QPen
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QGraphicsItem
 from PySide2.QtWidgets import QGraphicsView
-from PySide2.QtWidgets import QWidget
 import cv2
 from extrinsic_interactive_calibrator.utils import decompose_transformation_matrix
 from extrinsic_interactive_calibrator.utils import transform_points
@@ -387,7 +385,7 @@ class ImageView(QGraphicsItem, QObject):
 
     def boundingRect(self):
         with self.lock:
-            if self.rendered_image == None:
+            if self.rendered_image is None:
                 return QRectF(0, 0, 500, 500)
 
             return QRectF(
@@ -466,20 +464,23 @@ class ImageView(QGraphicsItem, QObject):
         ):
             return
 
-        t1 = time.time()
-
         pointcloud_ccs = transform_points(
             self.data_renderer.image_to_lidar_translation,
             self.data_renderer.image_to_lidar_rotation,
             self.data_renderer.pointcloud_xyz,
         )
 
+        if pointcloud_ccs.shape[0] == 0:
+            return
+
         # Transform to the image coordinate system
         tvec = np.zeros((3, 1))
         rvec = np.zeros((3, 1))
+
         pointcloud_ics, _ = cv2.projectPoints(
             pointcloud_ccs, rvec, tvec, self.data_renderer.k, self.data_renderer.d
         )
+
         pointcloud_ics = pointcloud_ics.reshape(-1, 2)
 
         indexes = np.logical_and(
@@ -535,6 +536,7 @@ class ImageView(QGraphicsItem, QObject):
             else:
                 raise NotImplementedError
         except Exception as e:
+            print(e)
             pass
 
         line_pen = QPen()
@@ -575,11 +577,6 @@ class ImageView(QGraphicsItem, QObject):
             painter.setPen(color)
             painter.setBrush(color)
             draw_marker_f(point[0] - 0.5 * radius, point[1] - 0.5 * radius, radius, radius)
-
-        t3 = time.time()
-
-        # print(f"Pointcloud preprocessing: {1000.0*(t2-t1):.2f}")
-        # print(f"Pointcloud rendering: {1000.0*(t3-t2):.2f}")
 
     def draw_calibration_points(self, painter):
 
