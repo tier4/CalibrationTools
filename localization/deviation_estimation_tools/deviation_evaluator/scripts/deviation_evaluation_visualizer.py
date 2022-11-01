@@ -16,13 +16,14 @@
 # limitations under the License.
 
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
 from threading import Thread
 
 from bag_load_utils import BagFileEvaluator
-from plot_utils import plot_thresholds, plot_bag_compare
+import matplotlib.pyplot as plt
+import numpy as np
+from plot_utils import plot_bag_compare
+from plot_utils import plot_thresholds
 import rclpy
 from rclpy.node import Node
 
