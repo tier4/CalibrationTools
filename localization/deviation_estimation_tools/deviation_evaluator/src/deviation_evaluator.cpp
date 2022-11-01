@@ -30,7 +30,6 @@
 // clang-format on
 using std::placeholders::_1;
 
-
 double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
 
 DeviationEvaluator::DeviationEvaluator(
