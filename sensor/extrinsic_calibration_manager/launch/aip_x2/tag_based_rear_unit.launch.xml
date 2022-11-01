@@ -28,12 +28,20 @@
     [$(var camera_frame)]"/>
   </node>
 
+  <!-- image decompressor -->
+  <group if="$(var calibrate_sensor)">
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
+    </node>
+  </group>
+
   <!-- tag based calibrator -->
   <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/calibrator.launch.xml" if="$(var calibrate_sensor)">
     <arg name="ns" value="$(var parent_frame)/$(var camera_frame)"/>
     <arg name="parent_frame" value="$(var parent_frame)"/>
     <arg name="child_frame" value="$(var camera_frame)"/>
-    <arg name="image_topic" value="/sensing/camera/$(var camera_name)/image_raw"/>
+    <arg name="image_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
     <arg name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
     <arg name="pointcloud_topic" value="/sensing/lidar/rear_lower/pointcloud_raw"/>
     <arg name="lidar_model" value="$(var lidar_model)"/>
