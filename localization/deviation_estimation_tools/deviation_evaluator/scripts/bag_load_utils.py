@@ -170,8 +170,6 @@ class EKFBagFileParser(BagFileParser):
         sorted_idxs = np.argsort(np.array(pose_list)[:, 0])
         pose_list = np.array(pose_list)[sorted_idxs]
         pose_cov_list = np.array(pose_cov_list)[sorted_idxs]
-        pose_list = np.array(pose_list)
-        pose_cov_list = np.array(pose_cov_list)
         return pose_list, pose_cov_list
 
 
