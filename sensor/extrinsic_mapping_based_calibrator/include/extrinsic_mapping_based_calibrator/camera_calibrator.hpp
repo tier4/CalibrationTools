@@ -21,6 +21,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <tier4_calibration_msgs/srv/frame.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/point_types.h>
 #include <tf2_ros/buffer.h>
@@ -29,6 +30,7 @@ class CameraCalibrator : public SensorCalibrator
 {
 public:
   using Ptr = std::shared_ptr<CameraCalibrator>;
+  using MarkersPublisher = rclcpp::Publisher<visualization_msgs::msg::MarkerArray>;
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
   using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
@@ -36,7 +38,8 @@ public:
   CameraCalibrator(
     const std::string & calibration_camera_optical_link_frame,
     CalibrationParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
-    std::shared_ptr<tf2_ros::Buffer> & tf_buffer, PointPublisher::SharedPtr & target_map_pub);
+    std::shared_ptr<tf2_ros::Buffer> & tf_buffer, PointPublisher::SharedPtr & target_map_pub,
+    MarkersPublisher::SharedPtr & target_markers_pub);
 
   virtual void singleSensorCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
@@ -64,7 +67,8 @@ protected:
    * @param[out] targets_thin The calibrated frames
    */
   void prepareCalibrationData(
-    const std::vector<CalibrationFrame> & calibration_frames, const float initial_distance,
+    const std::vector<CalibrationFrame> & calibration_frames,
+    const Eigen::Matrix4f & initial_calibration_transform, const float initial_distance,
     std::vector<pcl::PointCloud<PointType>::Ptr> & targets);
 
   /*!
@@ -75,9 +79,11 @@ protected:
    */
   void publishResults(
     const std::vector<CalibrationFrame> & calibration_frames,
-    const std::vector<pcl::PointCloud<PointType>::Ptr> & targets, const std::string & map_frame);
+    const std::vector<pcl::PointCloud<PointType>::Ptr> & targets, const std::string & map_frame,
+    const Eigen::Matrix4f & initial_calibration_transform);
 
   PointPublisher::SharedPtr target_map_pub_;
+  MarkersPublisher::SharedPtr target_markers_pub_;
 
   // Filters
   Filter::Ptr filter_;

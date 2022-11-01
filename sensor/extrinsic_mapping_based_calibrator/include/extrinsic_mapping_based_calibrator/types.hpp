@@ -171,8 +171,6 @@ struct CalibrationParameters
   bool calibration_verbose_;
   double leaf_size_dense_map_;
   int dense_pointcloud_num_keyframes_;
-  int calibration_min_frames_;
-  int calibration_max_frames_;
   double calibration_viz_leaf_size_;
 
   // Calibration preprocessing
@@ -202,6 +200,16 @@ struct CalibrationParameters
   double calibration_min_pca_eigenvalue_;
   double calibration_min_distance_between_frames_;
   double calibration_eval_max_corr_distance_;
+
+  // Lidar calibration parameters
+  int lidar_calibration_min_frames_;
+  int lidar_calibration_max_frames_;
+
+  // Camera calibration parameters
+  double pc_features_min_distance_;
+  double pc_features_max_distance_;
+  int camera_calibration_min_frames_;
+  int camera_calibration_max_frames_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_TYPES_HPP_

@@ -23,12 +23,15 @@
 class BestFramesFilter : public Filter
 {
 public:
-  BestFramesFilter(const CalibrationParameters::Ptr & parameters) : Filter(parameters)
+  BestFramesFilter(const Filter::FilterType & filter_type, CalibrationParameters::Ptr & parameters)
+  : Filter(filter_type, parameters)
   {
     name_ = "BestFramesFilter";
   }
-  BestFramesFilter(const std::string & name, const CalibrationParameters::Ptr & parameters)
-  : Filter(parameters)
+  BestFramesFilter(
+    const Filter::FilterType & filter_type, const std::string & name,
+    const CalibrationParameters::Ptr & parameters)
+  : Filter(filter_type, parameters)
   {
     setName(name);
   }

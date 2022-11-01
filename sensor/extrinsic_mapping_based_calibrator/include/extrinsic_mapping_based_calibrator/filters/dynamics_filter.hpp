@@ -23,12 +23,16 @@
 class DynamicsFilter : public Filter
 {
 public:
-  DynamicsFilter(const CalibrationParameters::Ptr & parameters) : Filter(parameters)
+  DynamicsFilter(
+    const Filter::FilterType & filter_type, const CalibrationParameters::Ptr & parameters)
+  : Filter(filter_type, parameters)
   {
     name_ = "DynamicsFilter";
   }
-  DynamicsFilter(const std::string & name, const CalibrationParameters::Ptr & parameters)
-  : Filter(parameters)
+  DynamicsFilter(
+    const Filter::FilterType & filter_type, const std::string & name,
+    const CalibrationParameters::Ptr & parameters)
+  : Filter(filter_type, parameters)
   {
     setName(name);
   }

@@ -22,10 +22,16 @@
 class Filter
 {
 public:
+  enum class FilterType {
+    CameraFilter,
+    LidarFilter,
+  };
+
   using Ptr = std::shared_ptr<Filter>;
   using ConstPtr = std::shared_ptr<const Filter>;
 
-  Filter(const CalibrationParameters::Ptr & parameters) : parameters_(parameters), name_("filter")
+  Filter(const FilterType & filter_type, const CalibrationParameters::Ptr & parameters)
+  : filter_type_(filter_type), parameters_(parameters), name_("filter")
   {
   }
   virtual ~Filter() {}
@@ -35,6 +41,7 @@ public:
   virtual void setName(const std::string & name) { name_ = name + " filter"; }
 
 protected:
+  FilterType filter_type_;
   const CalibrationParameters::Ptr parameters_;
   std::string name_;
 };

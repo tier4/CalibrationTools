@@ -214,6 +214,8 @@ protected:
 
   // Rosbag interface
   bool bag_paused_;
+  bool bag_pause_requested_;
+  bool bag_resume_requested_;
 
   // External interface
   bool stopped_;

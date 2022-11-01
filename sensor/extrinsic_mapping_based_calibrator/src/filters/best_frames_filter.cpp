@@ -27,6 +27,9 @@ std::vector<CalibrationFrame> BestFramesFilter::filter(
   UNUSED(mapping_data);
 
   std::vector<CalibrationFrame> filtered_frames;
+  const int & calibration_max_frames = filter_type_ == Filter::FilterType::CameraFilter
+                                         ? parameters_->camera_calibration_max_frames_
+                                         : parameters_->lidar_calibration_max_frames_;
 
   std::vector<std::pair<float, std::size_t>> pca_coeff_calibration_id_pairs;
 
@@ -79,7 +82,7 @@ std::vector<CalibrationFrame> BestFramesFilter::filter(
          << accepted_frame.target_frame_->keyframe_id_ << " ";
     }
 
-    if (static_cast<int>(filtered_frames.size()) == parameters_->calibration_max_frames_) {
+    if (static_cast<int>(filtered_frames.size()) == calibration_max_frames) {
       break;
     }
   }

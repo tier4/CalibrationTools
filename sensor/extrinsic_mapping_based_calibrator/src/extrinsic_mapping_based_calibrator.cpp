@@ -30,8 +30,7 @@ using namespace std::chrono_literals;
 
 #define UNUSED(x) (void)x;
 
-#define UPDATE_MAPPING_CALIBRATOR_PARAM(PARAM_STRUCT, NAME) \
-  update_param(p, #NAME, PARAM_STRUCT.NAME##_)
+#define UPDATE_PARAM(PARAM_STRUCT, NAME) update_param(p, #NAME, PARAM_STRUCT.NAME##_)
 
 namespace
 {
@@ -139,14 +138,10 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<int>("frames_since_stoped_force_frame", 5);
   mapping_parameters_->calibration_skip_keyframes_ =
     this->declare_parameter<int>("calibration_skip_keyframes", 5);
-  calibration_parameters_->calibration_min_frames_ =
-    this->declare_parameter<int>("calibration_min_frames", 2);
-  calibration_parameters_->calibration_max_frames_ =
-    this->declare_parameter<int>("calibration_max_frames", 10);
 
   // Calibration frames selection criteria and preprocessing parameters
   calibration_parameters_->max_allowed_interpolated_time_ =
-    this->declare_parameter<double>("max_allowed_interpolated_time", 0.04);
+    this->declare_parameter<double>("max_allowed_interpolated_time", 0.05);
   calibration_parameters_->max_allowed_interpolated_distance_ =
     this->declare_parameter<double>("max_allowed_interpolated_distance", 0.05);
   calibration_parameters_->max_allowed_interpolated_angle_ =
@@ -200,6 +195,22 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   calibration_parameters_->max_corr_dist_ultrafine_ =
     this->declare_parameter<double>("max_corr_dist_ultrafine", 0.05);
 
+  // Lidar calibration-only parameters
+  calibration_parameters_->lidar_calibration_min_frames_ =
+    this->declare_parameter<int>("lidar_calibration_min_frames", 2);
+  calibration_parameters_->lidar_calibration_max_frames_ =
+    this->declare_parameter<int>("lidar_calibration_max_frames", 10);
+
+  // Camera calibration-only parameters TODO(knzo25): sort the parameters
+  calibration_parameters_->camera_calibration_min_frames_ =
+    this->declare_parameter<int>("camera_calibration_min_frames", 1);
+  calibration_parameters_->camera_calibration_max_frames_ =
+    this->declare_parameter<int>("camera_calibration_max_frames", 10);
+  calibration_parameters_->pc_features_min_distance_ =
+    this->declare_parameter<double>("pc_features_min_distance", 0.2);
+  calibration_parameters_->pc_features_max_distance_ =
+    this->declare_parameter<double>("pc_features_max_distance", 40.0);
+
   auto map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("output_map", 10);
 
   auto frame_path_pub = this->create_publisher<nav_msgs::msg::Path>("frame_path", 10);
@@ -222,24 +233,27 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   // Set up lidar calibrators
   for (const auto & frame_name : mapping_data_->calibration_camera_optical_link_frame_names) {
-    auto target_map_pub_ =
+    auto target_map_pub =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(frame_name + "/target_map", 10);
+    auto target_markers_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+      frame_name + "/target_markers", 10);
 
     camera_calibrators_[frame_name] = std::make_shared<CameraCalibrator>(
-      frame_name, calibration_parameters_, mapping_data_, tf_buffer_, target_map_pub_);
+      frame_name, calibration_parameters_, mapping_data_, tf_buffer_, target_map_pub,
+      target_markers_pub);
   }
 
   for (const auto & frame_name : mapping_data_->calibration_lidar_frame_names_) {
-    auto initial_source_aligned_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+    auto initial_source_aligned_map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       frame_name + "/initial_source_aligned_map", 10);
-    auto calibrated_source_aligned_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+    auto calibrated_source_aligned_map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       frame_name + "/calibrated_source_aligned_map", 10);
-    auto target_map_pub_ =
+    auto target_map_pub =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(frame_name + "/target_map", 10);
 
     lidar_calibrators_[frame_name] = std::make_shared<LidarCalibrator>(
       frame_name, calibration_parameters_, mapping_data_, tf_buffer_,
-      initial_source_aligned_map_pub_, calibrated_source_aligned_map_pub_, target_map_pub_);
+      initial_source_aligned_map_pub, calibrated_source_aligned_map_pub, target_map_pub);
   }
 
   // Set up sensor callbacks
@@ -398,61 +412,63 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
   result.reason = "success";
 
   MappingParameters mapping_parameters = *mapping_parameters_;
-  CalibrationParameters lidar_calibration_parameters = *calibration_parameters_;
+  CalibrationParameters calibration_parameters = *calibration_parameters_;
   std::unique_lock<std::mutex> lock(mapping_data_->mutex_);
 
   try {
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, use_rosbag);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_verbose);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_max_frames);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, local_map_num_keyframes);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_max_range);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, min_pointcloud_size);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_lost_timeout);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_resolution);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_step_size);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_max_iterations);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, ndt_num_threads);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, mapping_viz_leaf_size);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_viz_leaf_size);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, leaf_size_input);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, leaf_size_local_map);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, leaf_size_dense_map);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, new_keyframe_min_distance);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, new_frame_min_distance);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, frame_stopped_distance);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, frames_since_stop_force_frame);
+    UPDATE_PARAM(mapping_parameters, use_rosbag);
+    UPDATE_PARAM(mapping_parameters, mapping_verbose);
+    UPDATE_PARAM(mapping_parameters, mapping_max_frames);
+    UPDATE_PARAM(mapping_parameters, local_map_num_keyframes);
+    UPDATE_PARAM(mapping_parameters, mapping_max_range);
+    UPDATE_PARAM(mapping_parameters, min_pointcloud_size);
+    UPDATE_PARAM(mapping_parameters, mapping_lost_timeout);
+    UPDATE_PARAM(mapping_parameters, ndt_resolution);
+    UPDATE_PARAM(mapping_parameters, ndt_step_size);
+    UPDATE_PARAM(mapping_parameters, ndt_max_iterations);
+    UPDATE_PARAM(mapping_parameters, ndt_num_threads);
+    UPDATE_PARAM(mapping_parameters, mapping_viz_leaf_size);
+    UPDATE_PARAM(calibration_parameters, calibration_viz_leaf_size);
+    UPDATE_PARAM(mapping_parameters, leaf_size_input);
+    UPDATE_PARAM(mapping_parameters, leaf_size_local_map);
+    UPDATE_PARAM(calibration_parameters, leaf_size_dense_map);
+    UPDATE_PARAM(mapping_parameters, new_keyframe_min_distance);
+    UPDATE_PARAM(mapping_parameters, new_frame_min_distance);
+    UPDATE_PARAM(mapping_parameters, frame_stopped_distance);
+    UPDATE_PARAM(mapping_parameters, frames_since_stop_force_frame);
 
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, calibration_skip_keyframes);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_min_frames);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_max_frames);
+    UPDATE_PARAM(mapping_parameters, calibration_skip_keyframes);
 
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_time);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(
-      lidar_calibration_parameters, max_allowed_interpolated_distance);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_angle);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_speed);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_allowed_interpolated_accel);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(
-      lidar_calibration_parameters, max_allowed_interpolated_distance_straight);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(
-      lidar_calibration_parameters, max_allowed_interpolated_angle_straight);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(
-      lidar_calibration_parameters, max_allowed_interpolated_speed_straight);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(
-      lidar_calibration_parameters, max_allowed_interpolated_accel_straight);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_time);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_distance);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_angle);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_speed);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_accel);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_distance_straight);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_angle_straight);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_speed_straight);
+    UPDATE_PARAM(calibration_parameters, max_allowed_interpolated_accel_straight);
 
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, lost_frame_max_angle_diff);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, lost_frame_interpolation_error);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(mapping_parameters, lost_frame_max_acceleration);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, max_calibration_range);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(lidar_calibration_parameters, calibration_min_pca_eigenvalue);
-    UPDATE_MAPPING_CALIBRATOR_PARAM(
-      lidar_calibration_parameters, calibration_min_distance_between_frames);
+    UPDATE_PARAM(mapping_parameters, lost_frame_max_angle_diff);
+    UPDATE_PARAM(mapping_parameters, lost_frame_interpolation_error);
+    UPDATE_PARAM(mapping_parameters, lost_frame_max_acceleration);
+    UPDATE_PARAM(calibration_parameters, max_calibration_range);
+    UPDATE_PARAM(calibration_parameters, calibration_min_pca_eigenvalue);
+    UPDATE_PARAM(calibration_parameters, calibration_min_distance_between_frames);
+
+    // Lidar calibration parameters
+    UPDATE_PARAM(calibration_parameters, lidar_calibration_min_frames);
+    UPDATE_PARAM(calibration_parameters, lidar_calibration_max_frames);
+
+    // Camera calibration parameters
+    UPDATE_PARAM(calibration_parameters, pc_features_min_distance);
+    UPDATE_PARAM(calibration_parameters, pc_features_max_distance);
+    UPDATE_PARAM(calibration_parameters, camera_calibration_min_frames);
+    UPDATE_PARAM(calibration_parameters, camera_calibration_max_frames);
 
     // transaction succeeds, now assign values
     *mapping_parameters_ = mapping_parameters;
-    *calibration_parameters_ = lidar_calibration_parameters;
+    *calibration_parameters_ = calibration_parameters;
   } catch (const rclcpp::exceptions::InvalidParameterTypeException & e) {
     result.successful = false;
     result.reason = e.what();

@@ -47,6 +47,9 @@ CalibrationMapper::CalibrationMapper(
   rosbag2_pause_client_(rosbag2_pause_client),
   rosbag2_resume_client_(rosbag2_resume_client),
   tf_buffer_(tf_buffer),
+  bag_paused_(false),
+  bag_pause_requested_(false),
+  bag_resume_requested_(false),
   stopped_(false)
 {
   published_map_pointcloud_ptr_.reset(new PointcloudType());
@@ -169,15 +172,19 @@ void CalibrationMapper::mappingPointCloudCallback(
     return;
   }
 
-  if (parameters_->use_rosbag_ && !bag_paused_ && data_->unprocessed_frames_.size() > 0) {
+  if (
+    parameters_->use_rosbag_ && !bag_paused_ && !bag_pause_requested_ &&
+    data_->unprocessed_frames_.size() > 0) {
     auto cb = [&](rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedFuture response_client) {
       auto res = response_client.get();
       (void)res;
       std::unique_lock<std::mutex> lock(data_->mutex_);
       bag_paused_ = true;
+      bag_pause_requested_ = false;
     };
     auto request = std::make_shared<rosbag2_interfaces::srv::Pause::Request>();
     rosbag2_pause_client_->async_send_request(request, cb);
+    bag_pause_requested_ = true;
   }
 
   data_->unprocessed_frames_.emplace_back(frame);
@@ -203,19 +210,21 @@ void CalibrationMapper::mappingThreadWorker()
       std::unique_lock<std::mutex> lock(data_->mutex_);
 
       if (data_->unprocessed_frames_.size() == 0) {
-        if (parameters_->use_rosbag_ && bag_paused_) {
+        if (parameters_->use_rosbag_ && bag_paused_ && !bag_resume_requested_) {
           auto cb =
             [&](rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedFuture response_client) {
               auto res = response_client.get();
               (void)res;
               std::unique_lock<std::mutex> lock(data_->mutex_);
               bag_paused_ = false;
+              bag_resume_requested_ = false;
               RCLCPP_WARN(rclcpp::get_logger("calibration_mapper"), "Received resume response");
             };
 
           RCLCPP_WARN(rclcpp::get_logger("calibration_mapper"), "Sending resume call");
           auto request = std::make_shared<rosbag2_interfaces::srv::Resume::Request>();
           rosbag2_resume_client_->async_send_request(request, cb);
+          bag_resume_requested_ = true;
         }
 
         lock.unlock();
@@ -563,6 +572,9 @@ void CalibrationMapper::recalculateLocalMap()
   voxel_grid.filter(*data_->local_map_ptr_);
 }
 
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+
 void CalibrationMapper::publisherTimerCallback()
 {
   static int published_frames = 0;
@@ -653,7 +665,10 @@ void CalibrationMapper::publisherTimerCallback()
     published_frames_path_.poses.push_back(pose_msg);
 
     pose_msg.pose = tf2::toMsg(predicted_pose_isometry);
-    published_frames_predicted_path_.poses.push_back(pose_msg);
+
+    if (frame->predicted_pose_.determinant() > 0.0) {
+      published_frames_predicted_path_.poses.push_back(pose_msg);
+    }
 
     visualization_msgs::msg::Marker frame_marker;
 
@@ -702,6 +717,8 @@ void CalibrationMapper::publisherTimerCallback()
 
   return;
 }
+
+#pragma GCC pop_options
 
 void CalibrationMapper::dataMatchingTimerCallback()
 {

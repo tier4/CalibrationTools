@@ -3,7 +3,7 @@
   <arg name="ns" />
   <arg name="mapping_pointcloud" />
   <arg name="detected_objects" default="detected_objects" />
-  <arg name="predicted_objects"  default="predicted_objects" />
+  <arg name="predicted_objects" default="predicted_objects" />
   <arg name="calibration_camera_info_topics" />
   <arg name="calibration_image_topics" />
   <arg name="calibration_pointcloud_topics" />
@@ -48,13 +48,14 @@
       <param name="ndt_epsilon" value="0.005" />
       <param name="ndt_num_threads" value="12" />
 
-      <param name="calibration_max_frames" value="5" />
+      <param name="lidar_calibration_max_frames" value="5" />
+      <param name="camera_calibration_max_frames" value="1" />
       <param name="calibration_min_pca_eigenvalue" value="0.02" />
       <param name="calibration_eval_max_corr_distance" value="0.2" />
       <param name="solver_iterations" value="100" />
       <param name="calibration_skip_keyframes" value="2" />
 
-      <param name="use_rosbag" value="false" />
+      <param name="use_rosbag" value="true" />
 
     </node>
   </group>

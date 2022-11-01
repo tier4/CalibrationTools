@@ -23,22 +23,31 @@
 class SequentialFilter : public Filter
 {
 public:
-  SequentialFilter(const CalibrationParameters::Ptr & parameters) : Filter(parameters) {}
-  SequentialFilter(const std::string & name, const CalibrationParameters::Ptr & parameters)
-  : Filter(parameters)
+  SequentialFilter(
+    const Filter::FilterType & filter_type, const CalibrationParameters::Ptr & parameters)
+  : Filter(filter_type, parameters)
+  {
+  }
+  SequentialFilter(
+    const Filter::FilterType & filter_type, const std::string & name,
+    const CalibrationParameters::Ptr & parameters)
+  : Filter(filter_type, parameters)
   {
     setName(name);
   }
+
   SequentialFilter(
-    const std::string & name, const CalibrationParameters::Ptr & parameters,
-    const std::vector<Filter::Ptr> & filters)
-  : Filter(parameters), filters_(filters)
-  {
-    setName(name);
-  }
-  SequentialFilter(
+    const Filter::FilterType & filter_type, const std::string & name,
     const CalibrationParameters::Ptr & parameters, const std::vector<Filter::Ptr> & filters)
-  : Filter(parameters), filters_(filters)
+  : Filter(filter_type, parameters), filters_(filters)
+  {
+    setName(name);
+  }
+
+  SequentialFilter(
+    const Filter::FilterType & filter_type, const CalibrationParameters::Ptr & parameters,
+    const std::vector<Filter::Ptr> & filters)
+  : Filter(filter_type, parameters), filters_(filters)
   {
   }
   virtual ~SequentialFilter() {}

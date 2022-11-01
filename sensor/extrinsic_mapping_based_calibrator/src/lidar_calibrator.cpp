@@ -45,11 +45,14 @@ LidarCalibrator::LidarCalibrator(
   target_map_pub_(target_map_pub)
 {
   // Filter configuration
-  std::shared_ptr<Filter> lost_state_filter(new LostStateFilter(calibrator_name_, parameters));
-  std::shared_ptr<Filter> dynamics_filter(new DynamicsFilter(calibrator_name_, parameters));
-  std::shared_ptr<Filter> best_frames_filter(new BestFramesFilter(calibrator_name_, parameters));
-  std::shared_ptr<Filter> object_detection_filter(
-    new ObjectDetectionFilter(calibrator_name_, parameters, tf_buffer_));
+  std::shared_ptr<Filter> lost_state_filter(
+    new LostStateFilter(Filter::FilterType::LidarFilter, calibrator_name_, parameters));
+  std::shared_ptr<Filter> dynamics_filter(
+    new DynamicsFilter(Filter::FilterType::LidarFilter, calibrator_name_, parameters));
+  std::shared_ptr<Filter> best_frames_filter(
+    new BestFramesFilter(Filter::FilterType::LidarFilter, calibrator_name_, parameters));
+  std::shared_ptr<Filter> object_detection_filter(new ObjectDetectionFilter(
+    Filter::FilterType::LidarFilter, calibrator_name_, parameters, tf_buffer_));
   std::vector<std::shared_ptr<Filter>> filters =
     parameters_->filter_detections_
       ? std::vector<std::shared_ptr<
@@ -57,7 +60,8 @@ LidarCalibrator::LidarCalibrator(
       : std::vector<std::shared_ptr<Filter>>{
           lost_state_filter, dynamics_filter, best_frames_filter};
 
-  filter_.reset(new SequentialFilter(calibrator_name_, parameters, filters));
+  filter_.reset(
+    new SequentialFilter(Filter::FilterType::LidarFilter, calibrator_name_, parameters, filters));
 
   // Calibration configuration
   correspondence_estimator_ =
@@ -162,10 +166,10 @@ void LidarCalibrator::singleSensorCalibrationCallback(
     calibration_frame.source_pointcloud_, parameters_->max_calibration_range_);
 
   PointcloudType::Ptr target_dense_pc_ptr = getDensePointcloudFromMap(
-    calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
+    calibration_frame.local_map_pose_, calibration_frame.target_frame_,
     parameters_->leaf_size_dense_map_, parameters_->max_calibration_range_ + initial_distance);
   PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(
-    calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
+    calibration_frame.local_map_pose_, calibration_frame.target_frame_,
     parameters_->calibration_viz_leaf_size_,
     parameters_->max_calibration_range_ + initial_distance);
 
@@ -232,12 +236,12 @@ void LidarCalibrator::singleSensorCalibrationCallback(
   PointcloudType::Ptr target_thin_map_ptr(new PointcloudType());
   pcl::transformPointCloud(
     *initial_source_aligned_pc_ptr, *initial_source_aligned_map_ptr,
-    calibration_frame.target_frame_->pose_);
+    calibration_frame.local_map_pose_);
   pcl::transformPointCloud(
     *calibrated_source_aligned_pc_ptr, *calibrated_source_aligned_map_ptr,
-    calibration_frame.target_frame_->pose_);
+    calibration_frame.local_map_pose_);
   pcl::transformPointCloud(
-    *target_thin_pc_ptr, *target_thin_map_ptr, calibration_frame.target_frame_->pose_);
+    *target_thin_pc_ptr, *target_thin_map_ptr, calibration_frame.local_map_pose_);
 
   sensor_msgs::msg::PointCloud2 initial_source_aligned_map_msg, calibrated_source_aligned_map_msg,
     target_map_msg;
@@ -312,7 +316,7 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
   std::vector<CalibrationFrame> calibration_frames =
     filter_->filter(data_->lidar_calibration_frames_map_[calibrator_sensor_frame_], data_);
 
-  if (static_cast<int>(calibration_frames.size()) < parameters_->calibration_min_frames_) {
+  if (static_cast<int>(calibration_frames.size()) < parameters_->lidar_calibration_min_frames_) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "Insufficient calibration frames. aborting.");
     return false;
   }
@@ -477,11 +481,11 @@ void LidarCalibrator::prepareCalibrationData(
       calibration_frame.source_pointcloud_, parameters_->max_calibration_range_);
 
     PointcloudType::Ptr target_pc_ptr = getDensePointcloudFromMap(
-      calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
+      calibration_frame.local_map_pose_, calibration_frame.target_frame_,
       parameters_->leaf_size_dense_map_, parameters_->max_calibration_range_ + initial_distance);
 
     PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(
-      calibration_frame.target_frame_->pose_, calibration_frame.target_frame_,
+      calibration_frame.local_map_pose_, calibration_frame.target_frame_,
       parameters_->calibration_viz_leaf_size_,
       parameters_->max_calibration_range_ + initial_distance);
 
@@ -519,14 +523,13 @@ void LidarCalibrator::publishResults(
     PointcloudType::Ptr target_thin_tmp_ptr(new PointcloudType());
 
     pcl::transformPointCloud(
-      *sources[i], *initial_tmp_ptr,
-      calibration_frames[i].target_frame_->pose_ * initial_transform);
+      *sources[i], *initial_tmp_ptr, calibration_frames[i].local_map_pose_ * initial_transform);
     pcl::transformPointCloud(
       *sources[i], *calibrated_tmp_ptr,
-      calibration_frames[i].target_frame_->pose_ * calibrated_transform);
+      calibration_frames[i].local_map_pose_ * calibrated_transform);
 
     pcl::transformPointCloud(
-      *targets[i], *target_thin_tmp_ptr, calibration_frames[i].target_frame_->pose_);
+      *targets[i], *target_thin_tmp_ptr, calibration_frames[i].local_map_pose_);
 
     *initial_source_aligned_map_ptr += *initial_tmp_ptr;
     *calibrated_source_aligned_map_ptr += *calibrated_tmp_ptr;
