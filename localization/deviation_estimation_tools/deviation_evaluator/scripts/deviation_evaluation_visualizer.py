@@ -69,7 +69,7 @@ class DeviationEvaluationVisualizer(Node):
                 save_path=output_dir / "long_radius/thres2recall_{:.2f}.png".format(thres),
             )
 
-        fig = plot_bag_compare(
+        _ = plot_bag_compare(
             output_dir / "deviation_evaluator.png",
             bag_file_evaluator.results,
         )
