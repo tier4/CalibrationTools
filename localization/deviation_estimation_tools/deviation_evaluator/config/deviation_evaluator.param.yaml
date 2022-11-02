@@ -1,10 +1,10 @@
 /**:
   ros__parameters:
     # Parameters that you want to evaluate
-    stddev_vx: 0.3
-    stddev_wz: 0.02
-    coef_vx: 1.0
-    bias_wz: 0.0
+    stddev_vx: 0.3 # [m/s]
+    stddev_wz: 0.02 # [rad/s]
+    coef_vx: 1.0 # [.]
+    bias_wz: 0.0 # [rad/s]
 
     # Dead Reckoning configuration
     period: 10.0 # [s]

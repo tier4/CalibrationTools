@@ -327,7 +327,8 @@ void DeviationEstimator::estimateStddev()
   double est_window_duration = 4.0;  // Hard coded
 
   auto duration = rclcpp::Duration(
-    int(est_window_duration / 1), int((est_window_duration - est_window_duration / 1) * 1e9));
+    static_cast<int>(est_window_duration / 1),
+    static_cast<int>((est_window_duration - est_window_duration / 1) * 1e9));
 
   std::vector<double> error_x_list;
   std::vector<std::vector<double>> error_rpy_lists;
