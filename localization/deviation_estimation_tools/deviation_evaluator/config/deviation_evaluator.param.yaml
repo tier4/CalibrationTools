@@ -1,13 +1,15 @@
 /**:
   ros__parameters:
     # Parameters that you want to evaluate
-    # Results expressed in base_link
-    # Copy the following to deviation_evaluator.param.yaml
-    stddev_vx: 0.25309
-    stddev_wz: 0.00191
-    coef_vx: 1.01624
-    bias_wz: -0.00631
+    stddev_vx: 0.3
+    stddev_wz: 0.02
+    coef_vx: 1.0
+    bias_wz: 0.0
 
     # Dead Reckoning configuration
     period: 10.0 # [s]
     cut: 9.0 # [s]
+
+    # Stop mask threshold (this should be manually synced with gyro_odometer in Autoware Universe)
+    vx_threshold: 0.01 # [m/s]
+    wz_threshold: 0.01 # [m/s]

@@ -71,6 +71,8 @@ private:
   double bias_wz_;
   double period_;
   double cut_;
+  double vx_threshold_;
+  double wz_threshold_;
 
   geometry_msgs::msg::PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
   geometry_msgs::msg::PoseStamped::SharedPtr current_ndt_pose_ptr_;

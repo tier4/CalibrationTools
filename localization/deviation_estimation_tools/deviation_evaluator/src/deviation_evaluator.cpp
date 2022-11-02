@@ -44,6 +44,8 @@ DeviationEvaluator::DeviationEvaluator(
   period_ = declare_parameter("period", 10.0);
   cut_ = declare_parameter("cut", 9.0);
   save_dir_ = declare_parameter("save_dir", "");
+  vx_threshold_ = declare_parameter<double>("vx_threshold");
+  wz_threshold_ = declare_parameter<double>("wz_threshold");
 
   save2YamlFile();
 
@@ -80,6 +82,10 @@ void DeviationEvaluator::callbackTwistWithCovariance(
   msg->twist.covariance[0 * 6 + 5] = 0.0;
   msg->twist.covariance[5 * 6 + 0] = 0.0;
   msg->twist.covariance[5 * 6 + 5] = stddev_wz_ * stddev_wz_;
+  if (msg->twist.twist.linear.x < vx_threshold_ && msg->twist.twist.angular.z < wz_threshold_) {
+    msg->twist.twist.linear.x = 0.0;
+    msg->twist.twist.angular.z = 0.0;
+  }
   pub_twist_with_cov_->publish(*msg);
 }
 
