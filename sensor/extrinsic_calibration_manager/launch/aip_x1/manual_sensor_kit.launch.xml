@@ -20,8 +20,7 @@
     <param name="parent_frame" value="$(var parent_frame)" />
     <param name="child_frames" value="
     [velodyne_top_base_link,
-    velarray_front_right_base_link,
-    velarray_front_left_base_link]" />
+    pandar_xt32_front_center_base_link]" />
   </node>
 
   <!-- extrinsic_manual_calibrator -->
@@ -32,15 +31,9 @@
   </include>
 
   <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
-    <arg name="ns" value="$(var parent_frame)/velarray_front_right_base_link" />
+    <arg name="ns" value="$(var parent_frame)/pandar_xt32_front_center_base_link" />
     <arg name="parent_frame" value="$(var parent_frame)" />
-    <arg name="child_frame" value="velarray_front_right_base_link" />
-  </include>
-
-  <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
-    <arg name="ns" value="$(var parent_frame)/velarray_front_left_base_link" />
-    <arg name="parent_frame" value="$(var parent_frame)" />
-    <arg name="child_frame" value="velarray_front_left_base_link" />
+    <arg name="child_frame" value="pandar_xt32_front_center_base_link" />
   </include>
 
 </launch>

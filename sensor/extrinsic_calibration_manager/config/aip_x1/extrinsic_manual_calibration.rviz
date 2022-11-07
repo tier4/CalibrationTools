@@ -9,8 +9,9 @@ Panels:
         - /Grid1
         - /TF1/Frames1
         - /LiDAR11
-        - /Front Left1
-        - /Front Right1
+        - /PointCloud21
+        - /PointCloud21/Status1
+        - /PointCloud21/Topic1
       Splitter Ratio: 0.3273542523384094
     Tree Height: 724
   - Class: rviz_common/Selection
@@ -30,7 +31,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Front Right
+    SyncSource: LiDAR1
 Visualization Manager:
   Class: ""
   Displays:
@@ -61,17 +62,13 @@ Visualization Manager:
           Value: true
         map:
           Value: true
+        pandar_xt32_front_center:
+          Value: true
+        pandar_xt32_front_center_base_link:
+          Value: true
         sensor_kit_base_link:
           Value: true
         tamagawa/imu_link:
-          Value: true
-        velarray_front_left:
-          Value: true
-        velarray_front_left_base_link:
-          Value: true
-        velarray_front_right:
-          Value: true
-        velarray_front_right_base_link:
           Value: true
         velodyne_top:
           Value: true
@@ -83,21 +80,17 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        base_link:
-          sensor_kit_base_link:
-            tamagawa/imu_link:
-              {}
-            velarray_front_left_base_link:
-              velarray_front_left:
-                {}
-            velarray_front_right_base_link:
-              velarray_front_right:
-                {}
-            velodyne_top_base_link:
-              velodyne_top:
-                {}
         map:
-          {}
+          base_link:
+            sensor_kit_base_link:
+              pandar_xt32_front_center_base_link:
+                pandar_xt32_front_center:
+                  {}
+              tamagawa/imu_link:
+                {}
+              velodyne_top_base_link:
+                velodyne_top:
+                  {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -202,6 +195,40 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 9.967242240905762
+        Min Value: -0.28297486901283264
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 255
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 2
+      Size (m): 0.009999999776482582
+      Style: Points
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /sensing/lidar/front_center/pointcloud_raw
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -257,11 +284,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 36.40941619873047
+      Scale: 7.169439315795898
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 53.510196685791016
-      Y: 20.816478729248047
+      X: 17.91412353515625
+      Y: 3.38124680519104
     Saved: ~
 Window Geometry:
   Displays:
@@ -269,7 +296,7 @@ Window Geometry:
   Height: 1016
   Hide Left Dock: true
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd0000000400000000000001c00000035ffc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003d0000035f000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000019e0000035ffc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000035f000000a400fffffffb0000000c00430061006d0065007200610100000237000001650000000000000000fb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000039c00000039fc0100000002fb0000000800540069006d006501000000000000039c000002eb00fffffffb0000000800540069006d006501000000000000045000000000000000000000039c0000035f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001c00000035ffc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003d0000035f000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000019e0000035ffc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000035f000000a400fffffffb0000000c00430061006d0065007200610100000237000001650000000000000000fb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000045900000039fc0100000002fb0000000800540069006d0065010000000000000459000002eb00fffffffb0000000800540069006d00650100000000000004500000000000000000000004590000035f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -278,6 +305,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 924
+  Width: 1113
   X: 72
   Y: 27
