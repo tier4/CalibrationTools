@@ -18,6 +18,7 @@
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
+#include <std_srvs/srv/empty.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -28,9 +29,14 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <map>
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+namespace extrinsic_tag_based_base_calibrator
+{
 
 class ExtrinsicTagBasedBaseCalibrator : public rclcpp::Node
 {
@@ -41,9 +47,30 @@ protected:
   void visualizationTimerCallback();
   std_msgs::msg::ColorRGBA getNextColor();
 
+  bool preprocessCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+  bool saveCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+  bool loadCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+  bool calibrateCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
   rclcpp::TimerBase::SharedPtr visualization_timer_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr preprocess_srv_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr save_srv_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr load_srv_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr calibration_dummy_srv_;
 
+  ApriltagParameters apriltag_parameters_;
   double waypoint_tag_size_;
   double wheel_tag_size_;
   double ground_tag_size_;
@@ -54,14 +81,17 @@ protected:
   std::vector<int> ground_tag_ids_;
   std::vector<int> intrinsic_calibration_tag_ids_;
 
+  std::map<int, double> tag_size_map_;
   std::unordered_set<int> waypoint_tag_ids_set_;
   std::unordered_set<int> wheel_tag_ids_set_;
   std::unordered_set<int> ground_tag_ids_set_;
 
-  std::vector<CalibrationScene> scenes_;
+  CalibrationData data_;
 
   std::size_t next_color_index_;
   std::vector<std_msgs::msg::ColorRGBA> precomputed_colors_;
 };
+
+}  // namespace extrinsic_tag_based_base_calibrator
 
 #endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__EXTRINSIC_TAG_BASED_BASE_CALIBRATOR_HPP_

@@ -23,6 +23,9 @@
 #include <string>
 #include <vector>
 
+namespace extrinsic_tag_based_base_calibrator
+{
+
 class IntrinsicsCalibrator
 {
 public:
@@ -42,5 +45,7 @@ public:
 
   bool debug_;
 };
+
+}  // namespace extrinsic_tag_based_base_calibrator
 
 #endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATOR_HPP_

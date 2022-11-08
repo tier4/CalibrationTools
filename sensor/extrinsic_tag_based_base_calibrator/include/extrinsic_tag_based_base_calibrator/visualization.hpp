@@ -22,12 +22,36 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <array>
+#include <string>
 
-visualization_msgs::msg::MarkerArray create_tag_markers(
-  int tag_id, float size, const std_msgs::msg::ColorRGBA & color, const cv::Affine3f & affine,
+namespace extrinsic_tag_based_base_calibrator
+{
+
+void add_text_marker(
+  visualization_msgs::msg::MarkerArray & markers, const std::string & text,
+  const std_msgs::msg::ColorRGBA & color, const cv::Affine3f & pose,
   const visualization_msgs::msg::Marker & base_marker)
 {
-  visualization_msgs::msg::MarkerArray markers;
+  visualization_msgs::msg::Marker marker;
+
+  marker = base_marker;
+  marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+  marker.text = text;
+  marker.color = color;
+  marker.scale.z = 0.3;
+
+  marker.pose.orientation.w = 1.f;
+  marker.pose.position.x = pose.translation()(0);
+  marker.pose.position.y = pose.translation()(1);
+  marker.pose.position.z = pose.translation()(2);
+  markers.markers.push_back(marker);
+}
+
+void add_tag_markers(
+  visualization_msgs::msg::MarkerArray & markers, const std::string & tag_name, float size,
+  const std_msgs::msg::ColorRGBA & color, const cv::Affine3f & pose,
+  const visualization_msgs::msg::Marker & base_marker)
+{
   visualization_msgs::msg::Marker marker;
 
   marker = base_marker;
@@ -43,7 +67,7 @@ visualization_msgs::msg::MarkerArray create_tag_markers(
   for (std::size_t index = 0; index < 5; ++index) {
     int normalized_index = index % 4;
 
-    cv::Matx31f p = affine.rotation() * template_points[normalized_index] + affine.translation();
+    cv::Matx31f p = pose.rotation() * template_points[normalized_index] + pose.translation();
     geometry_msgs::msg::Point p_msg;
     p_msg.x = p(0);
     p_msg.y = p(1);
@@ -55,29 +79,20 @@ visualization_msgs::msg::MarkerArray create_tag_markers(
   markers.markers.push_back(marker);
   marker.points.clear();
 
-  marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-  marker.text = std::to_string(tag_id);
-  marker.scale.z = 0.3;
-  marker.pose.orientation.w = 1.f;
-  marker.pose.position.x = affine.translation()(0);
-  marker.pose.position.y = affine.translation()(1);
-  marker.pose.position.z = affine.translation()(2);
-  markers.markers.push_back(marker);
-
-  return markers;
+  add_text_marker(markers, tag_name, color, pose, base_marker);
 }
 
-visualization_msgs::msg::MarkerArray create_line(
-  const std_msgs::msg::ColorRGBA & color, const cv::Affine3f & affine1,
-  const cv::Affine3f & affine2, const visualization_msgs::msg::Marker & base_marker)
+void add_line_marker(
+  visualization_msgs::msg::MarkerArray & markers, const std_msgs::msg::ColorRGBA & color,
+  const cv::Affine3f & affine1, const cv::Affine3f & affine2,
+  const visualization_msgs::msg::Marker & base_marker)
 {
-  visualization_msgs::msg::MarkerArray markers;
   visualization_msgs::msg::Marker marker;
 
   marker = base_marker;
   marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
   marker.color = color;
-  marker.scale.x = 0.01;
+  marker.scale.x = 0.005;
 
   auto affine_to_msg = [](const cv::Affine3f & affine, geometry_msgs::msg::Point & p) {
     p.x = affine.translation()(0);
@@ -95,13 +110,12 @@ visualization_msgs::msg::MarkerArray create_line(
   marker.points.push_back(p2);
 
   markers.markers.push_back(marker);
-  return markers;
 }
 
-visualization_msgs::msg::MarkerArray create_axes_markers(
-  float size, const cv::Affine3f & affine, const visualization_msgs::msg::Marker & base_marker)
+void add_axes_markers(
+  visualization_msgs::msg::MarkerArray & markers, float size, const cv::Affine3f & affine,
+  const visualization_msgs::msg::Marker & base_marker)
 {
-  visualization_msgs::msg::MarkerArray markers;
   visualization_msgs::msg::Marker marker;
 
   marker = base_marker;
@@ -138,8 +152,8 @@ visualization_msgs::msg::MarkerArray create_axes_markers(
     marker.points.push_back(p_msg);
     markers.markers.push_back(marker);
   }
-
-  return markers;
 }
+
+}  // namespace extrinsic_tag_based_base_calibrator
 
 #endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__VISUALIZATION_HPP_

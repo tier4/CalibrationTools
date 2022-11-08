@@ -24,6 +24,9 @@
 #include <unordered_map>
 #include <vector>
 
+namespace extrinsic_tag_based_base_calibrator
+{
+
 class ApriltagDetector
 {
 public:
@@ -49,5 +52,7 @@ protected:
   static std::unordered_map<std::string, create_family_fn_type> tag_create_fn_map;
   static std::unordered_map<std::string, destroy_family_fn_type> tag_destroy_fn_map;
 };
+
+}  // namespace extrinsic_tag_based_base_calibrator
 
 #endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__APRILTAG_DETECTOR_HPP_

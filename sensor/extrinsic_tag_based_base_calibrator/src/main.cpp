@@ -23,8 +23,9 @@ int main(int argc, char ** argv)
 
   rclcpp::executors::MultiThreadedExecutor executor;
   rclcpp::NodeOptions node_options;
-  std::shared_ptr<ExtrinsicTagBasedBaseCalibrator> node =
-    std::make_shared<ExtrinsicTagBasedBaseCalibrator>(node_options);
+  std::shared_ptr<extrinsic_tag_based_base_calibrator::ExtrinsicTagBasedBaseCalibrator> node =
+    std::make_shared<extrinsic_tag_based_base_calibrator::ExtrinsicTagBasedBaseCalibrator>(
+      node_options);
   executor.add_node(node);
   executor.spin();
 

@@ -22,6 +22,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+namespace extrinsic_tag_based_base_calibrator
+{
+
 void IntrinsicsCalibrator::setCalibrationImageFiles(
   const std::vector<std::string> & image_file_names)
 {
@@ -153,3 +156,5 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
 
   return true;
 }
+
+}  // namespace extrinsic_tag_based_base_calibrator

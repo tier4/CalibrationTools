@@ -6,9 +6,10 @@ find_package(apriltag REQUIRED)
 find_package(autoware_cmake REQUIRED)
 find_package(OpenCV REQUIRED)
 
-add_compile_options(-std=c++2a -std=gnu++2a)
-
 autoware_package()
+
+# These need to be called after autoware_package to avoid being overwritten
+find_package(Boost REQUIRED COMPONENTS system serialization filesystem)
 
 ament_export_include_directories(
   include
@@ -26,6 +27,7 @@ ament_auto_add_executable(extrinsic_tag_based_base_calibrator
 )
 
 target_link_libraries(extrinsic_tag_based_base_calibrator
+  ${Boost_LIBRARIES}
   ${OpenCV_LIBS}
   apriltag::apriltag
 )

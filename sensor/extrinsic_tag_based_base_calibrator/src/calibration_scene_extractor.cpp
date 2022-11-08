@@ -20,24 +20,23 @@
 #include <iostream>
 #include <unordered_set>
 
+namespace extrinsic_tag_based_base_calibrator
+{
+
 void CalibrationSceneExtractor::setCalibrationSensorIntrinsics(IntrinsicParameters & intrinsics)
 {
   calibration_sensor_intrinsics_ = intrinsics;
   calibration_sensor_detector_.setIntrinsics(
-    intrinsics.undistorted_camera_matrix.at<float>(0, 0),
-    intrinsics.undistorted_camera_matrix.at<float>(1, 1),
-    intrinsics.undistorted_camera_matrix.at<float>(0, 2),
-    intrinsics.undistorted_camera_matrix.at<float>(1, 2));
+    intrinsics.undistorted_camera_matrix(0, 0), intrinsics.undistorted_camera_matrix(1, 1),
+    intrinsics.undistorted_camera_matrix(0, 2), intrinsics.undistorted_camera_matrix(1, 2));
 }
 
 void CalibrationSceneExtractor::setExternalCameraIntrinsics(IntrinsicParameters & intrinsics)
 {
   external_camera_intrinsics_ = intrinsics;
   external_camera_detector_.setIntrinsics(
-    intrinsics.undistorted_camera_matrix.at<float>(0, 0),
-    intrinsics.undistorted_camera_matrix.at<float>(1, 1),
-    intrinsics.undistorted_camera_matrix.at<float>(0, 2),
-    intrinsics.undistorted_camera_matrix.at<float>(1, 2));
+    intrinsics.undistorted_camera_matrix(0, 0), intrinsics.undistorted_camera_matrix(1, 1),
+    intrinsics.undistorted_camera_matrix(0, 2), intrinsics.undistorted_camera_matrix(1, 2));
 }
 
 void CalibrationSceneExtractor::setWaypointTagSize(float size) { waypoint_tag_size_ = size; }
@@ -114,18 +113,19 @@ CalibrationScene CalibrationSceneExtractor::processScene(
       continue;
     }
 
-    std::vector<ApriltagDetection> filtered_detections;
+    ExternalCameraFrame frame;
+    frame.image_filename = image_name;
 
     std::copy_if(
-      detections.begin(), detections.end(), std::back_inserter(filtered_detections),
+      detections.begin(), detections.end(), std::back_inserter(frame.detections),
       [external_camera_tag_sizes](const ApriltagDetection & detection) {
         return external_camera_tag_sizes.count(detection.id) > 0;
       });
 
-    std::cout << "Prcesed: " << image_name << " Detections: " << filtered_detections.size()
+    std::cout << "Prcesed: " << image_name << " Detections: " << frame.detections.size()
               << std::endl;
 
-    scene.external_camera_detections.emplace_back(filtered_detections);
+    scene.external_camera_frames.emplace_back(frame);
 
     if (debug_) {
       auto draw_detection =
@@ -159,7 +159,7 @@ CalibrationScene CalibrationSceneExtractor::processScene(
         external_camera_intrinsics_.dist_coeffs,
         external_camera_intrinsics_.undistorted_camera_matrix);
 
-      for (const auto & detection : filtered_detections) {
+      for (const auto & detection : frame.detections) {
         draw_detection(undistorted_img, detection, cv::Scalar(0, 255, 0));
       }
 
@@ -174,3 +174,5 @@ CalibrationScene CalibrationSceneExtractor::processScene(
 
   return scene;
 }
+
+}  // namespace extrinsic_tag_based_base_calibrator

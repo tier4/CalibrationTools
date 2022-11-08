@@ -21,6 +21,9 @@
 
 #include <iostream>
 
+namespace extrinsic_tag_based_base_calibrator
+{
+
 std::unordered_map<std::string, ApriltagDetector::create_family_fn_type>
   ApriltagDetector::tag_create_fn_map = {
     {"16h5", tag16h5_create},
@@ -109,11 +112,12 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
       detection_info.tagsize = tag_sizes_map_.at(det->id);
 
       apriltag_pose_t pose;
-
       estimate_tag_pose(&detection_info, &pose);
 
-      result.pose_rotation = cv::Matx33d(pose.R->data);
-      result.pose_translation = cv::Matx31d(pose.t->data);
+      cv::Matx33d rotation(pose.R->data);
+      cv::Vec3d translation(pose.t->data);
+
+      result.pose = cv::Affine3d(rotation, translation);
       result.size = tag_sizes_map_.at(det->id);
 
       matd_destroy(pose.R);
@@ -127,3 +131,5 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
 
   return results;
 }
+
+}  // namespace extrinsic_tag_based_base_calibrator

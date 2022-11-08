@@ -21,6 +21,9 @@
 #include <string>
 #include <vector>
 
+namespace extrinsic_tag_based_base_calibrator
+{
+
 class CalibrationSceneExtractor
 {
 public:
@@ -65,5 +68,7 @@ protected:
   IntrinsicParameters external_camera_intrinsics_;
   bool debug_;
 };
+
+}  // namespace extrinsic_tag_based_base_calibrator
 
 #endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CALIBRATION_SCENE_EXTRACTOR_HPP_
