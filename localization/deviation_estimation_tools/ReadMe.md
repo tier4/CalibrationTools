@@ -143,10 +143,10 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 #### Input
 
-| Name                                                  | Type                                             | Description           |
-| ----------------------------------------------------- | ------------------------------------------------ | --------------------- |
-| `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose (default)  |
-| `/localization/pose_estimator/pose`                   | `geometry_msgs::msg::PoseStamped`                | Input pose            |
+| Name                                                      | Type                                             | Description           |
+| --------------------------------------------------------- | ------------------------------------------------ | --------------------- |
+| `/localization/pose_estimator/pose_with_covariance`       | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose (default)  |
+| `/localization/pose_estimator/pose`                       | `geometry_msgs::msg::PoseStamped`                | Input pose            |
 | `/localization/twist_estimator/twist_with_covariance_raw` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist (default) |
 | `/localization/twist_estimator/twist_raw`                 | `geometry_msgs::msg::TwistStamped`               | Input twist           |
 
@@ -253,10 +253,10 @@ The architecture of `deviation_evaluator` is shown below. It launches two `ekf_l
 
 #### Input
 
-| Name                                                  | Type                                             | Description |
-| ----------------------------------------------------- | ------------------------------------------------ | ----------- |
+| Name                                                      | Type                                             | Description |
+| --------------------------------------------------------- | ------------------------------------------------ | ----------- |
 | `/localization/twist_estimator/twist_with_covariance_raw` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist |
-| `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose  |
+| `/localization/pose_estimator/pose_with_covariance`       | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose  |
 
 #### Output
 
