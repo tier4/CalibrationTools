@@ -30,7 +30,6 @@ If you are using rosbag, it should contain the following topics:
 - /localization/pose_estimator/pose_with_covariance
 - /clock
 - /tf_static (that contains transform from `base_link` to `imu_link`)
-- (/localization/twist_estimator/twist_with_covariance: required in the next step)
 
 NOTE that the pose and twist must be estimated with default parameters (see `known issues` section for detail).
 
@@ -148,8 +147,8 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 | ----------------------------------------------------- | ------------------------------------------------ | --------------------- |
 | `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose (default)  |
 | `/localization/pose_estimator/pose`                   | `geometry_msgs::msg::PoseStamped`                | Input pose            |
-| `/localization/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist (default) |
-| `/localization/twist_estimator/twist`                 | `geometry_msgs::msg::TwistStamped`               | Input twist           |
+| `/localization/twist_estimator/twist_with_covariance_raw` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist (default) |
+| `/localization/twist_estimator/twist_raw`                 | `geometry_msgs::msg::TwistStamped`               | Input twist           |
 
 #### Output
 
@@ -256,7 +255,7 @@ The architecture of `deviation_evaluator` is shown below. It launches two `ekf_l
 
 | Name                                                  | Type                                             | Description |
 | ----------------------------------------------------- | ------------------------------------------------ | ----------- |
-| `/localization/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist |
+| `/localization/twist_estimator/twist_with_covariance_raw` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist |
 | `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose  |
 
 #### Output
