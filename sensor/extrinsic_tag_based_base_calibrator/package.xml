@@ -21,6 +21,7 @@
   <depend>libboost-filesystem</depend>
   <depend>libboost-serialization</depend>
   <depend>libceres-dev</depend>
+  <depend>libgoogle-glog-dev</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
   <depend>rclcpp</depend>

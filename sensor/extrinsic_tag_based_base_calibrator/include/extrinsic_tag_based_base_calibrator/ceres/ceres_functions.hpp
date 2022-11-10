@@ -20,41 +20,44 @@ namespace extrinsic_tag_based_base_calibrator
 
 /*
  * These methods were copied from ceres/rotation.h.
- * The reason behind the copy was the need for an implementation where the point being transformed
+ * The reason behind the copy was the need for an implementation where the point or pose
  * was fixed and thus could not find a signature with both ceres::Jet and double arguments
  */
-template <typename T>
-inline void UnitQuaternionRotatePointDouble(const T q[4], const double pt[3], T result[3])
+template <typename T1, typename T2, typename T3>
+inline void UnitQuaternionRotatePoint2(const T1 q[4], const T2 pt[3], T3 result[3])
 {
-  const T t2 = q[0] * q[1];
-  const T t3 = q[0] * q[2];
-  const T t4 = q[0] * q[3];
-  const T t5 = -q[1] * q[1];
-  const T t6 = q[1] * q[2];
-  const T t7 = q[1] * q[3];
-  const T t8 = -q[2] * q[2];
-  const T t9 = q[2] * q[3];
-  const T t1 = -q[3] * q[3];
-  result[0] = T(2) * ((t8 + t1) * pt[0] + (t6 - t4) * pt[1] + (t3 + t7) * pt[2]) + pt[0];  // NOLINT
-  result[1] = T(2) * ((t4 + t6) * pt[0] + (t5 + t1) * pt[1] + (t9 - t2) * pt[2]) + pt[1];  // NOLINT
-  result[2] = T(2) * ((t7 - t3) * pt[0] + (t2 + t9) * pt[1] + (t5 + t8) * pt[2]) + pt[2];  // NOLINT
+  const T1 t2 = q[0] * q[1];
+  const T1 t3 = q[0] * q[2];
+  const T1 t4 = q[0] * q[3];
+  const T1 t5 = -q[1] * q[1];
+  const T1 t6 = q[1] * q[2];
+  const T1 t7 = q[1] * q[3];
+  const T1 t8 = -q[2] * q[2];
+  const T1 t9 = q[2] * q[3];
+  const T1 t1 = -q[3] * q[3];
+  result[0] =
+    T3(2) * ((t8 + t1) * pt[0] + (t6 - t4) * pt[1] + (t3 + t7) * pt[2]) + pt[0];  // NOLINT
+  result[1] =
+    T3(2) * ((t4 + t6) * pt[0] + (t5 + t1) * pt[1] + (t9 - t2) * pt[2]) + pt[1];  // NOLINT
+  result[2] =
+    T3(2) * ((t7 - t3) * pt[0] + (t2 + t9) * pt[1] + (t5 + t8) * pt[2]) + pt[2];  // NOLINT
 }
 
-template <typename T>
-inline void QuaternionRotatePointDouble(const T q[4], const double pt[3], T result[3])
+template <typename T1, typename T2, typename T3>
+inline void QuaternionRotatePoint2(const T1 q[4], const T2 pt[3], T3 result[3])
 {
   // 'scale' is 1 / norm(q).
-  const T scale = T(1) / sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+  const T1 scale = T1(1) / sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
 
   // Make unit-norm version of q.
-  const T unit[4] = {
+  const T1 unit[4] = {
     scale * q[0],
     scale * q[1],
     scale * q[2],
     scale * q[3],
   };
 
-  UnitQuaternionRotatePointDouble(unit, pt, result);
+  UnitQuaternionRotatePoint2<T1, T2, T3>(unit, pt, result);
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

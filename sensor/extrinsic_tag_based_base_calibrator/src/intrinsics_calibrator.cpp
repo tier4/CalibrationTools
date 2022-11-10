@@ -42,7 +42,9 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
 
   std::vector<std::vector<cv::Point2f>> image_points;
   std::vector<std::vector<cv::Point3f>> object_points;
-  std::vector<std::string> filtered_image_file_names;
+
+  // std::vector<std::string> filtered_image_file_names;
+  std::unordered_map<std::string, std::vector<int>> filtered_image_file_name_to_calibration_id_map;
 
   std::unordered_set<int> calibration_tag_ids_set;
 
@@ -51,8 +53,7 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
   }
 
   std::vector<cv::Point3f> single_tag_object_points = {
-    cv::Point3f(-1.0, -1.0, 0.0), cv::Point3f(1.0, -1.0, 0.0), cv::Point3f(1.0, 1.0, 0.0),
-    cv::Point3f(-1.0, 1.0, 0.0)};
+    {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
 
   for (std::size_t i = 0; i < calibration_image_file_names_.size(); ++i) {
     RCLCPP_INFO(
@@ -77,23 +78,33 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
 
     // Extract points
     for (const auto & detection : filtered_detections) {
+      filtered_image_file_name_to_calibration_id_map[calibration_image_file_names_[i]].push_back(
+        image_points.size());
       image_points.push_back(detection.corners);
       object_points.push_back(single_tag_object_points);
-      filtered_image_file_names.push_back(calibration_image_file_names_[i]);
     }
   }
 
   // Calibrate
+  RCLCPP_INFO(
+    rclcpp::get_logger("intrinsics_calibrator"), "Calibration views: %lu", image_points.size());
   std::vector<cv::Mat> rvecs;
   std::vector<cv::Mat> tvecs;
-  cv::calibrateCamera(
+  double reproj_error = cv::calibrateCamera(
     object_points, image_points, intrinsics.size, intrinsics.camera_matrix, intrinsics.dist_coeffs,
     rvecs, tvecs);
+
+  // cv::Mat a, b, c;
+  // double reproj_error = cv::calibrateCamera(
+  //   object_points, image_points, intrinsics.size, intrinsics.camera_matrix,
+  //   intrinsics.dist_coeffs, rvecs, tvecs, a, b, c, cv::CALIB_FIX_K3);
+
   intrinsics.camera_matrix.convertTo(intrinsics.camera_matrix, CV_32F);
   intrinsics.dist_coeffs.convertTo(intrinsics.dist_coeffs, CV_32F);
 
-  std::cout << "camera_matrix: \n" << intrinsics.camera_matrix << std::endl;
-  std::cout << "dist_coeffs: \n" << intrinsics.dist_coeffs << std::endl;
+  std::cout << "Reproj_error: " << reproj_error << std::endl;
+  std::cout << "Camera_matrix: \n" << intrinsics.camera_matrix << std::endl;
+  std::cout << "Dist_coeffs: \n" << intrinsics.dist_coeffs << std::endl << std::flush;
 
   // New calibration matrix
   intrinsics.undistorted_camera_matrix = getOptimalNewCameraMatrix(
@@ -113,13 +124,16 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
 
     for (std::size_t i = 0; i < corners.size(); ++i) {
       std::size_t j = (i + 1) % corners.size();
-      cv::line(img, corners[i], corners[j], color, static_cast<int>(tag_size / 256), cv::LINE_AA);
+      cv::line(
+        img, corners[i], corners[j], color, std::max(1, static_cast<int>(tag_size / 256)),
+        cv::LINE_AA);
     }
   };
 
   if (debug_) {
-    for (std::size_t i = 0; i < filtered_image_file_names.size(); ++i) {
-      const std::string input_file_name = filtered_image_file_names[i];
+    for (auto it = filtered_image_file_name_to_calibration_id_map.begin();
+         it != filtered_image_file_name_to_calibration_id_map.end(); it++) {
+      const std::string input_file_name = it->first;
       std::size_t name_start_pos = input_file_name.find_last_of("/\\");
       std::size_t name_end_pos = input_file_name.find_last_of(".\\");
       std::string raw_name =
@@ -136,18 +150,20 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
         distorted_img, undistorted_img, intrinsics.camera_matrix, intrinsics.dist_coeffs,
         intrinsics.undistorted_camera_matrix);
 
-      std::vector<cv::Point2f> distorted_projected_points, undistorted_projected_points;
+      for (auto i : it->second) {
+        std::vector<cv::Point2f> distorted_projected_points, undistorted_projected_points;
 
-      cv::projectPoints(
-        object_points[i], rvecs[i], tvecs[i], intrinsics.camera_matrix, intrinsics.dist_coeffs,
-        distorted_projected_points);
+        cv::projectPoints(
+          object_points[i], rvecs[i], tvecs[i], intrinsics.camera_matrix, intrinsics.dist_coeffs,
+          distorted_projected_points);
 
-      cv::projectPoints(
-        object_points[i], rvecs[i], tvecs[i], intrinsics.undistorted_camera_matrix, cv::Mat(),
-        undistorted_projected_points);
+        cv::projectPoints(
+          object_points[i], rvecs[i], tvecs[i], intrinsics.undistorted_camera_matrix, cv::Mat(),
+          undistorted_projected_points);
 
-      draw_corners(distorted_img, distorted_projected_points, cv::Scalar(0, 255, 0));
-      draw_corners(undistorted_img, undistorted_projected_points, cv::Scalar(255, 0, 255));
+        draw_corners(distorted_img, distorted_projected_points, cv::Scalar(0, 255, 0));
+        draw_corners(undistorted_img, undistorted_projected_points, cv::Scalar(255, 0, 255));
+      }
 
       cv::imwrite(distorted_image_name, distorted_img);
       cv::imwrite(undistorted_image_name, undistorted_img);

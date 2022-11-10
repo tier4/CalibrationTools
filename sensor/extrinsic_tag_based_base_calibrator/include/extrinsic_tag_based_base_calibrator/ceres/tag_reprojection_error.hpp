@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__FIXED_INTRINSICS_TAG_REPROJECTION_ERROR_HPP_
-#define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__FIXED_INTRINSICS_TAG_REPROJECTION_ERROR_HPP_
+#ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__TAG_REPROJECTION_ERROR_HPP_
+#define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__TAG_REPROJECTION_ERROR_HPP_
 
 #include <extrinsic_tag_based_base_calibrator/ceres/ceres_functions.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
@@ -23,12 +23,13 @@
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
 
+#include <algorithm>
 #include <array>
 
 namespace extrinsic_tag_based_base_calibrator
 {
 
-struct FixedIntrinsicsTagReprojectionError
+struct TagReprojectionError
 {
   enum FixedPoseType {
     FixedCameraPose,  // the sensor camera pose uses optimization, but the pose itself is fixed
@@ -36,7 +37,7 @@ struct FixedIntrinsicsTagReprojectionError
     NoFixedPose,
   };
 
-  FixedIntrinsicsTagReprojectionError(
+  TagReprojectionError(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection)
   : camera_uid_(camera_uid),
@@ -62,11 +63,11 @@ struct FixedIntrinsicsTagReprojectionError
     }
   }
 
-  FixedIntrinsicsTagReprojectionError(
+  TagReprojectionError(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection, std::array<double, 10> fixed_pose,
     FixedPoseType fixed_pose_type)
-  : FixedIntrinsicsTagReprojectionError(camera_uid, intrinsics, detection)
+  : TagReprojectionError(camera_uid, intrinsics, detection)
   {
     fixed_pose_type_ = fixed_pose_type;
     if (fixed_pose_type == NoFixedPose) {
@@ -74,7 +75,8 @@ struct FixedIntrinsicsTagReprojectionError
     } else if (fixed_pose_type == FixedCameraPose) {
       fixed_camera_pose_inv_ = fixed_pose;
     } else if (fixed_pose_type == FixedTagPose) {
-      fixed_tag_pose_ = fixed_pose;
+      std::copy(fixed_pose.begin(), fixed_pose.begin() + 7, fixed_tag_pose_.begin());
+      // fixed_tag_pose_ = fixed_pose;
     }
   }
 
@@ -161,17 +163,40 @@ struct FixedIntrinsicsTagReprojectionError
       corner4_ccs[2] += camera_pose_inv[6];
     }
 
-    const T predicted_corner1_x = cx_ + fx_ * (corner1_ccs[0] / corner1_ccs[2]);
-    const T predicted_corner1_y = cy_ + fy_ * (corner1_ccs[1] / corner1_ccs[2]);
+    const T k1 = fixed_pose_type_ == FixedCameraPose ? T(1) : camera_pose_inv[7];
+    const T k2 = fixed_pose_type_ == FixedCameraPose ? T(1) : camera_pose_inv[8];
+    const T f = fixed_pose_type_ == FixedCameraPose ? T(1) : camera_pose_inv[9];
 
-    const T predicted_corner2_x = cx_ + fx_ * (corner2_ccs[0] / corner2_ccs[2]);
-    const T predicted_corner2_y = cy_ + fy_ * (corner2_ccs[1] / corner2_ccs[2]);
+    T fx = f + fx_;
+    T fy = f + fy_;
 
-    const T predicted_corner3_x = cx_ + fx_ * (corner3_ccs[0] / corner3_ccs[2]);
-    const T predicted_corner3_y = cy_ + fy_ * (corner3_ccs[1] / corner3_ccs[2]);
+    const T corner1_xp = corner1_ccs[0] / corner1_ccs[2];
+    const T corner1_yp = corner1_ccs[1] / corner1_ccs[2];
+    const T corner1_r2 = corner1_xp * corner1_xp + corner1_yp * corner1_yp;
+    const T corner1_distortion = 1.0 + corner1_r2 * (k1 + k2 * corner1_r2);
+    const T predicted_corner1_x = cx_ + fx * corner1_distortion * corner1_xp;
+    const T predicted_corner1_y = cy_ + fy * corner1_distortion * corner1_yp;
 
-    const T predicted_corner4_x = cx_ + fx_ * (corner4_ccs[0] / corner4_ccs[2]);
-    const T predicted_corner4_y = cy_ + fy_ * (corner4_ccs[1] / corner4_ccs[2]);
+    const T corner2_xp = corner2_ccs[0] / corner2_ccs[2];
+    const T corner2_yp = corner2_ccs[1] / corner2_ccs[2];
+    const T corner2_r2 = corner2_xp * corner2_xp + corner2_yp * corner2_yp;
+    const T corner2_distortion = 1.0 + corner2_r2 * (k1 + k2 * corner2_r2);
+    const T predicted_corner2_x = cx_ + fx * corner2_distortion * corner2_xp;
+    const T predicted_corner2_y = cy_ + fy * corner2_distortion * corner2_yp;
+
+    const T corner3_xp = corner3_ccs[0] / corner3_ccs[2];
+    const T corner3_yp = corner3_ccs[1] / corner3_ccs[2];
+    const T corner3_r2 = corner3_xp * corner3_xp + corner3_yp * corner3_yp;
+    const T corner3_distortion = 1.0 + corner3_r2 * (k1 + k2 * corner3_r2);
+    const T predicted_corner3_x = cx_ + fx * corner3_distortion * corner3_xp;
+    const T predicted_corner3_y = cy_ + fy * corner3_distortion * corner3_yp;
+
+    const T corner4_xp = corner4_ccs[0] / corner4_ccs[2];
+    const T corner4_yp = corner4_ccs[1] / corner4_ccs[2];
+    const T corner4_r2 = corner4_xp * corner4_xp + corner4_yp * corner4_yp;
+    const T corner4_distortion = 1.0 + corner4_r2 * (k1 + k2 * corner4_r2);
+    const T predicted_corner4_x = cx_ + fx * corner4_distortion * corner4_xp;
+    const T predicted_corner4_y = cy_ + fy * corner4_distortion * corner4_yp;
 
     residuals[0] = predicted_corner1_x - observed_corners_[0][0];
     residuals[1] = predicted_corner1_y - observed_corners_[0][1];
@@ -202,11 +227,11 @@ struct FixedIntrinsicsTagReprojectionError
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection)
   {
-    auto f = new FixedIntrinsicsTagReprojectionError(camera_uid, intrinsics, detection);
+    auto f = new TagReprojectionError(camera_uid, intrinsics, detection);
     return (new ceres::AutoDiffCostFunction<
-            FixedIntrinsicsTagReprojectionError,
+            TagReprojectionError,
             8,   // 4 corners x 2 residuals
-            7,   // 7 camera pose parameters
+            10,  // 10 camera pose parameters
             7>(  // 7 tag pose parameters
       f));
   }
@@ -215,10 +240,10 @@ struct FixedIntrinsicsTagReprojectionError
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection, const std::array<double, 10> & camera_pose_inv)
   {
-    auto f = new FixedIntrinsicsTagReprojectionError(
-      camera_uid, intrinsics, detection, camera_pose_inv, FixedCameraPose);
+    auto f =
+      new TagReprojectionError(camera_uid, intrinsics, detection, camera_pose_inv, FixedCameraPose);
     return (new ceres::AutoDiffCostFunction<
-            FixedIntrinsicsTagReprojectionError,
+            TagReprojectionError,
             8,   // 4 corners x 2 residuals
             7>(  // 7 tag pose parameters
       f));
@@ -238,10 +263,10 @@ struct FixedIntrinsicsTagReprojectionError
   IntrinsicParameters intrinsics_;
   ApriltagDetection detection_;
   std::array<double, 10> fixed_camera_pose_inv_;
-  std::array<double, 10> fixed_tag_pose_;
+  std::array<double, 7> fixed_tag_pose_;
   FixedPoseType fixed_pose_type_;
 };
 
 }  // namespace extrinsic_tag_based_base_calibrator
 
-#endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__FIXED_INTRINSICS_TAG_REPROJECTION_ERROR_HPP_
+#endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__TAG_REPROJECTION_ERROR_HPP_

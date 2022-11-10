@@ -84,8 +84,7 @@ void add_tag_markers(
 
 void add_line_marker(
   visualization_msgs::msg::MarkerArray & markers, const std_msgs::msg::ColorRGBA & color,
-  const cv::Affine3f & affine1, const cv::Affine3f & affine2,
-  const visualization_msgs::msg::Marker & base_marker)
+  const cv::Vec3f & v1, const cv::Vec3f & v2, const visualization_msgs::msg::Marker & base_marker)
 {
   visualization_msgs::msg::Marker marker;
 
@@ -94,22 +93,30 @@ void add_line_marker(
   marker.color = color;
   marker.scale.x = 0.005;
 
-  auto affine_to_msg = [](const cv::Affine3f & affine, geometry_msgs::msg::Point & p) {
-    p.x = affine.translation()(0);
-    p.y = affine.translation()(1);
-    p.z = affine.translation()(2);
+  auto vec_to_msg = [](const cv::Vec3f & v, geometry_msgs::msg::Point & p) {
+    p.x = v(0);
+    p.y = v(1);
+    p.z = v(2);
   };
 
   geometry_msgs::msg::Point p1;
   geometry_msgs::msg::Point p2;
 
-  affine_to_msg(affine1, p1);
-  affine_to_msg(affine2, p2);
+  vec_to_msg(v1, p1);
+  vec_to_msg(v2, p2);
 
   marker.points.push_back(p1);
   marker.points.push_back(p2);
 
   markers.markers.push_back(marker);
+}
+
+void add_line_marker(
+  visualization_msgs::msg::MarkerArray & markers, const std_msgs::msg::ColorRGBA & color,
+  const cv::Affine3f & affine1, const cv::Affine3f & affine2,
+  const visualization_msgs::msg::Marker & base_marker)
+{
+  add_line_marker(markers, color, affine1.translation(), affine2.translation(), base_marker);
 }
 
 void add_axes_markers(
@@ -151,6 +158,28 @@ void add_axes_markers(
     marker.points.push_back(p_center);
     marker.points.push_back(p_msg);
     markers.markers.push_back(marker);
+  }
+}
+
+void add_grid(
+  visualization_msgs::msg::MarkerArray & markers, const cv::Affine3f & affine, int cells,
+  float resolution, const visualization_msgs::msg::Marker & base_marker)
+{
+  int half_cells = cells / 2;
+
+  std_msgs::msg::ColorRGBA color;
+  color.a = 0.5;
+  color.r = 1.0;
+  color.g = 1.0;
+  color.b = 1.0;
+
+  for (int i = -half_cells; i <= half_cells; i++) {
+    cv::Vec3f v1 = affine * cv::Vec3f(i * resolution, -half_cells * resolution, 0.f);
+    cv::Vec3f v2 = affine * cv::Vec3f(i * resolution, half_cells * resolution, 0.f);
+    cv::Vec3f v3 = affine * cv::Vec3f(-half_cells * resolution, i * resolution, 0.f);
+    cv::Vec3f v4 = affine * cv::Vec3f(half_cells * resolution, i * resolution, 0.f);
+    add_line_marker(markers, color, v1, v2, base_marker);
+    add_line_marker(markers, color, v3, v4, base_marker);
   }
 }
 

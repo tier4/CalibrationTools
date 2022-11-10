@@ -96,8 +96,16 @@ CalibrationScene CalibrationSceneExtractor::processScene(
   };
 
   CalibrationScene scene;
-  scene.calibration_sensor_detections = detection_fn(
+
+  auto calibration_sensor_detections = detection_fn(
     calibration_sensor_detector_, calibration_sensor_intrinsics_, calibration_sensor_image_name);
+
+  std::copy_if(
+    calibration_sensor_detections.begin(), calibration_sensor_detections.end(),
+    std::back_inserter(scene.calibration_sensor_detections),
+    [&waypoint_ids_set](const ApriltagDetection & detection) {
+      return waypoint_ids_set.count(detection.id) > 0;
+    });
 
   for (const auto & image_name : external_camera_image_names) {
     std::vector<ApriltagDetection> detections =
@@ -122,7 +130,7 @@ CalibrationScene CalibrationSceneExtractor::processScene(
         return external_camera_tag_sizes.count(detection.id) > 0;
       });
 
-    std::cout << "Prcesed: " << image_name << " Detections: " << frame.detections.size()
+    std::cout << "Porcesed: " << image_name << " Detections: " << frame.detections.size()
               << std::endl;
 
     scene.external_camera_frames.emplace_back(frame);

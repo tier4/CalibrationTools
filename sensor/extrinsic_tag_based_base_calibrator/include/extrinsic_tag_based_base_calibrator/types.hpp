@@ -194,15 +194,31 @@ struct CalibrationData
 
   std::map<UID, std::shared_ptr<cv::Affine3f>> initial_external_camera_poses;
   std::map<UID, std::shared_ptr<cv::Affine3f>> initial_tag_poses_map;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_waypoint_tag_poses_map;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_ground_tag_poses_map;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_wheel_tag_poses_map;
+  std::vector<std::shared_ptr<cv::Affine3f>> initial_waypoint_tag_poses;
+  std::vector<std::shared_ptr<cv::Affine3f>> initial_ground_tag_poses;
+  std::shared_ptr<cv::Affine3f> initial_left_wheel_tag_pose;
+  std::shared_ptr<cv::Affine3f> initial_right_wheel_tag_pose;
+
+  static constexpr int POSE_OPTIMIZATION_DIMENSIONALITY = 10;
+  static constexpr int ROTATION_W_INDEX = 0;
+  static constexpr int ROTATION_X_INDEX = 1;
+  static constexpr int ROTATION_Y_INDEX = 2;
+  static constexpr int ROTATION_Z_INDEX = 3;
+  static constexpr int TRANSLATION_X_INDEX = 4;
+  static constexpr int TRANSLATION_Y_INDEX = 5;
+  static constexpr int TRANSLATION_Z_INDEX = 6;
+  static constexpr int INTRINSICS_K1_INDEX = 7;
+  static constexpr int INTRINSICS_K2_INDEX = 8;
+  static constexpr int INTRINSICS_F_INDEX = 9;
+
+  std::map<UID, std::array<double, POSE_OPTIMIZATION_DIMENSIONALITY>> optimization_placeholders_map;
 
   std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_external_camera_poses;
   std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_tag_poses_map;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_waypoint_tag_poses_map;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_ground_tag_poses_map;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_wheel_tag_poses_map;
+  std::vector<std::shared_ptr<cv::Affine3f>> optimized_waypoint_tag_poses;
+  std::vector<std::shared_ptr<cv::Affine3f>> optimized_ground_tag_poses;
+  std::shared_ptr<cv::Affine3f> optimized_left_wheel_tag_pose;
+  std::shared_ptr<cv::Affine3f> optimized_right_wheel_tag_pose;
 };
 
 }  // namespace extrinsic_tag_based_base_calibrator

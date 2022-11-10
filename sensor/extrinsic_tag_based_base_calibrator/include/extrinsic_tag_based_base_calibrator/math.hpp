@@ -17,9 +17,11 @@
 
 #include <Eigen/Core>
 #include <Eigen/SVD>
+#include <extrinsic_tag_based_base_calibrator/types.hpp>
 
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <vector>
 
 namespace extrinsic_tag_based_base_calibrator
@@ -73,6 +75,95 @@ Eigen::Vector4f quaternionAverage(std::vector<Eigen::Vector4f> quaternions)
   average(3) = U(3, largest_eigen_value_index);
 
   return average;
+}
+
+std::array<cv::Vec3f, 4> tagPoseToCorners(const cv::Affine3f & pose, float size)
+{
+  std::array<cv::Vec3f, 4> templates{
+    cv::Vec3f{-1.0, 1.0, 0.0}, cv::Vec3f{1.0, 1.0, 0.0}, cv::Vec3f{1.0, -1.0, 0.0},
+    cv::Vec3f{-1.0, -1.0, 0.0}};
+
+  return std::array<cv::Vec3f, 4>{
+    pose * (0.5f * size * templates[0]), pose * (0.5f * size * templates[1]),
+    pose * (0.5f * size * templates[2]), pose * (0.5f * size * templates[3])};
+}
+
+bool computeGroundPlane(const std::vector<cv::Vec3f> & points, cv::Affine3f & ground_pose)
+{
+  int num_points = static_cast<int>(points.size());
+
+  if (num_points == 0) {
+    return false;
+  }
+
+  cv::Mat_<float> pca_input = cv::Mat_<float>(num_points, 3);
+
+  for (int i = 0; i < num_points; i++) {
+    pca_input(i, 0) = points[i](0);
+    pca_input(i, 1) = points[i](1);
+    pca_input(i, 2) = points[i](2);
+  }
+
+  cv::PCA pca_analysis(pca_input, cv::Mat_<float>(), cv::PCA::DATA_AS_ROW);
+
+  cv::Matx33f rotation = cv::Matx33f(pca_analysis.eigenvectors).inv();
+  cv::Vec3f translation = cv::Vec3f(pca_analysis.mean);
+
+  ground_pose = cv::Affine3f(rotation, translation);
+
+  return true;
+}
+
+bool computeGroundPlane(
+  const std::vector<std::shared_ptr<cv::Affine3f>> & poses, float tag_size,
+  cv::Affine3f & ground_pose)
+{
+  std::vector<cv::Vec3f> points;
+
+  for (const auto & pose : poses) {
+    std::array<cv::Vec3f, 4> corners = tagPoseToCorners(*pose, tag_size);
+    points.insert(points.end(), corners.begin(), corners.end());
+  }
+
+  return computeGroundPlane(points, ground_pose);
+}
+
+cv::Affine3f computeBaseLink(
+  const cv::Affine3f & left_wheel_pose, const cv::Affine3f right_wheel_pose,
+  const cv::Affine3f & ground_pose)
+{
+  // Compute the base link center
+  cv::Vec3f tag_center = 0.5 * (left_wheel_pose.translation() + right_wheel_pose.translation());
+  cv::Vec3f base_link_translation = ground_pose.inv() * tag_center;
+  base_link_translation(2) = 0.f;
+  base_link_translation = ground_pose * base_link_translation;
+
+  cv::Vec3f base_link_direction = base_link_translation / cv::norm(base_link_translation);
+
+  cv::Vec3f base_link_z_axis(ground_pose.rotation().col(2).val);
+  float factor = base_link_z_axis.dot(base_link_direction) > 0.f ? -1.f : 1.f;
+  base_link_z_axis = factor * base_link_z_axis;
+
+  cv::Vec3f base_link_y_axis = left_wheel_pose.translation() - right_wheel_pose.translation();
+  base_link_y_axis = ground_pose.rotation().inv() * base_link_y_axis;
+  base_link_y_axis(2) = 0.f;
+  base_link_y_axis = base_link_y_axis / cv::norm(base_link_y_axis);
+  base_link_y_axis = ground_pose.rotation() * base_link_y_axis;
+
+  cv::Vec3f base_link_x_axis = base_link_y_axis.cross(base_link_z_axis);
+
+  auto fill_rotation_from_column = [](cv::Matx33f & rotation, const cv::Vec3f column, int index) {
+    rotation(0, index) = column(0);
+    rotation(1, index) = column(1);
+    rotation(2, index) = column(2);
+  };
+
+  cv::Matx33f base_link_rotation;
+  fill_rotation_from_column(base_link_rotation, base_link_x_axis, 0);
+  fill_rotation_from_column(base_link_rotation, base_link_y_axis, 1);
+  fill_rotation_from_column(base_link_rotation, base_link_z_axis, 2);
+
+  return cv::Affine3f(base_link_rotation, base_link_translation);
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

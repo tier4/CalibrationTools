@@ -5,6 +5,7 @@ project(extrinsic_tag_based_base_calibrator)
 find_package(apriltag REQUIRED)
 find_package(autoware_cmake REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(Ceres REQUIRED)
 
 autoware_package()
 
@@ -30,6 +31,7 @@ target_link_libraries(extrinsic_tag_based_base_calibrator
   ${Boost_LIBRARIES}
   ${OpenCV_LIBS}
   apriltag::apriltag
+  ${CERES_LIBRARIES}
 )
 
 ament_auto_package(

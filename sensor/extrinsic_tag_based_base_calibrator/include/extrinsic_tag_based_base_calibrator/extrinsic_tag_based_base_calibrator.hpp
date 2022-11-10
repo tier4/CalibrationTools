@@ -70,6 +70,9 @@ protected:
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr load_srv_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr calibration_dummy_srv_;
 
+  IntrinsicParameters external_camera_intrinsics_;
+  IntrinsicParameters calibration_sensor_intrinsics_;
+
   ApriltagParameters apriltag_parameters_;
   double waypoint_tag_size_;
   double wheel_tag_size_;

@@ -18,6 +18,7 @@
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 
+#include <boost/serialization/array.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/set.hpp>
@@ -131,12 +132,14 @@ void serialize(
   Archive & ar, extrinsic_tag_based_base_calibrator::UID & uid, const unsigned int version)
 {
   (void)version;
-  ar & uid.frame_id;
   ar & uid.is_camera;
   ar & uid.is_tag;
   ar & uid.is_waypoint_tag;
+  ar & uid.is_ground_tag;
   ar & uid.is_wheel_tag;
+
   ar & uid.scene_id;
+  ar & uid.frame_id;
   ar & uid.tag_id;
 }
 
@@ -148,13 +151,19 @@ void serialize(
   (void)version;
   ar & data.scenes;
   ar & data.detected_tag_ids_set;
+  ar & data.initial_external_camera_poses;
   ar & data.initial_tag_poses_map;
-  ar & data.initial_waypoint_tag_poses_map;
-  ar & data.initial_ground_tag_poses_map;
+  ar & data.initial_waypoint_tag_poses;
+  ar & data.initial_ground_tag_poses;
+  ar & data.initial_left_wheel_tag_pose;
+  ar & data.initial_right_wheel_tag_pose;
+  ar & data.optimization_placeholders_map;
   ar & data.optimized_external_camera_poses;
   ar & data.optimized_tag_poses_map;
-  ar & data.optimized_waypoint_tag_poses_map;
-  ar & data.optimized_ground_tag_poses_map;
+  ar & data.optimized_waypoint_tag_poses;
+  ar & data.optimized_ground_tag_poses;
+  ar & data.optimized_left_wheel_tag_pose;
+  ar & data.optimized_right_wheel_tag_pose;
 }
 
 }  // namespace serialization
