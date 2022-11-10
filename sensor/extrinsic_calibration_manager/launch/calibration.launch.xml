@@ -15,7 +15,6 @@
   <arg name="camera_name" default=""/>
   <!--e.g, camera6-->
   <arg name="calibration_rviz" default="true"/>
-  <arg name="decompress_images" default="true"/>
 
   <!-- interactive only -->
   <arg name="interactive_use_concatenated" default="true"/>
@@ -75,7 +74,6 @@
         <arg name="vehicle_id" value="$(var vehicle_id)"/>
         <arg name="camera_name" value="$(var camera_name)"/>
         <arg name="rviz" value="$(var calibration_rviz)"/>
-        <arg name="decompress_images" value="$(var decompress_images)"/>
       </include>
     </group>
 
