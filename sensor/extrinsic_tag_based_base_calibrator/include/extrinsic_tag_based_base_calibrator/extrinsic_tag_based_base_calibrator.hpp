@@ -73,6 +73,9 @@ protected:
   IntrinsicParameters external_camera_intrinsics_;
   IntrinsicParameters calibration_sensor_intrinsics_;
 
+  bool ba_optimize_intrinsics_;
+  bool ba_share_intrinsics_;
+
   ApriltagParameters apriltag_parameters_;
   double waypoint_tag_size_;
   double wheel_tag_size_;

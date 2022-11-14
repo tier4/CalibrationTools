@@ -14,7 +14,6 @@
 
 #include <Eigen/Core>
 #include <extrinsic_tag_based_base_calibrator/calibration_scene_extractor.hpp>
-#include <extrinsic_tag_based_base_calibrator/ceres/fixed_intrinsics_tag_reprojection_error.hpp>
 #include <extrinsic_tag_based_base_calibrator/ceres/tag_reprojection_error.hpp>
 #include <extrinsic_tag_based_base_calibrator/extrinsic_tag_based_base_calibrator.hpp>
 #include <extrinsic_tag_based_base_calibrator/intrinsics_calibrator.hpp>
@@ -55,6 +54,9 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   waypoint_tag_size_ = this->declare_parameter<double>("waypoint_tag_size", 0.8);
   wheel_tag_size_ = this->declare_parameter<double>("wheel_tag_size", 0.8);
   ground_tag_size_ = this->declare_parameter<double>("ground_tag_size", 0.135);
+
+  ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
+  ba_share_intrinsics_ = this->declare_parameter<bool>("ba_share_intrinsics", false);
 
   std::vector<int64_t> waypoint_tag_ids =
     this->declare_parameter<std::vector<int64_t>>("waypoint_tag_ids", std::vector<int64_t>{0});
@@ -723,6 +725,14 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
     std::cout << "UID: " << it->first.to_string() << "\t poses: " << it->second.size() << std::endl;
   }
 
+  std::array<double, CalibrationData::INTRINSICS_DIM> initial_intrinsics;
+  initial_intrinsics[0] = external_camera_intrinsics_.undistorted_camera_matrix(0, 2);
+  initial_intrinsics[1] = external_camera_intrinsics_.undistorted_camera_matrix(1, 2);
+  initial_intrinsics[2] = external_camera_intrinsics_.undistorted_camera_matrix(0, 0);
+  initial_intrinsics[3] = external_camera_intrinsics_.undistorted_camera_matrix(1, 1);
+  initial_intrinsics[4] = 0.0;
+  initial_intrinsics[5] = 0.0;
+
   for (auto it = poses_vector_map.begin(); it != poses_vector_map.end(); it++) {
     const UID & uid = it->first;
     auto poses = it->second;
@@ -769,6 +779,8 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
       }
     } else if (uid.is_camera) {
       data_.initial_external_camera_poses[uid] = initial_pose;
+      data_.initial_external_camera_intrinsics[uid] =
+        std::make_shared<std::array<double, CalibrationData::INTRINSICS_DIM>>(initial_intrinsics);
     }
   }
 
@@ -819,66 +831,63 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
   (void)request;
   (void)response;
 
-  auto affine_to_placeholder =
-    [](
-      cv::Affine3f pose,
-      std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY> & placeholder,
-      bool invert) {
-      if (invert) {
-        pose = pose.inv();
-      }
+  auto pose3d_to_placeholder = [](
+                                 cv::Affine3f pose,
+                                 std::array<double, CalibrationData::POSE_OPT_DIM> & placeholder,
+                                 bool invert) {
+    if (invert) {
+      pose = pose.inv();
+    }
 
-      Eigen::Vector3f translation;
-      Eigen::Matrix3f rotation;
-      cv::cv2eigen(pose.translation(), translation);
-      cv::cv2eigen(pose.rotation(), rotation);
-      Eigen::Quaternionf quat(rotation);
+    Eigen::Vector3f translation;
+    Eigen::Matrix3f rotation;
+    cv::cv2eigen(pose.translation(), translation);
+    cv::cv2eigen(pose.rotation(), rotation);
+    Eigen::Quaternionf quat(rotation);
 
-      std::fill(placeholder.begin(), placeholder.end(), 0);
-      placeholder[CalibrationData::ROTATION_W_INDEX] = quat.w();
-      placeholder[CalibrationData::ROTATION_X_INDEX] = quat.x();
-      placeholder[CalibrationData::ROTATION_Y_INDEX] = quat.y();
-      placeholder[CalibrationData::ROTATION_Z_INDEX] = quat.z();
-      placeholder[CalibrationData::TRANSLATION_X_INDEX] = translation.x();
-      placeholder[CalibrationData::TRANSLATION_Y_INDEX] = translation.y();
-      placeholder[CalibrationData::TRANSLATION_Z_INDEX] = translation.z();
-    };
+    std::fill(placeholder.begin(), placeholder.end(), 0);
+    placeholder[CalibrationData::ROTATION_W_INDEX] = quat.w();
+    placeholder[CalibrationData::ROTATION_X_INDEX] = quat.x();
+    placeholder[CalibrationData::ROTATION_Y_INDEX] = quat.y();
+    placeholder[CalibrationData::ROTATION_Z_INDEX] = quat.z();
+    placeholder[CalibrationData::TRANSLATION_X_INDEX] = translation.x();
+    placeholder[CalibrationData::TRANSLATION_Y_INDEX] = translation.y();
+    placeholder[CalibrationData::TRANSLATION_Z_INDEX] = translation.z();
+  };
 
-  auto placeholder_to_affine =
-    [](
-      std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY> & placeholder,
-      std::shared_ptr<cv::Affine3f> & pose, bool invert) {
-      const float scale =
-        1.f / std::sqrt(
-                placeholder[0] * placeholder[0] + placeholder[1] * placeholder[1] +
-                placeholder[2] * placeholder[2] + placeholder[3] * placeholder[3]);
+  auto placeholder_to_pose3d = [](
+                                 std::array<double, CalibrationData::POSE_OPT_DIM> & placeholder,
+                                 std::shared_ptr<cv::Affine3f> & pose, bool invert) {
+    const float scale = 1.f / std::sqrt(
+                                placeholder[0] * placeholder[0] + placeholder[1] * placeholder[1] +
+                                placeholder[2] * placeholder[2] + placeholder[3] * placeholder[3]);
 
-      Eigen::Quaternionf quat = Eigen::Quaterniond(
-                                  scale * placeholder[CalibrationData::ROTATION_W_INDEX],
-                                  scale * placeholder[CalibrationData::ROTATION_X_INDEX],
-                                  scale * placeholder[CalibrationData::ROTATION_Y_INDEX],
-                                  scale * placeholder[CalibrationData::ROTATION_Z_INDEX])
-                                  .cast<float>();
+    Eigen::Quaternionf quat = Eigen::Quaterniond(
+                                scale * placeholder[CalibrationData::ROTATION_W_INDEX],
+                                scale * placeholder[CalibrationData::ROTATION_X_INDEX],
+                                scale * placeholder[CalibrationData::ROTATION_Y_INDEX],
+                                scale * placeholder[CalibrationData::ROTATION_Z_INDEX])
+                                .cast<float>();
 
-      Eigen::Vector3f translation = Eigen::Vector3d(
-                                      placeholder[CalibrationData::TRANSLATION_X_INDEX],
-                                      placeholder[CalibrationData::TRANSLATION_Y_INDEX],
-                                      placeholder[CalibrationData::TRANSLATION_Z_INDEX])
-                                      .cast<float>();
+    Eigen::Vector3f translation = Eigen::Vector3d(
+                                    placeholder[CalibrationData::TRANSLATION_X_INDEX],
+                                    placeholder[CalibrationData::TRANSLATION_Y_INDEX],
+                                    placeholder[CalibrationData::TRANSLATION_Z_INDEX])
+                                    .cast<float>();
 
-      Eigen::Matrix3f rotation = quat.toRotationMatrix();
+    Eigen::Matrix3f rotation = quat.toRotationMatrix();
 
-      cv::Matx33f cv_rot;
-      cv::Vec3f cv_transl;
-      cv::eigen2cv(translation, cv_transl);
-      cv::eigen2cv(rotation, cv_rot);
+    cv::Matx33f cv_rot;
+    cv::Vec3f cv_transl;
+    cv::eigen2cv(translation, cv_transl);
+    cv::eigen2cv(rotation, cv_rot);
 
-      pose = std::make_shared<cv::Affine3f>(cv_rot, cv_transl);
+    pose = std::make_shared<cv::Affine3f>(cv_rot, cv_transl);
 
-      if (invert) {
-        *pose = pose->inv();
-      }
-    };
+    if (invert) {
+      *pose = pose->inv();
+    }
+  };
 
   // Prepare the placeholders
   for (auto it = data_.initial_external_camera_poses.begin();
@@ -886,9 +895,25 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     const UID & uid = it->first;
     const auto & pose = it->second;
 
-    affine_to_placeholder(*pose, data_.optimization_placeholders_map[uid], true);
-    placeholder_to_affine(
-      data_.optimization_placeholders_map[uid], data_.optimized_external_camera_poses[uid], true);
+    pose3d_to_placeholder(*pose, data_.pose_opt_map[uid], true);
+
+    if (ba_share_intrinsics_) {
+      data_.shared_intrinsics_opt = *data_.initial_external_camera_intrinsics[uid];
+    } else {
+      data_.intrinsics_opt_map[uid] = *data_.initial_external_camera_intrinsics[uid];
+    }
+
+    placeholder_to_pose3d(
+      data_.pose_opt_map[uid], data_.optimized_external_camera_poses[uid], true);
+
+    data_.optimized_external_camera_intrinsics[uid] =
+      std::make_shared<std::array<double, CalibrationData::INTRINSICS_DIM>>();
+
+    if (ba_share_intrinsics_) {
+      *data_.optimized_external_camera_intrinsics[uid] = data_.shared_intrinsics_opt;
+    } else {
+      *data_.optimized_external_camera_intrinsics[uid] = data_.intrinsics_opt_map[uid];
+    }
   }
 
   for (auto it = data_.initial_tag_poses_map.begin(); it != data_.initial_tag_poses_map.end();
@@ -896,14 +921,17 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     const UID & uid = it->first;
     const auto & pose = it->second;
 
-    affine_to_placeholder(*pose, data_.optimization_placeholders_map[uid], false);
-    placeholder_to_affine(
-      data_.optimization_placeholders_map[uid], data_.optimized_tag_poses_map[uid], false);
+    pose3d_to_placeholder(*pose, data_.pose_opt_map[uid], false);
+
+    placeholder_to_pose3d(data_.pose_opt_map[uid], data_.optimized_tag_poses_map[uid], false);
   }
 
   ceres::Problem problem;
-  using CalibrationSensorResidualFunction = FixedIntrinsicsTagReprojectionError;
+  using CalibrationSensorResidualFunction = TagReprojectionError;
   using ExternalCameraResidualFunction = TagReprojectionError;
+
+  auto identity = std::make_shared<std::array<double, CalibrationData::POSE_OPT_DIM>>(
+    std::array<double, CalibrationData::POSE_OPT_DIM>{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
 
   // Build the optimization problem
   for (std::size_t scene_index = 0; scene_index < data_.scenes.size(); scene_index++) {
@@ -912,17 +940,14 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     for (auto detection : scene.calibration_sensor_detections) {
       UID sensor_uid = UID::makeCameraUID(scene_index, -1);
       UID detection_uid = UID::makeWaypointUID(scene_index, detection.id);
-      auto identity =
-        std::make_shared<std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>>(
-          std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>{
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+
       std::array<double, 8> residuals;
 
       auto f = CalibrationSensorResidualFunction(
         sensor_uid, calibration_sensor_intrinsics_, detection, identity, nullptr, true, false,
         false);
 
-      f(data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
+      f(data_.pose_opt_map[detection_uid].data(), residuals.data());
       // double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
 
       double sum_res = std::transform_reduce(
@@ -938,7 +963,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
       problem.AddResidualBlock(
         res,
         nullptr,  // L2
-        data_.optimization_placeholders_map[detection_uid].data());
+        data_.pose_opt_map[detection_uid].data());
     }
 
     for (std::size_t frame_id = 0; frame_id < scene.external_camera_frames.size(); frame_id++) {
@@ -955,25 +980,49 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
                               : UID::makeGroundTagUID(detection.id);
 
         std::array<double, 8> residuals;
-        auto f = ExternalCameraResidualFunction(
-          external_camera_uid, external_camera_intrinsics_, detection);
 
-        f(data_.optimization_placeholders_map[external_camera_uid].data(),
-          data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
+        double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
+        double * external_camera_intrinsics_op =
+          ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
+                               : data_.intrinsics_opt_map[external_camera_uid].data();
+        double * detection_pose_op = data_.pose_opt_map[detection_uid].data();
+
+        if (ba_optimize_intrinsics_) {
+          auto f = ExternalCameraResidualFunction(
+            external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+            true, false);
+
+          f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
+            residuals.data());
+
+          ceres::CostFunction * res = ExternalCameraResidualFunction::createResidual(
+            external_camera_uid, external_camera_intrinsics_, detection, identity, identity, false,
+            true, false);
+
+          problem.AddResidualBlock(
+            res,
+            nullptr,  // L2
+            external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op);
+        } else {
+          auto f = ExternalCameraResidualFunction(
+            external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+            false, false);
+
+          f(external_camera_pose_op, data_.pose_opt_map[detection_uid].data(), residuals.data());
+
+          ceres::CostFunction * res = ExternalCameraResidualFunction::createResidual(
+            external_camera_uid, external_camera_intrinsics_, detection, identity, identity, false,
+            false, false);
+
+          problem.AddResidualBlock(
+            res,
+            nullptr,  // L2
+            external_camera_pose_op, detection_pose_op);
+        }
+
         double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
-
         std::cout << external_camera_uid.to_string() << " <-> " << detection_uid.to_string()
                   << " initial error: " << sum_res << std::endl;
-        ;
-
-        ceres::CostFunction * res = ExternalCameraResidualFunction::createResidual(
-          external_camera_uid, external_camera_intrinsics_, detection);
-
-        problem.AddResidualBlock(
-          res,
-          nullptr,  // L2
-          data_.optimization_placeholders_map[external_camera_uid].data(),
-          data_.optimization_placeholders_map[detection_uid].data());
       }
     }
   }
@@ -993,6 +1042,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_SCHUR;
   options.minimizer_progress_to_stdout = true;
+  options.max_num_iterations = 500;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   std::cout << summary.FullReport() << "\n" << std::flush;
@@ -1009,8 +1059,14 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
        it != data_.optimized_external_camera_poses.end(); it++) {
     const UID & uid = it->first;
 
-    placeholder_to_affine(
-      data_.optimization_placeholders_map[uid], data_.optimized_external_camera_poses[uid], true);
+    placeholder_to_pose3d(
+      data_.pose_opt_map[uid], data_.optimized_external_camera_poses[uid], true);
+
+    if (ba_share_intrinsics_) {
+      *data_.optimized_external_camera_intrinsics[uid] = data_.shared_intrinsics_opt;
+    } else {
+      *data_.optimized_external_camera_intrinsics[uid] = data_.intrinsics_opt_map[uid];
+    }
   }
 
   for (auto it = data_.optimized_tag_poses_map.begin(); it != data_.optimized_tag_poses_map.end();
@@ -1018,7 +1074,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     const UID & uid = it->first;
     auto & pose = data_.optimized_tag_poses_map[uid];
 
-    placeholder_to_affine(data_.optimization_placeholders_map[uid], pose, false);
+    placeholder_to_pose3d(data_.pose_opt_map[uid], pose, false);
 
     if (uid.is_waypoint_tag) {
       data_.optimized_waypoint_tag_poses.push_back(pose);
@@ -1031,24 +1087,22 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     }
   }
 
-  // Build the optimization problem
   for (std::size_t scene_index = 0; scene_index < data_.scenes.size(); scene_index++) {
     CalibrationScene & scene = data_.scenes[scene_index];
 
     for (auto detection : scene.calibration_sensor_detections) {
       UID sensor_uid = UID::makeCameraUID(scene_index, -1);
       UID detection_uid = UID::makeWaypointUID(scene_index, detection.id);
-      auto identity =
-        std::make_shared<std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>>(
-          std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>{
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+
+      auto identity = std::make_shared<std::array<double, CalibrationData::POSE_OPT_DIM>>(
+        std::array<double, CalibrationData::POSE_OPT_DIM>{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
       std::array<double, 8> residuals;
 
       auto f = CalibrationSensorResidualFunction(
         sensor_uid, calibration_sensor_intrinsics_, detection, identity, identity, true, false,
         false);
 
-      f(data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
+      f(data_.pose_opt_map[detection_uid].data(), residuals.data());
       double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
 
       std::cout << sensor_uid.to_string() << " <-> " << detection_uid.to_string()
@@ -1068,28 +1122,20 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
                               ? UID::makeWheelTagUID(detection.id)
                               : UID::makeGroundTagUID(detection.id);
 
-        if (external_camera_uid.to_string() == "s0_c8" && detection_uid.tag_id == 4) {
-          // Here have a reference of both poses
-          auto camera_placeholder = data_.optimization_placeholders_map[external_camera_uid];
-          auto tag_placeholder = data_.optimization_placeholders_map[detection_uid];
-          auto inv_camera_pose = data_.optimized_external_camera_poses[external_camera_uid]->inv();
-          auto camera_pose = data_.optimized_external_camera_poses[external_camera_uid];
-          auto tag_pose = *data_.optimized_tag_poses_map[detection_uid];
-          (void)camera_placeholder;
-          (void)inv_camera_pose;
-          (void)camera_pose;
-          (void)tag_placeholder;
-          (void)tag_pose;
-          int x = 0;
-          (void)x;
-        }
-
         std::array<double, 8> residuals;
-        auto f = ExternalCameraResidualFunction(
-          external_camera_uid, external_camera_intrinsics_, detection);
 
-        f(data_.optimization_placeholders_map[external_camera_uid].data(),
-          data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
+        double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
+        double * external_camera_intrinsics_op =
+          ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
+                               : data_.intrinsics_opt_map[external_camera_uid].data();
+        double * detection_pose_op = data_.pose_opt_map[detection_uid].data();
+
+        auto f = ExternalCameraResidualFunction(
+          external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+          true, false);
+
+        f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
+          residuals.data());
 
         double sum_res = std::transform_reduce(
           residuals.begin(), residuals.end(), 0.0, std::plus{}, [](auto v) { return std::abs(v); });
@@ -1166,7 +1212,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
         auto project_corners = [this, &external_camera_uid](
                                  ApriltagDetection & detection, const cv::Affine3f & camera_pose,
-                                 const cv::Affine3f & tag_pose) {
+                                 const cv::Affine3f & tag_pose, bool use_optimized_intrinsics) {
           cv::Vec3f template_corners[4] = {
             {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
 
@@ -1181,17 +1227,16 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
             camera_pose.inv() * corners_wcs[0], camera_pose.inv() * corners_wcs[1],
             camera_pose.inv() * corners_wcs[2], camera_pose.inv() * corners_wcs[3]};
 
-          float k1 = data_.optimization_placeholders_map[external_camera_uid]
-                                                        [CalibrationData::INTRINSICS_K1_INDEX];
-          float k2 = data_.optimization_placeholders_map[external_camera_uid]
-                                                        [CalibrationData::INTRINSICS_K2_INDEX];
-          float df = data_.optimization_placeholders_map[external_camera_uid]
-                                                        [CalibrationData::INTRINSICS_F_INDEX];
-
-          float fx = df + external_camera_intrinsics_.undistorted_camera_matrix(0, 0);
-          float fy = df + external_camera_intrinsics_.undistorted_camera_matrix(1, 1);
-          float cx = external_camera_intrinsics_.undistorted_camera_matrix(0, 2);
-          float cy = external_camera_intrinsics_.undistorted_camera_matrix(1, 2);
+          const auto & intrinsics =
+            use_optimized_intrinsics
+              ? *data_.optimized_external_camera_intrinsics[external_camera_uid]
+              : *data_.initial_external_camera_intrinsics[external_camera_uid];
+          float cx = intrinsics[CalibrationData::INTRINSICS_CX_INDEX];
+          float cy = intrinsics[CalibrationData::INTRINSICS_CY_INDEX];
+          float fx = intrinsics[CalibrationData::INTRINSICS_FX_INDEX];
+          float fy = intrinsics[CalibrationData::INTRINSICS_FY_INDEX];
+          float k1 = intrinsics[CalibrationData::INTRINSICS_K1_INDEX];
+          float k2 = intrinsics[CalibrationData::INTRINSICS_K2_INDEX];
 
           auto camera_ccs_to_image = [&fx, &fy, &cx, &cy, &k1, &k2](cv::Vec3f & p) {
             const float xp = p(0) / p(2);
@@ -1206,8 +1251,8 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
             camera_ccs_to_image(corners_ccs[2]), camera_ccs_to_image(corners_ccs[3])};
         };
 
-        project_corners(initial_detection, initial_camera_pose, initial_tag_pose);
-        project_corners(optimized_detection, optimized_camera_pose, optimized_tag_pose);
+        project_corners(initial_detection, initial_camera_pose, initial_tag_pose, false);
+        project_corners(optimized_detection, optimized_camera_pose, optimized_tag_pose, true);
 
         draw_detection(undistorted_img, detection, cv::Scalar(255, 0, 255));
         draw_detection(undistorted_img, initial_detection, cv::Scalar(0, 0, 255));

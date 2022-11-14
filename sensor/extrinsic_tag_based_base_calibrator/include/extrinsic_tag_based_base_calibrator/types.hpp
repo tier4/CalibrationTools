@@ -188,18 +188,11 @@ struct UID
 
 struct CalibrationData
 {
-  std::vector<CalibrationScene> scenes;
+  static constexpr int POSE_OPT_DIM = 7;
+  static constexpr int SHRD_GROUND_TAG_POSE_DIM = 5;
+  static constexpr int INDEP_GROUND_TAG_POSE_DIM = 3;
+  static constexpr int INTRINSICS_DIM = 6;
 
-  std::set<int> detected_tag_ids_set;
-
-  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_external_camera_poses;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_tag_poses_map;
-  std::vector<std::shared_ptr<cv::Affine3f>> initial_waypoint_tag_poses;
-  std::vector<std::shared_ptr<cv::Affine3f>> initial_ground_tag_poses;
-  std::shared_ptr<cv::Affine3f> initial_left_wheel_tag_pose;
-  std::shared_ptr<cv::Affine3f> initial_right_wheel_tag_pose;
-
-  static constexpr int POSE_OPTIMIZATION_DIMENSIONALITY = 10;
   static constexpr int ROTATION_W_INDEX = 0;
   static constexpr int ROTATION_X_INDEX = 1;
   static constexpr int ROTATION_Y_INDEX = 2;
@@ -207,13 +200,40 @@ struct CalibrationData
   static constexpr int TRANSLATION_X_INDEX = 4;
   static constexpr int TRANSLATION_Y_INDEX = 5;
   static constexpr int TRANSLATION_Z_INDEX = 6;
-  static constexpr int INTRINSICS_K1_INDEX = 7;
-  static constexpr int INTRINSICS_K2_INDEX = 8;
-  static constexpr int INTRINSICS_F_INDEX = 9;
 
-  std::map<UID, std::array<double, POSE_OPTIMIZATION_DIMENSIONALITY>> optimization_placeholders_map;
+  static constexpr int INTRINSICS_CX_INDEX = 0;
+  static constexpr int INTRINSICS_CY_INDEX = 1;
+  static constexpr int INTRINSICS_FX_INDEX = 2;
+  static constexpr int INTRINSICS_FY_INDEX = 3;
+  static constexpr int INTRINSICS_K1_INDEX = 4;
+  static constexpr int INTRINSICS_K2_INDEX = 5;
+
+  std::vector<CalibrationScene> scenes;
+
+  std::set<int> detected_tag_ids_set;
+
+  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_external_camera_poses;
+  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
+    initial_external_camera_intrinsics;
+
+  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_tag_poses_map;
+  std::vector<std::shared_ptr<cv::Affine3f>> initial_waypoint_tag_poses;
+  std::vector<std::shared_ptr<cv::Affine3f>> initial_ground_tag_poses;
+  std::shared_ptr<cv::Affine3f> initial_left_wheel_tag_pose;
+  std::shared_ptr<cv::Affine3f> initial_right_wheel_tag_pose;
+
+  // Optimization placeholders
+  std::map<UID, std::array<double, POSE_OPT_DIM>> pose_opt_map;
+  std::map<UID, std::array<double, SHRD_GROUND_TAG_POSE_DIM>>
+    shrd_ground_tag_pose_opt_map;  // not used now
+  std::map<UID, std::array<double, INDEP_GROUND_TAG_POSE_DIM>>
+    indep_ground_tag_pose_opt_map;  // not used now
+  std::map<UID, std::array<double, INTRINSICS_DIM>> intrinsics_opt_map;
+  std::array<double, INTRINSICS_DIM> shared_intrinsics_opt;
 
   std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_external_camera_poses;
+  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
+    optimized_external_camera_intrinsics;
   std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_tag_poses_map;
   std::vector<std::shared_ptr<cv::Affine3f>> optimized_waypoint_tag_poses;
   std::vector<std::shared_ptr<cv::Affine3f>> optimized_ground_tag_poses;

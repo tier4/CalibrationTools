@@ -21,6 +21,10 @@
       <param name="broacast_calibration_tf" value="true"/>
       <param name="filter_estimations" value="true"/>
 
+      <!--BA options -->
+      <param name="ba_optimize_intrinsics" value="true"/>
+      <param name="ba_share_intrinsics" value="true"/>
+
       <param name="initial_angle_cov" value="5.0"/>
       <!--degrees -->
       <param name="initial_z_cov" value="0.05"/>
