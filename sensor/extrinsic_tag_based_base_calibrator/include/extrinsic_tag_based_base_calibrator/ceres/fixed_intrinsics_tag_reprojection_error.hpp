@@ -24,6 +24,7 @@
 #include <ceres/rotation.h>
 
 #include <array>
+#include <memory>
 
 namespace extrinsic_tag_based_base_calibrator
 {
@@ -36,13 +37,23 @@ struct FixedIntrinsicsTagReprojectionError
     NoFixedPose,
   };
 
+  enum IntrinsicsOptimizationType {
+    FixIntrinsics,
+    OptimizeIntrinsics,
+  };
+
   FixedIntrinsicsTagReprojectionError(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
-    const ApriltagDetection & detection)
+    const ApriltagDetection & detection,
+    const std::shared_ptr<std::array<double, 10>> & fixed_camera_pose_inv,
+    const std::shared_ptr<std::array<double, 10>> & fixed_tag_pose, bool fix_camera_pose,
+    bool optimize_intrinsics, bool fix_tag_pose)
   : camera_uid_(camera_uid),
     intrinsics_(intrinsics),
     detection_(detection),
-    fixed_pose_type_(NoFixedPose)
+    fix_camera_pose_(fix_camera_pose),
+    optimize_intrinsics_(optimize_intrinsics),
+    fix_tag_pose_(fix_tag_pose)
   {
     fx_ = intrinsics.undistorted_camera_matrix(0, 0);
     fy_ = intrinsics.undistorted_camera_matrix(1, 1);
@@ -55,30 +66,31 @@ struct FixedIntrinsicsTagReprojectionError
       observed_corners_[j] = Eigen::Vector2d(
         static_cast<double>(detection.corners[j].x), static_cast<double>(detection.corners[j].y));
     }
-  }
 
-  FixedIntrinsicsTagReprojectionError(
-    const UID & camera_uid, const IntrinsicParameters & intrinsics,
-    const ApriltagDetection & detection, std::array<double, 10> fixed_pose,
-    FixedPoseType fixed_pose_type)
-  : FixedIntrinsicsTagReprojectionError(camera_uid, intrinsics, detection)
-  {
-    const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(fixed_pose.data());
-    const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(fixed_pose.data() + 4);
+    if (fix_camera_pose) {
+      const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(
+        fixed_camera_pose_inv->data());
+      const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(
+        fixed_camera_pose_inv->data() + 4);
 
-    fixed_pose_type_ = fixed_pose_type;
-    if (fixed_pose_type == NoFixedPose) {
-      throw std::invalid_argument("Invalid argument");
-    } else if (fixed_pose_type == FixedCameraPose) {
       fixed_camera_rotation_inv_ = rotation_map;
       fixed_camera_translation_inv_ = translation_map;
-    } else if (fixed_pose_type == FixedTagPose) {
-      fixed_tag_pose_ = fixed_pose;
+    }
+
+    if (fix_tag_pose) {
+      const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(fixed_tag_pose->data());
+      const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(
+        fixed_tag_pose->data() + 4);
+
+      fixed_tag_rotation_ = rotation_map;
+      fixed_tag_translation_ = translation_map;
     }
   }
 
   template <typename T>
-  bool operator()(const T * const camera_pose_inv, const T * const tag_pose, T * residuals) const
+  bool operator()(
+    const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
+    T * residuals) const
   {
     double hsize = 0.5 * tag_size_;
 
@@ -96,6 +108,7 @@ struct FixedIntrinsicsTagReprojectionError
 
     const Eigen::Map<const Eigen::Matrix<T, 4, 1>> camera_rotation_inv_map(camera_pose_inv);
     const Eigen::Map<const Eigen::Matrix<T, 3, 1>> camera_translation_inv_map(&camera_pose_inv[4]);
+    const Eigen::Map<const Eigen::Matrix<T, 6, 1>> camera_intrinsics_map(camera_intrinsics);
 
     assert(fixed_pose_type_ != FixedTagPose);
 
@@ -117,8 +130,19 @@ struct FixedIntrinsicsTagReprojectionError
     // Compute the reprojection error residuals
     auto compute_reproj_error_point = [&](
                                         auto & predicted_ccs, auto observed_ics, auto * residuals) {
-      const T predicted_ics_x = cx_ + fx_ * (predicted_ccs.x() / predicted_ccs.z());
-      const T predicted_ics_y = cy_ + fy_ * (predicted_ccs.y() / predicted_ccs.z());
+      const T & cx = camera_intrinsics_map(0);
+      const T & cy = camera_intrinsics_map(1);
+      const T & fx = camera_intrinsics_map(2);
+      const T & fy = camera_intrinsics_map(3);
+      const T & k1 = camera_intrinsics_map(4);
+      const T & k2 = camera_intrinsics_map(5);
+
+      const T xp = predicted_ccs.x() / predicted_ccs.z();
+      const T yp = predicted_ccs.y() / predicted_ccs.z();
+      const T r2 = xp * xp + yp * yp;
+      const T d = 1.0 + r2 * (k1 + k2 * r2);
+      const T predicted_ics_x = cx + fx * d * xp;
+      const T predicted_ics_y = cy + fy * d * yp;
 
       residuals[0] = predicted_ics_x - observed_ics.x();
       residuals[1] = predicted_ics_y - observed_ics.y();
@@ -132,40 +156,74 @@ struct FixedIntrinsicsTagReprojectionError
     return true;
   }
 
+  // Case where the camera has fixed intrinsics
+  template <typename T>
+  bool operator()(const T * const camera_pose_inv, const T * const tag_pose, T * residuals) const
+  {
+    assert(intrinsics_optimization_type_ == FixIntrinsics);
+
+    std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                T(1.0) * fy_, T(0.0),       T(0.0)};
+
+    return (*this)(camera_pose_inv, intrinsics.data(), tag_pose, residuals);
+  }
+
+  // Case where the camera has known pose and fixed intrinsics
   template <typename T>
   bool operator()(const T * const tag_pose, T * residuals) const
   {
     assert(fixed_pose_type_ != NoFixedPose);
+    assert(intrinsics_optimization_type_ == FixIntrinsics);
+    std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                T(1.0) * fy_, T(0.0),       T(0.0)};
 
-    (*this)(static_cast<T *>(nullptr), tag_pose, residuals);
-
-    return true;
+    return (*this)(static_cast<T *>(nullptr), intrinsics.data(), tag_pose, residuals);
   }
 
   static ceres::CostFunction * createResidual(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
-    const ApriltagDetection & detection)
+    const ApriltagDetection & detection,
+    std::shared_ptr<std::array<double, 10>> & fixed_camera_pose_inv,
+    std::shared_ptr<std::array<double, 10>> & fixed_tag_pose, bool fix_camera_pose,
+    bool optimize_intrinsics, bool fix_tag_pose)
   {
-    auto f = new FixedIntrinsicsTagReprojectionError(camera_uid, intrinsics, detection);
-    return (new ceres::AutoDiffCostFunction<
-            FixedIntrinsicsTagReprojectionError,
-            8,   // 4 corners x 2 residuals
-            7,   // 7 camera pose parameters
-            7>(  // 7 tag pose parameters
-      f));
-  }
+    assert(optimize_intrinsics == false);
 
-  static ceres::CostFunction * createResidualWithFixedCameraPose(
-    const UID & camera_uid, const IntrinsicParameters & intrinsics,
-    const ApriltagDetection & detection, const std::array<double, 10> & camera_pose_inv)
-  {
     auto f = new FixedIntrinsicsTagReprojectionError(
-      camera_uid, intrinsics, detection, camera_pose_inv, FixedCameraPose);
-    return (new ceres::AutoDiffCostFunction<
-            FixedIntrinsicsTagReprojectionError,
-            8,   // 4 corners x 2 residuals
-            7>(  // 7 tag pose parameters
-      f));
+      camera_uid, intrinsics, detection, fixed_camera_pose_inv, fixed_tag_pose, fix_camera_pose,
+      optimize_intrinsics, fix_tag_pose);
+
+    if (fix_camera_pose && !optimize_intrinsics) {
+      return (new ceres::AutoDiffCostFunction<
+              FixedIntrinsicsTagReprojectionError,
+              8,   // 4 corners x 2 residuals
+              7>(  // 7 tag pose parameters
+        f));
+    } else if (!fix_camera_pose && !optimize_intrinsics) {
+      return (new ceres::AutoDiffCostFunction<
+              FixedIntrinsicsTagReprojectionError,
+              8,   // 4 corners x 2 residuals
+              7,   // 7 camera pose parameters
+              7>(  // 7 tag pose parameters
+        f));
+    } else if (fix_camera_pose && optimize_intrinsics) {
+      return (new ceres::AutoDiffCostFunction<
+              FixedIntrinsicsTagReprojectionError,
+              8,   // 4 corners x 2 residuals
+              6,   // 6 camera intrinsic parameters
+              7>(  // 7 tag pose parameters
+        f));
+    } else if (!fix_camera_pose && optimize_intrinsics) {
+      return (new ceres::AutoDiffCostFunction<
+              FixedIntrinsicsTagReprojectionError,
+              8,   // 4 corners x 2 residuals
+              7,   // 7 camera pose parameters
+              6,   // 6 camera intrinsic parameters
+              7>(  // 7 tag pose parameters
+        f));
+    }
+
+    return nullptr;
   }
 
   double cx_;
@@ -174,8 +232,6 @@ struct FixedIntrinsicsTagReprojectionError
   double fy_;
   double tag_size_;
 
-  // double template_corners_[4][3] = {
-  //   {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
   Eigen::Vector2d observed_corners_[4];
 
   UID camera_uid_;
@@ -183,8 +239,13 @@ struct FixedIntrinsicsTagReprojectionError
   ApriltagDetection detection_;
   Eigen::Vector4d fixed_camera_rotation_inv_;
   Eigen::Vector3d fixed_camera_translation_inv_;
-  std::array<double, 10> fixed_tag_pose_;
+  Eigen::Vector4d fixed_tag_rotation_;
+  Eigen::Vector3d fixed_tag_translation_;
   FixedPoseType fixed_pose_type_;
+  IntrinsicsOptimizationType intrinsics_optimization_type_;
+  bool fix_camera_pose_;
+  bool optimize_intrinsics_;
+  bool fix_tag_pose_;
 };
 
 }  // namespace extrinsic_tag_based_base_calibrator

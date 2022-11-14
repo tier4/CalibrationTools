@@ -912,13 +912,15 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     for (auto detection : scene.calibration_sensor_detections) {
       UID sensor_uid = UID::makeCameraUID(scene_index, -1);
       UID detection_uid = UID::makeWaypointUID(scene_index, detection.id);
-      std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY> identity{
-        1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+      auto identity =
+        std::make_shared<std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>>(
+          std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>{
+            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
       std::array<double, 8> residuals;
 
       auto f = CalibrationSensorResidualFunction(
-        sensor_uid, calibration_sensor_intrinsics_, detection, identity,
-        CalibrationSensorResidualFunction::FixedCameraPose);
+        sensor_uid, calibration_sensor_intrinsics_, detection, identity, nullptr, true, false,
+        false);
 
       f(data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
       // double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
@@ -929,9 +931,9 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
       std::cout << sensor_uid.to_string() << " <-> " << detection_uid.to_string()
                 << " initial error: " << sum_res << std::endl;
 
-      ceres::CostFunction * res =
-        CalibrationSensorResidualFunction::createResidualWithFixedCameraPose(
-          sensor_uid, calibration_sensor_intrinsics_, detection, identity);
+      ceres::CostFunction * res = CalibrationSensorResidualFunction::createResidual(
+        sensor_uid, calibration_sensor_intrinsics_, detection, identity, identity, true, false,
+        false);
 
       problem.AddResidualBlock(
         res,
@@ -1036,13 +1038,15 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     for (auto detection : scene.calibration_sensor_detections) {
       UID sensor_uid = UID::makeCameraUID(scene_index, -1);
       UID detection_uid = UID::makeWaypointUID(scene_index, detection.id);
-      std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY> identity{
-        1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+      auto identity =
+        std::make_shared<std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>>(
+          std::array<double, CalibrationData::POSE_OPTIMIZATION_DIMENSIONALITY>{
+            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
       std::array<double, 8> residuals;
 
       auto f = CalibrationSensorResidualFunction(
-        sensor_uid, calibration_sensor_intrinsics_, detection, identity,
-        CalibrationSensorResidualFunction::FixedCameraPose);
+        sensor_uid, calibration_sensor_intrinsics_, detection, identity, identity, true, false,
+        false);
 
       f(data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
       double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
