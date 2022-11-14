@@ -52,13 +52,8 @@ struct FixedIntrinsicsTagReprojectionError
     tag_size_ = detection.size;
 
     for (int j = 0; j < 4; ++j) {
-      template_corners_[j][0] *= 0.5 * detection.size;
-      template_corners_[j][1] *= 0.5 * detection.size;
-    }
-
-    for (int j = 0; j < 4; ++j) {
-      observed_corners_[j][0] = static_cast<double>(detection.corners[j].x);
-      observed_corners_[j][1] = static_cast<double>(detection.corners[j].y);
+      observed_corners_[j] = Eigen::Vector2d(
+        static_cast<double>(detection.corners[j].x), static_cast<double>(detection.corners[j].y));
     }
   }
 
@@ -68,11 +63,15 @@ struct FixedIntrinsicsTagReprojectionError
     FixedPoseType fixed_pose_type)
   : FixedIntrinsicsTagReprojectionError(camera_uid, intrinsics, detection)
   {
+    const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(fixed_pose.data());
+    const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(fixed_pose.data() + 4);
+
     fixed_pose_type_ = fixed_pose_type;
     if (fixed_pose_type == NoFixedPose) {
       throw std::invalid_argument("Invalid argument");
     } else if (fixed_pose_type == FixedCameraPose) {
-      fixed_camera_pose_inv_ = fixed_pose;
+      fixed_camera_rotation_inv_ = rotation_map;
+      fixed_camera_translation_inv_ = translation_map;
     } else if (fixed_pose_type == FixedTagPose) {
       fixed_tag_pose_ = fixed_pose;
     }
@@ -81,109 +80,54 @@ struct FixedIntrinsicsTagReprojectionError
   template <typename T>
   bool operator()(const T * const camera_pose_inv, const T * const tag_pose, T * residuals) const
   {
-    T corner1_wcs[3];
-    T corner2_wcs[3];
-    T corner3_wcs[3];
-    T corner4_wcs[3];
+    double hsize = 0.5 * tag_size_;
 
-    if (fixed_pose_type_ == FixedTagPose) {
-      assert(false);
-    } else {
-      QuaternionRotatePoint2(tag_pose, template_corners_[0], corner1_wcs);
-      QuaternionRotatePoint2(tag_pose, template_corners_[1], corner2_wcs);
-      QuaternionRotatePoint2(tag_pose, template_corners_[2], corner3_wcs);
-      QuaternionRotatePoint2(tag_pose, template_corners_[3], corner4_wcs);
-    }
+    Eigen::Matrix<T, 3, 1> template_corners_[4] = {
+      {T(-hsize), T(hsize), T(0.0)},
+      {T(hsize), T(hsize), T(0.0)},
+      {T(hsize), T(-hsize), T(0.0)},
+      {T(-hsize), T(-hsize), T(0.0)}};
 
-    corner1_wcs[0] += tag_pose[4];
-    corner1_wcs[1] += tag_pose[5];
-    corner1_wcs[2] += tag_pose[6];
+    Eigen::Matrix<T, 3, 1> corners_wcs[4];
+    Eigen::Matrix<T, 3, 1> corners_ccs[4];
 
-    corner2_wcs[0] += tag_pose[4];
-    corner2_wcs[1] += tag_pose[5];
-    corner2_wcs[2] += tag_pose[6];
+    const Eigen::Map<const Eigen::Matrix<T, 4, 1>> tag_rotation_map(tag_pose);
+    const Eigen::Map<const Eigen::Matrix<T, 3, 1>> tag_translation_map(&tag_pose[4]);
 
-    corner3_wcs[0] += tag_pose[4];
-    corner3_wcs[1] += tag_pose[5];
-    corner3_wcs[2] += tag_pose[6];
+    const Eigen::Map<const Eigen::Matrix<T, 4, 1>> camera_rotation_inv_map(camera_pose_inv);
+    const Eigen::Map<const Eigen::Matrix<T, 3, 1>> camera_translation_inv_map(&camera_pose_inv[4]);
 
-    corner4_wcs[0] += tag_pose[4];
-    corner4_wcs[1] += tag_pose[5];
-    corner4_wcs[2] += tag_pose[6];
+    assert(fixed_pose_type_ != FixedTagPose);
 
-    T corner1_ccs[3];
-    T corner2_ccs[3];
-    T corner3_ccs[3];
-    T corner4_ccs[3];
+    // Template corners to World coordinate system (wcs)
+    transformCorners(tag_rotation_map, tag_translation_map, template_corners_, corners_wcs);
 
+    // World corners to camera coordinate system (ccs)
     if (fixed_pose_type_ == FixedCameraPose) {
-      auto fixed_camera_pose_inv = fixed_camera_pose_inv_.data();
-      QuaternionRotatePoint2(fixed_camera_pose_inv, corner1_wcs, corner1_ccs);
-      QuaternionRotatePoint2(fixed_camera_pose_inv, corner2_wcs, corner2_ccs);
-      QuaternionRotatePoint2(fixed_camera_pose_inv, corner3_wcs, corner3_ccs);
-      QuaternionRotatePoint2(fixed_camera_pose_inv, corner4_wcs, corner4_ccs);
-
-      corner1_ccs[0] += fixed_camera_pose_inv[4];
-      corner1_ccs[1] += fixed_camera_pose_inv[5];
-      corner1_ccs[2] += fixed_camera_pose_inv[6];
-
-      corner2_ccs[0] += fixed_camera_pose_inv[4];
-      corner2_ccs[1] += fixed_camera_pose_inv[5];
-      corner2_ccs[2] += fixed_camera_pose_inv[6];
-
-      corner3_ccs[0] += fixed_camera_pose_inv[4];
-      corner3_ccs[1] += fixed_camera_pose_inv[5];
-      corner3_ccs[2] += fixed_camera_pose_inv[6];
-
-      corner4_ccs[0] += fixed_camera_pose_inv[4];
-      corner4_ccs[1] += fixed_camera_pose_inv[5];
-      corner4_ccs[2] += fixed_camera_pose_inv[6];
+      const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(
+        fixed_camera_rotation_inv_.data());
+      const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(
+        fixed_camera_translation_inv_.data());
+      transformCorners(rotation_map, translation_map, corners_wcs, corners_ccs);
     } else {
-      QuaternionRotatePoint2(camera_pose_inv, corner1_wcs, corner1_ccs);
-      QuaternionRotatePoint2(camera_pose_inv, corner2_wcs, corner2_ccs);
-      QuaternionRotatePoint2(camera_pose_inv, corner3_wcs, corner3_ccs);
-      QuaternionRotatePoint2(camera_pose_inv, corner4_wcs, corner4_ccs);
-
-      corner1_ccs[0] += camera_pose_inv[4];
-      corner1_ccs[1] += camera_pose_inv[5];
-      corner1_ccs[2] += camera_pose_inv[6];
-
-      corner2_ccs[0] += camera_pose_inv[4];
-      corner2_ccs[1] += camera_pose_inv[5];
-      corner2_ccs[2] += camera_pose_inv[6];
-
-      corner3_ccs[0] += camera_pose_inv[4];
-      corner3_ccs[1] += camera_pose_inv[5];
-      corner3_ccs[2] += camera_pose_inv[6];
-
-      corner4_ccs[0] += camera_pose_inv[4];
-      corner4_ccs[1] += camera_pose_inv[5];
-      corner4_ccs[2] += camera_pose_inv[6];
+      transformCorners(
+        camera_rotation_inv_map, camera_translation_inv_map, corners_wcs, corners_ccs);
     }
 
-    const T predicted_corner1_x = cx_ + fx_ * (corner1_ccs[0] / corner1_ccs[2]);
-    const T predicted_corner1_y = cy_ + fy_ * (corner1_ccs[1] / corner1_ccs[2]);
+    // Compute the reprojection error residuals
+    auto compute_reproj_error_point = [&](
+                                        auto & predicted_ccs, auto observed_ics, auto * residuals) {
+      const T predicted_ics_x = cx_ + fx_ * (predicted_ccs.x() / predicted_ccs.z());
+      const T predicted_ics_y = cy_ + fy_ * (predicted_ccs.y() / predicted_ccs.z());
 
-    const T predicted_corner2_x = cx_ + fx_ * (corner2_ccs[0] / corner2_ccs[2]);
-    const T predicted_corner2_y = cy_ + fy_ * (corner2_ccs[1] / corner2_ccs[2]);
+      residuals[0] = predicted_ics_x - observed_ics.x();
+      residuals[1] = predicted_ics_y - observed_ics.y();
+    };
 
-    const T predicted_corner3_x = cx_ + fx_ * (corner3_ccs[0] / corner3_ccs[2]);
-    const T predicted_corner3_y = cy_ + fy_ * (corner3_ccs[1] / corner3_ccs[2]);
-
-    const T predicted_corner4_x = cx_ + fx_ * (corner4_ccs[0] / corner4_ccs[2]);
-    const T predicted_corner4_y = cy_ + fy_ * (corner4_ccs[1] / corner4_ccs[2]);
-
-    residuals[0] = predicted_corner1_x - observed_corners_[0][0];
-    residuals[1] = predicted_corner1_y - observed_corners_[0][1];
-
-    residuals[2] = predicted_corner2_x - observed_corners_[1][0];
-    residuals[3] = predicted_corner2_y - observed_corners_[1][1];
-
-    residuals[4] = predicted_corner3_x - observed_corners_[2][0];
-    residuals[5] = predicted_corner3_y - observed_corners_[2][1];
-
-    residuals[6] = predicted_corner4_x - observed_corners_[3][0];
-    residuals[7] = predicted_corner4_y - observed_corners_[3][1];
+    for (int i = 0; i < 4; i++) {
+      compute_reproj_error_point(corners_ccs[i], observed_corners_[i], residuals + 2 * i + 0);
+      compute_reproj_error_point(corners_ccs[i], observed_corners_[i], residuals + 2 * i + 1);
+    }
 
     return true;
   }
@@ -230,14 +174,15 @@ struct FixedIntrinsicsTagReprojectionError
   double fy_;
   double tag_size_;
 
-  double template_corners_[4][3] = {
-    {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
-  double observed_corners_[4][2];
+  // double template_corners_[4][3] = {
+  //   {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
+  Eigen::Vector2d observed_corners_[4];
 
   UID camera_uid_;
   IntrinsicParameters intrinsics_;
   ApriltagDetection detection_;
-  std::array<double, 10> fixed_camera_pose_inv_;
+  Eigen::Vector4d fixed_camera_rotation_inv_;
+  Eigen::Vector3d fixed_camera_translation_inv_;
   std::array<double, 10> fixed_tag_pose_;
   FixedPoseType fixed_pose_type_;
 };

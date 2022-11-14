@@ -36,9 +36,11 @@
 
 #include <ceres/ceres.h>
 
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <random>
 
 #define UNUSED(x) (void)x;
@@ -919,7 +921,10 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
         CalibrationSensorResidualFunction::FixedCameraPose);
 
       f(data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
-      double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
+      // double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
+
+      double sum_res = std::transform_reduce(
+        residuals.begin(), residuals.end(), 0.0, std::plus{}, [](auto v) { return std::abs(v); });
 
       std::cout << sensor_uid.to_string() << " <-> " << detection_uid.to_string()
                 << " initial error: " << sum_res << std::endl;
@@ -1081,10 +1086,14 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
         f(data_.optimization_placeholders_map[external_camera_uid].data(),
           data_.optimization_placeholders_map[detection_uid].data(), residuals.data());
-        double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
+
+        double sum_res = std::transform_reduce(
+          residuals.begin(), residuals.end(), 0.0, std::plus{}, [](auto v) { return std::abs(v); });
+
+        // double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
 
         std::cout << external_camera_uid.to_string() << " <-> " << detection_uid.to_string()
-                  << " Optimized error: " << sum_res << std::endl;
+                  << " Optimized error: " << sum_res / 8.0 << std::endl;
         ;
       }
     }
