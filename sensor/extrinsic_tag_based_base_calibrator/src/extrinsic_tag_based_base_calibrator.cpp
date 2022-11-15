@@ -57,6 +57,8 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
   ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
   ba_share_intrinsics_ = this->declare_parameter<bool>("ba_share_intrinsics", false);
+  ba_force_shared_ground_plane_ =
+    this->declare_parameter<bool>("ba_force_shared_ground_plane", false);
 
   std::vector<int64_t> waypoint_tag_ids =
     this->declare_parameter<std::vector<int64_t>>("waypoint_tag_ids", std::vector<int64_t>{0});
@@ -889,6 +891,94 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     }
   };
 
+  auto pose3d_to_ground_tag_placeholder =
+    [](
+      cv::Affine3f pose,
+      std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+      std::array<double, CalibrationData::INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
+      bool invert) {
+      if (invert) {
+        pose = pose.inv();
+      }
+
+      Eigen::Vector3f translation;
+      Eigen::Matrix3f rotation;
+      cv::cv2eigen(pose.translation(), translation);
+      cv::cv2eigen(pose.rotation(), rotation);
+      Eigen::Quaternionf quat(rotation);
+
+      std::fill(shrd_placeholder.begin(), shrd_placeholder.end(), 0);
+      shrd_placeholder[CalibrationData::ROTATION_W_INDEX] = quat.w();
+      shrd_placeholder[CalibrationData::ROTATION_X_INDEX] = quat.x();
+      shrd_placeholder[CalibrationData::ROTATION_Y_INDEX] = quat.y();
+      shrd_placeholder[CalibrationData::ROTATION_Z_INDEX] = quat.z();
+      shrd_placeholder[CalibrationData::GROUND_TAG_Z_INDEX] = translation.z();
+
+      std::fill(indep_placeholder.begin(), indep_placeholder.end(), 0);
+      indep_placeholder[CalibrationData::GROUND_TAG_X_INDEX] = translation.x();
+      indep_placeholder[CalibrationData::GROUND_TAG_Y_INDEX] = translation.y();
+    };
+
+  auto ground_tag_placeholder_to_pose3d =
+    [](
+      std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+      std::array<double, CalibrationData::INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
+      std::shared_ptr<cv::Affine3f> & pose, bool invert) {
+      const float scale = 1.f / std::sqrt(
+                                  shrd_placeholder[CalibrationData::ROTATION_W_INDEX] *
+                                    shrd_placeholder[CalibrationData::ROTATION_W_INDEX] +
+                                  shrd_placeholder[CalibrationData::ROTATION_X_INDEX] *
+                                    shrd_placeholder[CalibrationData::ROTATION_X_INDEX] +
+                                  shrd_placeholder[CalibrationData::ROTATION_Y_INDEX] *
+                                    shrd_placeholder[CalibrationData::ROTATION_Y_INDEX] +
+                                  shrd_placeholder[CalibrationData::ROTATION_Z_INDEX] *
+                                    shrd_placeholder[CalibrationData::ROTATION_Z_INDEX]);
+
+      Eigen::Quaternionf quat = Eigen::Quaterniond(
+                                  scale * shrd_placeholder[CalibrationData::ROTATION_W_INDEX],
+                                  scale * shrd_placeholder[CalibrationData::ROTATION_X_INDEX],
+                                  scale * shrd_placeholder[CalibrationData::ROTATION_Y_INDEX],
+                                  scale * shrd_placeholder[CalibrationData::ROTATION_Z_INDEX])
+                                  .cast<float>();
+
+      float z = shrd_placeholder[CalibrationData::GROUND_TAG_Z_INDEX];
+      float yaw = shrd_placeholder[CalibrationData::GROUND_TAG_YAW_INDEX];
+      float x = indep_placeholder[CalibrationData::GROUND_TAG_X_INDEX];
+      float y = indep_placeholder[CalibrationData::GROUND_TAG_Y_INDEX];
+
+      // create affines, concat and obtain the thigns
+      const float cos = std::cos(yaw);
+      const float sin = std::sin(yaw);
+      Eigen::Matrix3f rotation2d;
+      rotation2d << cos, -sin, 0.0, sin, cos, 0.0, 0.0, 0.0, 1.0;
+
+      Eigen::Matrix4f pose2d_matrix;  // Your Transformation Matrix
+      pose2d_matrix.setIdentity();
+      pose2d_matrix.block<3, 3>(0, 0) = rotation2d;
+      pose2d_matrix.block<3, 1>(0, 3) = Eigen::Vector3f(x, y, 0.f);
+
+      Eigen::Matrix4f pose3d_matrix;
+      Eigen::Matrix3f rotation3d = quat.toRotationMatrix();
+      pose3d_matrix.setIdentity();
+      pose3d_matrix.block<3, 3>(0, 0) = rotation3d;
+      pose3d_matrix.block<3, 1>(0, 3) = Eigen::Vector3f(0.0, 0.0, z);
+
+      Eigen::Matrix4f pose_matrix = pose3d_matrix * pose2d_matrix;
+      Eigen::Matrix3f pose_rotation = pose_matrix.block<3, 3>(0, 0);
+      Eigen::Vector3f pose_translation = pose_matrix.block<3, 1>(0, 3);
+
+      cv::Matx33f cv_rot;
+      cv::Vec3f cv_transl;
+      cv::eigen2cv(pose_translation, cv_transl);
+      cv::eigen2cv(pose_rotation, cv_rot);
+
+      pose = std::make_shared<cv::Affine3f>(cv_rot, cv_transl);
+
+      if (invert) {
+        *pose = pose->inv();
+      }
+    };
+
   // Prepare the placeholders
   for (auto it = data_.initial_external_camera_poses.begin();
        it != data_.initial_external_camera_poses.end(); it++) {
@@ -921,9 +1011,16 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     const UID & uid = it->first;
     const auto & pose = it->second;
 
-    pose3d_to_placeholder(*pose, data_.pose_opt_map[uid], false);
-
-    placeholder_to_pose3d(data_.pose_opt_map[uid], data_.optimized_tag_poses_map[uid], false);
+    if (!uid.is_ground_tag || !ba_force_shared_ground_plane_) {
+      pose3d_to_placeholder(*pose, data_.pose_opt_map[uid], false);
+      placeholder_to_pose3d(data_.pose_opt_map[uid], data_.optimized_tag_poses_map[uid], false);
+    } else {
+      pose3d_to_ground_tag_placeholder(
+        *pose, data_.shrd_ground_tag_pose_opt, data_.indep_ground_tag_pose_opt_map[uid], false);
+      ground_tag_placeholder_to_pose3d(
+        data_.shrd_ground_tag_pose_opt, data_.indep_ground_tag_pose_opt_map[uid],
+        data_.optimized_tag_poses_map[uid], false);
+    }
   }
 
   ceres::Problem problem;
@@ -981,43 +1078,84 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
         std::array<double, 8> residuals;
 
-        double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
-        double * external_camera_intrinsics_op =
-          ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
-                               : data_.intrinsics_opt_map[external_camera_uid].data();
-        double * detection_pose_op = data_.pose_opt_map[detection_uid].data();
+        if (!detection_uid.is_ground_tag || !ba_force_shared_ground_plane_) {
+          double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
+          double * external_camera_intrinsics_op =
+            ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
+                                 : data_.intrinsics_opt_map[external_camera_uid].data();
+          double * detection_pose_op = data_.pose_opt_map[detection_uid].data();
 
-        if (ba_optimize_intrinsics_) {
-          auto f = ExternalCameraResidualFunction(
-            external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
-            true, false, false);
+          if (ba_optimize_intrinsics_) {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              true, false, false);
 
-          f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
-            residuals.data());
+            f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
+              residuals.data());
 
-          ceres::CostFunction * res = ExternalCameraResidualFunction::createTagResidual(
-            external_camera_uid, external_camera_intrinsics_, detection, identity, identity, false,
-            true, false);
+            ceres::CostFunction * res = ExternalCameraResidualFunction::createTagResidual(
+              external_camera_uid, external_camera_intrinsics_, detection, identity, identity,
+              false, true, false);
 
-          problem.AddResidualBlock(
-            res,
-            nullptr,  // L2
-            external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op);
+            problem.AddResidualBlock(
+              res,
+              nullptr,  // L2
+              external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op);
+          } else {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              false, false, false);
+
+            f(external_camera_pose_op, data_.pose_opt_map[detection_uid].data(), residuals.data());
+
+            ceres::CostFunction * res = ExternalCameraResidualFunction::createTagResidual(
+              external_camera_uid, external_camera_intrinsics_, detection, identity, identity,
+              false, false, false);
+
+            problem.AddResidualBlock(
+              res,
+              nullptr,  // L2
+              external_camera_pose_op, detection_pose_op);
+          }
         } else {
-          auto f = ExternalCameraResidualFunction(
-            external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
-            false, false, false);
+          double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
+          double * external_camera_intrinsics_op =
+            ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
+                                 : data_.intrinsics_opt_map[external_camera_uid].data();
+          double * shrd_ground_pose_op = data_.shrd_ground_tag_pose_opt.data();
+          double * indep_ground_pose_op = data_.indep_ground_tag_pose_opt_map[detection_uid].data();
 
-          f(external_camera_pose_op, data_.pose_opt_map[detection_uid].data(), residuals.data());
+          if (ba_optimize_intrinsics_) {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              true, false, true);
 
-          ceres::CostFunction * res = ExternalCameraResidualFunction::createTagResidual(
-            external_camera_uid, external_camera_intrinsics_, detection, identity, identity, false,
-            false, false);
+            f(external_camera_pose_op, external_camera_intrinsics_op, shrd_ground_pose_op,
+              indep_ground_pose_op, residuals.data());
 
-          problem.AddResidualBlock(
-            res,
-            nullptr,  // L2
-            external_camera_pose_op, detection_pose_op);
+            ceres::CostFunction * res = ExternalCameraResidualFunction::createGroundTagResidual(
+              external_camera_uid, external_camera_intrinsics_, detection, true);
+
+            problem.AddResidualBlock(
+              res,
+              nullptr,  // L2
+              external_camera_pose_op, external_camera_intrinsics_op, shrd_ground_pose_op,
+              indep_ground_pose_op);
+          } else {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              false, false, true);
+
+            f(external_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op, residuals.data());
+
+            ceres::CostFunction * res = ExternalCameraResidualFunction::createGroundTagResidual(
+              external_camera_uid, external_camera_intrinsics_, detection, false);
+
+            problem.AddResidualBlock(
+              res,
+              nullptr,  // L2
+              external_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op);
+          }
         }
 
         double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
@@ -1074,7 +1212,12 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
     const UID & uid = it->first;
     auto & pose = data_.optimized_tag_poses_map[uid];
 
-    placeholder_to_pose3d(data_.pose_opt_map[uid], pose, false);
+    if (!uid.is_ground_tag || !ba_force_shared_ground_plane_) {
+      placeholder_to_pose3d(data_.pose_opt_map[uid], pose, false);
+    } else {
+      ground_tag_placeholder_to_pose3d(
+        data_.shrd_ground_tag_pose_opt, data_.indep_ground_tag_pose_opt_map[uid], pose, false);
+    }
 
     if (uid.is_waypoint_tag) {
       data_.optimized_waypoint_tag_poses.push_back(pose);
@@ -1124,18 +1267,56 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
         std::array<double, 8> residuals;
 
-        double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
-        double * external_camera_intrinsics_op =
-          ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
-                               : data_.intrinsics_opt_map[external_camera_uid].data();
-        double * detection_pose_op = data_.pose_opt_map[detection_uid].data();
+        //////
 
-        auto f = ExternalCameraResidualFunction(
-          external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
-          true, false, false);
+        if (!detection_uid.is_ground_tag || !ba_force_shared_ground_plane_) {
+          double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
+          double * external_camera_intrinsics_op =
+            ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
+                                 : data_.intrinsics_opt_map[external_camera_uid].data();
+          double * detection_pose_op = data_.pose_opt_map[detection_uid].data();
 
-        f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
-          residuals.data());
+          if (ba_optimize_intrinsics_) {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              true, false, false);
+
+            f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
+              residuals.data());
+
+          } else {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              false, false, false);
+
+            f(external_camera_pose_op, data_.pose_opt_map[detection_uid].data(), residuals.data());
+          }
+        } else {
+          double * external_camera_pose_op = data_.pose_opt_map[external_camera_uid].data();
+          double * external_camera_intrinsics_op =
+            ba_share_intrinsics_ ? data_.shared_intrinsics_opt.data()
+                                 : data_.intrinsics_opt_map[external_camera_uid].data();
+          double * shrd_ground_pose_op = data_.shrd_ground_tag_pose_opt.data();
+          double * indep_ground_pose_op = data_.indep_ground_tag_pose_opt_map[detection_uid].data();
+
+          if (ba_optimize_intrinsics_) {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              true, false, true);
+
+            f(external_camera_pose_op, external_camera_intrinsics_op, shrd_ground_pose_op,
+              indep_ground_pose_op, residuals.data());
+
+          } else {
+            auto f = ExternalCameraResidualFunction(
+              external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
+              false, false, true);
+
+            f(external_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op, residuals.data());
+          }
+        }
+
+        ////
 
         double sum_res = std::transform_reduce(
           residuals.begin(), residuals.end(), 0.0, std::plus{}, [](auto v) { return std::abs(v); });

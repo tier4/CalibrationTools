@@ -107,7 +107,7 @@ struct TagReprojectionError
       transformCorners(tag_rotation_map, tag_translation_map, template_corners_, corners_wcs);
     } else {
       const Eigen::Map<const Eigen::Matrix<T, 4, 1>> tag_rotation_map(tag_rotation_z);
-      const T & tag_z = tag_rotation_z[3];
+      const T & tag_z = tag_rotation_z[4];
 
       Eigen::Matrix<T, 3, 3> tag_rotation_2d = rotationMatrixFromYaw(tag_pose_2d[0]);
       const Eigen::Map<const Eigen::Matrix<T, 2, 1>> tag_translation_2d(&tag_pose_2d[1]);
@@ -156,7 +156,7 @@ struct TagReprojectionError
     return true;
   }
 
-  // Case where the camera is not fixed and the intrinsics are optimized
+  // Case where the tag is in the ground and the intrinsics are optimized
   template <typename T>
   bool operator()(
     const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_rot_z,
@@ -165,6 +165,7 @@ struct TagReprojectionError
     assert(fix_camera_pose_ == false);
     assert(optimize_intrinsics_ == true);
     assert(fix_tag_pose_ == false);
+    assert(is_ground_tag_ == true);
 
     return impl(
       camera_pose_inv, camera_intrinsics, static_cast<T *>(nullptr), tag_rot_z, tag_pose_2d,
@@ -173,21 +174,28 @@ struct TagReprojectionError
     return false;
   }
 
-  // Case where the camera is not fixed and the intrinsics are optimized
   template <typename T>
   bool operator()(
-    const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
-    T * residuals) const
+    const T * const arg1, const T * const arg2, const T * const arg3, T * residuals) const
   {
-    // HERE THERE ARE ACTUALLY TWO CASES, with one ground tag
+    if (is_ground_tag_) {
+      // Case where the tag is in the ground and not the intrinsics are not optimized
+      assert(fix_camera_pose_ == false);
+      assert(optimize_intrinsics_ == false);
+      assert(fix_tag_pose_ == false);
 
-    assert(fix_camera_pose_ == false);
-    assert(optimize_intrinsics_ == true);
-    assert(fix_tag_pose_ == false);
+      return impl(
+        arg1, static_cast<T *>(nullptr), static_cast<T *>(nullptr), arg2, arg3, residuals);
 
-    return impl(
-      camera_pose_inv, camera_intrinsics, tag_pose, static_cast<T *>(nullptr),
-      static_cast<T *>(nullptr), residuals);
+    } else {
+      // Case where the camera is not fixed and the intrinsics are optimized
+      assert(fix_camera_pose_ == false);
+      assert(optimize_intrinsics_ == true);
+      assert(fix_tag_pose_ == false);
+
+      return impl(
+        arg1, arg2, arg3, static_cast<T *>(nullptr), static_cast<T *>(nullptr), residuals);
+    }
   }
 
   // Case where the camera has fixed intrinsics
@@ -197,6 +205,7 @@ struct TagReprojectionError
     assert(fix_camera_pose_ == false);
     assert(optimize_intrinsics_ == false);
     assert(fix_tag_pose_ == false);
+    assert(is_ground_tag_ == false);
 
     std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
                                 T(1.0) * fy_, T(0.0),       T(0.0)};
@@ -213,6 +222,7 @@ struct TagReprojectionError
     assert(fix_camera_pose_ == true);
     assert(optimize_intrinsics_ == false);
     assert(fix_tag_pose_ == false);
+    assert(is_ground_tag_ == false);
 
     std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
                                 T(1.0) * fy_, T(0.0),       T(0.0)};
@@ -308,8 +318,6 @@ struct TagReprojectionError
   Eigen::Vector3d fixed_camera_translation_inv_;
   Eigen::Vector4d fixed_tag_rotation_;
   Eigen::Vector3d fixed_tag_translation_;
-  // FixedPoseType fixed_pose_type_;
-  // IntrinsicsOptimizationType intrinsics_optimization_type_;
   bool fix_camera_pose_;
   bool optimize_intrinsics_;
   bool fix_tag_pose_;

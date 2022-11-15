@@ -161,7 +161,7 @@ void serialize(
 
   ar & data.pose_opt_map;
   ar & data.intrinsics_opt_map;
-  ar & data.shrd_ground_tag_pose_opt_map;
+  ar & data.shrd_ground_tag_pose_opt;
   ar & data.indep_ground_tag_pose_opt_map;
 
   ar & data.optimized_external_camera_poses;

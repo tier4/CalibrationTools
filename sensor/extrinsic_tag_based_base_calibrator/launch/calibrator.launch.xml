@@ -24,6 +24,7 @@
       <!--BA options -->
       <param name="ba_optimize_intrinsics" value="true"/>
       <param name="ba_share_intrinsics" value="true"/>
+      <param name="ba_force_shared_ground_plane" value="true"/>
 
       <param name="initial_angle_cov" value="5.0"/>
       <!--degrees -->

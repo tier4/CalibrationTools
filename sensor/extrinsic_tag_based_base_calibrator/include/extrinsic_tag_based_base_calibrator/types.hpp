@@ -208,6 +208,11 @@ struct CalibrationData
   static constexpr int INTRINSICS_K1_INDEX = 4;
   static constexpr int INTRINSICS_K2_INDEX = 5;
 
+  static constexpr int GROUND_TAG_Z_INDEX = 4;
+  static constexpr int GROUND_TAG_YAW_INDEX = 0;
+  static constexpr int GROUND_TAG_X_INDEX = 1;
+  static constexpr int GROUND_TAG_Y_INDEX = 2;
+
   std::vector<CalibrationScene> scenes;
 
   std::set<int> detected_tag_ids_set;
@@ -224,10 +229,8 @@ struct CalibrationData
 
   // Optimization placeholders
   std::map<UID, std::array<double, POSE_OPT_DIM>> pose_opt_map;
-  std::map<UID, std::array<double, SHRD_GROUND_TAG_POSE_DIM>>
-    shrd_ground_tag_pose_opt_map;  // not used now
-  std::map<UID, std::array<double, INDEP_GROUND_TAG_POSE_DIM>>
-    indep_ground_tag_pose_opt_map;  // not used now
+  std::array<double, SHRD_GROUND_TAG_POSE_DIM> shrd_ground_tag_pose_opt;
+  std::map<UID, std::array<double, INDEP_GROUND_TAG_POSE_DIM>> indep_ground_tag_pose_opt_map;
   std::map<UID, std::array<double, INTRINSICS_DIM>> intrinsics_opt_map;
   std::array<double, INTRINSICS_DIM> shared_intrinsics_opt;
 

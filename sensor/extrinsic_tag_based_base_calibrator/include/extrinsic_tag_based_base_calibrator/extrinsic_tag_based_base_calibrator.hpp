@@ -75,6 +75,7 @@ protected:
 
   bool ba_optimize_intrinsics_;
   bool ba_share_intrinsics_;
+  bool ba_force_shared_ground_plane_;
 
   ApriltagParameters apriltag_parameters_;
   double waypoint_tag_size_;
