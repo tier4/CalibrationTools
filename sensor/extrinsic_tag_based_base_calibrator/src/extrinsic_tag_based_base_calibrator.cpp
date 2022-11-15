@@ -945,7 +945,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
       auto f = CalibrationSensorResidualFunction(
         sensor_uid, calibration_sensor_intrinsics_, detection, identity, nullptr, true, false,
-        false);
+        false, false);
 
       f(data_.pose_opt_map[detection_uid].data(), residuals.data());
       // double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
@@ -956,7 +956,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
       std::cout << sensor_uid.to_string() << " <-> " << detection_uid.to_string()
                 << " initial error: " << sum_res << std::endl;
 
-      ceres::CostFunction * res = CalibrationSensorResidualFunction::createResidual(
+      ceres::CostFunction * res = CalibrationSensorResidualFunction::createTagResidual(
         sensor_uid, calibration_sensor_intrinsics_, detection, identity, identity, true, false,
         false);
 
@@ -990,12 +990,12 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
         if (ba_optimize_intrinsics_) {
           auto f = ExternalCameraResidualFunction(
             external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
-            true, false);
+            true, false, false);
 
           f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
             residuals.data());
 
-          ceres::CostFunction * res = ExternalCameraResidualFunction::createResidual(
+          ceres::CostFunction * res = ExternalCameraResidualFunction::createTagResidual(
             external_camera_uid, external_camera_intrinsics_, detection, identity, identity, false,
             true, false);
 
@@ -1006,11 +1006,11 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
         } else {
           auto f = ExternalCameraResidualFunction(
             external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
-            false, false);
+            false, false, false);
 
           f(external_camera_pose_op, data_.pose_opt_map[detection_uid].data(), residuals.data());
 
-          ceres::CostFunction * res = ExternalCameraResidualFunction::createResidual(
+          ceres::CostFunction * res = ExternalCameraResidualFunction::createTagResidual(
             external_camera_uid, external_camera_intrinsics_, detection, identity, identity, false,
             false, false);
 
@@ -1100,7 +1100,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
       auto f = CalibrationSensorResidualFunction(
         sensor_uid, calibration_sensor_intrinsics_, detection, identity, identity, true, false,
-        false);
+        false, false);
 
       f(data_.pose_opt_map[detection_uid].data(), residuals.data());
       double sum_res = std::accumulate(residuals.begin(), residuals.end(), 0.0);
@@ -1132,7 +1132,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
         auto f = ExternalCameraResidualFunction(
           external_camera_uid, external_camera_intrinsics_, detection, nullptr, nullptr, false,
-          true, false);
+          true, false, false);
 
         f(external_camera_pose_op, external_camera_intrinsics_op, detection_pose_op,
           residuals.data());

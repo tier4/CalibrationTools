@@ -31,30 +31,20 @@ namespace extrinsic_tag_based_base_calibrator
 
 struct TagReprojectionError
 {
-  enum FixedPoseType {
-    FixedCameraPose,  // the sensor camera pose uses optimization, but the pose itself is fixed
-    FixedTagPose,     // the waypoints are fixed for base-lidar calibration
-    NoFixedPose,
-  };
-
-  enum IntrinsicsOptimizationType {
-    FixIntrinsics,
-    OptimizeIntrinsics,
-  };
-
   TagReprojectionError(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection,
     const std::shared_ptr<std::array<double, CalibrationData::POSE_OPT_DIM>> &
       fixed_camera_pose_inv,
     const std::shared_ptr<std::array<double, CalibrationData::POSE_OPT_DIM>> & fixed_tag_pose,
-    bool fix_camera_pose, bool optimize_intrinsics, bool fix_tag_pose)
+    bool fix_camera_pose, bool optimize_intrinsics, bool fix_tag_pose, bool is_ground_tag)
   : camera_uid_(camera_uid),
     intrinsics_(intrinsics),
     detection_(detection),
     fix_camera_pose_(fix_camera_pose),
     optimize_intrinsics_(optimize_intrinsics),
-    fix_tag_pose_(fix_tag_pose)
+    fix_tag_pose_(fix_tag_pose),
+    is_ground_tag_(is_ground_tag)
   {
     fx_ = intrinsics.undistorted_camera_matrix(0, 0);
     fy_ = intrinsics.undistorted_camera_matrix(1, 1);
@@ -91,7 +81,7 @@ struct TagReprojectionError
   template <typename T>
   bool impl(
     const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
-    T * residuals) const
+    const T * const tag_rotation_z, const T * const tag_pose_2d, T * residuals) const
   {
     double hsize = 0.5 * tag_size_;
 
@@ -104,9 +94,6 @@ struct TagReprojectionError
     Eigen::Matrix<T, 3, 1> corners_wcs[4];
     Eigen::Matrix<T, 3, 1> corners_ccs[4];
 
-    const Eigen::Map<const Eigen::Matrix<T, 4, 1>> tag_rotation_map(tag_pose);
-    const Eigen::Map<const Eigen::Matrix<T, 3, 1>> tag_translation_map(&tag_pose[4]);
-
     const Eigen::Map<const Eigen::Matrix<T, 4, 1>> camera_rotation_inv_map(camera_pose_inv);
     const Eigen::Map<const Eigen::Matrix<T, 3, 1>> camera_translation_inv_map(&camera_pose_inv[4]);
     const Eigen::Map<const Eigen::Matrix<T, 6, 1>> camera_intrinsics_map(camera_intrinsics);
@@ -114,7 +101,20 @@ struct TagReprojectionError
     assert(fix_tag_pose_ == false);
 
     // Template corners to World coordinate system (wcs)
-    transformCorners(tag_rotation_map, tag_translation_map, template_corners_, corners_wcs);
+    if (!is_ground_tag_) {
+      const Eigen::Map<const Eigen::Matrix<T, 4, 1>> tag_rotation_map(tag_pose);
+      const Eigen::Map<const Eigen::Matrix<T, 3, 1>> tag_translation_map(&tag_pose[4]);
+      transformCorners(tag_rotation_map, tag_translation_map, template_corners_, corners_wcs);
+    } else {
+      const Eigen::Map<const Eigen::Matrix<T, 4, 1>> tag_rotation_map(tag_rotation_z);
+      const T & tag_z = tag_rotation_z[3];
+
+      Eigen::Matrix<T, 3, 3> tag_rotation_2d = rotationMatrixFromYaw(tag_pose_2d[0]);
+      const Eigen::Map<const Eigen::Matrix<T, 2, 1>> tag_translation_2d(&tag_pose_2d[1]);
+      transformCorners2(
+        tag_rotation_map, tag_z, tag_rotation_2d, tag_translation_2d, template_corners_,
+        corners_wcs);
+    }
 
     // World corners to camera coordinate system (ccs)
     if (fix_camera_pose_) {
@@ -127,11 +127,6 @@ struct TagReprojectionError
       transformCorners(
         camera_rotation_inv_map, camera_translation_inv_map, corners_wcs, corners_ccs);
     }
-
-    // for(int i = 0; i < 8; i++)
-    //   residuals[i] = tag_pose[0] * tag_pose[1];
-
-    // return true;
 
     // Compute the reprojection error residuals
     auto compute_reproj_error_point = [&](
@@ -164,14 +159,35 @@ struct TagReprojectionError
   // Case where the camera is not fixed and the intrinsics are optimized
   template <typename T>
   bool operator()(
-    const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
-    T * residuals) const
+    const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_rot_z,
+    const T * const tag_pose_2d, T * residuals) const
   {
     assert(fix_camera_pose_ == false);
     assert(optimize_intrinsics_ == true);
     assert(fix_tag_pose_ == false);
 
-    return impl(camera_pose_inv, camera_intrinsics, tag_pose, residuals);
+    return impl(
+      camera_pose_inv, camera_intrinsics, static_cast<T *>(nullptr), tag_rot_z, tag_pose_2d,
+      residuals);
+
+    return false;
+  }
+
+  // Case where the camera is not fixed and the intrinsics are optimized
+  template <typename T>
+  bool operator()(
+    const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
+    T * residuals) const
+  {
+    // HERE THERE ARE ACTUALLY TWO CASES, with one ground tag
+
+    assert(fix_camera_pose_ == false);
+    assert(optimize_intrinsics_ == true);
+    assert(fix_tag_pose_ == false);
+
+    return impl(
+      camera_pose_inv, camera_intrinsics, tag_pose, static_cast<T *>(nullptr),
+      static_cast<T *>(nullptr), residuals);
   }
 
   // Case where the camera has fixed intrinsics
@@ -185,7 +201,9 @@ struct TagReprojectionError
     std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
                                 T(1.0) * fy_, T(0.0),       T(0.0)};
 
-    return impl(camera_pose_inv, intrinsics.data(), tag_pose, residuals);
+    return impl(
+      camera_pose_inv, intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
+      static_cast<T *>(nullptr), residuals);
   }
 
   // Case where the camera has known pose and fixed intrinsics
@@ -199,10 +217,12 @@ struct TagReprojectionError
     std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
                                 T(1.0) * fy_, T(0.0),       T(0.0)};
 
-    return impl(static_cast<T *>(nullptr), intrinsics.data(), tag_pose, residuals);
+    return impl(
+      static_cast<T *>(nullptr), intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
+      static_cast<T *>(nullptr), residuals);
   }
 
-  static ceres::CostFunction * createResidual(
+  static ceres::CostFunction * createTagResidual(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection,
     std::shared_ptr<std::array<double, CalibrationData::POSE_OPT_DIM>> & fixed_camera_pose_inv,
@@ -211,7 +231,7 @@ struct TagReprojectionError
   {
     auto f = new TagReprojectionError(
       camera_uid, intrinsics, detection, fixed_camera_pose_inv, fixed_tag_pose, fix_camera_pose,
-      optimize_intrinsics, fix_tag_pose);
+      optimize_intrinsics, fix_tag_pose, false);
 
     if (fix_camera_pose && !optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
@@ -246,6 +266,33 @@ struct TagReprojectionError
     return nullptr;
   }
 
+  static ceres::CostFunction * createGroundTagResidual(
+    const UID & camera_uid, const IntrinsicParameters & intrinsics,
+    const ApriltagDetection & detection, bool optimize_intrinsics)
+  {
+    auto f = new TagReprojectionError(
+      camera_uid, intrinsics, detection, nullptr, nullptr, false, optimize_intrinsics, false, true);
+
+    if (optimize_intrinsics) {
+      return (new ceres::AutoDiffCostFunction<
+              TagReprojectionError,
+              8,   // 4 corners x 2 residuals
+              7,   // 7 camera pose parameters
+              6,   // 6 camera intrinsic parameters
+              5,   // 5 shared ground pose parameters (quat/z) parameters
+              3>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+        f));
+    } else {
+      return (new ceres::AutoDiffCostFunction<
+              TagReprojectionError,
+              8,   // 4 corners x 2 residuals
+              7,   // 7 camera pose parameters
+              5,   // 5 shared ground pose parameters (quat/z) parameters
+              3>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+        f));
+    }
+  }
+
   double cx_;
   double cy_;
   double fx_;
@@ -261,11 +308,12 @@ struct TagReprojectionError
   Eigen::Vector3d fixed_camera_translation_inv_;
   Eigen::Vector4d fixed_tag_rotation_;
   Eigen::Vector3d fixed_tag_translation_;
-  FixedPoseType fixed_pose_type_;
-  IntrinsicsOptimizationType intrinsics_optimization_type_;
+  // FixedPoseType fixed_pose_type_;
+  // IntrinsicsOptimizationType intrinsics_optimization_type_;
   bool fix_camera_pose_;
   bool optimize_intrinsics_;
   bool fix_tag_pose_;
+  bool is_ground_tag_;
 };
 
 }  // namespace extrinsic_tag_based_base_calibrator

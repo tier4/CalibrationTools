@@ -105,7 +105,7 @@ inline void QuaternionRotatePoint2(
 }
 
 template <typename T>
-Eigen::Matrix<T, 3, 3> RotationMatrixFromYaw(T yaw)
+Eigen::Matrix<T, 3, 3> rotationMatrixFromYaw(T yaw)
 {
   const T cos = ceres::cos(yaw);
   const T sin = ceres::sin(yaw);
@@ -127,6 +127,21 @@ void transformPoint(
 }
 
 template <typename T1, typename T2>
+void transformPoint(
+  const Eigen::Map<const Eigen::Matrix<T1, 4, 1>> & rotation_3d, const T1 & z,
+  const Eigen::Matrix<T1, 3, 3> & rotation_2d,
+  const Eigen::Map<const Eigen::Matrix<T1, 2, 1>> & translation_2d,
+  const Eigen::Matrix<T2, 3, 1> & input_point, Eigen::Matrix<T2, 3, 1> & transformed_point)
+{
+  Eigen::Matrix<T2, 3, 1> aux = rotation_2d * input_point;
+  aux.x() += translation_2d.x();
+  aux.y() += translation_2d.y();
+
+  QuaternionRotatePoint2(rotation_3d, aux, transformed_point);
+  transformed_point.z() += z;
+}
+
+template <typename T1, typename T2>
 void transformCorners(
   const Eigen::Map<const Eigen::Matrix<T1, 4, 1>> & rotation,
   const Eigen::Map<const Eigen::Matrix<T1, 3, 1>> & translation,
@@ -134,6 +149,19 @@ void transformCorners(
 {
   for (int i = 0; i < 4; i++) {
     transformPoint(rotation, translation, input_corners[i], transformed_corners[i]);
+  }
+}
+
+template <typename T1, typename T2>
+void transformCorners2(
+  const Eigen::Map<const Eigen::Matrix<T1, 4, 1>> & rotation_3d, const T1 & z,
+  const Eigen::Matrix<T1, 3, 3> & rotation_2d,
+  const Eigen::Map<const Eigen::Matrix<T1, 2, 1>> & translation_2d,
+  const Eigen::Matrix<T2, 3, 1> input_corners[4], Eigen::Matrix<T2, 3, 1> transformed_corners[4])
+{
+  for (int i = 0; i < 4; i++) {
+    transformPoint(
+      rotation_3d, z, rotation_2d, translation_2d, input_corners[i], transformed_corners[i]);
   }
 }
 
