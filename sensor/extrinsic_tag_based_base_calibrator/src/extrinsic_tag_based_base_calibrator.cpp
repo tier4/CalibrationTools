@@ -942,7 +942,8 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
                                   .cast<float>();
 
       float z = shrd_placeholder[CalibrationData::GROUND_TAG_Z_INDEX];
-      float yaw = shrd_placeholder[CalibrationData::GROUND_TAG_YAW_INDEX];
+
+      float yaw = indep_placeholder[CalibrationData::GROUND_TAG_YAW_INDEX];
       float x = indep_placeholder[CalibrationData::GROUND_TAG_X_INDEX];
       float y = indep_placeholder[CalibrationData::GROUND_TAG_Y_INDEX];
 

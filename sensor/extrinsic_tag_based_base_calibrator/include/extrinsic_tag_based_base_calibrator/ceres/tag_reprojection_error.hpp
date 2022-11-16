@@ -184,8 +184,10 @@ struct TagReprojectionError
       assert(optimize_intrinsics_ == false);
       assert(fix_tag_pose_ == false);
 
-      return impl(
-        arg1, static_cast<T *>(nullptr), static_cast<T *>(nullptr), arg2, arg3, residuals);
+      std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                  T(1.0) * fy_, T(0.0),       T(0.0)};
+
+      return impl(arg1, intrinsics.data(), static_cast<T *>(nullptr), arg2, arg3, residuals);
 
     } else {
       // Case where the camera is not fixed and the intrinsics are optimized
