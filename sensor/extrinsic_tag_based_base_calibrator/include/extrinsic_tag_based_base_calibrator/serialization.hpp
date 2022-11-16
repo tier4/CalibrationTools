@@ -159,11 +159,6 @@ void serialize(
   ar & data.initial_left_wheel_tag_pose;
   ar & data.initial_right_wheel_tag_pose;
 
-  ar & data.pose_opt_map;
-  ar & data.intrinsics_opt_map;
-  ar & data.shrd_ground_tag_pose_opt;
-  ar & data.indep_ground_tag_pose_opt_map;
-
   ar & data.optimized_external_camera_poses;
   ar & data.optimized_external_camera_intrinsics;
   ar & data.optimized_tag_poses_map;

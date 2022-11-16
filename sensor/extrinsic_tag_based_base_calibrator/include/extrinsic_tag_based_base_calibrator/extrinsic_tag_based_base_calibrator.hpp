@@ -15,6 +15,7 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__EXTRINSIC_TAG_BASED_BASE_CALIBRATOR_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__EXTRINSIC_TAG_BASED_BASE_CALIBRATOR_HPP_
 
+#include <extrinsic_tag_based_base_calibrator/ceres/calibration_problem.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
@@ -73,10 +74,6 @@ protected:
   IntrinsicParameters external_camera_intrinsics_;
   IntrinsicParameters calibration_sensor_intrinsics_;
 
-  bool ba_optimize_intrinsics_;
-  bool ba_share_intrinsics_;
-  bool ba_force_shared_ground_plane_;
-
   ApriltagParameters apriltag_parameters_;
   double waypoint_tag_size_;
   double wheel_tag_size_;
@@ -93,7 +90,8 @@ protected:
   std::unordered_set<int> wheel_tag_ids_set_;
   std::unordered_set<int> ground_tag_ids_set_;
 
-  CalibrationData data_;
+  CalibrationProblem calibration_problem_;
+  std::shared_ptr<CalibrationData> data_;
 
   std::size_t next_color_index_;
   std::vector<std_msgs::msg::ColorRGBA> precomputed_colors_;

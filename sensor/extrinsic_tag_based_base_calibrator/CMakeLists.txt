@@ -20,6 +20,7 @@ ament_export_include_directories(
   # COMPILE THE SOURCE
 #========================================================================
 ament_auto_add_executable(extrinsic_tag_based_base_calibrator
+  src/ceres/calibration_problem.cpp
   src/calibration_scene_extractor.cpp
   src/extrinsic_tag_based_base_calibrator.cpp
   src/apriltag_detector.cpp

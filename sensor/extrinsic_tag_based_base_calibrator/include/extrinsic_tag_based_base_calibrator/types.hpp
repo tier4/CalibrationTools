@@ -188,6 +188,8 @@ struct UID
 
 struct CalibrationData
 {
+  using Ptr = std::shared_ptr<CalibrationData>;
+
   static constexpr int POSE_OPT_DIM = 7;
   static constexpr int SHRD_GROUND_TAG_POSE_DIM = 5;
   static constexpr int INDEP_GROUND_TAG_POSE_DIM = 3;
@@ -226,13 +228,6 @@ struct CalibrationData
   std::vector<std::shared_ptr<cv::Affine3f>> initial_ground_tag_poses;
   std::shared_ptr<cv::Affine3f> initial_left_wheel_tag_pose;
   std::shared_ptr<cv::Affine3f> initial_right_wheel_tag_pose;
-
-  // Optimization placeholders
-  std::map<UID, std::array<double, POSE_OPT_DIM>> pose_opt_map;
-  std::array<double, SHRD_GROUND_TAG_POSE_DIM> shrd_ground_tag_pose_opt;
-  std::map<UID, std::array<double, INDEP_GROUND_TAG_POSE_DIM>> indep_ground_tag_pose_opt_map;
-  std::map<UID, std::array<double, INTRINSICS_DIM>> intrinsics_opt_map;
-  std::array<double, INTRINSICS_DIM> shared_intrinsics_opt;
 
   std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_external_camera_poses;
   std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
