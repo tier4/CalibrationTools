@@ -19,6 +19,7 @@
 
 #include <array>
 #include <map>
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -33,6 +34,28 @@ public:
   static constexpr int INDEP_GROUND_TAG_POSE_DIM = CalibrationData::INDEP_GROUND_TAG_POSE_DIM;
   static constexpr int INTRINSICS_DIM = CalibrationData::INTRINSICS_DIM;
 
+  static constexpr int ROTATION_W_INDEX = CalibrationData::ROTATION_W_INDEX;
+  static constexpr int ROTATION_X_INDEX = CalibrationData::ROTATION_X_INDEX;
+  static constexpr int ROTATION_Y_INDEX = CalibrationData::ROTATION_Y_INDEX;
+  static constexpr int ROTATION_Z_INDEX = CalibrationData::ROTATION_Z_INDEX;
+  static constexpr int TRANSLATION_X_INDEX = CalibrationData::TRANSLATION_X_INDEX;
+  static constexpr int TRANSLATION_Y_INDEX = CalibrationData::TRANSLATION_Y_INDEX;
+  static constexpr int TRANSLATION_Z_INDEX = CalibrationData::TRANSLATION_Z_INDEX;
+
+  static constexpr int INTRINSICS_CX_INDEX = CalibrationData::INTRINSICS_CX_INDEX;
+  static constexpr int INTRINSICS_CY_INDEX = CalibrationData::INTRINSICS_CY_INDEX;
+  static constexpr int INTRINSICS_FX_INDEX = CalibrationData::INTRINSICS_FX_INDEX;
+  static constexpr int INTRINSICS_FY_INDEX = CalibrationData::INTRINSICS_FY_INDEX;
+  static constexpr int INTRINSICS_K1_INDEX = CalibrationData::INTRINSICS_K1_INDEX;
+  static constexpr int INTRINSICS_K2_INDEX = CalibrationData::INTRINSICS_K2_INDEX;
+
+  static constexpr int GROUND_TAG_Z_INDEX = CalibrationData::GROUND_TAG_Z_INDEX;
+  static constexpr int GROUND_TAG_YAW_INDEX = CalibrationData::GROUND_TAG_YAW_INDEX;
+  static constexpr int GROUND_TAG_X_INDEX = CalibrationData::GROUND_TAG_X_INDEX;
+  static constexpr int GROUND_TAG_Y_INDEX = CalibrationData::GROUND_TAG_Y_INDEX;
+
+  static constexpr int RESIDUAL_DIM = 8;
+
   void setTagIds(
     std::vector<int> & waypoint_tag_ids, std::vector<int> & ground_tag_ids, int left_wheel_tag_id,
     int right_wheel_tag_id);
@@ -45,15 +68,28 @@ public:
   void setCalibrationSensorIntrinsics(IntrinsicParameters & intrinsics);
 
   void setData(CalibrationData::Ptr & data);
-  void setBAOptions();
   void dataToPlaceholders();
   void placeholdersToData();
-  double evaluate();
+  void evaluate();
   void solve();
+  void writeDebugImages();
 
   void getMarkers();
 
 protected:
+  void pose3dToPlaceholder(
+    cv::Affine3f pose, std::array<double, POSE_OPT_DIM> & placeholder, bool invert);
+  void placeholderToPose3d(
+    const std::array<double, POSE_OPT_DIM> & placeholder, std::shared_ptr<cv::Affine3f> & pose,
+    bool invert);
+  void pose3dToGroundTagPlaceholder(
+    cv::Affine3f pose, std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+    std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder, bool invert);
+  void groundTagPlaceholderToPose3d(
+    const std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+    const std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
+    std::shared_ptr<cv::Affine3f> & pose, bool invert);
+
   std::set<int> waypoint_tag_ids_set_;
   std::set<int> ground_tag_ids_set_;
   std::set<int> wheel_tag_ids_set_;

@@ -175,7 +175,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     for (auto & detection : scene.calibration_sensor_detections) {
       sensor_to_waypoint_transform_map[detection.id] = detection.pose;
 
-      add_tag_markers(
+      addTagMarkers(
         markers, std::to_string(detection.id), detection.size, color, detection.pose, base_marker);
     }
 
@@ -213,8 +213,8 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
         cv::Affine3f sensor_to_external_camera_pose =
           sensor_to_waypoint_pose * external_camera_to_waypoint_pose.inv();
 
-        add_axes_markers(markers, 0.5f, sensor_to_external_camera_pose, base_marker);
-        add_line_marker(
+        addAxesMarkers(markers, 0.5f, sensor_to_external_camera_pose, base_marker);
+        addLineMarker(
           markers, color, sensor_to_waypoint_pose, sensor_to_external_camera_pose, base_marker);
 
         for (const auto & wheel_detection : wheel_detections) {
@@ -222,10 +222,10 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
           cv::Affine3d sensor_to_wheel_pose =
             sensor_to_external_camera_pose * external_camera_to_wheel_pose;
 
-          add_tag_markers(
+          addTagMarkers(
             markers, std::to_string(wheel_detection.id), wheel_detection.size, color,
             sensor_to_wheel_pose, base_marker);
-          add_line_marker(
+          addLineMarker(
             markers, color, sensor_to_external_camera_pose, sensor_to_wheel_pose, base_marker);
         }
 
@@ -235,10 +235,10 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
                                                     external_camera_to_waypoint_pose.inv() *
                                                     external_camera_to_ground_pose;
 
-          add_tag_markers(
+          addTagMarkers(
             markers, std::to_string(ground_detection.id), ground_detection.size, color,
             sensor_to_ground_transform, base_marker);
-          add_line_marker(
+          addLineMarker(
             markers, color, sensor_to_external_camera_pose, sensor_to_ground_transform,
             base_marker);
         }
@@ -260,7 +260,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     const UID & tag_uid = it->first;
     auto & pose = it->second;
 
-    add_tag_markers(
+    addTagMarkers(
       markers, tag_uid.to_string(), tag_size_map_[tag_uid.tag_id], initial_estimations_color, *pose,
       base_marker);
   }
@@ -270,9 +270,9 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     const UID & camera_uid = it->first;
     auto & camera_pose = it->second;
 
-    add_text_marker(
+    addTextMarker(
       markers, camera_uid.to_string(), initial_estimations_color, *camera_pose, base_marker);
-    add_axes_markers(markers, 0.5f, *camera_pose, base_marker);
+    addAxesMarkers(markers, 0.5f, *camera_pose, base_marker);
 
     // Iterate over all the detections of said camera
     for (const auto & detection : data_->scenes[camera_uid.scene_id]
@@ -284,7 +284,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
                             ? UID::makeWheelTagUID(detection.id)
                             : UID::makeGroundTagUID(detection.id);
 
-      add_line_marker(
+      addLineMarker(
         markers, initial_estimations_color, *camera_pose,
         *data_->initial_tag_poses_map[detection_uid], base_marker);
     }
@@ -304,7 +304,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     const UID & tag_uid = it->first;
     auto & pose = it->second;
 
-    add_tag_markers(
+    addTagMarkers(
       markers, tag_uid.to_string(), tag_size_map_[tag_uid.tag_id], optimized_estimations_color,
       *pose, base_marker);
   }
@@ -314,9 +314,9 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     const UID & camera_uid = it->first;
     auto & camera_pose = it->second;
 
-    add_text_marker(
+    addTextMarker(
       markers, camera_uid.to_string(), optimized_estimations_color, *camera_pose, base_marker);
-    add_axes_markers(markers, 0.5f, *camera_pose, base_marker);
+    addAxesMarkers(markers, 0.5f, *camera_pose, base_marker);
 
     // Iterate over all the detections of said camera
     for (const auto & detection : data_->scenes[camera_uid.scene_id]
@@ -328,7 +328,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
                             ? UID::makeWheelTagUID(detection.id)
                             : UID::makeGroundTagUID(detection.id);
 
-      add_line_marker(
+      addLineMarker(
         markers, optimized_estimations_color, *camera_pose,
         *data_->optimized_tag_poses_map[detection_uid], base_marker);
     }
@@ -345,27 +345,27 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
   cv::Affine3f initial_ground_pose, optimized_ground_pose;
   if (computeGroundPlane(data_->initial_ground_tag_poses, ground_tag_size_, initial_ground_pose)) {
-    add_grid(markers, initial_ground_pose, 100, 0.2, initial_ground_base_marker);
-    add_axes_markers(markers, 0.5f, initial_ground_pose, initial_ground_base_marker);
+    addGrid(markers, initial_ground_pose, 100, 0.2, initial_ground_base_marker);
+    addAxesMarkers(markers, 0.5f, initial_ground_pose, initial_ground_base_marker);
 
     if (data_->initial_left_wheel_tag_pose && data_->initial_right_wheel_tag_pose) {
       cv::Affine3f initial_base_link_pose = computeBaseLink(
         *data_->initial_left_wheel_tag_pose, *data_->initial_right_wheel_tag_pose,
         initial_ground_pose);
-      add_axes_markers(markers, 0.5f, initial_base_link_pose, initial_base_link_base_marker);
+      addAxesMarkers(markers, 0.5f, initial_base_link_pose, initial_base_link_base_marker);
     }
   }
 
   if (computeGroundPlane(
         data_->optimized_ground_tag_poses, ground_tag_size_, optimized_ground_pose)) {
-    add_grid(markers, optimized_ground_pose, 100, 0.2, optimized_ground_base_marker);
-    add_axes_markers(markers, 1.f, optimized_ground_pose, optimized_ground_base_marker);
+    addGrid(markers, optimized_ground_pose, 100, 0.2, optimized_ground_base_marker);
+    addAxesMarkers(markers, 1.f, optimized_ground_pose, optimized_ground_base_marker);
 
     if (data_->optimized_left_wheel_tag_pose && data_->optimized_right_wheel_tag_pose) {
       cv::Affine3f optimized_base_link_pose = computeBaseLink(
         *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose,
         optimized_ground_pose);
-      add_axes_markers(markers, 1.f, optimized_base_link_pose, optimized_base_link_base_marker);
+      addAxesMarkers(markers, 1.f, optimized_base_link_pose, optimized_base_link_base_marker);
     }
   }
 
@@ -852,7 +852,12 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
 
   calibration_problem_.setData(data_);
 
+  calibration_problem_.dataToPlaceholders();
+  calibration_problem_.evaluate();
   calibration_problem_.solve();
+  calibration_problem_.placeholdersToData();
+  calibration_problem_.evaluate();
+  calibration_problem_.writeDebugImages();
   RCLCPP_INFO(this->get_logger(), "Finished optimization");
 
   return true;

@@ -26,6 +26,7 @@ ament_auto_add_executable(extrinsic_tag_based_base_calibrator
   src/apriltag_detector.cpp
   src/intrinsics_calibrator.cpp
   src/main.cpp
+  src/visualization.cpp
 )
 
 target_link_libraries(extrinsic_tag_based_base_calibrator
