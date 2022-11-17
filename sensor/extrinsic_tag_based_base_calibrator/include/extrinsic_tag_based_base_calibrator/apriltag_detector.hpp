@@ -36,8 +36,8 @@ public:
   explicit ApriltagDetector(const ApriltagParameters & parameters);
   ~ApriltagDetector();
 
-  void setTagSizes(const std::unordered_map<int, float> & tag_sizes_map);
-  void setIntrinsics(float fx, float fy, float cx, float cy);
+  void setTagSizes(const std::unordered_map<int, double> & tag_sizes_map);
+  void setIntrinsics(double fx, double fy, double cx, double cy);
 
   std::vector<ApriltagDetection> detect(const cv::Mat & img) const;
 
@@ -46,8 +46,8 @@ protected:
   apriltag_family_t * apriltag_family_;
   apriltag_detector_t * apriltag_detector_;
 
-  std::unordered_map<int, float> tag_sizes_map_;
-  float fx_, fy_, cx_, cy_;
+  std::unordered_map<int, double> tag_sizes_map_;
+  double fx_, fy_, cx_, cy_;
 
   static std::unordered_map<std::string, create_family_fn_type> tag_create_fn_map;
   static std::unordered_map<std::string, destroy_family_fn_type> tag_destroy_fn_map;

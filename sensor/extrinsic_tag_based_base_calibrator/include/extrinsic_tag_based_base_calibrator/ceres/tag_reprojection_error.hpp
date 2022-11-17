@@ -54,8 +54,7 @@ struct TagReprojectionError
     tag_size_ = detection.size;
 
     for (int j = 0; j < 4; ++j) {
-      observed_corners_[j] = Eigen::Vector2d(
-        static_cast<double>(detection.corners[j].x), static_cast<double>(detection.corners[j].y));
+      observed_corners_[j] = Eigen::Vector2d(detection.corners[j].x, detection.corners[j].y);
     }
 
     if (fix_camera_pose) {

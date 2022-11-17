@@ -400,31 +400,31 @@ void CalibrationProblem::writeDebugImages()
                               ? UID::makeWheelTagUID(detection.id)
                               : UID::makeGroundTagUID(detection.id);
 
-        cv::Affine3f initial_camera_pose =
+        cv::Affine3d initial_camera_pose =
           *data_->initial_external_camera_poses[external_camera_uid];
-        cv::Affine3f initial_tag_pose = *data_->initial_tag_poses_map[detection_uid];
+        cv::Affine3d initial_tag_pose = *data_->initial_tag_poses_map[detection_uid];
 
-        cv::Affine3f optimized_camera_pose =
+        cv::Affine3d optimized_camera_pose =
           *data_->optimized_external_camera_poses[external_camera_uid];
-        cv::Affine3f optimized_tag_pose = *data_->optimized_tag_poses_map[detection_uid];
+        cv::Affine3d optimized_tag_pose = *data_->optimized_tag_poses_map[detection_uid];
 
         ApriltagDetection initial_detection = detection;
         ApriltagDetection optimized_detection = detection;
 
         auto project_corners = [this, &external_camera_uid](
-                                 ApriltagDetection & detection, const cv::Affine3f & camera_pose,
-                                 const cv::Affine3f & tag_pose, bool use_optimized_intrinsics) {
-          cv::Vec3f template_corners[4] = {
+                                 ApriltagDetection & detection, const cv::Affine3d & camera_pose,
+                                 const cv::Affine3d & tag_pose, bool use_optimized_intrinsics) {
+          cv::Vec3d template_corners[4] = {
             {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
 
           for (int j = 0; j < 4; ++j) {
             template_corners[j] *= 0.5 * detection.size;
           }
 
-          std::vector<cv::Vec3f> corners_wcs{
+          std::vector<cv::Vec3d> corners_wcs{
             tag_pose * template_corners[0], tag_pose * template_corners[1],
             tag_pose * template_corners[2], tag_pose * template_corners[3]};
-          std::vector<cv::Vec3f> corners_ccs{
+          std::vector<cv::Vec3d> corners_ccs{
             camera_pose.inv() * corners_wcs[0], camera_pose.inv() * corners_wcs[1],
             camera_pose.inv() * corners_wcs[2], camera_pose.inv() * corners_wcs[3]};
 
@@ -432,22 +432,22 @@ void CalibrationProblem::writeDebugImages()
             use_optimized_intrinsics
               ? *data_->optimized_external_camera_intrinsics[external_camera_uid]
               : *data_->initial_external_camera_intrinsics[external_camera_uid];
-          float cx = intrinsics[INTRINSICS_CX_INDEX];
-          float cy = intrinsics[INTRINSICS_CY_INDEX];
-          float fx = intrinsics[INTRINSICS_FX_INDEX];
-          float fy = intrinsics[INTRINSICS_FY_INDEX];
-          float k1 = intrinsics[INTRINSICS_K1_INDEX];
-          float k2 = intrinsics[INTRINSICS_K2_INDEX];
+          double cx = intrinsics[INTRINSICS_CX_INDEX];
+          double cy = intrinsics[INTRINSICS_CY_INDEX];
+          double fx = intrinsics[INTRINSICS_FX_INDEX];
+          double fy = intrinsics[INTRINSICS_FY_INDEX];
+          double k1 = intrinsics[INTRINSICS_K1_INDEX];
+          double k2 = intrinsics[INTRINSICS_K2_INDEX];
 
-          auto camera_ccs_to_image = [&fx, &fy, &cx, &cy, &k1, &k2](cv::Vec3f & p) {
-            const float xp = p(0) / p(2);
-            const float yp = p(1) / p(2);
-            const float r2 = xp * xp + yp * yp;
-            const float d = 1.0 + r2 * (k1 + k2 * r2);
-            return cv::Point2f(cx + fx * d * xp, cy + fy * d * yp);
+          auto camera_ccs_to_image = [&fx, &fy, &cx, &cy, &k1, &k2](cv::Vec3d & p) {
+            const double xp = p(0) / p(2);
+            const double yp = p(1) / p(2);
+            const double r2 = xp * xp + yp * yp;
+            const double d = 1.0 + r2 * (k1 + k2 * r2);
+            return cv::Point2d(cx + fx * d * xp, cy + fy * d * yp);
           };
 
-          detection.corners = std::vector<cv::Point2f>{
+          detection.corners = std::vector<cv::Point2d>{
             camera_ccs_to_image(corners_ccs[0]), camera_ccs_to_image(corners_ccs[1]),
             camera_ccs_to_image(corners_ccs[2]), camera_ccs_to_image(corners_ccs[3])};
         };
@@ -469,17 +469,17 @@ void CalibrationProblem::writeDebugImages()
 void CalibrationProblem::getMarkers() {}
 
 void CalibrationProblem::pose3dToPlaceholder(
-  cv::Affine3f pose, std::array<double, POSE_OPT_DIM> & placeholder, bool invert)
+  cv::Affine3d pose, std::array<double, POSE_OPT_DIM> & placeholder, bool invert)
 {
   if (invert) {
     pose = pose.inv();
   }
 
-  Eigen::Vector3f translation;
-  Eigen::Matrix3f rotation;
+  Eigen::Vector3d translation;
+  Eigen::Matrix3d rotation;
   cv::cv2eigen(pose.translation(), translation);
   cv::cv2eigen(pose.rotation(), rotation);
-  Eigen::Quaternionf quat(rotation);
+  Eigen::Quaterniond quat(rotation);
 
   std::fill(placeholder.begin(), placeholder.end(), 0);
   placeholder[ROTATION_W_INDEX] = quat.w();
@@ -492,33 +492,29 @@ void CalibrationProblem::pose3dToPlaceholder(
 }
 
 void CalibrationProblem::placeholderToPose3d(
-  const std::array<double, POSE_OPT_DIM> & placeholder, std::shared_ptr<cv::Affine3f> & pose,
+  const std::array<double, POSE_OPT_DIM> & placeholder, std::shared_ptr<cv::Affine3d> & pose,
   bool invert)
 {
-  const float scale = 1.f / std::sqrt(
-                              placeholder[0] * placeholder[0] + placeholder[1] * placeholder[1] +
-                              placeholder[2] * placeholder[2] + placeholder[3] * placeholder[3]);
+  const double scale = 1.0 / std::sqrt(
+                               placeholder[0] * placeholder[0] + placeholder[1] * placeholder[1] +
+                               placeholder[2] * placeholder[2] + placeholder[3] * placeholder[3]);
 
-  Eigen::Quaternionf quat =
-    Eigen::Quaterniond(
-      scale * placeholder[ROTATION_W_INDEX], scale * placeholder[ROTATION_X_INDEX],
-      scale * placeholder[ROTATION_Y_INDEX], scale * placeholder[ROTATION_Z_INDEX])
-      .cast<float>();
+  Eigen::Quaterniond quat = Eigen::Quaterniond(
+    scale * placeholder[ROTATION_W_INDEX], scale * placeholder[ROTATION_X_INDEX],
+    scale * placeholder[ROTATION_Y_INDEX], scale * placeholder[ROTATION_Z_INDEX]);
 
-  Eigen::Vector3f translation =
-    Eigen::Vector3d(
-      placeholder[TRANSLATION_X_INDEX], placeholder[TRANSLATION_Y_INDEX],
-      placeholder[TRANSLATION_Z_INDEX])
-      .cast<float>();
+  Eigen::Vector3d translation = Eigen::Vector3d(
+    placeholder[TRANSLATION_X_INDEX], placeholder[TRANSLATION_Y_INDEX],
+    placeholder[TRANSLATION_Z_INDEX]);
 
-  Eigen::Matrix3f rotation = quat.toRotationMatrix();
+  Eigen::Matrix3d rotation = quat.toRotationMatrix();
 
-  cv::Matx33f cv_rot;
-  cv::Vec3f cv_transl;
+  cv::Matx33d cv_rot;
+  cv::Vec3d cv_transl;
   cv::eigen2cv(translation, cv_transl);
   cv::eigen2cv(rotation, cv_rot);
 
-  pose = std::make_shared<cv::Affine3f>(cv_rot, cv_transl);
+  pose = std::make_shared<cv::Affine3d>(cv_rot, cv_transl);
 
   if (invert) {
     *pose = pose->inv();
@@ -526,18 +522,18 @@ void CalibrationProblem::placeholderToPose3d(
 }
 
 void CalibrationProblem::pose3dToGroundTagPlaceholder(
-  cv::Affine3f pose, std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+  cv::Affine3d pose, std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
   std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder, bool invert)
 {
   if (invert) {
     pose = pose.inv();
   }
 
-  Eigen::Vector3f translation;
-  Eigen::Matrix3f rotation;
+  Eigen::Vector3d translation;
+  Eigen::Matrix3d rotation;
   cv::cv2eigen(pose.translation(), translation);
   cv::cv2eigen(pose.rotation(), rotation);
-  Eigen::Quaternionf quat(rotation);
+  Eigen::Quaterniond quat(rotation);
 
   std::fill(shrd_placeholder.begin(), shrd_placeholder.end(), 0);
   shrd_placeholder[ROTATION_W_INDEX] = quat.w();
@@ -554,53 +550,51 @@ void CalibrationProblem::pose3dToGroundTagPlaceholder(
 void CalibrationProblem::groundTagPlaceholderToPose3d(
   const std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
   const std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
-  std::shared_ptr<cv::Affine3f> & pose, bool invert)
+  std::shared_ptr<cv::Affine3d> & pose, bool invert)
 {
-  const float scale =
-    1.f / std::sqrt(
+  const double scale =
+    1.0 / std::sqrt(
             shrd_placeholder[ROTATION_W_INDEX] * shrd_placeholder[ROTATION_W_INDEX] +
             shrd_placeholder[ROTATION_X_INDEX] * shrd_placeholder[ROTATION_X_INDEX] +
             shrd_placeholder[ROTATION_Y_INDEX] * shrd_placeholder[ROTATION_Y_INDEX] +
             shrd_placeholder[ROTATION_Z_INDEX] * shrd_placeholder[ROTATION_Z_INDEX]);
 
-  Eigen::Quaternionf quat =
-    Eigen::Quaterniond(
-      scale * shrd_placeholder[ROTATION_W_INDEX], scale * shrd_placeholder[ROTATION_X_INDEX],
-      scale * shrd_placeholder[ROTATION_Y_INDEX], scale * shrd_placeholder[ROTATION_Z_INDEX])
-      .cast<float>();
+  Eigen::Quaterniond quat = Eigen::Quaterniond(
+    scale * shrd_placeholder[ROTATION_W_INDEX], scale * shrd_placeholder[ROTATION_X_INDEX],
+    scale * shrd_placeholder[ROTATION_Y_INDEX], scale * shrd_placeholder[ROTATION_Z_INDEX]);
 
-  float z = shrd_placeholder[GROUND_TAG_Z_INDEX];
+  double z = shrd_placeholder[GROUND_TAG_Z_INDEX];
 
-  float yaw = indep_placeholder[GROUND_TAG_YAW_INDEX];
-  float x = indep_placeholder[GROUND_TAG_X_INDEX];
-  float y = indep_placeholder[GROUND_TAG_Y_INDEX];
+  double yaw = indep_placeholder[GROUND_TAG_YAW_INDEX];
+  double x = indep_placeholder[GROUND_TAG_X_INDEX];
+  double y = indep_placeholder[GROUND_TAG_Y_INDEX];
 
-  const float cos = std::cos(yaw);
-  const float sin = std::sin(yaw);
-  Eigen::Matrix3f rotation2d;
+  const double cos = std::cos(yaw);
+  const double sin = std::sin(yaw);
+  Eigen::Matrix3d rotation2d;
   rotation2d << cos, -sin, 0.0, sin, cos, 0.0, 0.0, 0.0, 1.0;
 
-  Eigen::Matrix4f pose2d_matrix;
+  Eigen::Matrix4d pose2d_matrix;
   pose2d_matrix.setIdentity();
   pose2d_matrix.block<3, 3>(0, 0) = rotation2d;
-  pose2d_matrix.block<3, 1>(0, 3) = Eigen::Vector3f(x, y, 0.f);
+  pose2d_matrix.block<3, 1>(0, 3) = Eigen::Vector3d(x, y, 0.0);
 
-  Eigen::Matrix4f pose3d_matrix;
-  Eigen::Matrix3f rotation3d = quat.toRotationMatrix();
+  Eigen::Matrix4d pose3d_matrix;
+  Eigen::Matrix3d rotation3d = quat.toRotationMatrix();
   pose3d_matrix.setIdentity();
   pose3d_matrix.block<3, 3>(0, 0) = rotation3d;
-  pose3d_matrix.block<3, 1>(0, 3) = Eigen::Vector3f(0.0, 0.0, z);
+  pose3d_matrix.block<3, 1>(0, 3) = Eigen::Vector3d(0.0, 0.0, z);
 
-  Eigen::Matrix4f pose_matrix = pose3d_matrix * pose2d_matrix;
-  Eigen::Matrix3f pose_rotation = pose_matrix.block<3, 3>(0, 0);
-  Eigen::Vector3f pose_translation = pose_matrix.block<3, 1>(0, 3);
+  Eigen::Matrix4d pose_matrix = pose3d_matrix * pose2d_matrix;
+  Eigen::Matrix3d pose_rotation = pose_matrix.block<3, 3>(0, 0);
+  Eigen::Vector3d pose_translation = pose_matrix.block<3, 1>(0, 3);
 
-  cv::Matx33f cv_rot;
-  cv::Vec3f cv_transl;
+  cv::Matx33d cv_rot;
+  cv::Vec3d cv_transl;
   cv::eigen2cv(pose_translation, cv_transl);
   cv::eigen2cv(pose_rotation, cv_rot);
 
-  pose = std::make_shared<cv::Affine3f>(cv_rot, cv_transl);
+  pose = std::make_shared<cv::Affine3d>(cv_rot, cv_transl);
 
   if (invert) {
     *pose = pose->inv();

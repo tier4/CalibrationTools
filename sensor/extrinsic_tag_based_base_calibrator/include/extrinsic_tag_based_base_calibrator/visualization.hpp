@@ -30,30 +30,30 @@ namespace extrinsic_tag_based_base_calibrator
 
 void addTextMarker(
   visualization_msgs::msg::MarkerArray & markers, const std::string & text,
-  const std_msgs::msg::ColorRGBA & color, const cv::Affine3f & pose,
+  const std_msgs::msg::ColorRGBA & color, const cv::Affine3d & pose,
   const visualization_msgs::msg::Marker & base_marker);
 
 void addTagMarkers(
-  visualization_msgs::msg::MarkerArray & markers, const std::string & tag_name, float size,
-  const std_msgs::msg::ColorRGBA & color, const cv::Affine3f & pose,
+  visualization_msgs::msg::MarkerArray & markers, const std::string & tag_name, double size,
+  const std_msgs::msg::ColorRGBA & color, const cv::Affine3d & pose,
   const visualization_msgs::msg::Marker & base_marker);
 
 void addLineMarker(
   visualization_msgs::msg::MarkerArray & markers, const std_msgs::msg::ColorRGBA & color,
-  const cv::Vec3f & v1, const cv::Vec3f & v2, const visualization_msgs::msg::Marker & base_marker);
+  const cv::Vec3d & v1, const cv::Vec3d & v2, const visualization_msgs::msg::Marker & base_marker);
 
 void addLineMarker(
   visualization_msgs::msg::MarkerArray & markers, const std_msgs::msg::ColorRGBA & color,
-  const cv::Affine3f & affine1, const cv::Affine3f & affine2,
+  const cv::Affine3d & affine1, const cv::Affine3d & affine2,
   const visualization_msgs::msg::Marker & base_marker);
 
 void addAxesMarkers(
-  visualization_msgs::msg::MarkerArray & markers, float size, const cv::Affine3f & affine,
+  visualization_msgs::msg::MarkerArray & markers, double size, const cv::Affine3d & affine,
   const visualization_msgs::msg::Marker & base_marker);
 
 void addGrid(
-  visualization_msgs::msg::MarkerArray & markers, const cv::Affine3f & affine, int cells,
-  float resolution, const visualization_msgs::msg::Marker & base_marker);
+  visualization_msgs::msg::MarkerArray & markers, const cv::Affine3d & affine, int cells,
+  double resolution, const visualization_msgs::msg::Marker & base_marker);
 
 void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scalar color);
 

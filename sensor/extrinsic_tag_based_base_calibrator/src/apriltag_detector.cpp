@@ -63,12 +63,12 @@ ApriltagDetector::~ApriltagDetector()
   tag_destroy_fn_map.at(parameters_.family)(apriltag_family_);
 }
 
-void ApriltagDetector::setTagSizes(const std::unordered_map<int, float> & tag_sizes_map)
+void ApriltagDetector::setTagSizes(const std::unordered_map<int, double> & tag_sizes_map)
 {
   tag_sizes_map_ = tag_sizes_map;
 }
 
-void ApriltagDetector::setIntrinsics(float fx, float fy, float cx, float cy)
+void ApriltagDetector::setIntrinsics(double fx, double fy, double cx, double cy)
 {
   fx_ = fx;
   fy_ = fy;
@@ -96,13 +96,13 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
 
     ApriltagDetection result;
     result.id = det->id;
-    result.center = cv::Point2f(det->c[0], det->c[1]);
+    result.center = cv::Point2d(det->c[0], det->c[1]);
 
     for (int i = 0; i < 4; ++i) {
       result.corners.emplace_back(det->p[i][0], det->p[i][1]);
     }
 
-    if (tag_sizes_map_.count(det->id) > 0 && fx_ > 0.f && fy_ > 0.f && cx_ > 0.f && cy_ > 0.f) {
+    if (tag_sizes_map_.count(det->id) > 0 && fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0) {
       apriltag_detection_info_t detection_info;
       detection_info.det = det;
       detection_info.fx = fx_;

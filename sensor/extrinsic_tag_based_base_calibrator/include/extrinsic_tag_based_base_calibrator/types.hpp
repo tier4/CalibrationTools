@@ -32,10 +32,10 @@ struct ApriltagParameters
 {
   std::string family;
   int max_hamming;
-  float min_margin;
-  float max_h_error;
-  float quad_decimate;
-  float quad_sigma;
+  double min_margin;
+  double max_h_error;
+  double quad_decimate;
+  double quad_sigma;
   int nthreads;
   bool debug;
   bool refine_edges;
@@ -71,34 +71,25 @@ public:
 
   bool isValid()
   {
-    return !size.empty() && camera_matrix(0, 0) > 0.f && camera_matrix(1, 1) > 0.f &&
-           camera_matrix(0, 2) > 0.f && camera_matrix(1, 2) > 0.f &&
-           undistorted_camera_matrix(0, 0) > 0.f && undistorted_camera_matrix(1, 1) > 0.f &&
-           undistorted_camera_matrix(0, 2) > 0.f && undistorted_camera_matrix(1, 2) > 0.f;
+    return !size.empty() && camera_matrix(0, 0) > 0.0 && camera_matrix(1, 1) > 0.0 &&
+           camera_matrix(0, 2) > 0.0 && camera_matrix(1, 2) > 0.0 &&
+           undistorted_camera_matrix(0, 0) > 0.0 && undistorted_camera_matrix(1, 1) > 0.0 &&
+           undistorted_camera_matrix(0, 2) > 0.0 && undistorted_camera_matrix(1, 2) > 0.0;
   }
 
   cv::Size size;
-  cv::Mat_<float> camera_matrix;
-  cv::Mat_<float> dist_coeffs;
-  cv::Mat_<float> undistorted_camera_matrix;
+  cv::Mat_<double> camera_matrix;
+  cv::Mat_<double> dist_coeffs;
+  cv::Mat_<double> undistorted_camera_matrix;
 };
-
-// struct Pose
-//{
-//   using Ptr = std::shared_ptr<Pose>;
-//   using ConstPtr = std::shared_ptr<const Pose>;
-
-//  cv::Matx33f rotation;
-//  cv::Matx31f translation;
-//};
 
 struct ApriltagDetection
 {
   int id;
-  std::vector<cv::Point2f> corners;
-  cv::Point2f center;
-  cv::Affine3f pose;
-  float size;
+  std::vector<cv::Point2d> corners;
+  cv::Point2d center;
+  cv::Affine3d pose;
+  double size;
 };
 
 struct ExternalCameraFrame
@@ -112,7 +103,6 @@ struct CalibrationScene
   std::vector<ApriltagDetection> calibration_sensor_detections;
   std::vector<ExternalCameraFrame> external_camera_frames;
 };
-
 struct UID
 {
   UID()
@@ -219,24 +209,24 @@ struct CalibrationData
 
   std::set<int> detected_tag_ids_set;
 
-  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_external_camera_poses;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_external_camera_poses;
   std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
     initial_external_camera_intrinsics;
 
-  std::map<UID, std::shared_ptr<cv::Affine3f>> initial_tag_poses_map;
-  std::vector<std::shared_ptr<cv::Affine3f>> initial_waypoint_tag_poses;
-  std::vector<std::shared_ptr<cv::Affine3f>> initial_ground_tag_poses;
-  std::shared_ptr<cv::Affine3f> initial_left_wheel_tag_pose;
-  std::shared_ptr<cv::Affine3f> initial_right_wheel_tag_pose;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_tag_poses_map;
+  std::vector<std::shared_ptr<cv::Affine3d>> initial_waypoint_tag_poses;
+  std::vector<std::shared_ptr<cv::Affine3d>> initial_ground_tag_poses;
+  std::shared_ptr<cv::Affine3d> initial_left_wheel_tag_pose;
+  std::shared_ptr<cv::Affine3d> initial_right_wheel_tag_pose;
 
-  std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_external_camera_poses;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_external_camera_poses;
   std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
     optimized_external_camera_intrinsics;
-  std::map<UID, std::shared_ptr<cv::Affine3f>> optimized_tag_poses_map;
-  std::vector<std::shared_ptr<cv::Affine3f>> optimized_waypoint_tag_poses;
-  std::vector<std::shared_ptr<cv::Affine3f>> optimized_ground_tag_poses;
-  std::shared_ptr<cv::Affine3f> optimized_left_wheel_tag_pose;
-  std::shared_ptr<cv::Affine3f> optimized_right_wheel_tag_pose;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_tag_poses_map;
+  std::vector<std::shared_ptr<cv::Affine3d>> optimized_waypoint_tag_poses;
+  std::vector<std::shared_ptr<cv::Affine3d>> optimized_ground_tag_poses;
+  std::shared_ptr<cv::Affine3d> optimized_left_wheel_tag_pose;
+  std::shared_ptr<cv::Affine3d> optimized_right_wheel_tag_pose;
 };
 
 }  // namespace extrinsic_tag_based_base_calibrator

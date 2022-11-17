@@ -39,11 +39,11 @@ void CalibrationSceneExtractor::setExternalCameraIntrinsics(IntrinsicParameters 
     intrinsics.undistorted_camera_matrix(0, 2), intrinsics.undistorted_camera_matrix(1, 2));
 }
 
-void CalibrationSceneExtractor::setWaypointTagSize(float size) { waypoint_tag_size_ = size; }
+void CalibrationSceneExtractor::setWaypointTagSize(double size) { waypoint_tag_size_ = size; }
 
-void CalibrationSceneExtractor::setWheelTagSize(float size) { wheel_tag_size_ = size; }
+void CalibrationSceneExtractor::setWheelTagSize(double size) { wheel_tag_size_ = size; }
 
-void CalibrationSceneExtractor::setGroundTagSize(float size) { ground_tag_size_ = size; }
+void CalibrationSceneExtractor::setGroundTagSize(double size) { ground_tag_size_ = size; }
 
 void CalibrationSceneExtractor::setWaypointTagIds(const std::vector<int> & ids)
 {
@@ -63,8 +63,8 @@ CalibrationScene CalibrationSceneExtractor::processScene(
   std::string calibration_sensor_image_name, std::vector<std::string> external_camera_image_names)
 {
   std::unordered_set<int> waypoint_ids_set;
-  std::unordered_map<int, float> calibration_sensor_tag_sizes;
-  std::unordered_map<int, float> external_camera_tag_sizes;
+  std::unordered_map<int, double> calibration_sensor_tag_sizes;
+  std::unordered_map<int, double> external_camera_tag_sizes;
 
   for (auto id : waypoint_tag_ids_) {
     waypoint_ids_set.insert(id);
@@ -138,26 +138,26 @@ CalibrationScene CalibrationSceneExtractor::processScene(
     if (debug_) {
       auto draw_detection =
         [](cv::Mat & img, const ApriltagDetection & detection, cv::Scalar color) {
-          std::vector<float> edge_sizes;
+          std::vector<double> edge_sizes;
 
           for (std::size_t i = 0; i < detection.corners.size(); ++i) {
             std::size_t j = (i + 1) % detection.corners.size();
             edge_sizes.push_back(cv::norm(detection.corners[i] - detection.corners[j]));
           }
 
-          float tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
+          double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
 
           for (std::size_t i = 0; i < detection.corners.size(); ++i) {
             std::size_t j = (i + 1) % detection.corners.size();
             cv::line(
               img, detection.corners[i], detection.corners[j], color,
-              static_cast<int>(std::max(tag_size / 256.f, 1.f)), cv::LINE_AA);
+              static_cast<int>(std::max(tag_size / 256.0, 1.0)), cv::LINE_AA);
           }
 
           cv::putText(
             img, std::to_string(detection.id), detection.center, cv::FONT_HERSHEY_SIMPLEX,
-            std::max(tag_size / 128.f, 1.f), color,
-            static_cast<int>(std::max(tag_size / 128.f, 1.f)));
+            std::max(tag_size / 128.0, 1.0), color,
+            static_cast<int>(std::max(tag_size / 128.0, 1.0)));
         };
 
       cv::Mat distorted_img = cv::imread(image_name, cv::IMREAD_COLOR);

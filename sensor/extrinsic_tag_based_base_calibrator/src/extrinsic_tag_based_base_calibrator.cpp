@@ -161,16 +161,16 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
   base_marker.ns = "raw_detections";
   next_color_index_ = 0;
 
-  std::map<int, cv::Affine3f> sensor_to_waypoint_transform_map;
+  std::map<int, cv::Affine3d> sensor_to_waypoint_transform_map;
 
   for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
     const CalibrationScene & scene = data_->scenes[scene_index];
 
     std_msgs::msg::ColorRGBA color;
-    color.r = 1.f;
-    color.g = 1.f;
-    color.b = 1.f;
-    color.a = 1.f;
+    color.r = 1.0;
+    color.g = 1.0;
+    color.b = 1.0;
+    color.a = 1.0;
 
     for (auto & detection : scene.calibration_sensor_detections) {
       sensor_to_waypoint_transform_map[detection.id] = detection.pose;
@@ -206,19 +206,19 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
         });
 
       for (const auto & waypoint_detection : waypoint_detections) {
-        cv::Affine3f sensor_to_waypoint_pose =
+        cv::Affine3d sensor_to_waypoint_pose =
           sensor_to_waypoint_transform_map[waypoint_detection.id];
-        const cv::Affine3f & external_camera_to_waypoint_pose = waypoint_detection.pose;
+        const cv::Affine3d & external_camera_to_waypoint_pose = waypoint_detection.pose;
 
-        cv::Affine3f sensor_to_external_camera_pose =
+        cv::Affine3d sensor_to_external_camera_pose =
           sensor_to_waypoint_pose * external_camera_to_waypoint_pose.inv();
 
-        addAxesMarkers(markers, 0.5f, sensor_to_external_camera_pose, base_marker);
+        addAxesMarkers(markers, 0.5, sensor_to_external_camera_pose, base_marker);
         addLineMarker(
           markers, color, sensor_to_waypoint_pose, sensor_to_external_camera_pose, base_marker);
 
         for (const auto & wheel_detection : wheel_detections) {
-          const cv::Affine3f & external_camera_to_wheel_pose = wheel_detection.pose;
+          const cv::Affine3d & external_camera_to_wheel_pose = wheel_detection.pose;
           cv::Affine3d sensor_to_wheel_pose =
             sensor_to_external_camera_pose * external_camera_to_wheel_pose;
 
@@ -230,7 +230,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
         }
 
         for (const auto & ground_detection : ground_detections) {
-          const cv::Affine3f & external_camera_to_ground_pose = ground_detection.pose;
+          const cv::Affine3d & external_camera_to_ground_pose = ground_detection.pose;
           cv::Affine3d sensor_to_ground_transform = sensor_to_waypoint_pose *
                                                     external_camera_to_waypoint_pose.inv() *
                                                     external_camera_to_ground_pose;
@@ -272,7 +272,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
     addTextMarker(
       markers, camera_uid.to_string(), initial_estimations_color, *camera_pose, base_marker);
-    addAxesMarkers(markers, 0.5f, *camera_pose, base_marker);
+    addAxesMarkers(markers, 0.5, *camera_pose, base_marker);
 
     // Iterate over all the detections of said camera
     for (const auto & detection : data_->scenes[camera_uid.scene_id]
@@ -316,7 +316,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
     addTextMarker(
       markers, camera_uid.to_string(), optimized_estimations_color, *camera_pose, base_marker);
-    addAxesMarkers(markers, 0.5f, *camera_pose, base_marker);
+    addAxesMarkers(markers, 0.5, *camera_pose, base_marker);
 
     // Iterate over all the detections of said camera
     for (const auto & detection : data_->scenes[camera_uid.scene_id]
@@ -343,29 +343,29 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
   visualization_msgs::msg::Marker optimized_base_link_base_marker = base_marker;
   optimized_base_link_base_marker.ns = "optimized_base_link";
 
-  cv::Affine3f initial_ground_pose, optimized_ground_pose;
+  cv::Affine3d initial_ground_pose, optimized_ground_pose;
   if (computeGroundPlane(data_->initial_ground_tag_poses, ground_tag_size_, initial_ground_pose)) {
     addGrid(markers, initial_ground_pose, 100, 0.2, initial_ground_base_marker);
-    addAxesMarkers(markers, 0.5f, initial_ground_pose, initial_ground_base_marker);
+    addAxesMarkers(markers, 0.5, initial_ground_pose, initial_ground_base_marker);
 
     if (data_->initial_left_wheel_tag_pose && data_->initial_right_wheel_tag_pose) {
-      cv::Affine3f initial_base_link_pose = computeBaseLink(
+      cv::Affine3d initial_base_link_pose = computeBaseLink(
         *data_->initial_left_wheel_tag_pose, *data_->initial_right_wheel_tag_pose,
         initial_ground_pose);
-      addAxesMarkers(markers, 0.5f, initial_base_link_pose, initial_base_link_base_marker);
+      addAxesMarkers(markers, 0.5, initial_base_link_pose, initial_base_link_base_marker);
     }
   }
 
   if (computeGroundPlane(
         data_->optimized_ground_tag_poses, ground_tag_size_, optimized_ground_pose)) {
     addGrid(markers, optimized_ground_pose, 100, 0.2, optimized_ground_base_marker);
-    addAxesMarkers(markers, 1.f, optimized_ground_pose, optimized_ground_base_marker);
+    addAxesMarkers(markers, 1.0, optimized_ground_pose, optimized_ground_base_marker);
 
     if (data_->optimized_left_wheel_tag_pose && data_->optimized_right_wheel_tag_pose) {
-      cv::Affine3f optimized_base_link_pose = computeBaseLink(
+      cv::Affine3d optimized_base_link_pose = computeBaseLink(
         *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose,
         optimized_ground_pose);
-      addAxesMarkers(markers, 1.f, optimized_base_link_pose, optimized_base_link_base_marker);
+      addAxesMarkers(markers, 1.0, optimized_base_link_pose, optimized_base_link_base_marker);
     }
   }
 
@@ -569,7 +569,7 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
   data_->scenes.push_back(scene2);
 
   // Estimate the the initial poses for all the tags
-  std::map<UID, std::vector<cv::Affine3f>> poses_vector_map;
+  std::map<UID, std::vector<cv::Affine3d>> poses_vector_map;
 
   for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
     const CalibrationScene & scene = data_->scenes[scene_index];
@@ -607,11 +607,11 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
 
       for (const auto & waypoint_detection : waypoint_detections) {
         UID waypoint_uid = UID::makeWaypointUID(scene_index, waypoint_detection.id);
-        cv::Affine3f sensor_to_waypoint_pose = poses_vector_map[waypoint_uid].back();
+        cv::Affine3d sensor_to_waypoint_pose = poses_vector_map[waypoint_uid].back();
 
-        const cv::Affine3f & external_camera_to_waypoint_pose = waypoint_detection.pose;
+        const cv::Affine3d & external_camera_to_waypoint_pose = waypoint_detection.pose;
 
-        cv::Affine3f sensor_to_external_camera_pose =
+        cv::Affine3d sensor_to_external_camera_pose =
           sensor_to_waypoint_pose * external_camera_to_waypoint_pose.inv();
 
         UID external_camera_uid = UID::makeCameraUID(scene_index, frame_id);
@@ -619,7 +619,7 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
         poses_vector_map[external_camera_uid].push_back(sensor_to_external_camera_pose);
 
         for (const auto & wheel_detection : wheel_detections) {
-          const cv::Affine3f & external_camera_to_wheel_pose = wheel_detection.pose;
+          const cv::Affine3d & external_camera_to_wheel_pose = wheel_detection.pose;
 
           cv::Affine3d sensor_to_wheel_pose =
             sensor_to_external_camera_pose * external_camera_to_wheel_pose;
@@ -629,7 +629,7 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
         }
 
         for (const auto & ground_detection : ground_detections) {
-          cv::Affine3f external_camera_to_ground_pose = ground_detection.pose;
+          cv::Affine3d external_camera_to_ground_pose = ground_detection.pose;
           cv::Affine3d sensor_to_ground_pose = sensor_to_waypoint_pose *
                                                external_camera_to_waypoint_pose.inv() *
                                                external_camera_to_ground_pose;
@@ -688,11 +688,11 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
 
         UID wheel_tag_uid = UID::makeWheelTagUID(linked_detection.id);
         UID ground_tag_uid = UID::makeGroundTagUID(linked_detection.id);
-        cv::Affine3f sensor_to_linked_tag = poses_vector_map.count(wheel_tag_uid) > 0
+        cv::Affine3d sensor_to_linked_tag = poses_vector_map.count(wheel_tag_uid) > 0
                                               ? poses_vector_map[wheel_tag_uid].front()
                                               : poses_vector_map[ground_tag_uid].front();
 
-        const cv::Affine3f & external_camera_to_linked_tag_affine = linked_detection.pose;
+        const cv::Affine3d & external_camera_to_linked_tag_affine = linked_detection.pose;
         poses_vector_map[external_camera_uid].push_back(
           sensor_to_linked_tag * external_camera_to_linked_tag_affine.inv());
       }
@@ -703,12 +703,12 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
         UID unlinked_wheel_tag_uid = UID::makeWheelTagUID(unlinked_wheel_detection.id);
         UID linked_wheel_tag_uid = UID::makeWheelTagUID(linked_detection.id);
         UID linked_ground_tag_uid = UID::makeGroundTagUID(linked_detection.id);
-        cv::Affine3f sensor_to_linked_tag = poses_vector_map.count(linked_wheel_tag_uid) > 0
+        cv::Affine3d sensor_to_linked_tag = poses_vector_map.count(linked_wheel_tag_uid) > 0
                                               ? poses_vector_map[linked_wheel_tag_uid].front()
                                               : poses_vector_map[linked_ground_tag_uid].front();
 
-        const cv::Affine3f & external_camera_to_linked_tag_affine = linked_detection.pose;
-        const cv::Affine3f & external_camera_to_unlinked_tag_affine = unlinked_wheel_detection.pose;
+        const cv::Affine3d & external_camera_to_linked_tag_affine = linked_detection.pose;
+        const cv::Affine3d & external_camera_to_unlinked_tag_affine = unlinked_wheel_detection.pose;
 
         poses_vector_map[unlinked_wheel_tag_uid].push_back(
           sensor_to_linked_tag * external_camera_to_linked_tag_affine.inv() *
@@ -722,12 +722,12 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
         UID linked_wheel_tag_uid = UID::makeWheelTagUID(linked_detection.id);
         UID linked_ground_tag_uid = UID::makeGroundTagUID(linked_detection.id);
 
-        cv::Affine3f sensor_to_linked_tag = poses_vector_map.count(linked_wheel_tag_uid) > 0
+        cv::Affine3d sensor_to_linked_tag = poses_vector_map.count(linked_wheel_tag_uid) > 0
                                               ? poses_vector_map[linked_wheel_tag_uid].front()
                                               : poses_vector_map[linked_ground_tag_uid].front();
 
-        const cv::Affine3f & external_camera_to_linked_tag_affine = linked_detection.pose;
-        const cv::Affine3f & external_camera_to_unlinked_tag_affine =
+        const cv::Affine3d & external_camera_to_linked_tag_affine = linked_detection.pose;
+        const cv::Affine3d & external_camera_to_unlinked_tag_affine =
           unlinked_ground_detection.pose;
 
         poses_vector_map[unlinked_ground_tag_uid].push_back(
@@ -753,32 +753,32 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
     const UID & uid = it->first;
     auto poses = it->second;
 
-    Eigen::Vector3f avg_translation = Eigen::Vector3f::Zero();
-    std::vector<Eigen::Vector4f> quats;
+    Eigen::Vector3d avg_translation = Eigen::Vector3d::Zero();
+    std::vector<Eigen::Vector4d> quats;
 
     for (auto & pose : poses) {
-      Eigen::Vector3f translation;
-      Eigen::Matrix3f rotation;
+      Eigen::Vector3d translation;
+      Eigen::Matrix3d rotation;
       cv::cv2eigen(pose.translation(), translation);
       cv::cv2eigen(pose.rotation(), rotation);
-      Eigen::Quaternionf quat(rotation);
+      Eigen::Quaterniond quat(rotation);
       quats.emplace_back(quat.w(), quat.x(), quat.y(), quat.z());
 
       avg_translation += translation;
     }
 
     avg_translation /= poses.size();
-    Eigen::Vector4f avg_quat = quaternionAverage(quats);
+    Eigen::Vector4d avg_quat = quaternionAverage(quats);
 
-    Eigen::Matrix3f avg_rotation =
-      Eigen::Quaternionf(avg_quat(0), avg_quat(1), avg_quat(2), avg_quat(3)).toRotationMatrix();
+    Eigen::Matrix3d avg_rotation =
+      Eigen::Quaterniond(avg_quat(0), avg_quat(1), avg_quat(2), avg_quat(3)).toRotationMatrix();
 
-    cv::Vec3f avg_pose_translation;
-    cv::Matx33f avg_pose_rotation;
+    cv::Vec3d avg_pose_translation;
+    cv::Matx33d avg_pose_rotation;
     cv::eigen2cv(avg_translation, avg_pose_translation);
     cv::eigen2cv(avg_rotation, avg_pose_rotation);
 
-    auto initial_pose = std::make_shared<cv::Affine3f>(avg_pose_rotation, avg_pose_translation);
+    auto initial_pose = std::make_shared<cv::Affine3d>(avg_pose_rotation, avg_pose_translation);
     (void)initial_pose;
 
     if (uid.is_tag) {

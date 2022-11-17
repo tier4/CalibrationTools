@@ -38,9 +38,9 @@ public:
   void setCalibrationSensorIntrinsics(IntrinsicParameters & parameters);
   void setExternalCameraIntrinsics(IntrinsicParameters & parameters);
 
-  void setWaypointTagSize(float size);
-  void setWheelTagSize(float size);
-  void setGroundTagSize(float size);
+  void setWaypointTagSize(double size);
+  void setWheelTagSize(double size);
+  void setGroundTagSize(double size);
 
   void setWaypointTagIds(const std::vector<int> & ids);
   void setLeftWheelTagId(int ids);
@@ -55,9 +55,9 @@ protected:
   ApriltagDetector calibration_sensor_detector_;
   ApriltagDetector external_camera_detector_;
 
-  float waypoint_tag_size_;
-  float wheel_tag_size_;
-  float ground_tag_size_;
+  double waypoint_tag_size_;
+  double wheel_tag_size_;
+  double ground_tag_size_;
 
   std::vector<int> waypoint_tag_ids_;
   int left_wheel_tag_id_;

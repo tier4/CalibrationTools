@@ -40,8 +40,8 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
     rclcpp::get_logger("intrinsics_calibrator"), "Calibration images: %lu",
     calibration_image_file_names_.size());
 
-  std::vector<std::vector<cv::Point2f>> image_points;
-  std::vector<std::vector<cv::Point3f>> object_points;
+  std::vector<std::vector<cv::Point2d>> image_points;
+  std::vector<std::vector<cv::Point3d>> object_points;
 
   // std::vector<std::string> filtered_image_file_names;
   std::unordered_map<std::string, std::vector<int>> filtered_image_file_name_to_calibration_id_map;
@@ -52,7 +52,7 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
     calibration_tag_ids_set.insert(id);
   }
 
-  std::vector<cv::Point3f> single_tag_object_points = {
+  std::vector<cv::Point3d> single_tag_object_points = {
     {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
 
   for (std::size_t i = 0; i < calibration_image_file_names_.size(); ++i) {
@@ -112,15 +112,15 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
   intrinsics.undistorted_camera_matrix.convertTo(intrinsics.undistorted_camera_matrix, CV_32F);
   std::cout << "undistorted_camera_matrix: \n" << intrinsics.undistorted_camera_matrix << std::endl;
 
-  auto draw_corners = [](cv::Mat & img, std::vector<cv::Point2f> & corners, cv::Scalar color) {
-    std::vector<float> edge_sizes;
+  auto draw_corners = [](cv::Mat & img, std::vector<cv::Point2d> & corners, cv::Scalar color) {
+    std::vector<double> edge_sizes;
 
     for (std::size_t i = 0; i < corners.size(); ++i) {
       std::size_t j = (i + 1) % corners.size();
       edge_sizes.push_back(cv::norm(corners[i] - corners[j]));
     }
 
-    float tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
+    double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
 
     for (std::size_t i = 0; i < corners.size(); ++i) {
       std::size_t j = (i + 1) % corners.size();
@@ -151,7 +151,7 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
         intrinsics.undistorted_camera_matrix);
 
       for (auto i : it->second) {
-        std::vector<cv::Point2f> distorted_projected_points, undistorted_projected_points;
+        std::vector<cv::Point2d> distorted_projected_points, undistorted_projected_points;
 
         cv::projectPoints(
           object_points[i], rvecs[i], tvecs[i], intrinsics.camera_matrix, intrinsics.dist_coeffs,

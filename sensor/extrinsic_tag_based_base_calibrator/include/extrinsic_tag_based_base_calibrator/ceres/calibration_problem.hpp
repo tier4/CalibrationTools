@@ -78,17 +78,17 @@ public:
 
 protected:
   void pose3dToPlaceholder(
-    cv::Affine3f pose, std::array<double, POSE_OPT_DIM> & placeholder, bool invert);
+    cv::Affine3d pose, std::array<double, POSE_OPT_DIM> & placeholder, bool invert);
   void placeholderToPose3d(
-    const std::array<double, POSE_OPT_DIM> & placeholder, std::shared_ptr<cv::Affine3f> & pose,
+    const std::array<double, POSE_OPT_DIM> & placeholder, std::shared_ptr<cv::Affine3d> & pose,
     bool invert);
   void pose3dToGroundTagPlaceholder(
-    cv::Affine3f pose, std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+    cv::Affine3d pose, std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
     std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder, bool invert);
   void groundTagPlaceholderToPose3d(
     const std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
     const std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
-    std::shared_ptr<cv::Affine3f> & pose, bool invert);
+    std::shared_ptr<cv::Affine3d> & pose, bool invert);
 
   std::set<int> waypoint_tag_ids_set_;
   std::set<int> ground_tag_ids_set_;
