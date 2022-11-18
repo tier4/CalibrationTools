@@ -11,7 +11,7 @@
   <arg name="results_path" default="$(env HOME)/output.txt"/>
 
   <arg name="estimation_freq" default="0.25" description="[Hz]"/>
-  <arg name="show_debug_info" default="false"/>
+  <arg name="show_debug_info" default="true"/>
 
   <arg name="use_pose_with_covariance" default="true"/>
   <arg name="input_pose_name" default="/localization/pose_estimator/pose"/>

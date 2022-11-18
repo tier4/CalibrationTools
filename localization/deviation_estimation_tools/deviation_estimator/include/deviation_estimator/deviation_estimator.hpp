@@ -15,6 +15,10 @@
 #ifndef DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 #define DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 
+#include "deviation_estimator/utils.hpp"
+#include "deviation_estimator/gyro_bias_module.hpp"
+#include "deviation_estimator/velocity_coef_module.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
@@ -85,18 +89,6 @@ private:
   std::vector<geometry_msgs::msg::PoseStamped> pose_all_;
   std::vector<geometry_msgs::msg::TwistStamped> twist_all_;
   std::vector<geometry_msgs::msg::PoseStamped> pose_buf_;
-  std::vector<double> coef_vx_list_;
-  std::pair<double, double> coef_vx_;
-  std::vector<std::vector<double>> bias_angvel_list_;
-  std::vector<std::pair<double, double>> bias_angvel_;
-  geometry_msgs::msg::Vector3Stamped bias_angvel_base_;
-  geometry_msgs::msg::Vector3Stamped bias_angvel_imu_;
-
-  double stddev_vx_;
-  double stddev_vx_prime_;
-  std::vector<double> stddev_angvel_base_;
-  std::vector<double> stddev_angvel_prime_base_;
-  std::vector<double> stddev_angvel_prime_imu_;
 
   double dt_design_;
   double dx_design_;
@@ -106,6 +98,9 @@ private:
 
   std::string output_frame_;
   geometry_msgs::msg::TransformStamped::SharedPtr tf_base2imu_ptr_;
+
+  std::unique_ptr<GyroBiasModule> gyro_bias_module_;
+  std::unique_ptr<VelocityCoefModule> vel_coef_module_;
 
   /**
    * @brief set poseWithCovariance measurement
@@ -136,48 +131,28 @@ private:
   /**
    * @brief stock bias for every small sub-trajectory
    */
-  void updateBias();
-
-  /**
-   * @brief clip radian
-   */
-  double clipRadian(double rad);
-
-  /**
-   * @brief save the results to a text file
-   */
-  void saveEstimatedParameters();
-
-  /**
-   * @brief get yaw from quaternion
-   */
-  double getYawFromQuat(const geometry_msgs::msg::Quaternion quat_msg);
+  void updateBias(
+    const std::vector<geometry_msgs::msg::PoseStamped> & pose_buf,
+    const std::vector<geometry_msgs::msg::TwistStamped> & twist_all);
 
   /**
    * @brief get stddev
    */
-  void estimateStddev();
-
-  /**
-   * @brief get stddev prime
-   */
-  void estimateStddevPrime();
-
-  /**
-   * @brief calculate diff x
-   */
-  std::pair<double, double> calculateErrorPos(
+  double estimateStddevVelocity(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-    const bool enable_bias = false);
-
-  /**
-   * @brief calculate diff RPY
-   */
-  std::vector<double> calculateErrorRPY(
+    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double T_window) const;
+  geometry_msgs::msg::Vector3 estimateStddevAngularVelocity(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-    const bool enable_bias = false);
+    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double T_window) const;
+
+
+  double addBiasUncertaintyOnVelocity(
+    const double stddev_vx,
+    const double stddev_coef_vx) const;
+
+  geometry_msgs::msg::Vector3 addBiasUncertaintyOnAngularVelocity(
+    const geometry_msgs::msg::Vector3 stddev_angvel_base,
+    const geometry_msgs::msg::Vector3 stddev_angvel_bias_base) const;
 
   bool getTransform(
     const std::string & target_frame, const std::string & source_frame,
