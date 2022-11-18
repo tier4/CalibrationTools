@@ -16,14 +16,16 @@
 #define DEVIATION_ESTIMATOR__UTILS_HPP_
 
 #include "rclcpp/rclcpp.hpp"
-#include "geometry_msgs/msg/vector3.hpp"
+
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
+#include "geometry_msgs/msg/vector3.hpp"
 
-#include <vector>
-#include <fstream>
 #include <tf2/transform_datatypes.h>
+
+#include <fstream>
+#include <vector>
 
 double double_round(const double x, const int n);
 
@@ -71,8 +73,8 @@ double calculateStdMeanConst(const std::vector<T> & v, const double mean)
   return std::sqrt(error / v.size());
 }
 
-
-struct CompareMsgTimestamp {
+struct CompareMsgTimestamp
+{
   template <typename T1>
   bool operator()(T1 const & t1, double const & t2) const
   {
@@ -108,8 +110,10 @@ template <typename T>
 std::vector<T> extractSubTrajectory(
   const std::vector<T> & msg_list, const rclcpp::Time & t0, const rclcpp::Time & t1)
 {
-  const auto start_iter = std::lower_bound(msg_list.begin(), msg_list.end(), t0, CompareMsgTimestamp());
-  const auto end_iter = std::lower_bound(msg_list.begin(), msg_list.end(), t1, CompareMsgTimestamp());
+  const auto start_iter =
+    std::lower_bound(msg_list.begin(), msg_list.end(), t0, CompareMsgTimestamp());
+  const auto end_iter =
+    std::lower_bound(msg_list.begin(), msg_list.end(), t1, CompareMsgTimestamp());
   std::vector<T> msg_list_sub(start_iter, end_iter);
   return msg_list_sub;
 }
@@ -125,11 +129,8 @@ double norm_xy(const T p1, const U p2)
 double clipRadian(const double rad);
 
 void saveEstimatedParameters(
-  const std::string output_path,
-  const double stddev_vx,
-  const double stddev_wz,
-  const double coef_vx,
-  const double bias_wz,
+  const std::string output_path, const double stddev_vx, const double stddev_wz,
+  const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset);
 

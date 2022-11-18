@@ -15,10 +15,9 @@
 #ifndef DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 #define DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 
-#include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/gyro_bias_module.hpp"
+#include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/velocity_coef_module.hpp"
-
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
@@ -145,10 +144,7 @@ private:
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
     const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double T_window) const;
 
-
-  double addBiasUncertaintyOnVelocity(
-    const double stddev_vx,
-    const double stddev_coef_vx) const;
+  double addBiasUncertaintyOnVelocity(const double stddev_vx, const double stddev_coef_vx) const;
 
   geometry_msgs::msg::Vector3 addBiasUncertaintyOnAngularVelocity(
     const geometry_msgs::msg::Vector3 stddev_angvel_base,

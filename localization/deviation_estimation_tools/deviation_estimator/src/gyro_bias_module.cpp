@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "deviation_estimator/gyro_bias_module.hpp"
+
 #include "deviation_estimator/utils.hpp"
 
-GyroBiasModule::GyroBiasModule(){}
+GyroBiasModule::GyroBiasModule() {}
 
 void GyroBiasModule::update_bias(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-  const double dt)
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt)
 {
   const auto error_rpy = calculateErrorRPY(pose_list, twist_list);
   gyro_bias_pair_.first.x += dt * error_rpy.x;
@@ -50,22 +49,19 @@ geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_base_link() const
 geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_std() const
 {
   std::vector<double> stddev_bias_list_x, stddev_bias_list_y, stddev_bias_list_z;
-  for (const auto & e: gyro_bias_list) {
+  for (const auto & e : gyro_bias_list) {
     stddev_bias_list_x.push_back(e.x);
     stddev_bias_list_y.push_back(e.y);
     stddev_bias_list_z.push_back(e.z);
   }
   geometry_msgs::msg::Vector3 stddev_bias;
-  stddev_bias.x = calculateStdMeanConst(
-    stddev_bias_list_x, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
-  stddev_bias.y = calculateStdMeanConst(
-    stddev_bias_list_y, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
-  stddev_bias.z = calculateStdMeanConst(
-    stddev_bias_list_z, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+  stddev_bias.x =
+    calculateStdMeanConst(stddev_bias_list_x, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+  stddev_bias.y =
+    calculateStdMeanConst(stddev_bias_list_y, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+  stddev_bias.z =
+    calculateStdMeanConst(stddev_bias_list_z, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
   return stddev_bias;
 }
 
-bool GyroBiasModule::empty() const
-{
-  return gyro_bias_list.empty();
-}
+bool GyroBiasModule::empty() const { return gyro_bias_list.empty(); }

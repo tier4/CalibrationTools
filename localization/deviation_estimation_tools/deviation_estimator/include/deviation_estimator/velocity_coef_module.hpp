@@ -26,8 +26,7 @@ public:
   VelocityCoefModule();
   void update_coef(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-    const double dt);
+    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt);
   double get_coef() const;
   double get_coef_std() const;
   bool empty() const;
@@ -35,6 +34,6 @@ public:
 private:
   std::vector<double> coef_vx_list_;
   std::pair<double, double> coef_vx_;
-}; 
+};
 
 #endif  // DEVIATION_ESTIMATOR__VELOCITY_COEF_MODULE_HPP_

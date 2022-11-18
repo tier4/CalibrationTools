@@ -13,11 +13,14 @@
 // limitations under the License.
 
 #include "deviation_estimator/utils.hpp"
+
 #include "rclcpp/rclcpp.hpp"
+
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/utils.h>
-#include <vector>
+
 #include <iostream>
+#include <vector>
 
 double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
 
@@ -36,11 +39,8 @@ double clipRadian(const double rad)
  * saveEstimatedParameters
  */
 void saveEstimatedParameters(
-  const std::string output_path,
-  const double stddev_vx,
-  const double stddev_wz,
-  const double coef_vx,
-  const double bias_wz,
+  const std::string output_path, const double stddev_vx, const double stddev_wz,
+  const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset)
 {
@@ -54,12 +54,9 @@ void saveEstimatedParameters(
   file << std::endl;
   file << "# Results expressed in imu_link" << std::endl;
   file << "# Copy the following to imu_corrector.param.yaml" << std::endl;
-  file << "angular_velocity_stddev_xx: " << double_round(angular_velocity_stddev.x, 5)
-       << std::endl;
-  file << "angular_velocity_stddev_yy: " << double_round(angular_velocity_stddev.y, 5)
-       << std::endl;
-  file << "angular_velocity_stddev_zz: " << double_round(angular_velocity_stddev.z, 5)
-       << std::endl;
+  file << "angular_velocity_stddev_xx: " << double_round(angular_velocity_stddev.x, 5) << std::endl;
+  file << "angular_velocity_stddev_yy: " << double_round(angular_velocity_stddev.y, 5) << std::endl;
+  file << "angular_velocity_stddev_zz: " << double_round(angular_velocity_stddev.z, 5) << std::endl;
   file << "angular_velocity_offset_x: " << double_round(angular_velocity_offset.x, 6) << std::endl;
   file << "angular_velocity_offset_y: " << double_round(angular_velocity_offset.y, 6) << std::endl;
   file << "angular_velocity_offset_z: " << double_round(angular_velocity_offset.z, 6) << std::endl;
@@ -85,7 +82,6 @@ geometry_msgs::msg::Point calculateErrorPos(
   }
   return d_pos;
 }
-
 
 geometry_msgs::msg::Vector3 calculateErrorRPY(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
