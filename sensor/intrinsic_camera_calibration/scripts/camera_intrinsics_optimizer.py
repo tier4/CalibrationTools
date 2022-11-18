@@ -41,7 +41,7 @@ class CameraIntrinsicsOptimizer(Node):
         self.declare_parameter("fix_principal_point", False)
         self.declare_parameter("fix_aspect_ratio", False)
         self.declare_parameter("zero_tangent_dist", False)
-        self.declare_parameter("no_dist_model", False)
+        self.declare_parameter("no_distortion_model", False)
 
         self.method = self.get_parameter("opt_method").get_parameter_value().string_value
         self.opt_allowed_percentage = self.get_parameter("opt_scale")
@@ -56,9 +56,11 @@ class CameraIntrinsicsOptimizer(Node):
         self.zero_tangent_dist = self.zero_tangent_dist.get_parameter_value().bool_value
 
         # This options superseeds other configurations and sets a non-distorted intrinsics model
-        self.no_dist_model = self.get_parameter("no_dist_model").get_parameter_value().bool_value
+        self.no_distortion_model = (
+            self.get_parameter("no_distortion_model").get_parameter_value().bool_value
+        )
 
-        if self.no_dist_model:
+        if self.no_distortion_model:
             self.zero_tangent_dist = True
             self.num_ks = 0
 
@@ -205,7 +207,7 @@ class CameraIntrinsicsOptimizer(Node):
         initial_k = np.array(initial_camera_info.k).reshape(3, 3)
         initial_d = np.array(initial_camera_info.d).flatten()
 
-        if self.no_dist_model:
+        if self.no_distortion_model:
             initial_d = np.zeros_like(initial_d)
 
         _, new_k, new_d, _, _ = cv2.calibrateCamera(
