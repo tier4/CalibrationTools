@@ -26,14 +26,14 @@ public:
   GyroBiasModule();
   void update_bias(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-    const double dt);
+    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt);
   geometry_msgs::msg::Vector3 get_bias_base_link() const;
   geometry_msgs::msg::Vector3 get_bias_std() const;
   bool empty() const;
+
 private:
   std::vector<geometry_msgs::msg::Vector3> gyro_bias_list;
   std::pair<geometry_msgs::msg::Vector3, geometry_msgs::msg::Vector3> gyro_bias_pair_;
-}; 
+};
 
 #endif  // DEVIATION_ESTIMATOR__GYRO_BIAS_MODULE_HPP_
