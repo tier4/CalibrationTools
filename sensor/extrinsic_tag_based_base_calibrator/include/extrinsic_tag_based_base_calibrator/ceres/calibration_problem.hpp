@@ -49,7 +49,7 @@ public:
   static constexpr int INTRINSICS_K1_INDEX = CalibrationData::INTRINSICS_K1_INDEX;
   static constexpr int INTRINSICS_K2_INDEX = CalibrationData::INTRINSICS_K2_INDEX;
 
-  static constexpr int GROUND_TAG_Z_INDEX = CalibrationData::GROUND_TAG_Z_INDEX;
+  static constexpr int GROUND_TAG_D_INDEX = CalibrationData::GROUND_TAG_D_INDEX;
   static constexpr int GROUND_TAG_YAW_INDEX = CalibrationData::GROUND_TAG_YAW_INDEX;
   static constexpr int GROUND_TAG_X_INDEX = CalibrationData::GROUND_TAG_X_INDEX;
   static constexpr int GROUND_TAG_Y_INDEX = CalibrationData::GROUND_TAG_Y_INDEX;
@@ -83,12 +83,13 @@ protected:
     const std::array<double, POSE_OPT_DIM> & placeholder, std::shared_ptr<cv::Affine3d> & pose,
     bool invert);
   void pose3dToGroundTagPlaceholder(
-    cv::Affine3d pose, std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
-    std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder, bool invert);
+    cv::Affine3d tag_pose, cv::Affine3d ground_pose,
+    std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+    std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder);
   void groundTagPlaceholderToPose3d(
     const std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
     const std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
-    std::shared_ptr<cv::Affine3d> & pose, bool invert);
+    std::shared_ptr<cv::Affine3d> & pose);
 
   std::set<int> waypoint_tag_ids_set_;
   std::set<int> ground_tag_ids_set_;

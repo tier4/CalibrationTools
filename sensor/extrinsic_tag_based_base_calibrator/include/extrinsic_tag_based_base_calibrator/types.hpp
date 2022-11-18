@@ -200,7 +200,7 @@ struct CalibrationData
   static constexpr int INTRINSICS_K1_INDEX = 4;
   static constexpr int INTRINSICS_K2_INDEX = 5;
 
-  static constexpr int GROUND_TAG_Z_INDEX = 4;
+  static constexpr int GROUND_TAG_D_INDEX = 4;
   static constexpr int GROUND_TAG_YAW_INDEX = 0;
   static constexpr int GROUND_TAG_X_INDEX = 1;
   static constexpr int GROUND_TAG_Y_INDEX = 2;

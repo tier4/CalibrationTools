@@ -104,6 +104,26 @@ inline void QuaternionRotatePoint2(
   UnitQuaternionRotatePoint2<T1, T2, T3>(unit, pt, result);
 }
 
+template <typename T1, typename T2, typename T3>
+inline void QuaternionRotatePoint2(
+  const Eigen::Matrix<T1, 4, 1> & q, const Eigen::Matrix<T2, 3, 1> & pt,
+  Eigen::Matrix<T3, 3, 1> & result)
+{
+  // 'scale' is 1 / norm(q).
+  const T1 scale = T1(1) / sqrt(q(0) * q(0) + q(1) * q(1) + q(2) * q(2) + q(3) * q(3));
+
+  // Make unit-norm version of q.
+
+  const Eigen::Matrix<T1, 4, 1> unit = {
+    scale * q(0),
+    scale * q(1),
+    scale * q(2),
+    scale * q(3),
+  };
+
+  UnitQuaternionRotatePoint2<T1, T2, T3>(unit, pt, result);
+}
+
 template <typename T>
 Eigen::Matrix<T, 3, 3> rotationMatrixFromYaw(T yaw)
 {
@@ -137,8 +157,15 @@ void transformPoint(
   aux.x() += translation_2d.x();
   aux.y() += translation_2d.y();
 
-  QuaternionRotatePoint2(rotation_3d, aux, transformed_point);
-  transformed_point.z() += z;
+  // Compute the inverse of the projected ground pose
+  const Eigen::Matrix<T1, 4, 1> rotation_3d_inv(
+    rotation_3d(0), -rotation_3d(1), -rotation_3d(2), -rotation_3d(3));
+  const Eigen::Matrix<T1, 3, 1> translation_3d(T1(0), T1(0), z);
+  Eigen::Matrix<T1, 3, 1> translation_3d_inv;
+  QuaternionRotatePoint2(rotation_3d_inv, translation_3d, translation_3d_inv);
+
+  QuaternionRotatePoint2(rotation_3d_inv, aux, transformed_point);
+  transformed_point -= translation_3d_inv;
 }
 
 template <typename T1, typename T2>

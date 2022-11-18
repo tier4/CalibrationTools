@@ -15,6 +15,7 @@
 #include <Eigen/Core>
 #include <extrinsic_tag_based_base_calibrator/ceres/calibration_problem.hpp>
 #include <extrinsic_tag_based_base_calibrator/ceres/tag_reprojection_error.hpp>
+#include <extrinsic_tag_based_base_calibrator/math.hpp>
 #include <extrinsic_tag_based_base_calibrator/visualization.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core.hpp>
@@ -26,6 +27,8 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <ceres/ceres.h>
+
+#include <algorithm>
 
 namespace extrinsic_tag_based_base_calibrator
 {
@@ -78,6 +81,10 @@ void CalibrationProblem::setData(CalibrationData::Ptr & data) { data_ = data; }
 
 void CalibrationProblem::dataToPlaceholders()
 {
+  // Compute the initial ground plane !
+  cv::Affine3d ground_pose;
+  computeGroundPlane(data_->initial_ground_tag_poses, 0.0, ground_pose);
+
   // Prepare the placeholders
   for (auto it = data_->initial_external_camera_poses.begin();
        it != data_->initial_external_camera_poses.end(); it++) {
@@ -114,10 +121,10 @@ void CalibrationProblem::dataToPlaceholders()
       placeholderToPose3d(pose_opt_map[uid], data_->optimized_tag_poses_map[uid], false);
     } else {
       pose3dToGroundTagPlaceholder(
-        *pose, shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid], false);
+        *pose, ground_pose, shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid]);
       groundTagPlaceholderToPose3d(
         shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid],
-        data_->optimized_tag_poses_map[uid], false);
+        data_->optimized_tag_poses_map[uid]);
     }
   }
 }
@@ -146,7 +153,7 @@ void CalibrationProblem::placeholdersToData()
       placeholderToPose3d(pose_opt_map[uid], pose, false);
     } else {
       groundTagPlaceholderToPose3d(
-        shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid], pose, false);
+        shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid], pose);
     }
 
     if (uid.is_waypoint_tag) {
@@ -522,35 +529,49 @@ void CalibrationProblem::placeholderToPose3d(
 }
 
 void CalibrationProblem::pose3dToGroundTagPlaceholder(
-  cv::Affine3d pose, std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
-  std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder, bool invert)
+  cv::Affine3d tag_pose, cv::Affine3d ground_pose,
+  std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
+  std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder)
 {
-  if (invert) {
-    pose = pose.inv();
-  }
+  // We define a coordinate system in the ground plane where the calibration sensor has only
+  // component in the z direction
+  cv::Vec3d aux = ground_pose.inv() * cv::Vec3d(0.0, 0.0, 0.0);
+  aux(2) = 0.0;
+  aux = ground_pose * aux;
+  cv::Affine3d projected_ground_pose = cv::Affine3d(ground_pose.rotation(), aux);
 
-  Eigen::Vector3d translation;
-  Eigen::Matrix3d rotation;
-  cv::cv2eigen(pose.translation(), translation);
-  cv::cv2eigen(pose.rotation(), rotation);
-  Eigen::Quaterniond quat(rotation);
+  // Pose of the calibration sensor from the projected ground plane
+  cv::Affine3d projected_ground_pose_inv = projected_ground_pose.inv();
+  double d = projected_ground_pose_inv.translation()(2);
+
+  // Pose of the tag seen from the projected ground
+  cv::Affine3d tag_pose_aux = projected_ground_pose_inv * tag_pose;
+
+  Eigen::Vector3d tag_translation;
+  Eigen::Matrix3d ground_rotation;
+  cv::cv2eigen(tag_pose_aux.translation(), tag_translation);
+  cv::cv2eigen(projected_ground_pose_inv.rotation(), ground_rotation);
+
+  Eigen::Quaterniond ground_quat(ground_rotation);
 
   std::fill(shrd_placeholder.begin(), shrd_placeholder.end(), 0);
-  shrd_placeholder[ROTATION_W_INDEX] = quat.w();
-  shrd_placeholder[ROTATION_X_INDEX] = quat.x();
-  shrd_placeholder[ROTATION_Y_INDEX] = quat.y();
-  shrd_placeholder[ROTATION_Z_INDEX] = quat.z();
-  shrd_placeholder[GROUND_TAG_Z_INDEX] = translation.z();
+  shrd_placeholder[ROTATION_W_INDEX] = ground_quat.w();
+  shrd_placeholder[ROTATION_X_INDEX] = ground_quat.x();
+  shrd_placeholder[ROTATION_Y_INDEX] = ground_quat.y();
+  shrd_placeholder[ROTATION_Z_INDEX] = ground_quat.z();
+  shrd_placeholder[GROUND_TAG_D_INDEX] = d;
 
   std::fill(indep_placeholder.begin(), indep_placeholder.end(), 0);
-  indep_placeholder[GROUND_TAG_X_INDEX] = translation.x();
-  indep_placeholder[GROUND_TAG_Y_INDEX] = translation.y();
+  indep_placeholder[GROUND_TAG_YAW_INDEX] =
+    std::atan2(tag_pose_aux.rotation()(1, 0), tag_pose_aux.rotation()(0, 0));
+  indep_placeholder[GROUND_TAG_X_INDEX] = tag_translation.x();
+  indep_placeholder[GROUND_TAG_Y_INDEX] = tag_translation.y();
 }
 
 void CalibrationProblem::groundTagPlaceholderToPose3d(
   const std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
   const std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
-  std::shared_ptr<cv::Affine3d> & pose, bool invert)
+  std::shared_ptr<cv::Affine3d> & pose)
 {
   const double scale =
     1.0 / std::sqrt(
@@ -559,11 +580,12 @@ void CalibrationProblem::groundTagPlaceholderToPose3d(
             shrd_placeholder[ROTATION_Y_INDEX] * shrd_placeholder[ROTATION_Y_INDEX] +
             shrd_placeholder[ROTATION_Z_INDEX] * shrd_placeholder[ROTATION_Z_INDEX]);
 
+  // Eigen's Quaternion constructor is in the WXYZ order but the internal data is in the XYZW format
   Eigen::Quaterniond quat = Eigen::Quaterniond(
     scale * shrd_placeholder[ROTATION_W_INDEX], scale * shrd_placeholder[ROTATION_X_INDEX],
     scale * shrd_placeholder[ROTATION_Y_INDEX], scale * shrd_placeholder[ROTATION_Z_INDEX]);
 
-  double z = shrd_placeholder[GROUND_TAG_Z_INDEX];
+  double d = shrd_placeholder[GROUND_TAG_D_INDEX];
 
   double yaw = indep_placeholder[GROUND_TAG_YAW_INDEX];
   double x = indep_placeholder[GROUND_TAG_X_INDEX];
@@ -583,9 +605,9 @@ void CalibrationProblem::groundTagPlaceholderToPose3d(
   Eigen::Matrix3d rotation3d = quat.toRotationMatrix();
   pose3d_matrix.setIdentity();
   pose3d_matrix.block<3, 3>(0, 0) = rotation3d;
-  pose3d_matrix.block<3, 1>(0, 3) = Eigen::Vector3d(0.0, 0.0, z);
+  pose3d_matrix.block<3, 1>(0, 3) = Eigen::Vector3d(0.0, 0.0, d);  // not z but d
 
-  Eigen::Matrix4d pose_matrix = pose3d_matrix * pose2d_matrix;
+  Eigen::Matrix4d pose_matrix = pose3d_matrix.inverse() * pose2d_matrix;
   Eigen::Matrix3d pose_rotation = pose_matrix.block<3, 3>(0, 0);
   Eigen::Vector3d pose_translation = pose_matrix.block<3, 1>(0, 3);
 
@@ -595,10 +617,6 @@ void CalibrationProblem::groundTagPlaceholderToPose3d(
   cv::eigen2cv(pose_rotation, cv_rot);
 
   pose = std::make_shared<cv::Affine3d>(cv_rot, cv_transl);
-
-  if (invert) {
-    *pose = pose->inv();
-  }
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

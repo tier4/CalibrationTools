@@ -26,6 +26,7 @@ ament_auto_add_executable(extrinsic_tag_based_base_calibrator
   src/apriltag_detector.cpp
   src/intrinsics_calibrator.cpp
   src/main.cpp
+  src/math.cpp
   src/visualization.cpp
 )
 
