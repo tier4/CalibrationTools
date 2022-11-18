@@ -15,7 +15,6 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__TAG_REPROJECTION_ERROR_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__TAG_REPROJECTION_ERROR_HPP_
 
-#include <extrinsic_tag_based_base_calibrator/ceres/ceres_functions.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 
@@ -31,6 +30,49 @@ namespace extrinsic_tag_based_base_calibrator
 
 struct TagReprojectionError
 {
+  template <class T>
+  using Vector2 = Eigen::Matrix<T, 2, 1>;
+
+  template <class T>
+  using Vector3 = Eigen::Matrix<T, 3, 1>;
+
+  template <class T>
+  using Vector4 = Eigen::Matrix<T, 4, 1>;
+
+  template <class T>
+  using Vector6 = Eigen::Matrix<T, 6, 1>;
+
+  template <typename T>
+  using Matrix3 = Eigen::Matrix<T, 3, 3>;
+
+  static constexpr int POSE_OPT_DIM = CalibrationData::POSE_OPT_DIM;
+  static constexpr int SHRD_GROUND_TAG_POSE_DIM = CalibrationData::SHRD_GROUND_TAG_POSE_DIM;
+  static constexpr int INDEP_GROUND_TAG_POSE_DIM = CalibrationData::INDEP_GROUND_TAG_POSE_DIM;
+  static constexpr int INTRINSICS_DIM = CalibrationData::INTRINSICS_DIM;
+
+  static constexpr int ROTATION_W_INDEX = CalibrationData::ROTATION_W_INDEX;
+  static constexpr int ROTATION_X_INDEX = CalibrationData::ROTATION_X_INDEX;
+  static constexpr int ROTATION_Y_INDEX = CalibrationData::ROTATION_Y_INDEX;
+  static constexpr int ROTATION_Z_INDEX = CalibrationData::ROTATION_Z_INDEX;
+  static constexpr int TRANSLATION_X_INDEX = CalibrationData::TRANSLATION_X_INDEX;
+  static constexpr int TRANSLATION_Y_INDEX = CalibrationData::TRANSLATION_Y_INDEX;
+  static constexpr int TRANSLATION_Z_INDEX = CalibrationData::TRANSLATION_Z_INDEX;
+
+  static constexpr int INTRINSICS_CX_INDEX = CalibrationData::INTRINSICS_CX_INDEX;
+  static constexpr int INTRINSICS_CY_INDEX = CalibrationData::INTRINSICS_CY_INDEX;
+  static constexpr int INTRINSICS_FX_INDEX = CalibrationData::INTRINSICS_FX_INDEX;
+  static constexpr int INTRINSICS_FY_INDEX = CalibrationData::INTRINSICS_FY_INDEX;
+  static constexpr int INTRINSICS_K1_INDEX = CalibrationData::INTRINSICS_K1_INDEX;
+  static constexpr int INTRINSICS_K2_INDEX = CalibrationData::INTRINSICS_K2_INDEX;
+
+  static constexpr int GROUND_TAG_D_INDEX = CalibrationData::GROUND_TAG_D_INDEX;
+  static constexpr int GROUND_TAG_YAW_INDEX = CalibrationData::GROUND_TAG_YAW_INDEX;
+  static constexpr int GROUND_TAG_X_INDEX = CalibrationData::GROUND_TAG_X_INDEX;
+  static constexpr int GROUND_TAG_Y_INDEX = CalibrationData::GROUND_TAG_Y_INDEX;
+
+  static constexpr int RESIDUAL_DIM = 8;
+  static constexpr int NUM_CORNERS = 4;
+
   TagReprojectionError(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection,
@@ -53,28 +95,37 @@ struct TagReprojectionError
 
     tag_size_ = detection.size;
 
-    for (int j = 0; j < 4; ++j) {
+    for (int j = 0; j < NUM_CORNERS; ++j) {
       observed_corners_[j] = Eigen::Vector2d(detection.corners[j].x, detection.corners[j].y);
     }
 
     if (fix_camera_pose) {
-      const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(
-        fixed_camera_pose_inv->data());
-      const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(
-        fixed_camera_pose_inv->data() + 4);
+      const Eigen::Map<const Eigen::Vector4d> rotation_map(fixed_camera_pose_inv->data());
+      const Eigen::Map<const Eigen::Vector3d> translation_map(
+        fixed_camera_pose_inv->data() + TRANSLATION_X_INDEX);
 
       fixed_camera_rotation_inv_ = rotation_map;
       fixed_camera_translation_inv_ = translation_map;
     }
 
     if (fix_tag_pose) {
-      const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(fixed_tag_pose->data());
-      const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(
-        fixed_tag_pose->data() + 4);
+      const Eigen::Map<const Eigen::Vector4d> rotation_map(fixed_tag_pose->data());
+      const Eigen::Map<const Eigen::Vector3d> translation_map(
+        fixed_tag_pose->data() + TRANSLATION_X_INDEX);
 
       fixed_tag_rotation_ = rotation_map;
       fixed_tag_translation_ = translation_map;
     }
+  }
+
+  template <typename T>
+  Eigen::Matrix<T, 3, 3> rotationMatrixFromYaw(const T & yaw) const
+  {
+    const T cos = ceres::cos(yaw);
+    const T sin = ceres::sin(yaw);
+    Eigen::Matrix<T, 3, 3> rotation;
+    rotation << cos, -sin, T(0.0), sin, cos, T(0.0), T(0.0), T(0.0), T(1.0);
+    return rotation;
   }
 
   template <typename T>
@@ -84,58 +135,96 @@ struct TagReprojectionError
   {
     double hsize = 0.5 * tag_size_;
 
-    Eigen::Matrix<T, 3, 1> template_corners_[4] = {
+    Vector3<T> template_corners_[NUM_CORNERS] = {
       {T(-hsize), T(hsize), T(0.0)},
       {T(hsize), T(hsize), T(0.0)},
       {T(hsize), T(-hsize), T(0.0)},
       {T(-hsize), T(-hsize), T(0.0)}};
 
-    Eigen::Matrix<T, 3, 1> corners_wcs[4];
-    Eigen::Matrix<T, 3, 1> corners_ccs[4];
+    Vector3<T> corners_wcs[NUM_CORNERS];
+    Vector3<T> corners_ccs[NUM_CORNERS];
 
-    const Eigen::Map<const Eigen::Matrix<T, 4, 1>> camera_rotation_inv_map(camera_pose_inv);
-    const Eigen::Map<const Eigen::Matrix<T, 3, 1>> camera_translation_inv_map(&camera_pose_inv[4]);
-    const Eigen::Map<const Eigen::Matrix<T, 6, 1>> camera_intrinsics_map(camera_intrinsics);
+    const Eigen::Map<const Vector4<T>> camera_rotation_inv_map(camera_pose_inv);
+    const Eigen::Map<const Vector3<T>> camera_translation_inv_map(
+      &camera_pose_inv[TRANSLATION_X_INDEX]);
+    const Eigen::Map<const Vector6<T>> camera_intrinsics_map(camera_intrinsics);
 
     assert(fix_tag_pose_ == false);
 
+    auto transform_corners =
+      [](auto & quaternion, auto & translation, auto & input_corners, auto & output_corners) {
+        for (int i = 0; i < NUM_CORNERS; i++) {
+          output_corners[i] = quaternion * input_corners[i] + translation;
+        }
+      };
+
     // Template corners to World coordinate system (wcs)
     if (!is_ground_tag_) {
-      const Eigen::Map<const Eigen::Matrix<T, 4, 1>> tag_rotation_map(tag_pose);
-      const Eigen::Map<const Eigen::Matrix<T, 3, 1>> tag_translation_map(&tag_pose[4]);
-      transformCorners(tag_rotation_map, tag_translation_map, template_corners_, corners_wcs);
-    } else {
-      const Eigen::Map<const Eigen::Matrix<T, 4, 1>> tag_rotation_map(tag_rotation_z);
-      const T & tag_z = tag_rotation_z[4];
+      const Eigen::Map<const Vector4<T>> tag_rotation_map(tag_pose);
+      const Eigen::Map<const Vector3<T>> tag_translation_map(&tag_pose[TRANSLATION_X_INDEX]);
 
-      Eigen::Matrix<T, 3, 3> tag_rotation_2d = rotationMatrixFromYaw(tag_pose_2d[0]);
-      const Eigen::Map<const Eigen::Matrix<T, 2, 1>> tag_translation_2d(&tag_pose_2d[1]);
-      transformCorners2(
-        tag_rotation_map, tag_z, tag_rotation_2d, tag_translation_2d, template_corners_,
-        corners_wcs);
+      Eigen::Quaternion<T> tag_quaternion = {
+        tag_rotation_map(ROTATION_W_INDEX), tag_rotation_map(ROTATION_X_INDEX),
+        tag_rotation_map(ROTATION_Y_INDEX), tag_rotation_map(ROTATION_Z_INDEX)};
+
+      tag_quaternion = tag_quaternion.normalized();
+
+      transform_corners(tag_quaternion, tag_translation_map, template_corners_, corners_wcs);
+
+    } else {
+      const Eigen::Map<const Vector4<T>> tag_rotation_map(tag_rotation_z);
+      Eigen::Quaternion<T> tag_quaternion = {
+        tag_rotation_map(ROTATION_W_INDEX), tag_rotation_map(ROTATION_X_INDEX),
+        tag_rotation_map(ROTATION_Y_INDEX), tag_rotation_map(ROTATION_Z_INDEX)};
+
+      const Matrix3<T> tag_rotation_2d = rotationMatrixFromYaw(tag_pose_2d[GROUND_TAG_YAW_INDEX]);
+      Vector3<T> tag_translation_2d(
+        tag_pose_2d[GROUND_TAG_X_INDEX], tag_pose_2d[GROUND_TAG_Y_INDEX], T(0));
+      transform_corners(tag_rotation_2d, tag_translation_2d, template_corners_, corners_wcs);
+
+      tag_quaternion = tag_quaternion.normalized().inverse();
+      Vector3<T> translation =
+        T(-1.0) * (tag_quaternion * Vector3<T>(T(0), T(0), tag_rotation_z[GROUND_TAG_D_INDEX]));
+      transform_corners(tag_quaternion, translation, corners_wcs, corners_wcs);
     }
 
     // World corners to camera coordinate system (ccs)
     if (fix_camera_pose_) {
-      const Eigen::Map<const Eigen::Matrix<double, 4, 1>> rotation_map(
+      const Eigen::Map<const Eigen::Vector4d> fixed_camera_rotation_inv_map(
         fixed_camera_rotation_inv_.data());
-      const Eigen::Map<const Eigen::Matrix<double, 3, 1>> translation_map(
+      const Eigen::Map<const Eigen::Vector3d> fixed_camera_translation_inv_map(
         fixed_camera_translation_inv_.data());
-      transformCorners(rotation_map, translation_map, corners_wcs, corners_ccs);
+
+      Eigen::Quaternion<T> fixed_camera_rotation_inv_quaternion = {
+        T(1) * fixed_camera_rotation_inv_map(ROTATION_W_INDEX),
+        T(1) * fixed_camera_rotation_inv_map(ROTATION_X_INDEX),
+        T(1) * fixed_camera_rotation_inv_map(ROTATION_Y_INDEX),
+        T(1) * fixed_camera_rotation_inv_map(ROTATION_Z_INDEX)};
+
+      fixed_camera_rotation_inv_quaternion = fixed_camera_rotation_inv_quaternion.normalized();
+      transform_corners(
+        fixed_camera_rotation_inv_quaternion, fixed_camera_translation_inv_map, corners_wcs,
+        corners_ccs);
+
     } else {
-      transformCorners(
-        camera_rotation_inv_map, camera_translation_inv_map, corners_wcs, corners_ccs);
+      Eigen::Quaternion<T> camera_rotation_inv_quaternion = {
+        camera_rotation_inv_map(ROTATION_W_INDEX), camera_rotation_inv_map(ROTATION_X_INDEX),
+        camera_rotation_inv_map(ROTATION_Y_INDEX), camera_rotation_inv_map(ROTATION_Z_INDEX)};
+
+      camera_rotation_inv_quaternion = camera_rotation_inv_quaternion.normalized();
+      transform_corners(
+        camera_rotation_inv_quaternion, camera_translation_inv_map, corners_wcs, corners_ccs);
     }
 
     // Compute the reprojection error residuals
     auto compute_reproj_error_point = [&](
                                         auto & predicted_ccs, auto observed_ics, auto * residuals) {
-      const T & cx = camera_intrinsics_map(0);
-      const T & cy = camera_intrinsics_map(1);
-      const T & fx = camera_intrinsics_map(2);
-      const T & fy = camera_intrinsics_map(3);
-      const T & k1 = camera_intrinsics_map(4);
-      const T & k2 = camera_intrinsics_map(5);
+      const T & cx = camera_intrinsics_map(INTRINSICS_CX_INDEX);
+      const T & cy = camera_intrinsics_map(INTRINSICS_CY_INDEX);
+      const T & fx = camera_intrinsics_map(INTRINSICS_FX_INDEX);
+      const T & fy = camera_intrinsics_map(INTRINSICS_FY_INDEX);
+      const T & k1 = camera_intrinsics_map(INTRINSICS_K1_INDEX);
+      const T & k2 = camera_intrinsics_map(INTRINSICS_K2_INDEX);
 
       const T xp = predicted_ccs.x() / predicted_ccs.z();
       const T yp = predicted_ccs.y() / predicted_ccs.z();
@@ -148,7 +237,7 @@ struct TagReprojectionError
       residuals[1] = predicted_ics_y - observed_ics.y();
     };
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < NUM_CORNERS; i++) {
       compute_reproj_error_point(corners_ccs[i], observed_corners_[i], residuals + 2 * i);
     }
 
@@ -183,8 +272,8 @@ struct TagReprojectionError
       assert(optimize_intrinsics_ == false);
       assert(fix_tag_pose_ == false);
 
-      std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                  T(1.0) * fy_, T(0.0),       T(0.0)};
+      std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                               T(1.0) * fy_, T(0.0),       T(0.0)};
 
       return impl(arg1, intrinsics.data(), static_cast<T *>(nullptr), arg2, arg3, residuals);
 
@@ -208,8 +297,8 @@ struct TagReprojectionError
     assert(fix_tag_pose_ == false);
     assert(is_ground_tag_ == false);
 
-    std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                T(1.0) * fy_, T(0.0),       T(0.0)};
+    std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                             T(1.0) * fy_, T(0.0),       T(0.0)};
 
     return impl(
       camera_pose_inv, intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
@@ -225,8 +314,8 @@ struct TagReprojectionError
     assert(fix_tag_pose_ == false);
     assert(is_ground_tag_ == false);
 
-    std::array<T, 6> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                T(1.0) * fy_, T(0.0),       T(0.0)};
+    std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                             T(1.0) * fy_, T(0.0),       T(0.0)};
 
     return impl(
       static_cast<T *>(nullptr), intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
@@ -247,30 +336,30 @@ struct TagReprojectionError
     if (fix_camera_pose && !optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
               TagReprojectionError,
-              8,   // 4 corners x 2 residuals
-              7>(  // 7 tag pose parameters
+              RESIDUAL_DIM,   // 4 corners x 2 residuals
+              POSE_OPT_DIM>(  // 7 tag pose parameters
         f));
     } else if (!fix_camera_pose && !optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
               TagReprojectionError,
-              8,   // 4 corners x 2 residuals
-              7,   // 7 camera pose parameters
-              7>(  // 7 tag pose parameters
+              RESIDUAL_DIM,   // 4 corners x 2 residuals
+              POSE_OPT_DIM,   // 7 camera pose parameters
+              POSE_OPT_DIM>(  // 7 tag pose parameters
         f));
     } else if (fix_camera_pose && optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
               TagReprojectionError,
-              8,   // 4 corners x 2 residuals
-              6,   // 6 camera intrinsic parameters
-              7>(  // 7 tag pose parameters
+              RESIDUAL_DIM,    // 4 corners x 2 residuals
+              INTRINSICS_DIM,  // 6 camera intrinsic parameters
+              POSE_OPT_DIM>(   // 7 tag pose parameters
         f));
     } else if (!fix_camera_pose && optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
               TagReprojectionError,
-              8,   // 4 corners x 2 residuals
-              7,   // 7 camera pose parameters
-              6,   // 6 camera intrinsic parameters
-              7>(  // 7 tag pose parameters
+              RESIDUAL_DIM,    // 4 corners x 2 residuals
+              POSE_OPT_DIM,    // 7 camera pose parameters
+              INTRINSICS_DIM,  // 6 camera intrinsic parameters
+              POSE_OPT_DIM>(   // 7 tag pose parameters
         f));
     }
 
@@ -287,19 +376,19 @@ struct TagReprojectionError
     if (optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
               TagReprojectionError,
-              8,   // 4 corners x 2 residuals
-              7,   // 7 camera pose parameters
-              6,   // 6 camera intrinsic parameters
-              5,   // 5 shared ground pose parameters (quat/z) parameters
-              3>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+              RESIDUAL_DIM,                // 4 corners x 2 residuals
+              POSE_OPT_DIM,                // 7 camera pose parameters
+              INTRINSICS_DIM,              // 6 camera intrinsic parameters
+              SHRD_GROUND_TAG_POSE_DIM,    // 5 shared ground pose parameters (quat/z) parameters
+              INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
         f));
     } else {
       return (new ceres::AutoDiffCostFunction<
               TagReprojectionError,
-              8,   // 4 corners x 2 residuals
-              7,   // 7 camera pose parameters
-              5,   // 5 shared ground pose parameters (quat/z) parameters
-              3>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+              RESIDUAL_DIM,                // 4 corners x 2 residuals
+              POSE_OPT_DIM,                // 7 camera pose parameters
+              SHRD_GROUND_TAG_POSE_DIM,    // 5 shared ground pose parameters (quat/z) parameters
+              INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
         f));
     }
   }
@@ -310,7 +399,7 @@ struct TagReprojectionError
   double fy_;
   double tag_size_;
 
-  Eigen::Vector2d observed_corners_[4];
+  Eigen::Vector2d observed_corners_[NUM_CORNERS];
 
   UID camera_uid_;
   IntrinsicParameters intrinsics_;
