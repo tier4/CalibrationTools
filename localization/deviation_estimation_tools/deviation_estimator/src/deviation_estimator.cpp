@@ -130,10 +130,8 @@ void DeviationEstimator::timerCallback()
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
   double stddev_vx = estimateStddevVelocity(pose_all_, twist_all_, time_window_);
   auto stddev_angvel_base = estimateStddevAngularVelocity(pose_all_, twist_all_, time_window_);
-  if (add_bias_uncertainty_)
-  {
-    stddev_vx =
-      addBiasUncertaintyOnVelocity(stddev_vx, vel_coef_module_->get_coef_std());
+  if (add_bias_uncertainty_) {
+    stddev_vx = addBiasUncertaintyOnVelocity(stddev_vx, vel_coef_module_->get_coef_std());
     stddev_angvel_base =
       addBiasUncertaintyOnAngularVelocity(stddev_angvel_base, gyro_bias_module_->get_bias_std());
   }
@@ -263,7 +261,8 @@ geometry_msgs::msg::Vector3 DeviationEstimator::estimateStddevAngularVelocity(
       extractSubTrajectory(twist_list, t0_pose, t1_pose);
     const size_t N_twist = twist_sub_traj.size();
 
-    const auto error_rpy = calculateErrorRPY(pose_sub_traj, twist_sub_traj, gyro_bias_module_->get_bias_base_link());
+    const auto error_rpy =
+      calculateErrorRPY(pose_sub_traj, twist_sub_traj, gyro_bias_module_->get_bias_base_link());
     delta_wx_list.push_back(std::sqrt(N_twist / T_window) * error_rpy.x);
     delta_wy_list.push_back(std::sqrt(N_twist / T_window) * error_rpy.y);
     delta_wz_list.push_back(std::sqrt(N_twist / T_window) * error_rpy.z);
