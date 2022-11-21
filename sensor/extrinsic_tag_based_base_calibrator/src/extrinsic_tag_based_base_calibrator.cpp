@@ -56,6 +56,9 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   wheel_tag_size_ = this->declare_parameter<double>("wheel_tag_size", 0.8);
   ground_tag_size_ = this->declare_parameter<double>("ground_tag_size", 0.135);
 
+  calibration_sensor_type_ =
+    this->declare_parameter<std::string>("calibration_sensor_type", "camera");
+
   bool ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
   bool ba_share_intrinsics_ = this->declare_parameter<bool>("ba_share_intrinsics", false);
   bool ba_force_shared_ground_plane_ =
@@ -131,25 +134,91 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this, get_clock(), std::chrono::seconds(1),
     std::bind(&ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback, this));
 
-  preprocess_srv_ = this->create_service<std_srvs::srv::Empty>(
-    "preproces", std::bind(
-                   &ExtrinsicTagBasedBaseCalibrator::preprocessCallback, this,
+  // Scene related services
+  add_scene_srv_ = this->create_service<std_srvs::srv::Empty>(
+    "add_scene", std::bind(
+                   &ExtrinsicTagBasedBaseCalibrator::addSceneCallback, this, std::placeholders::_1,
+                   std::placeholders::_2));
+
+  add_external_camera_images_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
+    "add_external_camera_images_to_scene",
+    std::bind(
+      &ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  add_lidar_detections_to_scene_srv_ = this->create_service<std_srvs::srv::Empty>(
+    "add_calibration_lidar_detections_to_scene",
+    std::bind(
+      &ExtrinsicTagBasedBaseCalibrator::addLidarDetectionsCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
+  add_camera_detections_to_scene_srv_ = this->create_service<std_srvs::srv::Empty>(
+    "add_calibration_camera_detections_to_scene",
+    std::bind(
+      &ExtrinsicTagBasedBaseCalibrator::addCameraDetectionsCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
+
+  add_calibration_camera_images_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
+    "add_calibration_camera_images_to_scene",
+    std::bind(
+      &ExtrinsicTagBasedBaseCalibrator::addCalibrationImagesCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
+
+  // Intrinsics realated services
+  load_external_camera_intrinsics_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
+    "load_external_camera_intrinsics",
+    std::bind(
+      &ExtrinsicTagBasedBaseCalibrator::loadExternalIntrinsicsCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
+  save_external_camera_intrinsics_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
+    "save_external_camera_intrinsics",
+    std::bind(
+      &ExtrinsicTagBasedBaseCalibrator::saveExternalIntrinsicsCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
+  calibrate_external_camera_intrinsics_srv_ =
+    this->create_service<tier4_calibration_msgs::srv::Files>(
+      "calibrate_external_camera_intrinsics",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback, this,
+        std::placeholders::_1, std::placeholders::_2));
+
+  load_calibration_camera_intrinsics_srv_ =
+    this->create_service<tier4_calibration_msgs::srv::Files>(
+      "load_calibration_camera_intrinsics",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::loadCalibrationIntrinsicsCallback, this,
+        std::placeholders::_1, std::placeholders::_2));
+  save_calibration_camera_intrinsics_srv_ =
+    this->create_service<tier4_calibration_msgs::srv::Files>(
+      "save_calibration_camera_intrinsics",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::saveCalibrationIntrinsicsCallback, this,
+        std::placeholders::_1, std::placeholders::_2));
+  calibrate_calibration_camera_intrinsics_srv_ =
+    this->create_service<tier4_calibration_msgs::srv::Files>(
+      "calibrate_calibration_camera_intrinsics",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::calibrateCalibrationIntrinsicsCallback, this,
+        std::placeholders::_1, std::placeholders::_2));
+
+  // Calibration related services
+  process_scenes_srv_ = this->create_service<std_srvs::srv::Empty>(
+    "process_scenes", std::bind(
+                        &ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback, this,
+                        std::placeholders::_1, std::placeholders::_2));
+  calibration_srv_ = this->create_service<std_srvs::srv::Empty>(
+    "calibrate", std::bind(
+                   &ExtrinsicTagBasedBaseCalibrator::calibrationCallback, this,
                    std::placeholders::_1, std::placeholders::_2));
 
-  save_srv_ = this->create_service<std_srvs::srv::Empty>(
-    "save", std::bind(
-              &ExtrinsicTagBasedBaseCalibrator::saveCallback, this, std::placeholders::_1,
-              std::placeholders::_2));
-
-  load_srv_ = this->create_service<std_srvs::srv::Empty>(
-    "load", std::bind(
-              &ExtrinsicTagBasedBaseCalibrator::loadCallback, this, std::placeholders::_1,
-              std::placeholders::_2));
-
-  calibration_dummy_srv_ = this->create_service<std_srvs::srv::Empty>(
-    "calibrate", std::bind(
-                   &ExtrinsicTagBasedBaseCalibrator::calibrateCallback, this, std::placeholders::_1,
-                   std::placeholders::_2));
+  // Calibration related services
+  load_database_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
+    "load_database", std::bind(
+                       &ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback, this,
+                       std::placeholders::_1, std::placeholders::_2));
+  save_database_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
+    "save_database", std::bind(
+                       &ExtrinsicTagBasedBaseCalibrator::saveDatabaseCallback, this,
+                       std::placeholders::_1, std::placeholders::_2));
 }
 
 void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
@@ -394,157 +463,200 @@ std_msgs::msg::ColorRGBA ExtrinsicTagBasedBaseCalibrator::getNextColor()
   return color;
 }
 
-bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
+bool ExtrinsicTagBasedBaseCalibrator::addSceneCallback(
   const std::shared_ptr<std_srvs::srv::Empty::Request> request,
   std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  (void)request;
-  (void)response;
+  UNUSED(request);
+  UNUSED(response);
 
-  std::vector<std::string> external_camera_intrinsic_images_names = {
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0007.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0008.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0009.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0010.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0011.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0012.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0013.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0014.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0015.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0016.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0017.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0018.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0019.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0020.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0021.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0022.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0023.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0024.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0025.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0026.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0027.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0028.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0029.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0030.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0031.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0032.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0033.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0034.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0035.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0036.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0037.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0038.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0039.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0040.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0041.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0042.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_intrinsics/DSC_0043.JPG"};
+  if (
+    current_external_camera_images_.size() == 0 || current_calibration_camera_images_.size() != 1) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "The scene must contain at least one external calibration image and exactly one calibration "
+      "image");
+    return false;
+  }
 
-  std::vector<std::string> sensor_camera_intrinsic_images_names = {
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3852.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3847.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3846.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3855.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3861.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3863.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3849.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3851.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3848.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3841.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3867.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3858.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3843.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3853.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3870.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3860.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3864.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3869.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3865.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3845.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3862.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3842.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3854.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3844.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3859.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3856.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3857.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3850.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3868.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_intrinsics/DSC_3866.JPG"};
+  scenes_external_camera_images_.push_back(current_external_camera_images_);
+  scenes_calibration_camera_images_.push_back(current_calibration_camera_images_[0]);
 
-  std::string scene1_sensor_calibration_image_name =
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_extrinsics_scene1/DSC_3875.JPG";
+  return true;
+}
 
-  std::vector<std::string> scene1_external_camera_image_names = {
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0051.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0047.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0048.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0050.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0044.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0053.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0056.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0058.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0057.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0049.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0055.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0045.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0052.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0046.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene1/DSC_0054.JPG"};
+bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Adding external camera images to the current scene");
 
-  std::string scene2_sensor_calibration_image_name =
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon7200_extrinsics_scene2/DSC_3877.JPG";
+  if (request->files.size() == 0) {
+    RCLCPP_ERROR(this->get_logger(), "We expected at least one image!");
+    response->success = false;
+    return false;
+  }
 
-  std::vector<std::string> scene2_external_camera_image_names = {
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0061.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0063.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0071.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0066.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0067.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0065.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0070.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0062.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0064.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0069.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0073.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0068.JPG",
-    "/home/kenzolobos/repos/lib-dt-apriltags/test/nikon5100_extrinsics_scene2/DSC_0060.JPG"};
+  current_external_camera_images_ = request->files;
 
-  // Experimental: use all the images to calibrate the intrinsics
-  external_camera_intrinsic_images_names.insert(
-    external_camera_intrinsic_images_names.end(), scene1_external_camera_image_names.begin(),
-    scene1_external_camera_image_names.end());
-  // external_camera_intrinsic_images_names.insert( external_camera_intrinsic_images_names.end(),
-  // scene2_external_camera_image_names.begin(), scene2_external_camera_image_names.end());
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::addLidarDetectionsCallback(
+  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+  RCLCPP_ERROR(this->get_logger(), "Unimplemented!");
+  UNUSED(request);
+  UNUSED(response);
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::addCameraDetectionsCallback(
+  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+  RCLCPP_ERROR(this->get_logger(), "Unimplemented!");
+  UNUSED(request);
+  UNUSED(response);
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::addCalibrationImagesCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Adding a calibration camera image to the current scene");
+
+  if (request->files.size() != 1) {
+    RCLCPP_ERROR(this->get_logger(), "We expected a single image!");
+    response->success = false;
+    return false;
+  }
+
+  current_calibration_camera_images_ = request->files;
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::loadExternalIntrinsicsCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Loading external camera intrinsics");
+
+  if (!external_camera_intrinsics_.loadCalibration(request->files[0])) {
+    RCLCPP_ERROR(this->get_logger(), "Could not load intrinsics");
+    response->success = false;
+    return false;
+  }
+
+  calibration_problem_.setExternalCameraIntrinsics(external_camera_intrinsics_);
+
+  RCLCPP_INFO_STREAM(this->get_logger(), "k = " << external_camera_intrinsics_.camera_matrix);
+  RCLCPP_INFO_STREAM(this->get_logger(), "d = " << external_camera_intrinsics_.dist_coeffs);
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::saveExternalIntrinsicsCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Saving external camera intrinsics");
+
+  external_camera_intrinsics_.saveCalibration(request->files[0]);
+
+  RCLCPP_INFO(this->get_logger(), "External camera intrinsics saved");
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Calibrating external cameras intrinsics");
 
   IntrinsicsCalibrator external_camera_intrinsics_calibrator(
     apriltag_parameters_, intrinsic_calibration_tag_ids_, true);
+
+  external_camera_intrinsics_calibrator.setCalibrationImageFiles(request->files);
+  external_camera_intrinsics_calibrator.calibrate(external_camera_intrinsics_);
+  calibration_problem_.setExternalCameraIntrinsics(external_camera_intrinsics_);
+
+  RCLCPP_INFO_STREAM(this->get_logger(), "k = " << external_camera_intrinsics_.camera_matrix);
+  RCLCPP_INFO_STREAM(this->get_logger(), "d = " << external_camera_intrinsics_.dist_coeffs);
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::loadCalibrationIntrinsicsCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Loading 'calibration sensor' intrinsics");
+
+  if (!calibration_sensor_intrinsics_.loadCalibration(request->files[0])) {
+    RCLCPP_ERROR(this->get_logger(), "Could not load intrinsics");
+    response->success = false;
+    return false;
+  }
+
+  calibration_problem_.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
+
+  RCLCPP_INFO_STREAM(this->get_logger(), "k = " << calibration_sensor_intrinsics_.camera_matrix);
+  RCLCPP_INFO_STREAM(this->get_logger(), "d = " << calibration_sensor_intrinsics_.dist_coeffs);
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::saveCalibrationIntrinsicsCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Saving 'calibration sensor' intrinsics");
+
+  calibration_sensor_intrinsics_.saveCalibration(request->files[0]);
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::calibrateCalibrationIntrinsicsCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Calibrating 'calibration sensor' intrinsics");
+
   IntrinsicsCalibrator calibration_sensor_intrinsics_calibrator(
     apriltag_parameters_, intrinsic_calibration_tag_ids_, true);
 
-  if (!external_camera_intrinsics_.loadCalibration("external_camera_intrinsics.cfg")) {
-    RCLCPP_INFO(this->get_logger(), "External camera intrinsic calibration not found");
-    external_camera_intrinsics_calibrator.setCalibrationImageFiles(
-      external_camera_intrinsic_images_names);
-    external_camera_intrinsics_calibrator.calibrate(external_camera_intrinsics_);
-    external_camera_intrinsics_.saveCalibration("external_camera_intrinsics.cfg");
-  } else {
-    RCLCPP_INFO(this->get_logger(), "Loading external camera intrinsic calibration");
-  }
-
-  if (!calibration_sensor_intrinsics_.loadCalibration("sensor_camera_intrinsics.cfg")) {
-    RCLCPP_INFO(this->get_logger(), "Sensor camera intrinsic calibration not found");
-    calibration_sensor_intrinsics_calibrator.setCalibrationImageFiles(
-      sensor_camera_intrinsic_images_names);
-    calibration_sensor_intrinsics_calibrator.calibrate(calibration_sensor_intrinsics_);
-    calibration_sensor_intrinsics_.saveCalibration("sensor_camera_intrinsics.cfg");
-  } else {
-    RCLCPP_INFO(this->get_logger(), "Loading calibration sensor camera intrinsic calibration");
-  }
-
-  // Set the intrinsics for the calibration problem
-  calibration_problem_.setExternalCameraIntrinsics(external_camera_intrinsics_);
+  calibration_sensor_intrinsics_calibrator.setCalibrationImageFiles(request->files);
+  calibration_sensor_intrinsics_calibrator.calibrate(calibration_sensor_intrinsics_);
   calibration_problem_.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
+
+  RCLCPP_INFO_STREAM(this->get_logger(), "k = " << calibration_sensor_intrinsics_.camera_matrix);
+  RCLCPP_INFO_STREAM(this->get_logger(), "d = " << calibration_sensor_intrinsics_.dist_coeffs);
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
+  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+  UNUSED(request);
+  UNUSED(response);
+
+  RCLCPP_INFO(this->get_logger(), "Processing scenes...");
 
   CalibrationSceneExtractor calibration_scene_extractor(apriltag_parameters_);
   calibration_scene_extractor.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
@@ -559,14 +671,12 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
   calibration_scene_extractor.setRightWheelTagId(right_wheel_tag_id_);
   calibration_scene_extractor.setGroundTagIds(ground_tag_ids_);
 
-  CalibrationScene scene1 = calibration_scene_extractor.processScene(
-    scene1_sensor_calibration_image_name, scene1_external_camera_image_names);
+  for (std::size_t i = 0; i < scenes_external_camera_images_.size(); i++) {
+    CalibrationScene scene = calibration_scene_extractor.processScene(
+      scenes_calibration_camera_images_[i], scenes_external_camera_images_[i]);
 
-  CalibrationScene scene2 = calibration_scene_extractor.processScene(
-    scene2_sensor_calibration_image_name, scene2_external_camera_image_names);
-
-  data_->scenes.push_back(scene1);
-  data_->scenes.push_back(scene2);
+    data_->scenes.push_back(scene);
+  }
 
   // Estimate the the initial poses for all the tags
   std::map<UID, std::vector<cv::Affine3d>> poses_vector_map;
@@ -803,52 +913,12 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessCallback(
   return true;
 }
 
-bool ExtrinsicTagBasedBaseCalibrator::saveCallback(
+bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
   const std::shared_ptr<std_srvs::srv::Empty::Request> request,
   std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  (void)request;
-  (void)response;
-
-  std::ofstream ofs("base_calibration.data");
-  boost::archive::text_oarchive oa(ofs);
-
-  oa << data_;
-
-  return true;
-}
-
-bool ExtrinsicTagBasedBaseCalibrator::loadCallback(
-  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  std::shared_ptr<std_srvs::srv::Empty::Response> response)
-{
-  (void)request;
-  (void)response;
-
-  if (
-    !external_camera_intrinsics_.loadCalibration("external_camera_intrinsics.cfg") ||
-    !calibration_sensor_intrinsics_.loadCalibration("sensor_camera_intrinsics.cfg")) {
-    RCLCPP_ERROR(this->get_logger(), "Could not load intrinsics");
-    return false;
-  }
-
-  calibration_problem_.setExternalCameraIntrinsics(external_camera_intrinsics_);
-  calibration_problem_.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
-
-  std::ifstream ifs("base_calibration.data");
-  boost::archive::text_iarchive ia(ifs);
-
-  ia >> data_;
-
-  return true;
-}
-
-bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
-  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  std::shared_ptr<std_srvs::srv::Empty::Response> response)
-{
-  (void)request;
-  (void)response;
+  UNUSED(request);
+  UNUSED(response);
 
   calibration_problem_.setData(data_);
 
@@ -860,6 +930,38 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCallback(
   calibration_problem_.writeDebugImages();
   RCLCPP_INFO(this->get_logger(), "Finished optimization");
 
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Loading database...");
+  std::ifstream ifs(request->files[0]);
+  boost::archive::text_iarchive ia(ifs);
+
+  ia >> data_;
+
+  RCLCPP_INFO(this->get_logger(), "Database loaded");
+
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::saveDatabaseCallback(
+  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Saving database");
+  std::ofstream ofs(request->files[0]);
+  boost::archive::text_oarchive oa(ofs);
+
+  oa << data_;
+
+  RCLCPP_INFO(this->get_logger(), "Database saved");
+
+  response->success = true;
   return true;
 }
 

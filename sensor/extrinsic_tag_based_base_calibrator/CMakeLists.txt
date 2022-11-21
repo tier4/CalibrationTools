@@ -2,6 +2,10 @@
 cmake_minimum_required(VERSION 3.5)
 project(extrinsic_tag_based_base_calibrator)
 
+#find_package(ament_cmake REQUIRED)
+#find_package(ament_cmake_python REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
 find_package(apriltag REQUIRED)
 find_package(autoware_cmake REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -11,6 +15,8 @@ autoware_package()
 
 # These need to be called after autoware_package to avoid being overwritten
 find_package(Boost REQUIRED COMPONENTS system serialization filesystem)
+
+ament_python_install_package(${PROJECT_NAME})
 
 ament_export_include_directories(
   include
@@ -36,6 +42,16 @@ target_link_libraries(extrinsic_tag_based_base_calibrator
   apriltag::apriltag
   ${CERES_LIBRARIES}
 )
+
+install(PROGRAMS
+  scripts/calibrator_ui_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+ament_export_dependencies(ament_cmake_python)
+#ament_export_dependencies(rclcpp)
+#ament_export_dependencies(rclpy)
+
 
 ament_auto_package(
   INSTALL_TO_SHARE

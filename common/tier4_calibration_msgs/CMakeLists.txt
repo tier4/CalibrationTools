@@ -20,6 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Float32Stamped.msg"
   "msg/EstimationResult.msg"
   "msg/TimeDelay.msg"
+  "srv/Files.srv"
   "srv/ExtrinsicCalibrationManager.srv"
   "srv/ExtrinsicCalibrator.srv"
   "srv/IntrinsicsOptimizer.srv"

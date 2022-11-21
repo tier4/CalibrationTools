@@ -26,24 +26,9 @@
       <param name="ba_share_intrinsics" value="true"/>
       <param name="ba_force_shared_ground_plane" value="true"/>
 
-      <param name="initial_angle_cov" value="5.0"/>
-      <!--degrees -->
-      <param name="initial_z_cov" value="0.05"/>
-      <!--meters -->
-      <param name="angle_measurement_cov" value="0.5"/>
-      <!--degrees -->
-      <param name="angle_process_cov" value="0.1"/>
-      <!--degrees -->
-      <param name="z_measurement_cov" value="0.005"/>
-      <!--meters -->
-      <param name="z_process_cov" value="0.001"/>
-      <!--meters -->
-      <param name="angle_convergence_threshold" value="0.01"/>
-      <!--degrees -->
-      <param name="z_convergence_threshold" value="0.0003"/>
-      <!--meters -->
-
       <remap from="input_pointcloud" to="$(var pointcloud_topic)"/>
     </node>
+
+    <node pkg="extrinsic_tag_based_base_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
   </group>
 </launch>
