@@ -37,7 +37,8 @@ void VelocityCoefModule::update_coef(
   coef_vx_list_.push_back(d_coef_vx);
 }
 
-double VelocityCoefModule::get_coef() const {
+double VelocityCoefModule::get_coef() const
+{
   if (coef_vx_.second == 0) return 1.0;
   return coef_vx_.first / coef_vx_.second;
 }

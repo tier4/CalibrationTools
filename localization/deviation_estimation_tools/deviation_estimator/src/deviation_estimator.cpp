@@ -226,7 +226,8 @@ double DeviationEstimator::estimateStddevVelocity(
 
     const double distance =
       norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
-    const auto d_pos = calculateErrorPos(pose_sub_traj, twist_sub_traj, vel_coef_module_->get_coef());
+    const auto d_pos =
+      calculateErrorPos(pose_sub_traj, twist_sub_traj, vel_coef_module_->get_coef());
 
     const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
     const double delta = std::sqrt(N_twist / T_window) * (distance - distance_from_twist);
