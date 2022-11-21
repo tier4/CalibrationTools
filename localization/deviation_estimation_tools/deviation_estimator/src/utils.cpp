@@ -15,6 +15,7 @@
 #include "deviation_estimator/utils.hpp"
 
 #include "rclcpp/rclcpp.hpp"
+#include "tier4_autoware_utils/geometry/geometry.hpp"
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/utils.h>
@@ -89,13 +90,8 @@ geometry_msgs::msg::Vector3 calculateErrorRPY(
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
   const geometry_msgs::msg::Vector3 & gyro_bias)
 {
-  double roll_0 = 0, pitch_0 = 0, yaw_0 = 0;
-  double roll_1 = 0, pitch_1 = 0, yaw_1 = 0;
-  tf2::Quaternion q_tf_0, q_tf_1;
-  tf2::fromMsg(pose_list.front().pose.orientation, q_tf_0);
-  tf2::fromMsg(pose_list.back().pose.orientation, q_tf_1);
-  tf2::Matrix3x3(q_tf_0).getRPY(roll_0, pitch_0, yaw_0);
-  tf2::Matrix3x3(q_tf_1).getRPY(roll_1, pitch_1, yaw_1);
+  const geometry_msgs::msg::Vector3 rpy_0 = tier4_autoware_utils::getRPY(pose_list.front().pose.orientation);
+  const geometry_msgs::msg::Vector3 rpy_1 = tier4_autoware_utils::getRPY(pose_list.back().pose.orientation);
 
   double d_roll = 0, d_pitch = 0, d_yaw = 0;
   double t_prev = rclcpp::Time(twist_list.front().header.stamp).seconds();
@@ -109,9 +105,9 @@ geometry_msgs::msg::Vector3 calculateErrorRPY(
     t_prev = t_cur;
   }
   geometry_msgs::msg::Vector3 error_rpy;
-  error_rpy.x = clipRadian(-roll_1 + roll_0 + d_roll);
-  error_rpy.y = clipRadian(-pitch_1 + pitch_0 + d_pitch);
-  error_rpy.z = clipRadian(-yaw_1 + yaw_0 + d_yaw);
+  error_rpy.x = clipRadian(-rpy_1.x + rpy_0.x + d_roll);
+  error_rpy.y = clipRadian(-rpy_1.y + rpy_0.y + d_pitch);
+  error_rpy.z = clipRadian(-rpy_1.z + rpy_0.z + d_yaw);
   return error_rpy;
 }
 
