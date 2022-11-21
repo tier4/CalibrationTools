@@ -66,8 +66,7 @@ void saveEstimatedParameters(
 
 geometry_msgs::msg::Point calculateErrorPos(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-  const double coef_vx)
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double coef_vx)
 {
   double t_prev = rclcpp::Time(twist_list.front().header.stamp).seconds();
   geometry_msgs::msg::Point d_pos;

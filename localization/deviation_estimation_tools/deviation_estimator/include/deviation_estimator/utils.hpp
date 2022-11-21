@@ -136,8 +136,7 @@ void saveEstimatedParameters(
 
 geometry_msgs::msg::Point calculateErrorPos(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-  const double coef_vx);
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double coef_vx);
 
 geometry_msgs::msg::Vector3 calculateErrorRPY(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
