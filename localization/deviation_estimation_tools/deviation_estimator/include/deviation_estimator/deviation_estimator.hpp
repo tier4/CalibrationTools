@@ -60,10 +60,6 @@ public:
   DeviationEstimator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
-    sub_pose_;  //!< @brief measurement pose subscriber
-  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr
-    sub_twist_raw_;  //!< @brief measurement twist subscriber
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     sub_pose_with_cov_;  //!< @brief measurement pose with covariance subscriber
   rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
@@ -78,8 +74,6 @@ private:
   tf2_ros::TransformListener tf_listener_;
 
   bool show_debug_info_;
-  bool use_pose_with_covariance_;   //!< @brief  use covariance in pose_with_covariance message
-  bool use_twist_with_covariance_;  //!< @brief  use covariance in twist_with_covariance message
   bool use_predefined_coef_vx_;
   double predefined_coef_vx_;
   std::string results_path_;
@@ -113,16 +107,6 @@ private:
    */
   void callbackTwistWithCovarianceRaw(
     geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
-
-  /**
-   * @brief set pose measurement
-   */
-  void callbackPose(geometry_msgs::msg::PoseStamped::SharedPtr msg);
-
-  /**
-   * @brief set twist measurement
-   */
-  void callbackTwistRaw(geometry_msgs::msg::TwistStamped::SharedPtr msg);
 
   /**
    * @brief computes update & prediction of EKF for each ekf_dt_[s] time

@@ -45,8 +45,6 @@ DeviationEstimator::DeviationEstimator(
   vx_threshold_ = declare_parameter("vx_threshold", 1.5);
   wz_threshold_ = declare_parameter("wz_threshold", 0.01);
   estimation_freq_ = declare_parameter("estimation_freq", 0.5);
-  use_pose_with_covariance_ = declare_parameter("use_pose_with_covariance", true);
-  use_twist_with_covariance_ = declare_parameter("use_twist_with_covariance", true);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
   results_path_ = declare_parameter("results_path", "test");
@@ -68,11 +66,6 @@ DeviationEstimator::DeviationEstimator(
   sub_twist_with_cov_raw_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
     "in_twist_with_covariance_raw", 1,
     std::bind(&DeviationEstimator::callbackTwistWithCovarianceRaw, this, _1));
-  sub_pose_ = create_subscription<geometry_msgs::msg::PoseStamped>(
-    "in_pose", 1, std::bind(&DeviationEstimator::callbackPose, this, _1));
-  sub_twist_raw_ = create_subscription<geometry_msgs::msg::TwistStamped>(
-    "in_twist_raw", 1, std::bind(&DeviationEstimator::callbackTwistRaw, this, _1));
-
   pub_coef_vx_ = create_publisher<std_msgs::msg::Float64>("estimated_coef_vx", 1);
   pub_bias_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_bias_angular_velocity", 1);
@@ -95,13 +88,11 @@ void DeviationEstimator::callbackPoseWithCovariance(
   const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
 {
   // push pose_msg to queue
-  if (use_pose_with_covariance_) {
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header = msg->header;
-    pose.pose = msg->pose.pose;
-    pose_buf_.push_back(pose);
-    pose_all_.push_back(pose);
-  }
+  geometry_msgs::msg::PoseStamped pose;
+  pose.header = msg->header;
+  pose.pose = msg->pose.pose;
+  pose_buf_.push_back(pose);
+  pose_all_.push_back(pose);
 }
 
 void DeviationEstimator::callbackTwistWithCovarianceRaw(
@@ -111,50 +102,28 @@ void DeviationEstimator::callbackTwistWithCovarianceRaw(
   static std::vector<double> stamps;
 
   // push twist_msg to queue
-  if (use_twist_with_covariance_ == true) {
-    geometry_msgs::msg::TwistStamped twist;
-    twist.header = msg->header;
-    twist.twist = msg->twist.twist;
+  geometry_msgs::msg::TwistStamped twist;
+  twist.header = msg->header;
+  twist.twist = msg->twist.twist;
 
-    if (use_predefined_coef_vx_) {
-      twist.twist.linear.x *= predefined_coef_vx_;
-    }
-
-    twist_all_.push_back(twist);
+  if (use_predefined_coef_vx_) {
+    twist.twist.linear.x *= predefined_coef_vx_;
   }
-}
 
-void DeviationEstimator::callbackPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
-{
-  // push pose_msg to queue
-  if (!use_pose_with_covariance_) {
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header = msg->header;
-    pose.pose = msg->pose;
-
-    pose_buf_.push_back(pose);
-    pose_all_.push_back(pose);
-  }
-}
-
-void DeviationEstimator::callbackTwistRaw(const geometry_msgs::msg::TwistStamped::SharedPtr msg)
-{
-  // push twist_msg to queue
-  if (!use_twist_with_covariance_) {
-    geometry_msgs::msg::TwistStamped twist;
-    twist.header = msg->header;
-    twist.twist = msg->twist;
-
-    if (use_predefined_coef_vx_) {
-      twist.twist.linear.x *= predefined_coef_vx_;
-    }
-    twist_all_.push_back(twist);
-  }
+  twist_all_.push_back(twist);
 }
 
 void DeviationEstimator::timerCallback()
 {
-  if ((pose_buf_.size() == 0) | (twist_all_.size() == 0)) return;
+  if (twist_all_.empty()) {
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "No twist");
+    return;
+  }
+  if (pose_all_.empty()) {
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "No pose");
+    return;
+  }
+  if (pose_buf_.size() == 0) return;
   updateBias(pose_buf_, twist_all_);
   pose_buf_.clear();
 
@@ -260,8 +229,8 @@ double DeviationEstimator::estimateStddevVelocity(
     const double distance =
       norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
     const auto d_pos = calculateErrorPos(pose_sub_traj, twist_sub_traj, vel_coef_module_->get_coef());
+
     const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
-    std::cout << i << ": " << distance << " and " << distance_from_twist << ", wz_mean = " << getMeanAbsWz(twist_sub_traj) << std::endl;
     const double delta = std::sqrt(N_twist / T_window) * (distance - distance_from_twist);
     delta_x_list.push_back(delta);
   }

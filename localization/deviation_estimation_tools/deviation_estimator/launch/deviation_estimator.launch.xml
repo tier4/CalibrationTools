@@ -13,11 +13,9 @@
   <arg name="estimation_freq" default="0.25" description="[Hz]"/>
   <arg name="show_debug_info" default="false"/>
 
-  <arg name="use_pose_with_covariance" default="true"/>
   <arg name="input_pose_name" default="/localization/pose_estimator/pose"/>
   <arg name="input_pose_with_cov_name" default="/localization/pose_estimator/pose_with_covariance"/>
 
-  <arg name="use_twist_with_covariance" default="true"/>
   <arg name="input_twist_raw_name" default="/localization/twist_estimator/twist_raw"/>
   <arg name="input_twist_with_cov_raw_name" default="/localization/twist_estimator/twist_with_covariance_raw"/>
 
@@ -42,8 +40,6 @@
     <param name="vx_threshold" value="$(var vx_threshold)"/>
     <param name="estimation_freq" value="$(var estimation_freq)"/>
     <param name="show_debug_info" value="$(var show_debug_info)"/>
-    <param name="use_pose_with_covariance" value="$(var use_pose_with_covariance)"/>
-    <param name="use_twist_with_covariance" value="$(var use_twist_with_covariance)"/>
     <param name="results_path" value="$(var results_path)"/>
 
     <remap from="estimated_bias_angular_velocity" to="$(var output_bias_angular_velocity)"/>
