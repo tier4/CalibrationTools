@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Tier IV, Inc.
+# Copyright 2022 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
 import threading
 
 import rclpy
-
-# from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from std_srvs.srv import Empty
 from tier4_calibration_msgs.srv import Files
@@ -44,6 +42,7 @@ class ServiceWrapper:
         if self.future is not None and self.future.done() and self.result_callback is not None:
             response = self.future.result()
             self.result_callback(response)
+            self.future = None
 
     def set_status_callback(self, callback):
         self.status_callback = callback
@@ -304,7 +303,7 @@ class RosInterface(Node):
 
     def spin(self):
 
-        self.ros_executor = MultiThreadedExecutor(num_threads=2)
+        self.ros_executor = SingleThreadedExecutor()
         self.ros_executor.add_node(self)
 
         self.thread = threading.Thread(target=self.executor.spin, args=())

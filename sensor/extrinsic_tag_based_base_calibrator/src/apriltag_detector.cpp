@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <extrinsic_tag_based_base_calibrator/apriltag_detector.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <apriltag/apriltag_pose.h>
 #include <apriltag/tag16h5.h>
@@ -91,8 +92,9 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
       continue;
     }
 
-    std::cout << "Detected apriltag: " << det->id << " margin: " << det->decision_margin
-              << std::endl;
+    RCLCPP_INFO(
+      rclcpp::get_logger("intrinsics_calibrator"), "Detected apriltag: %d \t margin: %.2f", det->id,
+      det->decision_margin);
 
     ApriltagDetection result;
     result.id = det->id;

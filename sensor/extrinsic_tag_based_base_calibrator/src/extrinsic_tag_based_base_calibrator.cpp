@@ -79,9 +79,6 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   right_wheel_tag_id_ = this->declare_parameter<int>("right_wheel_tag_id", 4);
   wheel_tag_ids_ = std::vector<int>{left_wheel_tag_id_, right_wheel_tag_id_};
 
-  // std::vector<int64_t> ground_tag_ids = this->declare_parameter<std::vector<int64_t>>(
-  //   "ground_tag_ids", std::vector<int64_t>{/*5, 6,*/ 7, /*8, */9, 10, /*11, 12, */ 13, 14, 15});
-
   std::vector<int64_t> ground_tag_ids = this->declare_parameter<std::vector<int64_t>>(
     "ground_tag_ids", std::vector<int64_t>{7, 10, 12, 13, 14, 15});
 
@@ -91,8 +88,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
   std::vector<int64_t> intrinsic_calibration_tag_ids =
     this->declare_parameter<std::vector<int64_t>>(
-      "intrinsic_calibration_tag_ids",
-      std::vector<int64_t>{0, 3, 4, 7, 13});  // , 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+      "intrinsic_calibration_tag_ids", std::vector<int64_t>{0, 3, 4, 7, 13});
   std::transform(
     intrinsic_calibration_tag_ids.begin(), intrinsic_calibration_tag_ids.end(),
     std::back_inserter(intrinsic_calibration_tag_ids_),
@@ -469,6 +465,8 @@ bool ExtrinsicTagBasedBaseCalibrator::addSceneCallback(
 {
   UNUSED(request);
   UNUSED(response);
+
+  RCLCPP_INFO(this->get_logger(), "Adding a new scene");
 
   if (
     current_external_camera_images_.size() == 0 || current_calibration_camera_images_.size() != 1) {
@@ -848,7 +846,8 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
   }
 
   for (auto it = poses_vector_map.begin(); it != poses_vector_map.end(); it++) {
-    std::cout << "UID: " << it->first.to_string() << "\t poses: " << it->second.size() << std::endl;
+    RCLCPP_INFO(
+      this->get_logger(), "UID: %s \tposes: %lu", it->first.to_string().c_str(), it->second.size());
   }
 
   std::array<double, CalibrationData::INTRINSICS_DIM> initial_intrinsics;

@@ -41,6 +41,7 @@ class CalibratorUI(QMainWindow):
         self.valid_calibration_camera_intrinsics = False
         self.processed_scenes = False
         self.database_loaded = False
+        self.pending_service = False
 
         self.add_scene_service_status = False
         self.add_external_camera_images_to_scene_service_status = False
@@ -140,12 +141,12 @@ class CalibratorUI(QMainWindow):
 
         self.add_scene_button = QPushButton("Add scene")
         self.add_scene_button.setEnabled(False)
-        self.add_scene_button.clicked.connect(None)
+        self.add_scene_button.clicked.connect(self.add_scene_button_callback)
         self.scene_layout.addWidget(self.add_scene_button)
 
         self.add_external_images_button = QPushButton("Add external camera images to scene")
         self.add_external_images_button.setEnabled(False)
-        self.add_external_images_button.clicked.connect(None)
+        self.add_external_images_button.clicked.connect(self.add_external_images_button_callback)
         self.scene_layout.addWidget(self.add_external_images_button)
 
         if self.sensor_type == "lidar":
@@ -161,7 +162,7 @@ class CalibratorUI(QMainWindow):
 
             self.add_camera_images_button = QPushButton("Add calibration camera images to scene")
             self.add_camera_images_button.setEnabled(False)
-            self.add_camera_images_button.clicked.connect(None)
+            self.add_camera_images_button.clicked.connect(self.add_camera_images_button_callback)
             self.scene_layout.addWidget(self.add_camera_images_button)
 
         self.scene_group.setLayout(self.scene_layout)
@@ -268,39 +269,50 @@ class CalibratorUI(QMainWindow):
             )
 
         # Scene group
-        self.add_scene_button.setEnabled(self.valid_scenes and self.add_scene_service_status)
+        self.add_scene_button.setEnabled(
+            self.valid_scenes and self.add_scene_service_status and not self.pending_service
+        )
         self.add_external_images_button.setEnabled(
-            not self.valid_current_scene_calibration_images
+            not self.valid_current_scene_external_images
             and self.add_external_camera_images_to_scene_service_status
+            and not self.pending_service
         )
 
         if self.sensor_type == "lidar":
             self.add_lidar_detections_button.setEnabled(
                 not self.valid_current_scene_calibration_lidar_detections
                 and self.add_calibration_lidar_detections_to_scene_service_status
+                and not self.pending_service
             )
         else:
             self.add_camera_detections_button.setEnabled(
-                not self.valid_current_scene_calibration_camera_detections
+                not self.valid_current_scene_calibration_images
+                and not self.valid_current_scene_calibration_camera_detections
                 and self.add_calibration_camera_detections_to_scene_service_status
+                and not self.pending_service
             )
             self.add_camera_images_button.setEnabled(
                 not self.valid_current_scene_calibration_images
+                and not self.valid_current_scene_calibration_camera_detections
                 and self.add_calibration_camera_images_to_scene_service_status
+                and not self.pending_service
             )
 
         # Intrinsics group
         self.load_external_intrinsics_button.setEnabled(
             self.load_external_camera_intrinsics_service_status
             and not self.valid_external_camera_intrinsics
+            and not self.pending_service
         )
         self.save_external_intrinsics_button.setEnabled(
             self.save_external_camera_intrinsics_service_status
             and self.valid_external_camera_intrinsics
+            and not self.pending_service
         )
         self.calibrate_external_intrinsics_button.setEnabled(
             self.calibrate_external_camera_intrinsics_service_status
             and not self.valid_external_camera_intrinsics
+            and not self.pending_service
         )
 
         if self.sensor_type == "camera":
@@ -308,14 +320,17 @@ class CalibratorUI(QMainWindow):
             self.load_camera_intrinsics_button.setEnabled(
                 self.load_calibration_camera_intrinsics_service_status
                 and not self.valid_calibration_camera_intrinsics
+                and not self.pending_service
             )
             self.save_camera_intrinsics_button.setEnabled(
                 self.save_calibration_camera_intrinsics_service_status
                 and self.valid_calibration_camera_intrinsics
+                and not self.pending_service
             )
             self.calibrate_camera_intrinsics_button.setEnabled(
                 self.calibrate_calibration_camera_intrinsics_service_status
                 and not self.valid_calibration_camera_intrinsics
+                and not self.pending_service
             )
 
         # Calibration group
@@ -323,12 +338,14 @@ class CalibratorUI(QMainWindow):
             (self.sensor_type == "lidar" or self.valid_calibration_camera_intrinsics)
             and self.valid_external_camera_intrinsics
             and self.num_valid_scenes > 0
+            and not self.pending_service
         )
         self.process_scenes_button.setEnabled(self.process_scenes_service_status and can_process)
         self.calibration_button.setEnabled(
             self.calibration_service_status
             and (can_process and self.processed_scenes)
             or self.database_loaded
+            and not self.pending_service
         )
 
         # Database group
@@ -336,9 +353,10 @@ class CalibratorUI(QMainWindow):
             self.load_database_service_status
             and self.num_valid_scenes == 0
             and not self.processed_scenes
+            and not self.pending_service
         )
         self.save_database_button.setEnabled(
-            self.save_database_service_status and self.processed_scenes
+            self.save_database_service_status and self.processed_scenes and not self.pending_service
         )
 
     def add_scene_result_callback(self, result):
@@ -349,10 +367,6 @@ class CalibratorUI(QMainWindow):
         self.valid_current_scene_calibration_camera_detections = False
         self.valid_current_scene_calibration_lidar_detections = False
 
-        self.current_scene_external_images = None
-        self.current_scene_calibration_images = None
-        self.current_scene_calibration_detections = None
-
         self.check_status()
 
     def add_scene_status_callback(self, status):
@@ -360,6 +374,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_external_camera_images_to_scene_result_callback(self, result):
+        self.pending_service = False
         self.valid_current_scene_external_images = True
         self.check_status()
 
@@ -368,6 +383,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_calibration_camera_images_to_scene_result_callback(self, result):
+        self.pending_service = False
         self.valid_current_scene_calibration_images = True
         self.check_status()
 
@@ -376,6 +392,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_calibration_camera_detections_to_scene_result_callback(self, result):
+        self.pending_service = False
         self.valid_current_scene_calibration_camera_detections = True
         self.check_status()
 
@@ -384,6 +401,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_calibration_lidar_detections_to_scene_result_callback(self, result):
+        self.pending_service = False
         self.valid_current_scene_calibration_lidar_detections = True
         self.check_status()
 
@@ -392,6 +410,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def load_external_camera_intrinsics_result_callback(self, result):
+        self.pending_service = False
         self.valid_external_camera_intrinsics = True
         self.check_status()
 
@@ -400,6 +419,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def save_external_camera_intrinsics_result_callback(self, result):
+        self.pending_service = False
         self.check_status()
 
     def save_external_camera_intrinsics_status_callback(self, status):
@@ -407,6 +427,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def calibrate_external_camera_intrinsics_result_callback(self, result):
+        self.pending_service = False
         self.valid_external_camera_intrinsics = True
         self.check_status()
 
@@ -415,6 +436,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def load_calibration_camera_intrinsics_result_callback(self, result):
+        self.pending_service = False
         self.valid_calibration_camera_intrinsics = True
         self.check_status()
 
@@ -423,6 +445,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def save_calibration_camera_intrinsics_result_callback(self, result):
+        self.pending_service = False
         self.check_status()
 
     def save_calibration_camera_intrinsics_status_callback(self, status):
@@ -430,6 +453,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def calibrate_calibration_camera_intrinsics_result_callback(self, result):
+        self.pending_service = False
         self.valid_calibration_camera_intrinsics = True
         self.check_status()
 
@@ -438,6 +462,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def process_scenes_result_callback(self, result):
+        self.pending_service = False
         self.processed_scenes = True
         self.check_status()
 
@@ -446,6 +471,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def calibration_result_callback(self, result):
+        self.pending_service = False
         self.check_status()
 
     def calibration_status_callback(self, status):
@@ -453,7 +479,8 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def load_database_result_callback(self, result):
-        self.database_loaded = True
+        self.pending_service = False
+        self.database_loaded = result.success
         self.check_status()
 
     def load_database_status_callback(self, status):
@@ -461,6 +488,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def save_database_result_callback(self, result):
+        self.pending_service = False
         self.check_status()
 
     def save_database_status_callback(self, status):
@@ -468,10 +496,19 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_scene_button_callback(self):
-        pass
+        self.ros_interface.add_scene()
 
     def add_external_images_button_callback(self):
-        pass
+        filenames, _ = QFileDialog.getOpenFileNames(
+            None, "Load external camera images", ".", "Image file (*.jpg *.JPG *.png *.PNG)"
+        )
+
+        if len(filenames) == 0:
+            return
+
+        self.pending_service = True
+        self.ros_interface.add_external_camera_images_to_scene(filenames)
+        self.check_status()
 
     def add_lidar_detections_button_callback(self):
         pass
@@ -480,43 +517,97 @@ class CalibratorUI(QMainWindow):
         pass
 
     def add_camera_images_button_callback(self):
-        pass
+        filenames, _ = QFileDialog.getOpenFileNames(
+            None, "Load calibration camera images", ".", "Image file (*.jpg *.JPG *.png *.PNG)"
+        )
+
+        if len(filenames) == 0:
+            return
+
+        self.pending_service = True
+        self.ros_interface.add_calibration_camera_images_to_scene(filenames)
+        self.check_status()
 
     def load_external_intrinsics_button_callback(self):
         filename, _ = QFileDialog.getOpenFileName(
             None, "Load external camera intrinsics", ".", "Intrinsics file (*.yaml *.cfg)"
         )
+
+        if len(filename) == 0:
+            return
+
+        self.pending_service = True
         self.ros_interface.load_external_camera_intrinsics([filename])
+        self.check_status()
 
     def save_external_intrinsics_button_callback(self):
         pass
 
     def calibrate_external_intrinsics_button_callback(self):
-        pass
+        filenames, _ = QFileDialog.getOpenFileNames(
+            None, "Load external camera images", ".", "Image file (*.jpg *.JPG *.png *.PNG)"
+        )
+
+        if len(filenames) == 0:
+            return
+
+        self.pending_service = True
+        self.ros_interface.calibrate_external_camera_intrinsics(filenames)
+        self.check_status()
 
     def load_camera_intrinsics_button_callback(self):
         filename, _ = QFileDialog.getOpenFileName(
             None, "Load calibration camera intrinsics", ".", "Intrinsics file (*.yaml *.cfg)"
         )
+
+        if len(filename) == 0:
+            return
+
+        self.pending_service = True
         self.ros_interface.load_calibration_camera_intrinsics([filename])
+        self.check_status()
 
     def save_camera_intrinsics_button_callback(self):
         pass
 
     def calibrate_camera_intrinsics_button_callback(self):
-        pass
+        filenames, _ = QFileDialog.getOpenFileNames(
+            None, "Load calibration camera images", ".", "Image file (*.jpg *.JPG *.png *.PNG)"
+        )
+
+        if len(filenames) == 0:
+            return
+
+        self.pending_service = True
+        self.ros_interface.calibrate_calibration_camera_intrinsics(filenames)
+        self.check_status()
 
     def process_scenes_button_callback(self):
-        pass
+        self.pending_service = True
+        self.ros_interface.process_scenes()
+        self.check_status()
 
     def calibration_button_callback(self):
+        self.pending_service = True
         self.ros_interface.calibrate()
+        self.check_status()
 
     def load_database_button_callback(self):
         filename, _ = QFileDialog.getOpenFileName(None, "Open File", ".", "Database (*.db *.data)")
+
+        if len(filename) == 0:
+            return
+
+        self.pending_service = True
         self.ros_interface.load_database([filename])
+        self.check_status()
 
     def save_database_button_callback(self):
-
         filename = QFileDialog.getSaveFileName(None, "Save File", ".", "Database (*.db *.data)")
+
+        if len(filename) == 0:
+            return
+
+        self.pending_service = True
         self.ros_interface.save_database([filename])
+        self.check_status()

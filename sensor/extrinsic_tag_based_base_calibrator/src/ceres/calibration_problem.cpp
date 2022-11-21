@@ -191,8 +191,10 @@ void CalibrationProblem::evaluate()
       double sum_res = std::transform_reduce(
         residuals.begin(), residuals.end(), 0.0, std::plus{}, [](auto v) { return std::abs(v); });
 
-      std::cout << sensor_uid.to_string() << " <-> " << detection_uid.to_string()
-                << " error: " << sum_res << std::endl;
+      RCLCPP_INFO(
+        rclcpp::get_logger("calibration_problem"), "%s <-> %s error: %.2f",
+        sensor_uid.to_string().c_str(), detection_uid.to_string().c_str(),
+        sum_res / residuals.size());
     }
 
     for (std::size_t frame_id = 0; frame_id < scene.external_camera_frames.size(); frame_id++) {
@@ -259,8 +261,10 @@ void CalibrationProblem::evaluate()
         double sum_res = std::transform_reduce(
           residuals.begin(), residuals.end(), 0.0, std::plus{}, [](auto v) { return std::abs(v); });
 
-        std::cout << external_camera_uid.to_string() << " <-> " << detection_uid.to_string()
-                  << " error: " << sum_res / residuals.size() << std::endl;
+        RCLCPP_INFO(
+          rclcpp::get_logger("calibration_problem"), "%s <-> %s error: %.2f",
+          external_camera_uid.to_string().c_str(), detection_uid.to_string().c_str(),
+          sum_res / residuals.size());
       }
     }
   }
@@ -362,12 +366,6 @@ void CalibrationProblem::solve()
     }
   }
 
-  int numresidualsblocks = problem.NumResidualBlocks();
-  int numresiduals = problem.NumResiduals();
-
-  (void)numresidualsblocks;
-  (void)numresiduals;
-
   std::vector<double> residuals;
   ceres::Problem::EvaluateOptions eval_opt;
   eval_opt.num_threads = 1;
@@ -380,7 +378,8 @@ void CalibrationProblem::solve()
   options.max_num_iterations = 500;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
-  std::cout << summary.FullReport() << "\n" << std::flush;
+
+  RCLCPP_INFO_STREAM(rclcpp::get_logger("calibration_problem"), "Report: " << summary.FullReport());
 }
 
 void CalibrationProblem::writeDebugImages()

@@ -2,8 +2,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(extrinsic_tag_based_base_calibrator)
 
-#find_package(ament_cmake REQUIRED)
-#find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(apriltag REQUIRED)
@@ -49,9 +47,6 @@ install(PROGRAMS
 )
 
 ament_export_dependencies(ament_cmake_python)
-#ament_export_dependencies(rclcpp)
-#ament_export_dependencies(rclpy)
-
 
 ament_auto_package(
   INSTALL_TO_SHARE

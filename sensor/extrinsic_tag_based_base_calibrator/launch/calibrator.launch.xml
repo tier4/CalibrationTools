@@ -4,7 +4,6 @@
   <arg name="base_frame" default=""/>
   <arg name="parent_frame" default=""/>
   <arg name="child_frame" default=""/>
-  <arg name="pointcloud_topic" default="sdfdsff"/>
 
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
@@ -12,21 +11,11 @@
       <param name="base_frame" value="$(var base_frame)"/>
       <param name="parent_frame" value="$(var parent_frame)"/>
       <param name="child_frame" value="$(var child_frame)"/>
-      <param name="marker_size" value="10.0"/>
-      <param name="max_inlier_distance" value="0.01"/>
-      <param name="min_plane_points" value="500"/>
-      <param name="max_cos_distance" value="0.2"/>
-      <param name="max_iterations" value="500"/>
-      <param name="verbose" value="true"/>
-      <param name="broacast_calibration_tf" value="true"/>
-      <param name="filter_estimations" value="true"/>
 
       <!--BA options -->
       <param name="ba_optimize_intrinsics" value="true"/>
       <param name="ba_share_intrinsics" value="true"/>
       <param name="ba_force_shared_ground_plane" value="true"/>
-
-      <remap from="input_pointcloud" to="$(var pointcloud_topic)"/>
     </node>
 
     <node pkg="extrinsic_tag_based_base_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>

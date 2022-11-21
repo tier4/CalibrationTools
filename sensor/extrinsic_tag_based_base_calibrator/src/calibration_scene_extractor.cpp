@@ -16,6 +16,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <iostream>
 #include <unordered_set>
@@ -130,8 +131,9 @@ CalibrationScene CalibrationSceneExtractor::processScene(
         return external_camera_tag_sizes.count(detection.id) > 0;
       });
 
-    std::cout << "Porcesed: " << image_name << " Detections: " << frame.detections.size()
-              << std::endl;
+    RCLCPP_INFO(
+      rclcpp::get_logger("scene_extractor"), "Processed: %s Detections: %lu", image_name.c_str(),
+      frame.detections.size());
 
     scene.external_camera_frames.emplace_back(frame);
 
