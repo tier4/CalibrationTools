@@ -66,7 +66,8 @@ void saveEstimatedParameters(
 
 geometry_msgs::msg::Point calculateErrorPos(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
+  const double coef_vx)
 {
   double t_prev = rclcpp::Time(twist_list.front().header.stamp).seconds();
   geometry_msgs::msg::Point d_pos;
@@ -75,8 +76,8 @@ geometry_msgs::msg::Point calculateErrorPos(
     const double t_cur = rclcpp::Time(twist_list[i + 1].header.stamp).seconds();
     yaw += twist_list[i].twist.angular.z * (t_cur - t_prev);
 
-    d_pos.x += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::cos(yaw);
-    d_pos.y += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::sin(yaw);
+    d_pos.x += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::cos(yaw) * coef_vx;
+    d_pos.y += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::sin(yaw) * coef_vx;
 
     t_prev = t_cur;
   }
@@ -85,7 +86,8 @@ geometry_msgs::msg::Point calculateErrorPos(
 
 geometry_msgs::msg::Vector3 calculateErrorRPY(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
+  const geometry_msgs::msg::Vector3 & gyro_bias)
 {
   double roll_0 = 0, pitch_0 = 0, yaw_0 = 0;
   double roll_1 = 0, pitch_1 = 0, yaw_1 = 0;
@@ -100,9 +102,9 @@ geometry_msgs::msg::Vector3 calculateErrorRPY(
   for (std::size_t i = 0; i < twist_list.size() - 1; ++i) {
     double t_cur = rclcpp::Time(twist_list[i + 1].header.stamp).seconds();
 
-    d_roll += (t_cur - t_prev) * twist_list[i].twist.angular.x;
-    d_pitch += (t_cur - t_prev) * twist_list[i].twist.angular.y;
-    d_yaw += (t_cur - t_prev) * twist_list[i].twist.angular.z;
+    d_roll += (t_cur - t_prev) * (twist_list[i].twist.angular.x - gyro_bias.x);
+    d_pitch += (t_cur - t_prev) * (twist_list[i].twist.angular.y - gyro_bias.y);
+    d_yaw += (t_cur - t_prev) * (twist_list[i].twist.angular.z - gyro_bias.z);
 
     t_prev = t_cur;
   }
@@ -111,4 +113,24 @@ geometry_msgs::msg::Vector3 calculateErrorRPY(
   error_rpy.y = clipRadian(-pitch_1 + pitch_0 + d_pitch);
   error_rpy.z = clipRadian(-yaw_1 + yaw_0 + d_yaw);
   return error_rpy;
+}
+
+double getMeanAbsVx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+{
+  double mean_abs_vx = 0;
+  for (const auto & msg : twist_list) {
+    mean_abs_vx += abs(msg.twist.linear.x);
+  }
+  mean_abs_vx /= twist_list.size();
+  return mean_abs_vx;
+}
+
+double getMeanAbsWz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+{
+  double mean_abs_wz = 0;
+  for (auto msg : twist_list) {
+    mean_abs_wz += abs(msg.twist.angular.z);
+  }
+  mean_abs_wz /= twist_list.size();
+  return mean_abs_wz;
 }

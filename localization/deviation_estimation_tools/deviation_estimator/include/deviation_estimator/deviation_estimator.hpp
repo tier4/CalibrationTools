@@ -94,6 +94,8 @@ private:
   double wz_threshold_;
   double vx_threshold_;
   double estimation_freq_;
+  double time_window_;
+  bool add_bias_uncertainty_;
 
   std::string output_frame_;
   geometry_msgs::msg::TransformStamped::SharedPtr tf_base2imu_ptr_;

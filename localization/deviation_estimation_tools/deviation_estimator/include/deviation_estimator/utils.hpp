@@ -136,10 +136,15 @@ void saveEstimatedParameters(
 
 geometry_msgs::msg::Point calculateErrorPos(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
+  const double coef_vx);
 
 geometry_msgs::msg::Vector3 calculateErrorRPY(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
+  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
+  const geometry_msgs::msg::Vector3 & gyro_bias);
+
+double getMeanAbsVx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
+double getMeanAbsWz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
 
 #endif  // DEVIATION_ESTIMATOR__UTILS_HPP_

@@ -22,7 +22,7 @@ void GyroBiasModule::update_bias(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt)
 {
-  const auto error_rpy = calculateErrorRPY(pose_list, twist_list);
+  const auto error_rpy = calculateErrorRPY(pose_list, twist_list, geometry_msgs::msg::Vector3{});
   gyro_bias_pair_.first.x += dt * error_rpy.x;
   gyro_bias_pair_.first.y += dt * error_rpy.y;
   gyro_bias_pair_.first.z += dt * error_rpy.z;

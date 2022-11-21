@@ -22,7 +22,7 @@ void VelocityCoefModule::update_coef(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt)
 {
-  const auto d_pos = calculateErrorPos(pose_list, twist_list);
+  const auto d_pos = calculateErrorPos(pose_list, twist_list, 1.0);
   double dx = pose_list.back().pose.position.x - pose_list.front().pose.position.x;
   double dy = pose_list.back().pose.position.y - pose_list.front().pose.position.y;
   double d_coef_vx = (d_pos.x * dx + d_pos.y * dy) / (d_pos.x * d_pos.x + d_pos.y * d_pos.y);

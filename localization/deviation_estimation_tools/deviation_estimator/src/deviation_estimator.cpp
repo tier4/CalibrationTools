@@ -51,6 +51,8 @@ DeviationEstimator::DeviationEstimator(
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
   results_path_ = declare_parameter("results_path", "test");
   imu_link_frame_ = declare_parameter("imu_link_frame", "tamagawa/imu_link");
+  time_window_ = declare_parameter("time_window", 2.0);
+  add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
 
   auto timer_control_callback = std::bind(&DeviationEstimator::timerCallback, this);
   auto period_control = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -152,18 +154,20 @@ void DeviationEstimator::callbackTwistRaw(const geometry_msgs::msg::TwistStamped
 
 void DeviationEstimator::timerCallback()
 {
-  // Update bias
   if ((pose_buf_.size() == 0) | (twist_all_.size() == 0)) return;
   updateBias(pose_buf_, twist_all_);
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
-  double stddev_vx = estimateStddevVelocity(pose_all_, twist_all_, 4.0);
-  double stddev_vx_prime =
-    addBiasUncertaintyOnVelocity(stddev_vx, vel_coef_module_->get_coef_std());
-  auto stddev_angvel_base = estimateStddevAngularVelocity(pose_all_, twist_all_, 4.0);
-  auto stddev_angvel_prime_base =
-    addBiasUncertaintyOnAngularVelocity(stddev_angvel_base, gyro_bias_module_->get_bias_std());
+  double stddev_vx = estimateStddevVelocity(pose_all_, twist_all_, time_window_);
+  auto stddev_angvel_base = estimateStddevAngularVelocity(pose_all_, twist_all_, time_window_);
+  if (add_bias_uncertainty_)
+  {
+    stddev_vx =
+      addBiasUncertaintyOnVelocity(stddev_vx, vel_coef_module_->get_coef_std());
+    stddev_angvel_base =
+      addBiasUncertaintyOnAngularVelocity(stddev_angvel_base, gyro_bias_module_->get_bias_std());
+  }
 
   // publish messages
   std_msgs::msg::Float64 coef_vx_msg;
@@ -183,13 +187,13 @@ void DeviationEstimator::timerCallback()
   pub_bias_angvel_->publish(bias_angvel_imu.vector);
 
   std_msgs::msg::Float64 stddev_vx_msg;
-  stddev_vx_msg.data = stddev_vx_prime;
+  stddev_vx_msg.data = stddev_vx;
   pub_stddev_vx_->publish(stddev_vx_msg);
 
   double stddev_angvel_imu = 0.0;
-  stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_prime_base.x);
-  stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_prime_base.y);
-  stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_prime_base.z);
+  stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.x);
+  stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.y);
+  stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.z);
   geometry_msgs::msg::Vector3 stddev_angvel_imu_msg;
   stddev_angvel_imu_msg.x = stddev_angvel_imu;
   stddev_angvel_imu_msg.y = stddev_angvel_imu;
@@ -198,7 +202,7 @@ void DeviationEstimator::timerCallback()
 
   if (results_path_.size() > 0) {
     saveEstimatedParameters(
-      results_path_, stddev_vx_prime, stddev_angvel_prime_base.z, vel_coef_module_->get_coef(),
+      results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
       bias_angvel_base.vector.z, stddev_angvel_imu_msg, bias_angvel_imu.vector);
   };
 }
@@ -217,13 +221,7 @@ void DeviationEstimator::updateBias(
   double t0 = t0_rclcpp_time.seconds();
   double t1 = t1_rclcpp_time.seconds();
 
-  // Calculate coef_vx only when the velocity is higher than the threshold
-  double mean_abs_vx = 0;
-  for (const auto & msg : twist_buf) {
-    mean_abs_vx += abs(msg.twist.linear.x);
-  }
-  mean_abs_vx /= twist_buf.size();
-  if (mean_abs_vx > vx_threshold_) {
+  if (getMeanAbsVx(twist_buf) > vx_threshold_) {
     vel_coef_module_->update_coef(pose_buf, twist_buf, t1 - t0);
   } else {
     DEBUG_INFO(
@@ -250,24 +248,20 @@ double DeviationEstimator::estimateStddevVelocity(
 
     const auto t1_pose = rclcpp::Time(pose_sub_traj.back().header.stamp);
     const auto t0_pose = rclcpp::Time(pose_sub_traj.front().header.stamp);
-    const double distance =
-      norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
     if (t0_pose > t1_pose) continue;
 
     const std::vector<geometry_msgs::msg::TwistStamped> twist_sub_traj =
       extractSubTrajectory(twist_list, t0_pose, t1_pose);
     const size_t N_twist = twist_sub_traj.size();
 
-    double mean_abs_wz = 0;
-    for (auto msg : twist_sub_traj) {
-      mean_abs_wz += abs(msg.twist.angular.z);
-    }
-    mean_abs_wz /= twist_sub_traj.size();
-    if (mean_abs_wz > wz_threshold_)
-      continue;  // calculate Error x only if the vehicle is not curving
+    if (getMeanAbsVx(twist_sub_traj) < vx_threshold_) continue;
+    if (getMeanAbsWz(twist_sub_traj) > wz_threshold_) continue;
 
-    const auto d_pos = calculateErrorPos(pose_sub_traj, twist_sub_traj);
-    const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y + d_pos.y);
+    const double distance =
+      norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
+    const auto d_pos = calculateErrorPos(pose_sub_traj, twist_sub_traj, vel_coef_module_->get_coef());
+    const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
+    std::cout << i << ": " << distance << " and " << distance_from_twist << ", wz_mean = " << getMeanAbsWz(twist_sub_traj) << std::endl;
     const double delta = std::sqrt(N_twist / T_window) * (distance - distance_from_twist);
     delta_x_list.push_back(delta);
   }
@@ -294,18 +288,13 @@ geometry_msgs::msg::Vector3 DeviationEstimator::estimateStddevAngularVelocity(
 
     const auto t1_pose = rclcpp::Time(pose_sub_traj.back().header.stamp);
     const auto t0_pose = rclcpp::Time(pose_sub_traj.front().header.stamp);
-    const double distance =
-      norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
-
     if (t0_pose > t1_pose) continue;
-    if (distance < T_window * vx_threshold_)
-      continue;  // calculate Error theta only if the vehicle is moving
 
     const std::vector<geometry_msgs::msg::TwistStamped> twist_sub_traj =
       extractSubTrajectory(twist_list, t0_pose, t1_pose);
     const size_t N_twist = twist_sub_traj.size();
 
-    const auto error_rpy = calculateErrorRPY(pose_sub_traj, twist_sub_traj);
+    const auto error_rpy = calculateErrorRPY(pose_sub_traj, twist_sub_traj, gyro_bias_module_->get_bias_base_link());
     delta_wx_list.push_back(std::sqrt(N_twist / T_window) * error_rpy.x);
     delta_wy_list.push_back(std::sqrt(N_twist / T_window) * error_rpy.y);
     delta_wz_list.push_back(std::sqrt(N_twist / T_window) * error_rpy.z);
