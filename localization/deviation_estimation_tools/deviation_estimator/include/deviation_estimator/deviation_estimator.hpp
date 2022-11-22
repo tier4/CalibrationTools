@@ -130,7 +130,8 @@ private:
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
     const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double t_window) const;
 
-  double add_bias_uncertainty_on_velocity(const double stddev_vx, const double stddev_coef_vx) const;
+  double add_bias_uncertainty_on_velocity(
+    const double stddev_vx, const double stddev_coef_vx) const;
 
   geometry_msgs::msg::Vector3 add_bias_uncertainty_on_angular_velocity(
     const geometry_msgs::msg::Vector3 stddev_angvel_base,

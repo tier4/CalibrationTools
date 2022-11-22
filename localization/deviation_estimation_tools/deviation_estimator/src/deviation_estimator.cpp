@@ -132,8 +132,8 @@ void DeviationEstimator::timer_callback()
   auto stddev_angvel_base = estimate_stddev_angular_velocity(pose_all_, twist_all_, time_window_);
   if (add_bias_uncertainty_) {
     stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
-    stddev_angvel_base =
-      add_bias_uncertainty_on_angular_velocity(stddev_angvel_base, gyro_bias_module_->get_bias_std());
+    stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(
+      stddev_angvel_base, gyro_bias_module_->get_bias_std());
   }
 
   // publish messages
@@ -226,7 +226,8 @@ double DeviationEstimator::estimate_stddev_velocity(
 
     const double distance =
       norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
-    const auto d_pos = calculate_error_pos(pose_sub_traj, twist_sub_traj, vel_coef_module_->get_coef());
+    const auto d_pos =
+      calculate_error_pos(pose_sub_traj, twist_sub_traj, vel_coef_module_->get_coef());
 
     const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
     const double delta = std::sqrt(n_twist / t_window) * (distance - distance_from_twist);

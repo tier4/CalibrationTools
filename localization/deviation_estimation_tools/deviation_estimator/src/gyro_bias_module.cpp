@@ -53,12 +53,12 @@ geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_std() const
     stddev_bias_list_z.push_back(e.z);
   }
   geometry_msgs::msg::Vector3 stddev_bias;
-  stddev_bias.x =
-    calculate_std_mean_const(stddev_bias_list_x, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
-  stddev_bias.y =
-    calculate_std_mean_const(stddev_bias_list_y, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
-  stddev_bias.z =
-    calculate_std_mean_const(stddev_bias_list_z, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+  stddev_bias.x = calculate_std_mean_const(
+    stddev_bias_list_x, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+  stddev_bias.y = calculate_std_mean_const(
+    stddev_bias_list_y, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+  stddev_bias.z = calculate_std_mean_const(
+    stddev_bias_list_z, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
   return stddev_bias;
 }
 
