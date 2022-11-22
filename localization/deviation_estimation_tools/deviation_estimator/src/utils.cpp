@@ -89,8 +89,10 @@ geometry_msgs::msg::Vector3 calculate_error_rpy(
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
   const geometry_msgs::msg::Vector3 & gyro_bias)
 {
-  const geometry_msgs::msg::Vector3 rpy_0 = tier4_autoware_utils::getRPY(pose_list.front().pose.orientation);
-  const geometry_msgs::msg::Vector3 rpy_1 = tier4_autoware_utils::getRPY(pose_list.back().pose.orientation);
+  const geometry_msgs::msg::Vector3 rpy_0 =
+    tier4_autoware_utils::getRPY(pose_list.front().pose.orientation);
+  const geometry_msgs::msg::Vector3 rpy_1 =
+    tier4_autoware_utils::getRPY(pose_list.back().pose.orientation);
 
   double d_roll = 0, d_pitch = 0, d_yaw = 0;
   double t_prev = rclcpp::Time(twist_list.front().header.stamp).seconds();
