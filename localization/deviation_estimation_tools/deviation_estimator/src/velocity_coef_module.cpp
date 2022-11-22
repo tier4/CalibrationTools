@@ -16,13 +16,11 @@
 
 #include "deviation_estimator/utils.hpp"
 
-VelocityCoefModule::VelocityCoefModule() {}
-
 void VelocityCoefModule::update_coef(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt)
 {
-  const auto d_pos = calculateErrorPos(pose_list, twist_list, 1.0);
+  const auto d_pos = calculate_error_pos(pose_list, twist_list, 1.0);
   double dx = pose_list.back().pose.position.x - pose_list.front().pose.position.x;
   double dy = pose_list.back().pose.position.y - pose_list.front().pose.position.y;
   if (d_pos.x * d_pos.x + d_pos.y * d_pos.y == 0) return;
@@ -42,6 +40,6 @@ double VelocityCoefModule::get_coef() const {
   return coef_vx_.first / coef_vx_.second;
 }
 
-double VelocityCoefModule::get_coef_std() const { return calculateStd(coef_vx_list_); }
+double VelocityCoefModule::get_coef_std() const { return calculate_std(coef_vx_list_); }
 
 bool VelocityCoefModule::empty() const { return coef_vx_.second == 0; }

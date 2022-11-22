@@ -23,7 +23,7 @@
 class VelocityCoefModule
 {
 public:
-  VelocityCoefModule();
+  VelocityCoefModule() = default;
   void update_coef(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
     const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt);

@@ -25,7 +25,7 @@
 
 double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
 
-double clipRadian(const double rad)
+double clip_radian(const double rad)
 {
   if (rad < -M_PI) {
     return rad + 2 * M_PI;
@@ -37,9 +37,9 @@ double clipRadian(const double rad)
 }
 
 /*
- * saveEstimatedParameters
+ * save_estimated_parameters
  */
-void saveEstimatedParameters(
+void save_estimated_parameters(
   const std::string output_path, const double stddev_vx, const double stddev_wz,
   const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
@@ -65,7 +65,7 @@ void saveEstimatedParameters(
   file.close();
 }
 
-geometry_msgs::msg::Point calculateErrorPos(
+geometry_msgs::msg::Point calculate_error_pos(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double coef_vx)
 {
@@ -84,7 +84,7 @@ geometry_msgs::msg::Point calculateErrorPos(
   return d_pos;
 }
 
-geometry_msgs::msg::Vector3 calculateErrorRPY(
+geometry_msgs::msg::Vector3 calculate_error_rpy(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
   const geometry_msgs::msg::Vector3 & gyro_bias)
@@ -104,13 +104,13 @@ geometry_msgs::msg::Vector3 calculateErrorRPY(
     t_prev = t_cur;
   }
   geometry_msgs::msg::Vector3 error_rpy;
-  error_rpy.x = clipRadian(-rpy_1.x + rpy_0.x + d_roll);
-  error_rpy.y = clipRadian(-rpy_1.y + rpy_0.y + d_pitch);
-  error_rpy.z = clipRadian(-rpy_1.z + rpy_0.z + d_yaw);
+  error_rpy.x = clip_radian(-rpy_1.x + rpy_0.x + d_roll);
+  error_rpy.y = clip_radian(-rpy_1.y + rpy_0.y + d_pitch);
+  error_rpy.z = clip_radian(-rpy_1.z + rpy_0.z + d_yaw);
   return error_rpy;
 }
 
-double getMeanAbsVx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+double get_mean_abs_vx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
 {
   double mean_abs_vx = 0;
   for (const auto & msg : twist_list) {
@@ -120,10 +120,10 @@ double getMeanAbsVx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_
   return mean_abs_vx;
 }
 
-double getMeanAbsWz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+double get_mean_abs_wz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
 {
   double mean_abs_wz = 0;
-  for (auto msg : twist_list) {
+  for (auto & msg : twist_list) {
     mean_abs_wz += abs(msg.twist.angular.z);
   }
   mean_abs_wz /= twist_list.size();

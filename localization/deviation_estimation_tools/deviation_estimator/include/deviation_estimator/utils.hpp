@@ -30,7 +30,7 @@
 double double_round(const double x, const int n);
 
 template <typename T>
-double calculateMean(const std::vector<T> & v)
+double calculate_mean(const std::vector<T> & v)
 {
   if (v.size() == 0) {
     return 0;
@@ -45,13 +45,13 @@ double calculateMean(const std::vector<T> & v)
 }
 
 template <typename T>
-double calculateStd(const std::vector<T> & v)
+double calculate_std(const std::vector<T> & v)
 {
   if (v.size() == 0) {
     return 0;
   }
 
-  const double mean = calculateMean(v);
+  const double mean = calculate_mean(v);
   double error = 0;
   for (const T & t : v) {
     error += pow(t - mean, 2);
@@ -60,7 +60,7 @@ double calculateStd(const std::vector<T> & v)
 }
 
 template <typename T>
-double calculateStdMeanConst(const std::vector<T> & v, const double mean)
+double calculate_std_mean_const(const std::vector<T> & v, const double mean)
 {
   if (v.size() == 0) {
     return 0;
@@ -107,7 +107,7 @@ struct CompareMsgTimestamp
 };
 
 template <typename T>
-std::vector<T> extractSubTrajectory(
+std::vector<T> extract_sub_trajectory(
   const std::vector<T> & msg_list, const rclcpp::Time & t0, const rclcpp::Time & t1)
 {
   const auto start_iter =
@@ -126,24 +126,24 @@ double norm_xy(const T p1, const U p2)
   return std::sqrt(dx * dx + dy * dy);
 }
 
-double clipRadian(const double rad);
+double clip_radian(const double rad);
 
-void saveEstimatedParameters(
+void save_estimated_parameters(
   const std::string output_path, const double stddev_vx, const double stddev_wz,
   const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset);
 
-geometry_msgs::msg::Point calculateErrorPos(
+geometry_msgs::msg::Point calculate_error_pos(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double coef_vx);
 
-geometry_msgs::msg::Vector3 calculateErrorRPY(
+geometry_msgs::msg::Vector3 calculate_error_rpy(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
   const geometry_msgs::msg::Vector3 & gyro_bias);
 
-double getMeanAbsVx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
-double getMeanAbsWz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
+double get_mean_abs_vx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
+double get_mean_abs_wz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
 
 #endif  // DEVIATION_ESTIMATOR__UTILS_HPP_

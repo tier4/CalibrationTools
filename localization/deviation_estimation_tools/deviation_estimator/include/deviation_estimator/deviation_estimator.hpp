@@ -100,43 +100,43 @@ private:
   /**
    * @brief set poseWithCovariance measurement
    */
-  void callbackPoseWithCovariance(geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+  void callback_pose_with_covariance(geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
   /**
    * @brief set twistWithCovariance measurement
    */
-  void callbackTwistWithCovarianceRaw(
+  void callback_twist_with_covarianceRaw(
     geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
 
   /**
    * @brief computes update & prediction of EKF for each ekf_dt_[s] time
    */
-  void timerCallback();
+  void timer_callback();
 
   /**
    * @brief stock bias for every small sub-trajectory
    */
-  void updateBias(
+  void update_bias(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_buf,
     const std::vector<geometry_msgs::msg::TwistStamped> & twist_all);
 
   /**
    * @brief get stddev
    */
-  double estimateStddevVelocity(
+  double estimate_stddev_velocity(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double T_window) const;
-  geometry_msgs::msg::Vector3 estimateStddevAngularVelocity(
+    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double t_window) const;
+  geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double T_window) const;
+    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double t_window) const;
 
-  double addBiasUncertaintyOnVelocity(const double stddev_vx, const double stddev_coef_vx) const;
+  double add_bias_uncertainty_on_velocity(const double stddev_vx, const double stddev_coef_vx) const;
 
-  geometry_msgs::msg::Vector3 addBiasUncertaintyOnAngularVelocity(
+  geometry_msgs::msg::Vector3 add_bias_uncertainty_on_angular_velocity(
     const geometry_msgs::msg::Vector3 stddev_angvel_base,
     const geometry_msgs::msg::Vector3 stddev_angvel_bias_base) const;
 
-  bool getTransform(
+  bool get_transform(
     const std::string & target_frame, const std::string & source_frame,
     const geometry_msgs::msg::TransformStamped::SharedPtr transform_stamped_ptr);
 
