@@ -46,68 +46,168 @@ public:
   explicit ExtrinsicTagBasedBaseCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
+  /*!
+   * A function to be called periodically that generates rviz markers to visualize the state of the
+   * calibration
+   */
   void visualizationTimerCallback();
+
+  /*!
+   * Generates the next color to be used from a fixed palette
+   * @returns the next color to be used
+   */
   std_msgs::msg::ColorRGBA getNextColor();
 
+  /*!
+   * Attempts to add a new scene to the calibration set
+   * @param request Empty request
+   * @param response Empty response
+   * @returns whether or not the service callback succeeded
+   */
   bool addSceneCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
+  /*!
+   * Attempts to add external camera images to the scene
+   * @param request A vector of files to be added as external images
+   * @param response Whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool addExternalCameraImagesCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
+  /*!
+   * Attempts to add detections from the calibration lidar to the scene
+   * @param request Empty request
+   * @param response Empty response
+   * @returns whether or not the service callback succeeded
+   */
   bool addLidarDetectionsCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
+  /*!
+   * Attempts to add detections from the calibration camera to the scene
+   * @param request Empty request
+   * @param response Empty response
+   * @returns whether or not the service callback succeeded
+   */
   bool addCameraDetectionsCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
+  /*!
+   * Attempts to add images from the calibration camera to the scene
+   * @param request Vector of files from the calibration camera
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool addCalibrationImagesCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
   // Intrinsics realated services
+  /*!
+   * Attempts to load the external camera intrinsics from a file
+   * @param request Vector containing the intrinsics path
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool loadExternalIntrinsicsCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
+  /*!
+   * Saves the external camera intrinsics to a file
+   * @param request Vector containing the intrinsics path
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool saveExternalIntrinsicsCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
+  /*!
+   * Attempts to caibrate the external camera intrinsics from a set of images containing tags
+   * @param request Vector containing the path to the images to use for intrinsic calibration
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool calibrateExternalIntrinsicsCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
+  /*!
+   * Attempts to load the calibration camera intrinsics from a file
+   * @param request Vector containing the intrinsics path
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool loadCalibrationIntrinsicsCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
+  /*!
+   * Saves the calibration camera intrinsics to a file
+   * @param request Vector containing the intrinsics path
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool saveCalibrationIntrinsicsCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
+  /*!
+   * Attempts to caibrate the calibratioon intrinsics from a set of images containing tags
+   * @param request Vector containing the path to the images to use for intrinsic calibration
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool calibrateCalibrationIntrinsicsCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
   // Calibration related services
+  /*!
+   * Processes a scene by obtaining all the images' detections and 3d poses
+   * @param request Empty request
+   * @param response Empty response
+   * @returns whether or not the service callback succeeded
+   */
   bool preprocessScenesCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
+  /*!
+   * Calibrate the base link by estimating the 3d pose of all the tags usin BA and then setting the
+   * base_link ad the midpoint between the wheel tags
+   * @param request Empty request
+   * @param response Empty response
+   * @returns whether or not the service callback succeeded
+   */
   bool calibrationCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
   // Calibration related services
+  /*!
+   * Load a calibration database from a path
+   * @param request The path to load the database from
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool loadDatabaseCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
+  /*!
+   * Save a calibration database to a path
+   * @param request The path to load the database from
+   * @param response whether or not the service callback succeeded
+   * @returns whether or not the service callback succeeded
+   */
   bool saveDatabaseCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);

@@ -118,6 +118,10 @@ struct TagReprojectionError
     }
   }
 
+  /*!
+   * Auxiliar method to construct a 3d rotation matrix representing a 2d rotatin matrix
+   * @param[in] yaw the rotation angle in the Z axis
+   */
   template <typename T>
   Eigen::Matrix<T, 3, 3> rotationMatrixFromYaw(const T & yaw) const
   {
@@ -128,6 +132,17 @@ struct TagReprojectionError
     return rotation;
   }
 
+  /*!
+   * The implementation of the cost function
+   * @param[in] camera_pose_inv The pose from the camera to the origin
+   * @param[in] camera_intrinsics The camera intrinsics
+   * @param[in] tag_pose The pose of the tag to project into the camera
+   * @param[in] tag_rotation_z The pose from the ground plane to the origin (only used when using
+   * ground tags)
+   * @param[in] tag_pose_2d The pose from ground plane to the tag (only used when using ground tags)
+   * @param[in] residuals The residual error of projecting the tag into the camera
+   * @returns success status
+   */
   template <typename T>
   bool impl(
     const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
@@ -244,7 +259,17 @@ struct TagReprojectionError
     return true;
   }
 
-  // Case where the tag is in the ground and the intrinsics are optimized
+  /*!
+   * The cost function wrapper for the case where the tag is in the ground and the intrinsics are
+   * optimized
+   * @param[in] camera_pose_inv The pose from the camera to the origin
+   * @param[in] camera_intrinsics The camera intrinsics
+   * @param[in] tag_rotation_z The pose from the ground plane to the origin (only used when using
+   * ground tags)
+   * @param[in] tag_pose_2d The pose from ground plane to the tag (only used when using ground tags)
+   * @param[in] residuals The residual error of projecting the tag into the camera
+   * @returns success status
+   */
   template <typename T>
   bool operator()(
     const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_rot_z,
@@ -262,12 +287,22 @@ struct TagReprojectionError
     return false;
   }
 
+  /*!
+   * The cost function wrapper for the following casesL
+   *     - the tag is in the ground and the intrinsics are not optimized
+   *     - the camera is not fixed and the intrinsics are optimized
+   * @param[in] arg1 The pose from the camera to the origin
+   * @param[in] arg2 The camera intrinsics
+   * @param[in] arg3 The pose from the ground plane to the origin (only used when using ground tags)
+   * @param[in] residuals The residual error of projecting the tag into the camera
+   * @returns success status
+   */
   template <typename T>
   bool operator()(
     const T * const arg1, const T * const arg2, const T * const arg3, T * residuals) const
   {
     if (is_ground_tag_) {
-      // Case where the tag is in the ground and not the intrinsics are not optimized
+      // Case where the tag is in the ground and the intrinsics are not optimized
       assert(fix_camera_pose_ == false);
       assert(optimize_intrinsics_ == false);
       assert(fix_tag_pose_ == false);
@@ -288,7 +323,14 @@ struct TagReprojectionError
     }
   }
 
-  // Case where the camera has fixed intrinsics
+  /*!
+   * The cost function wrapper for the basic case of a normal tag with the intrinsics not being
+   * optimized
+   * @param[in] camera_pose_inv The pose from the camera to the origin
+   * @param[in] tag_pose The pose of the tag
+   * @param[in] residuals The residual error of projecting the tag into the camera
+   * @returns success status
+   */
   template <typename T>
   bool operator()(const T * const camera_pose_inv, const T * const tag_pose, T * residuals) const
   {
@@ -305,7 +347,12 @@ struct TagReprojectionError
       static_cast<T *>(nullptr), residuals);
   }
 
-  // Case where the camera has known pose and fixed intrinsics
+  /*!
+   * The cost function wrapper for the case where the camera has a fixed pose and intrinsics
+   * @param[in] tag_pose The pose of the tag
+   * @param[in] residuals The residual error of projecting the tag into the camera
+   * @returns success status
+   */
   template <typename T>
   bool operator()(const T * const tag_pose, T * residuals) const
   {
@@ -322,6 +369,18 @@ struct TagReprojectionError
       static_cast<T *>(nullptr), residuals);
   }
 
+  /*!
+   * Residual factory function of a normal tag & camera residual without exposing much templates
+   * @param[in] camera_uid The detection's uid
+   * @param[in] intrinsics The camera intrinsics
+   * @param[in] detection The tag detection
+   * @param[in] fixed_camera_pose_inv The fixed pose of the camera
+   * @param[in] fixed_tag_pose The fixed tag of the pose
+   * @param[in] fix_camera_pose Whether the camera pose should be fixed during optimization
+   * @param[in] optimize_intrinsics Whether the intrinsics should be optimized
+   * @param[in] fix_tag_pose Whether the tag pose should be fixed during optimization
+   * @returns the ceres residual
+   */
   static ceres::CostFunction * createTagResidual(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection,
@@ -366,6 +425,14 @@ struct TagReprojectionError
     return nullptr;
   }
 
+  /*!
+   * Residual factory function of a ground tag & camera residual without exposing much templates
+   * @param[in] camera_uid The detection's uid
+   * @param[in] intrinsics The camera intrinsics
+   * @param[in] detection The tag detection
+   * @param[in] optimize_intrinsics Whether the intrinsics should be optimized
+   * @returns the ceres residual
+   */
   static ceres::CostFunction * createGroundTagResidual(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection, bool optimize_intrinsics)

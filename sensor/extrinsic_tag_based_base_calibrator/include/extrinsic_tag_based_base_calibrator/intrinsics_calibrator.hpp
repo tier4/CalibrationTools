@@ -35,7 +35,17 @@ public:
   {
   }
 
+  /*!
+   * Set the images to use for calibration
+   * @param image_file_names the images to use for calibration
+   */
   void setCalibrationImageFiles(const std::vector<std::string> & image_file_names);
+
+  /*!
+   * Calibrate the camera intrinsicss using images containing apriltags
+   * @param[out] intrinsics the calibrated intrinsics
+   * @returns whether or not the service callback succeeded
+   */
   bool calibrate(IntrinsicParameters & intrinsics);
 
   ApriltagDetector detector_;

@@ -36,9 +36,28 @@ public:
   explicit ApriltagDetector(const ApriltagParameters & parameters);
   ~ApriltagDetector();
 
+  /*!
+   * Sets the id-dependent tag sizes to estimate the 3d poses
+   * @param[in] tag_sizes_map A map containing the size (side-to-side) of the tags
+   */
   void setTagSizes(const std::unordered_map<int, double> & tag_sizes_map);
+
+  /*!
+   * Sets the intrinsics of the camera for the detector, which are used to estimate the 3d pose of
+   * the detections
+   * @param[in] fx Focal distance
+   * @param[in] fy Focal distance
+   * @param[in] cx Optical center
+   * @param[in] cy Optical center
+   */
   void setIntrinsics(double fx, double fy, double cx, double cy);
 
+  /*!
+   * Detetect all the apriltags in an image filtering by hamming distance and detection margin
+   * If the tag size and intrinsics are known, it also estiamtes the 3d pose of the tag
+   * @param[in] img The image to obtain detections from
+   * @return a vector of ApriltagDetection found in the img
+   */
   std::vector<ApriltagDetection> detect(const cv::Mat & img) const;
 
 protected:

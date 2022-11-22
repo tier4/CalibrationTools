@@ -26,20 +26,49 @@ namespace extrinsic_tag_based_base_calibrator
 
 /*
  * Method to find the average of a set of rotation quaternions using Singular Value Decomposition
- * Snipped taken from https://gist.github.com/PeteBlackerThe3rd/f73e9d569e29f23e8bd828d7886636a0
+ * Snippet taken from https://gist.github.com/PeteBlackerThe3rd/f73e9d569e29f23e8bd828d7886636a0
  * The algorithm used is described here:
  * https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
  */
 Eigen::Vector4d quaternionAverage(std::vector<Eigen::Vector4d> quaternions);
 
+/*!
+ * Computes an array of corners from a tag pose and its size
+ * @param pose the calibrated intrinsics
+ * @param size the side-to-side size of the tag
+ * @returns the tags corners
+ */
 std::array<cv::Vec3d, 4> tagPoseToCorners(const cv::Affine3d & pose, double size);
 
+/*!
+ * Computes a pose to the ground plane by fitting a plane to a set of points and then projecting the
+ * origin to said plane
+ * @param[in] points the points used to calculate the ground pose from
+ * @param[out] ground_pose the ground pose
+ * @returns whether or not the algorithm succeeded
+ */
 bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & ground_pose);
 
+/*!
+ * Computes a pose to the ground plane by fitting a plane to a set of tag poses and then projecting
+ * the origin to said plane
+ * @param[in] poses the tag poses to use to compute the ground plane
+ * @param[in] tag_size the sized of the tags
+ * @param[out] ground_pose the ground pose
+ * @returns whether or not the algorithm succeeded
+ */
 bool computeGroundPlane(
   const std::vector<std::shared_ptr<cv::Affine3d>> & poses, double tag_size,
   cv::Affine3d & ground_pose);
 
+/*!
+ * Computes the base link pose by projecting the mid point between the left and right wheel poses
+ * into the ground plane
+ * @param[int] the left whee pose
+ * @param[int] the right whee pose
+ * @param[in] the ground pose
+ * @returns the base link pose
+ */
 cv::Affine3d computeBaseLink(
   const cv::Affine3d & left_wheel_pose, const cv::Affine3d right_wheel_pose,
   const cv::Affine3d & ground_pose);

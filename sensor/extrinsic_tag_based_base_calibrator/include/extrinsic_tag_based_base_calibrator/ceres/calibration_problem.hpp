@@ -56,36 +56,119 @@ public:
 
   static constexpr int RESIDUAL_DIM = 8;
 
+  /*!
+   * Sets the tag ids for each type of tag
+   * @param[in] waypoint_tag_ids vector of ids corresponding to waypoint tags
+   * @param[in] ground_tag_ids vector of ids corresponding to ground tags
+   * @param[in] left_wheel_tag_id tag id of the left wheel tag
+   * @param[in] right_wheel_tag_id tag id of the right wheel tag
+   */
   void setTagIds(
     std::vector<int> & waypoint_tag_ids, std::vector<int> & ground_tag_ids, int left_wheel_tag_id,
     int right_wheel_tag_id);
 
+  /*!
+   * Sets whether or not the external camera intrinsics should be optimized during ba
+   * @param[in] ba_optimize_intrinsics whether or not the external camera intrinsics should be
+   * optimized
+   */
   void setOptimizeIntrinsics(bool ba_optimize_intrinsics);
+
+  /*!
+   * Sets whether or not the external camera intrinsics are shared among observations
+   * @param[in] ba_share_intrinsics whether or not the external camera intrinsics are shared among
+   * observations
+   */
   void setShareIntrinsics(bool ba_share_intrinsics);
+
+  /*!
+   * Sets whether or not the ground tags are forced to lie on a single plane during ba
+   * @param[in] ba_force_shared_ground_plane whether or not the ground tags are forced to lie on a
+   * single plane
+   */
   void setForceSharedGroundPlane(bool ba_force_shared_ground_plane);
 
+  /*!
+   * Sets the external camera intrinsics
+   * @param[in] intrinsics the camera intrinsics
+   */
   void setExternalCameraIntrinsics(IntrinsicParameters & intrinsics);
+
+  /*!
+   * Sets the calibration camera intrinsics
+   * @param[in] intrinsics the camera intrinsics
+   */
   void setCalibrationSensorIntrinsics(IntrinsicParameters & intrinsics);
 
+  /*!
+   * Sets the calibration data
+   * @param[in] data the calibration data
+   */
   void setData(CalibrationData::Ptr & data);
+
+  /*!
+   * Formats the input data into optimization placeholders
+   */
   void dataToPlaceholders();
+
+  /*!
+   * Extracts the information from the optimization placeholders and formats it into the calibration
+   * data structure
+   */
   void placeholdersToData();
+
+  /*!
+   * Evaluates the current optimization variables with the BA cost function
+   */
   void evaluate();
+
+  /*!
+   * Formulates and solves the BA problem
+   */
   void solve();
+
+  /*!
+   * Generates debug image displaying the detections with the poses and intrinsics resulting from BA
+   */
   void writeDebugImages();
 
-  void getMarkers();
-
 protected:
+  /*!
+   * Converts a 3d pose into a normal tag optimization placeholder
+   * @param[in] pose the input 3d pose
+   * @param[out] placeholder the output placeholder
+   * @param[in] invert whether or not the pose should be inverted
+   */
   void pose3dToPlaceholder(
     cv::Affine3d pose, std::array<double, POSE_OPT_DIM> & placeholder, bool invert);
+
+  /*!
+   * Converts a normal tag optimization placeholder into a 3d pose
+   * @param[in] placeholder the input placeholder
+   * @param[out] pose the output 3d pose
+   * @param[in] invert whether or not the pose should be inverted
+   */
   void placeholderToPose3d(
     const std::array<double, POSE_OPT_DIM> & placeholder, std::shared_ptr<cv::Affine3d> & pose,
     bool invert);
+
+  /*!
+   * Converts a 3d pose into a ground tag optimization placeholder
+   * @param[in] pose the input 3d pose
+   * @param[out] shrd_placeholder the output placeholder shared among all ground tags
+   * @param[out] indep_placeholder the output placeholder independent from other ground tags
+   */
   void pose3dToGroundTagPlaceholder(
     cv::Affine3d tag_pose, cv::Affine3d ground_pose,
     std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
     std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder);
+
+  /*!
+   * Converts a ground tag optimization placeholder into a 3d pose
+   * @param[in] shrd_placeholder the input placeholder shared among all ground tags
+   * @param[in] indep_placeholder the input placeholder independent from other ground tags
+   * @param[out] pose the output 3d pose
+   */
   void groundTagPlaceholderToPose3d(
     const std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
     const std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,

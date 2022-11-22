@@ -35,18 +35,69 @@ public:
   {
   }
 
+  /*!
+   * Sets the intrinsics of the calibration camera prior to process a scene to include the 3d poses
+   * of the tags
+   * @param[in] parameters The intrinsics of the calibration camera
+   */
   void setCalibrationSensorIntrinsics(IntrinsicParameters & parameters);
+
+  /*!
+   * Sets the intrinsics of the external camera prior to process a scene to include the 3d poses of
+   * the tags
+   * @param[in] parameters The intrinsics of the external camera
+   */
   void setExternalCameraIntrinsics(IntrinsicParameters & parameters);
 
+  /*!
+   * Sets the side-to-side size of the waypoint tags
+   * @param[in] parameters The size of the waypoint size
+   */
   void setWaypointTagSize(double size);
+
+  /*!
+   * Sets the side-to-side size of the wheel tags
+   * @param[in] parameters The size of the wheel size
+   */
   void setWheelTagSize(double size);
+
+  /*!
+   * Sets the side-to-side size of the ground tags
+   * @param[in] parameters The size of the ground size
+   */
   void setGroundTagSize(double size);
 
+  /*!
+   * Sets tag ids of the waypoint tags
+   * @param[in] ids A vector containing the id from the waypoint tags
+   */
   void setWaypointTagIds(const std::vector<int> & ids);
+
+  /*!
+   * Sets tag id of the left wheel
+   * @param[in] id A vector containing the id from the waypoint tags
+   */
   void setLeftWheelTagId(int ids);
-  void setRightWheelTagId(int ids);
+
+  /*!
+   * Sets tag ids of the right wheel
+   * @param[in] id A vector containing the id from the waypoint tags
+   */
+  void setRightWheelTagId(int id);
+
+  /*!
+   * Sets tag ids of the ground tags
+   * @param[in] ids A vector containing the id from the waypoint tags
+   */
   void setGroundTagIds(const std::vector<int> & ids);
 
+  /*!
+   * Process a scene, rectifying the images in the scene and obtaining the detections and 3d poses
+   * @param[in] calibration_sensor_image_name The single image of the scene corresponding to the
+   * calibration camera
+   * @param[in] external_camera_image_names The vector containing the images of the scene
+   * corresponding to the external camera
+   */
   CalibrationScene processScene(
     std::string calibration_sensor_image_name,
     std::vector<std::string> external_camera_image_names);

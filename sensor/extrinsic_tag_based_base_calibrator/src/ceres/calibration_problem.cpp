@@ -472,8 +472,6 @@ void CalibrationProblem::writeDebugImages()
   }
 }
 
-void CalibrationProblem::getMarkers() {}
-
 void CalibrationProblem::pose3dToPlaceholder(
   cv::Affine3d pose, std::array<double, POSE_OPT_DIM> & placeholder, bool invert)
 {
