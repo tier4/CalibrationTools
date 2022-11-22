@@ -171,7 +171,7 @@ void DeviationEstimator::timer_callback()
     save_estimated_parameters(
       results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
       bias_angvel_base.vector.z, stddev_angvel_imu_msg, bias_angvel_imu.vector);
-  };
+  }
 }
 
 void DeviationEstimator::update_bias(
