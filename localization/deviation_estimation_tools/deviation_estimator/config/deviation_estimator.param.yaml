@@ -1,3 +1,4 @@
 /**:
   ros__parameters:
     imu_link_frame: tamagawa/imu_link
+    time_window: 2.0
