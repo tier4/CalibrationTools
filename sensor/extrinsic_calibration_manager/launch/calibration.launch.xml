@@ -77,6 +77,14 @@
       </include>
     </group>
 
+    <group if="$(eval &quot;'$(var mode)' == 'tag_based_base' &quot;)">
+      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/tag_based_base.launch.xml">
+        <arg name="vehicle_id" value="$(var vehicle_id)"/>
+        <arg name="camera_name" value="$(var camera_name)"/>
+        <arg name="rviz" value="$(var calibration_rviz)"/>
+      </include>
+    </group>
+
     <group if="$(eval &quot;'$(var mode)' == 'interactive' &quot;)">
       <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/interactive.launch.xml">
         <arg name="vehicle_id" value="$(var vehicle_id)"/>

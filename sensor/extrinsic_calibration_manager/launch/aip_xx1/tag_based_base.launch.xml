@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_xx1"/>
+  <arg name="camera_name" default=""/>
+  <arg name="rviz" default="false"/>
+
+  <!-- we do not use the standard image_raw name to avoid naming conflicts -->
+  <let name="lidar_model" value="velodyne_vls128"/>
+
+  <let name="image_decompressed_topic" value="/sensing/camera/camera0/image_rect_color/decompressed"/>
+  <let name="image_compressed_topic" value="/sensing/camera/camera0/image_rect_color/compressed"/>
+  <let name="camera_info_topic" value="/sensing/camera/camera0/camera_info"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
+
+  <let name="camera_frame" value="camera0/camera_link"/>
+
+  <!-- image decompressor -->
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+    <remap from="decompressor/input/compressed_image" to="$(var image_compressed_topic)"/>
+    <remap from="decompressor/output/raw_image" to="$(var image_decompressed_topic)"/>
+  </node>
+
+  <!-- lidartag detector -->
+  <include file="$(find-pkg-share lidartag)/launch/lidartag_$(var lidar_model).launch.xml">
+    <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
+  </include>
+
+  <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+    <param name="max_no_observation_time" value="3.0"/>
+    <param name="new_hypothesis_distance" value="1.5"/>
+
+    <param name="new_hypothesis_transl" value="0.1"/>
+    <param name="new_hypothesis_rot" value="15.0"/>
+    <param name="measurement_noise_transl" value="0.05"/>
+    <param name="measurement_noise_rot" value="5.0"/>
+    <param name="process_noise_transl" value="0.01"/>
+    <param name="process_noise_transl_dot" value="0.001"/>
+    <param name="process_noise_rot" value="1.0"/>
+    <param name="process_noise_rot_dot" value="0.1"/>
+  </node>
+
+  <!-- apriltag detector -->
+  <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
+    <arg name="image_topic" value="$(var image_decompressed_topic)"/>
+    <arg name="camera_info_topic" value="$(var camera_info_topic)"/>
+  </include>
+
+  <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+    <!-- filtering parameters -->
+    <param name="min_tag_size" value="0.6"/>
+    <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+    <param name="max_tag_distance" value="30.0"/>
+    <param name="max_allowed_homography_error" value="0.5"/>
+    <param name="min_margin" value="50.0"/>
+    <param name="max_hamming_error" value="0"/>
+
+    <param name="max_no_observation_time" value="3.0"/>
+    <param name="new_hypothesis_distance" value="1.5"/>
+    <param name="tag_ids" value="[0, 3, 4]"/>
+    <param name="tag_sizes" value="[0.6, 0.6, 0.6]"/>
+    <!-- the sizes of tag_ids -->
+    <param name="max_convergence_transl" value="2.0"/>
+    <param name="new_hypothesis_transl" value="20.0"/>
+
+    <param name="measurement_noise_transl" value="0.2"/>
+    <param name="process_noise_transl" value="0.02"/>
+  </node>
+</launch>
