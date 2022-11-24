@@ -9,3 +9,7 @@
     # Dead Reckoning configuration
     period: 10.0 # [s]
     cut: 9.0 # [s]
+
+    # Stop mask threshold (this should be manually synced with gyro_odometer in Autoware Universe)
+    vx_threshold: 0.01 # [m/s]
+    wz_threshold: 0.01 # [m/s]
