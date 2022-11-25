@@ -15,12 +15,14 @@
 #include "deviation_estimator/gyro_bias_module.hpp"
 
 #include "deviation_estimator/utils.hpp"
+#include "tier4_autoware_utils/geometry/geometry.hpp"
 
 void GyroBiasModule::update_bias(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt)
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
+  const double dt)
 {
-  const auto error_rpy = calculate_error_rpy(pose_list, twist_list, geometry_msgs::msg::Vector3{});
+  const auto error_rpy = calculate_error_rpy(pose_list, gyro_list, geometry_msgs::msg::Vector3{});
   gyro_bias_pair_.first.x += dt * error_rpy.x;
   gyro_bias_pair_.first.y += dt * error_rpy.y;
   gyro_bias_pair_.first.z += dt * error_rpy.z;

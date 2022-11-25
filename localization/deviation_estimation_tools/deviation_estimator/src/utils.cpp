@@ -65,19 +65,57 @@ void save_estimated_parameters(
   file.close();
 }
 
-geometry_msgs::msg::Point calculate_error_pos(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double coef_vx)
+geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & vec_list,
+  const double time,
+  const double tolerance_sec = 0.1)
 {
-  double t_prev = rclcpp::Time(twist_list.front().header.stamp).seconds();
-  geometry_msgs::msg::Point d_pos;
-  double yaw = tf2::getYaw(pose_list.front().pose.orientation);
-  for (std::size_t i = 0; i < twist_list.size() - 1; ++i) {
-    const double t_cur = rclcpp::Time(twist_list[i + 1].header.stamp).seconds();
-    yaw += twist_list[i].twist.angular.z * (t_cur - t_prev);
+  std::vector<double> time_list{};
+  for (const auto & vec: vec_list)
+  {
+    time_list.push_back(rclcpp::Time(vec.header.stamp).seconds());
+  }
 
-    d_pos.x += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::cos(yaw) * coef_vx;
-    d_pos.y += (t_cur - t_prev) * twist_list[i].twist.linear.x * std::sin(yaw) * coef_vx;
+  const int next_idx = std::upper_bound(time_list.begin(), time_list.end(), time) - time_list.begin();
+
+  if (next_idx == 0) 
+  {
+    if (time_list.front() - time > tolerance_sec) {
+      throw std::domain_error("interpolate_vector3_stamped failed! Query time is too small.");
+    }
+    return vec_list.front().vector;
+  } else if (next_idx == time_list.end() - time_list.begin()) {
+    if (time - time_list.back() > tolerance_sec) {
+      throw std::domain_error("interpolate_vector3_stamped failed! Query time is too large.");
+    }
+    return vec_list.back().vector;
+  } else {
+    const int prev_idx = next_idx - 1;
+    const double ratio = (time - time_list[prev_idx]) / (time_list[next_idx] - time_list[prev_idx]);
+    geometry_msgs::msg::Point interpolated_vec = tier4_autoware_utils::calcInterpolatedPoint(
+      vec_list[prev_idx].vector, vec_list[next_idx].vector, ratio);
+
+    return tier4_autoware_utils::createVector3(interpolated_vec.x, interpolated_vec.y, interpolated_vec.z);
+  }
+}
+
+geometry_msgs::msg::Point integrate_position(
+  const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
+  const double coef_vx,
+  const double yaw_init)
+{
+  double t_prev = rclcpp::Time(vx_list.front().stamp).seconds();
+  double yaw = yaw_init;
+  geometry_msgs::msg::Point d_pos = tier4_autoware_utils::createPoint(0.0, 0.0, 0.0);
+  for (std::size_t i = 0; i < vx_list.size() - 1; ++i) {
+    const double t_cur = rclcpp::Time(vx_list[i + 1].stamp).seconds();
+    const geometry_msgs::msg::Vector3 gyro_interpolated =
+      interpolate_vector3_stamped(gyro_list, rclcpp::Time(vx_list[i + 1].stamp).seconds());
+    yaw += gyro_interpolated.z * (t_cur - t_prev);
+
+    d_pos.x += (t_cur - t_prev) * vx_list[i].data * std::cos(yaw) * coef_vx;
+    d_pos.y += (t_cur - t_prev) * vx_list[i].data * std::sin(yaw) * coef_vx;
 
     t_prev = t_cur;
   }
@@ -86,48 +124,57 @@ geometry_msgs::msg::Point calculate_error_pos(
 
 geometry_msgs::msg::Vector3 calculate_error_rpy(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
   const geometry_msgs::msg::Vector3 & gyro_bias)
 {
   const geometry_msgs::msg::Vector3 rpy_0 =
     tier4_autoware_utils::getRPY(pose_list.front().pose.orientation);
   const geometry_msgs::msg::Vector3 rpy_1 =
     tier4_autoware_utils::getRPY(pose_list.back().pose.orientation);
-
-  double d_roll = 0, d_pitch = 0, d_yaw = 0;
-  double t_prev = rclcpp::Time(twist_list.front().header.stamp).seconds();
-  for (std::size_t i = 0; i < twist_list.size() - 1; ++i) {
-    double t_cur = rclcpp::Time(twist_list[i + 1].header.stamp).seconds();
-
-    d_roll += (t_cur - t_prev) * (twist_list[i].twist.angular.x - gyro_bias.x);
-    d_pitch += (t_cur - t_prev) * (twist_list[i].twist.angular.y - gyro_bias.y);
-    d_yaw += (t_cur - t_prev) * (twist_list[i].twist.angular.z - gyro_bias.z);
-
-    t_prev = t_cur;
-  }
-  geometry_msgs::msg::Vector3 error_rpy;
-  error_rpy.x = clip_radian(-rpy_1.x + rpy_0.x + d_roll);
-  error_rpy.y = clip_radian(-rpy_1.y + rpy_0.y + d_pitch);
-  error_rpy.z = clip_radian(-rpy_1.z + rpy_0.z + d_yaw);
+  const geometry_msgs::msg::Vector3 d_rpy = integrate_orientation(gyro_list, gyro_bias);
+  
+  geometry_msgs::msg::Vector3 error_rpy = tier4_autoware_utils::createVector3(
+    clip_radian(-rpy_1.x + rpy_0.x + d_rpy.x),
+    clip_radian(-rpy_1.y + rpy_0.y + d_rpy.y),
+    clip_radian(-rpy_1.z + rpy_0.z + d_rpy.z)
+  );
   return error_rpy;
 }
 
-double get_mean_abs_vx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+geometry_msgs::msg::Vector3 integrate_orientation(
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
+  const geometry_msgs::msg::Vector3 & gyro_bias)
+{
+  geometry_msgs::msg::Vector3 d_rpy = tier4_autoware_utils::createVector3(0.0, 0.0, 0.0);
+  double t_prev = rclcpp::Time(gyro_list.front().header.stamp).seconds();
+  for (std::size_t i = 0; i < gyro_list.size() - 1; ++i) {
+    double t_cur = rclcpp::Time(gyro_list[i + 1].header.stamp).seconds();
+
+    d_rpy.x += (t_cur - t_prev) * (gyro_list[i].vector.x - gyro_bias.x);
+    d_rpy.y += (t_cur - t_prev) * (gyro_list[i].vector.y - gyro_bias.y);
+    d_rpy.z += (t_cur - t_prev) * (gyro_list[i].vector.z - gyro_bias.z);
+
+    t_prev = t_cur;
+  }
+  return d_rpy;
+}
+
+double get_mean_abs_vx(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list)
 {
   double mean_abs_vx = 0;
-  for (const auto & msg : twist_list) {
-    mean_abs_vx += abs(msg.twist.linear.x);
+  for (const auto & msg : vx_list) {
+    mean_abs_vx += abs(msg.data);
   }
-  mean_abs_vx /= twist_list.size();
+  mean_abs_vx /= vx_list.size();
   return mean_abs_vx;
 }
 
-double get_mean_abs_wz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list)
+double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list)
 {
   double mean_abs_wz = 0;
-  for (auto & msg : twist_list) {
-    mean_abs_wz += abs(msg.twist.angular.z);
+  for (auto & msg : gyro_list) {
+    mean_abs_wz += abs(msg.vector.z);
   }
-  mean_abs_wz /= twist_list.size();
+  mean_abs_wz /= gyro_list.size();
   return mean_abs_wz;
 }

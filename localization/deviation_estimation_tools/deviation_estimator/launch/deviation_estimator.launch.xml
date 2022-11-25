@@ -13,21 +13,19 @@
   <arg name="estimation_freq" default="0.25" description="[Hz]"/>
   <arg name="show_debug_info" default="false"/>
 
-  <arg name="input_pose_name" default="/localization/pose_estimator/pose"/>
   <arg name="input_pose_with_cov_name" default="/localization/pose_estimator/pose_with_covariance"/>
 
-  <arg name="input_twist_raw_name" default="/localization/twist_estimator/twist_raw"/>
-  <arg name="input_twist_with_cov_raw_name" default="/localization/twist_estimator/twist_with_covariance_raw"/>
+  <arg name="input_wheel_odometry" default="/sensing/vehicle_velocity_converter/twist_with_covariance"/>
+  <arg name="input_imu" default="/sensing/imu/imu_data"/>
 
   <arg name="output_bias_angular_velocity" default="estimated_bias_angular_velocity"/>
   <arg name="output_coef_vx" default="estimated_coef_vx"/>
 
   <node pkg="deviation_estimator" exec="deviation_estimator" name="deviation_estimator" output="screen">
-    <remap from="in_pose" to="$(var input_pose_name)"/>
     <remap from="in_pose_with_covariance" to="$(var input_pose_with_cov_name)"/>
 
-    <remap from="in_twist_raw" to="$(var input_twist_raw_name)"/>
-    <remap from="in_twist_with_covariance_raw" to="$(var input_twist_with_cov_raw_name)"/>
+    <remap from="in_wheel_odometry" to="$(var input_wheel_odometry)"/>
+    <remap from="in_imu" to="$(var input_imu)"/>
 
     <param from="$(var param_path)"/>
 

@@ -16,7 +16,8 @@
 #define DEVIATION_ESTIMATOR__VELOCITY_COEF_MODULE_HPP_
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
+#include "geometry_msgs/msg/vector3_stamped.hpp"
+#include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
 #include <vector>
 
@@ -26,7 +27,9 @@ public:
   VelocityCoefModule() = default;
   void update_coef(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt);
+    const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
+    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
+    const double dt);
   double get_coef() const;
   double get_coef_std() const;
   bool empty() const;
