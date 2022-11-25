@@ -110,8 +110,8 @@ bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & gr
   auto det = cv::determinant(rotation);
 
   if (det < 0.0) {
-    rotation(2, 0) *= -1.0;
-    rotation(2, 1) *= -1.0;
+    rotation(0, 2) *= -1.0;
+    rotation(1, 2) *= -1.0;
     rotation(2, 2) *= -1.0;
     det = cv::determinant(rotation);
   }
@@ -177,6 +177,16 @@ cv::Affine3d computeBaseLink(
   fill_rotation_from_column(base_link_rotation, base_link_z_axis, 2);
 
   return cv::Affine3d(base_link_rotation, base_link_translation);
+}
+
+cv::Point2d projectPoint(
+  const cv::Vec3d & p, double fx, double fy, double cx, double cy, double k1, double k2)
+{
+  const double xp = p(0) / p(2);
+  const double yp = p(1) / p(2);
+  const double r2 = xp * xp + yp * yp;
+  const double d = 1.0 + r2 * (k1 + k2 * r2);
+  return cv::Point2d(cx + fx * d * xp, cy + fy * d * yp);
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

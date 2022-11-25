@@ -77,15 +77,11 @@ class RosInterface(Node):
 
         super().__init__("extrinsic_tag_based_base_calibrator")
 
-        try:
-            self.declare_parameter("calibration_sensor_type", rclpy.Parameter.Type.STRING)
+        self.declare_parameter("calibration_sensor_type", rclpy.Parameter.Type.STRING)
 
-            self.calibration_sensor_type = (
-                self.get_parameter("calibration_sensor_type").get_parameter_value().string_value
-            )
-        except Exception as e:
-            print(e)
-            self.calibration_sensor_type = "camera"
+        self.calibration_sensor_type = (
+            self.get_parameter("calibration_sensor_type").get_parameter_value().string_value
+        )
 
         self.ros_context = None
         self.ros_executor = None

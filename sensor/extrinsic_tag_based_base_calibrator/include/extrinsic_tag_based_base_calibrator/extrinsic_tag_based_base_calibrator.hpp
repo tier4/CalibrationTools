@@ -21,7 +21,9 @@
 #include <rclcpp/timer.hpp>
 #include <std_srvs/srv/empty.hpp>
 
+#include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
 #include <tier4_calibration_msgs/srv/files.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
@@ -46,6 +48,20 @@ public:
   explicit ExtrinsicTagBasedBaseCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
+  /*!
+   * Callback method for incoming apriltag detections
+   * @param detections_msg The apriltag detections
+   */
+  void apriltagDetectionsCallback(
+    const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr detections_msg);
+
+  /*!
+   * Callback method for incoming lidartag detections
+   * @param detections_msg The lidartag detections
+   */
+  void lidartagDetectionsCallback(
+    const lidartag_msgs::msg::LidarTagDetectionArray::SharedPtr detections_msg);
+
   /*!
    * A function to be called periodically that generates rviz markers to visualize the state of the
    * calibration
@@ -213,6 +229,10 @@ protected:
     std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
 
   rclcpp::TimerBase::SharedPtr visualization_timer_;
+  rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr
+    apriltag_detections_sub_;
+  rclcpp::Subscription<lidartag_msgs::msg::LidarTagDetectionArray>::SharedPtr
+    lidartag_detections_sub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub_;
 
   // Scene related services
@@ -246,9 +266,11 @@ protected:
   rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr save_database_srv_;
 
   // Parameters
-  std::string calibration_sensor_type_;
+  std::string calibration_sensor_frame_;
+  bool is_lidar_calibration_;
 
   ApriltagParameters apriltag_parameters_;
+  double lidartag_to_apriltag_scale_;
   double waypoint_tag_size_;
   double wheel_tag_size_;
   double ground_tag_size_;
@@ -264,9 +286,18 @@ protected:
   std::unordered_set<int> wheel_tag_ids_set_;
   std::unordered_set<int> ground_tag_ids_set_;
 
+  // Detections
+  apriltag_msgs::msg::AprilTagDetectionArray latest_apriltag_detections_msg_;
+  lidartag_msgs::msg::LidarTagDetectionArray latest_lidartag_detections_msg_;
+
   // Scene building parameters
   std::vector<std::string> current_external_camera_images_;
   std::vector<std::string> current_calibration_camera_images_;
+  apriltag_msgs::msg::AprilTagDetectionArray current_apriltag_detections_msg_;
+  lidartag_msgs::msg::LidarTagDetectionArray current_lidartag_detections_msg_;
+
+  std::vector<apriltag_msgs::msg::AprilTagDetectionArray> scenes_calibration_apriltag_detections_;
+  std::vector<lidartag_msgs::msg::LidarTagDetectionArray> scenes_calibration_lidartag_detections_;
   std::vector<std::vector<std::string>> scenes_external_camera_images_;
   std::vector<std::string> scenes_calibration_camera_images_;
 

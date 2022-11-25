@@ -164,8 +164,6 @@ struct TagReprojectionError
       &camera_pose_inv[TRANSLATION_X_INDEX]);
     const Eigen::Map<const Vector6<T>> camera_intrinsics_map(camera_intrinsics);
 
-    assert(fix_tag_pose_ == false);
-
     auto transform_corners =
       [](auto & quaternion, auto & translation, auto & input_corners, auto & output_corners) {
         for (int i = 0; i < NUM_CORNERS; i++) {
@@ -174,7 +172,17 @@ struct TagReprojectionError
       };
 
     // Template corners to World coordinate system (wcs)
-    if (!is_ground_tag_) {
+    if (fix_tag_pose_) {
+      assert(std::abs(fixed_tag_rotation_.norm() - 1.0) < 1e7);
+
+      Eigen::Quaternion<T> tag_quaternion = {
+        T(1) * fixed_tag_rotation_(ROTATION_W_INDEX), T(1) * fixed_tag_rotation_(ROTATION_X_INDEX),
+        T(1) * fixed_tag_rotation_(ROTATION_Y_INDEX), T(1) * fixed_tag_rotation_(ROTATION_Z_INDEX)};
+
+      tag_quaternion = tag_quaternion.normalized();
+
+      transform_corners(tag_quaternion, fixed_tag_translation_, template_corners_, corners_wcs);
+    } else if (!is_ground_tag_) {
       const Eigen::Map<const Vector4<T>> tag_rotation_map(tag_pose);
       const Eigen::Map<const Vector3<T>> tag_translation_map(&tag_pose[TRANSLATION_X_INDEX]);
 
@@ -324,27 +332,42 @@ struct TagReprojectionError
   }
 
   /*!
-   * The cost function wrapper for the basic case of a normal tag with the intrinsics not being
-   * optimized
+   * The cost function wrapper for one of the following cases:
+   *   - the basic case of a normal tag with the intrinsics not being optimized
+   *   - the case of a fixed tag with intrinsics being optimized
    * @param[in] camera_pose_inv The pose from the camera to the origin
    * @param[in] tag_pose The pose of the tag
    * @param[in] residuals The residual error of projecting the tag into the camera
    * @returns success status
    */
   template <typename T>
-  bool operator()(const T * const camera_pose_inv, const T * const tag_pose, T * residuals) const
+  bool operator()(const T * const arg1, const T * const arg2, T * residuals) const
   {
     assert(fix_camera_pose_ == false);
-    assert(optimize_intrinsics_ == false);
-    assert(fix_tag_pose_ == false);
     assert(is_ground_tag_ == false);
 
-    std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                             T(1.0) * fy_, T(0.0),       T(0.0)};
+    if (!fix_tag_pose_) {
+      assert(optimize_intrinsics_ == false);
 
-    return impl(
-      camera_pose_inv, intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
-      static_cast<T *>(nullptr), residuals);
+      const T * const camera_pose_inv = arg1;
+      const T * const tag_pose = arg2;
+
+      std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                               T(1.0) * fy_, T(0.0),       T(0.0)};
+
+      return impl(
+        camera_pose_inv, intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
+        static_cast<T *>(nullptr), residuals);
+    } else {
+      assert(optimize_intrinsics_ == true);
+
+      const T * const camera_pose_inv = arg1;
+      const T * const intrinsics = arg2;
+
+      return impl(
+        camera_pose_inv, intrinsics, static_cast<T *>(nullptr), static_cast<T *>(nullptr),
+        static_cast<T *>(nullptr), residuals);
+    }
   }
 
   /*!
@@ -392,6 +415,20 @@ struct TagReprojectionError
       camera_uid, intrinsics, detection, fixed_camera_pose_inv, fixed_tag_pose, fix_camera_pose,
       optimize_intrinsics, fix_tag_pose, false);
 
+    if (fix_tag_pose && !optimize_intrinsics) {
+      return (new ceres::AutoDiffCostFunction<
+              TagReprojectionError,
+              RESIDUAL_DIM,   // 4 corners x 2 residuals
+              POSE_OPT_DIM>(  // 7 tag pose parameters
+        f));
+    } else if (fix_tag_pose && optimize_intrinsics) {
+      return (new ceres::AutoDiffCostFunction<
+              TagReprojectionError,
+              RESIDUAL_DIM,     // 4 corners x 2 residuals
+              POSE_OPT_DIM,     // 7 camera pose parameters
+              INTRINSICS_DIM>(  // 6 camera intrinsic parameters
+        f));
+    }
     if (fix_camera_pose && !optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
               TagReprojectionError,

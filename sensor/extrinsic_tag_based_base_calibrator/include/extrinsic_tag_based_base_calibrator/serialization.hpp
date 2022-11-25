@@ -109,6 +109,17 @@ void serialize(
 
 template <class Archive>
 void serialize(
+  Archive & ar, extrinsic_tag_based_base_calibrator::LidartagDetection & detection,
+  const unsigned int version)
+{
+  (void)version;
+  ar & detection.id;
+  ar & detection.pose;
+  ar & detection.size;
+}
+
+template <class Archive>
+void serialize(
   Archive & ar, extrinsic_tag_based_base_calibrator::ExternalCameraFrame & frame,
   const unsigned int version)
 {
@@ -123,7 +134,8 @@ void serialize(
   const unsigned int version)
 {
   (void)version;
-  ar & scene.calibration_sensor_detections;
+  ar & scene.calibration_camera_detections;
+  ar & scene.calibration_lidar_detections;
   ar & scene.external_camera_frames;
 }
 

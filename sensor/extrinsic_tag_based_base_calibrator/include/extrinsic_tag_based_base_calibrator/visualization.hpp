@@ -103,7 +103,25 @@ void addGrid(
   visualization_msgs::msg::MarkerArray & markers, const cv::Affine3d & affine, int cells,
   double resolution, const visualization_msgs::msg::Marker & base_marker);
 
+/*!
+ * Draws the detections in an image
+ * @param[inout] img the image to draw on
+ * @param[in] detection the detection to draw
+ * @param[in] color the color to colour in
+ */
 void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scalar color);
+
+/*!
+ * Draws the detections in an image
+ * @param[inout] img the image to draw on
+ * @param[in] center the center of the axes
+ * @param[in] px the point in the x direction
+ * @param[in] py the point in the y direction
+ * @param[in] pz the point in the z direction
+ */
+void drawAxes(
+  cv::Mat & img, const ApriltagDetection & detection, const cv::Point2d & center,
+  const cv::Point2d & px, const cv::Point2d & py, const cv::Point2d & pz);
 
 }  // namespace extrinsic_tag_based_base_calibrator
 

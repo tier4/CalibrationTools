@@ -152,12 +152,16 @@ class CalibratorUI(QMainWindow):
         if self.sensor_type == "lidar":
             self.add_lidar_detections_button = QPushButton("Add lidar detections to scene")
             self.add_lidar_detections_button.setEnabled(False)
-            self.add_lidar_detections_button.clicked.connect(None)
+            self.add_lidar_detections_button.clicked.connect(
+                self.add_lidar_detections_button_callback
+            )
             self.scene_layout.addWidget(self.add_lidar_detections_button)
         else:
             self.add_camera_detections_button = QPushButton("Add camera detections to scene")
             self.add_camera_detections_button.setEnabled(False)
-            self.add_camera_detections_button.clicked.connect(None)
+            self.add_camera_detections_button.clicked.connect(
+                self.add_camera_detections_button_callback
+            )
             self.scene_layout.addWidget(self.add_camera_detections_button)
 
             self.add_camera_images_button = QPushButton("Add calibration camera images to scene")
@@ -344,7 +348,7 @@ class CalibratorUI(QMainWindow):
         self.calibration_button.setEnabled(
             self.calibration_service_status
             and (can_process and self.processed_scenes)
-            or self.database_loaded
+            or (self.database_loaded and self.valid_external_camera_intrinsics)
             and not self.pending_service
         )
 
@@ -511,10 +515,10 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_lidar_detections_button_callback(self):
-        pass
+        self.ros_interface.add_calibration_lidar_detections_to_scene()
 
     def add_camera_detections_button_callback(self):
-        pass
+        self.ros_interface.add_calibration_camera_detections_to_scene()
 
     def add_camera_images_button_callback(self):
         filenames, _ = QFileDialog.getOpenFileNames(
@@ -541,7 +545,16 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def save_external_intrinsics_button_callback(self):
-        pass
+        filename, _ = QFileDialog.getSaveFileName(
+            None, "Save extrinsics", ".", "Extrinsics file (*.yaml)"
+        )
+
+        if len(filename) == 0:
+            return
+
+        self.pending_service = True
+        self.ros_interface.save_external_camera_intrinsics([filename])
+        self.check_status()
 
     def calibrate_external_intrinsics_button_callback(self):
         filenames, _ = QFileDialog.getOpenFileNames(
@@ -568,7 +581,16 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def save_camera_intrinsics_button_callback(self):
-        pass
+        filename, _ = QFileDialog.getSaveFileName(
+            None, "Save extrinsics", ".", "Extrinsics file (*.yaml)"
+        )
+
+        if len(filename) == 0:
+            return
+
+        self.pending_service = True
+        self.ros_interface.save_calibration_camera_intrinsics([filename])
+        self.check_status()
 
     def calibrate_camera_intrinsics_button_callback(self):
         filenames, _ = QFileDialog.getOpenFileNames(
@@ -603,7 +625,7 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def save_database_button_callback(self):
-        filename = QFileDialog.getSaveFileName(None, "Save File", ".", "Database (*.db *.data)")
+        filename, _ = QFileDialog.getSaveFileName(None, "Save File", ".", "Database (*.db *.data)")
 
         if len(filename) == 0:
             return

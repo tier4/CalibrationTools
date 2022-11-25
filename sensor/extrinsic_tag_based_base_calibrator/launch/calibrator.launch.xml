@@ -4,20 +4,41 @@
   <arg name="base_frame" default=""/>
   <arg name="parent_frame" default=""/>
   <arg name="child_frame" default=""/>
+  <arg name="calibration_sensor_frame" default="sensor"/>
+  <arg name="calibration_sensor_type" default="lidar"/>
+  <arg name="apriltag_detections_topic" default="apriltag/detection_array"/>
+  <arg name="lidartag_detections_topic" default="lidartag/detection_array"/>
+  <arg name="apriltag_detector_nthreads" default="12"/>
 
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
     <node pkg="extrinsic_tag_based_base_calibrator" exec="extrinsic_tag_based_base_calibrator" name="extrinsic_tag_based_base_calibrator" output="screen">
+      <remap from="apriltag/detection_array" to="$(var apriltag_detections_topic)"/>
+      <remap from="lidartag/detection_array" to="$(var lidartag_detections_topic)"/>
+
       <param name="base_frame" value="$(var base_frame)"/>
       <param name="parent_frame" value="$(var parent_frame)"/>
       <param name="child_frame" value="$(var child_frame)"/>
 
-      <!--BA options -->
+      <param name="calibration_sensor_frame" value="$(var calibration_sensor_frame)"/>
+      <param name="calibration_sensor_type" value="$(var calibration_sensor_type)"/>
+
+      <param name="apriltag_nthreads" value="$(var apriltag_detector_nthreads)"/>
+
       <param name="ba_optimize_intrinsics" value="true"/>
       <param name="ba_share_intrinsics" value="true"/>
-      <param name="ba_force_shared_ground_plane" value="true"/>
+      <param name="ba_force_shared_ground_plane" value="false"/>
+
+      <param name="intrinsic_calibration_tag_ids" value="[0, 4]"/>
+      <param name="ground_tag_ids" value="[6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]"/>
+      <param name="ground_tag_size" value="16.3"/>
+      <!--0.2185-->
+      <param name="waypoint_tag_size" value="0.6"/>
+      <param name="wheel_tag_size" value="0.6"/>
     </node>
 
-    <node pkg="extrinsic_tag_based_base_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
+    <node pkg="extrinsic_tag_based_base_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen">
+      <param name="calibration_sensor_type" value="$(var calibration_sensor_type)"/>
+    </node>
   </group>
 </launch>

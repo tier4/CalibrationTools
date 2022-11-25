@@ -13,13 +13,23 @@
 // limitations under the License.
 
 #include <extrinsic_tag_based_base_calibrator/calibration_scene_extractor.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#ifdef ROS_DISTRO_GALACTIC
+#include <tf2_eigen/tf2_eigen.h>
+#else
+#include <tf2_eigen/tf2_eigen.hpp>
+#endif
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include <iostream>
-#include <unordered_set>
 
 namespace extrinsic_tag_based_base_calibrator
 {
@@ -38,6 +48,11 @@ void CalibrationSceneExtractor::setExternalCameraIntrinsics(IntrinsicParameters 
   external_camera_detector_.setIntrinsics(
     intrinsics.undistorted_camera_matrix(0, 0), intrinsics.undistorted_camera_matrix(1, 1),
     intrinsics.undistorted_camera_matrix(0, 2), intrinsics.undistorted_camera_matrix(1, 2));
+}
+
+void CalibrationSceneExtractor::setLidartagToApriltagScale(double scale)
+{
+  lidartag_to_apriltag_scale_ = scale;
 }
 
 void CalibrationSceneExtractor::setWaypointTagSize(double size) { waypoint_tag_size_ = size; }
@@ -61,64 +76,93 @@ void CalibrationSceneExtractor::setGroundTagIds(const std::vector<int> & ids)
 }
 
 CalibrationScene CalibrationSceneExtractor::processScene(
-  std::string calibration_sensor_image_name, std::vector<std::string> external_camera_image_names)
+  const lidartag_msgs::msg::LidarTagDetectionArray & msg,
+  const std::vector<std::string> & external_camera_image_names)
 {
-  std::unordered_set<int> waypoint_ids_set;
-  std::unordered_map<int, double> calibration_sensor_tag_sizes;
-  std::unordered_map<int, double> external_camera_tag_sizes;
-
-  for (auto id : waypoint_tag_ids_) {
-    waypoint_ids_set.insert(id);
-    calibration_sensor_tag_sizes[id] = waypoint_tag_size_;
-    external_camera_tag_sizes[id] = waypoint_tag_size_;
-  }
-
-  external_camera_tag_sizes[left_wheel_tag_id_] = wheel_tag_size_;
-  external_camera_tag_sizes[right_wheel_tag_id_] = wheel_tag_size_;
-
-  for (auto id : ground_tag_ids_) {
-    external_camera_tag_sizes[id] = ground_tag_size_;
-  }
-
-  calibration_sensor_detector_.setTagSizes(calibration_sensor_tag_sizes);
-  external_camera_detector_.setTagSizes(external_camera_tag_sizes);
-
-  auto detection_fn = [](
-                        const ApriltagDetector & detector, const IntrinsicParameters & intrinsics,
-                        const std::string & img_name) -> std::vector<ApriltagDetection> {
-    cv::Mat distorted_img = cv::imread(img_name, cv::IMREAD_GRAYSCALE);
-    cv::Mat undistorted_img;
-
-    cv::undistort(
-      distorted_img, undistorted_img, intrinsics.camera_matrix, intrinsics.dist_coeffs,
-      intrinsics.undistorted_camera_matrix);
-
-    return detector.detect(undistorted_img);
-  };
+  setUp();
 
   CalibrationScene scene;
 
-  auto calibration_sensor_detections = detection_fn(
+  // Lidartag and apriltag poses have different directions (orientation) so we need to choose one
+  // and adapt the other We choose to use the coordinate system defined by apriltag and convert the
+  // lidartag poses to match the apriltag definitions E.j corner^{1}_{apriltag} = (-hsize, hsize, 0)
+  // <=> corner^{1}_{lidartag} = (0, -hsize, -hsize) corner^{2}_{apriltag} = (hsize, hsize, 0)   <=>
+  // corner^{2}_{lidartag} = (0, hsize, -hsize) corner^{3}_{apriltag} = (hsize, -hsize, 0)  <=>
+  // corner^{3}_{lidartag} = (0, hsize, hsize) corner^{4}_{apriltag} = (-hsize, -hsize, 0) <=>
+  // corner^{4}_{lidartag} = (0, -hsize, hsize) corner_{lidartag} = R * corner_{apriltag} R = [[0,
+  // 0, -1],
+  //      [1,  0, 0],
+  //      [0, -1, 0]]
+  // Rot_{apriltag} = R^{T} * Rot_{lidartag}
+
+  std::vector<LidartagDetection> tmp_detections;
+  std::transform(
+    msg.detections.begin(), msg.detections.end(), std::back_inserter(tmp_detections),
+    [&](const lidartag_msgs::msg::LidarTagDetection & msg) {
+      LidartagDetection detection;
+      detection.id = msg.id;
+      detection.size = msg.size * lidartag_to_apriltag_scale_;
+
+      Eigen::Isometry3d pose_eigen;
+      tf2::fromMsg(msg.pose, pose_eigen);
+
+      Eigen::Vector3d translation_eigen = pose_eigen.translation();
+      Eigen::Matrix3d rotation_eigen = pose_eigen.rotation();
+
+      Eigen::Matrix3d apriltag_to_lidartag_rot;
+      apriltag_to_lidartag_rot << 0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0;
+
+      rotation_eigen = rotation_eigen * apriltag_to_lidartag_rot;
+
+      cv::Vec3d translation_cv;
+      cv::Matx33d rotation_cv;
+      cv::eigen2cv(translation_eigen, translation_cv);
+      cv::eigen2cv(rotation_eigen, rotation_cv);
+
+      detection.pose = cv::Affine3d(rotation_cv, translation_cv);
+
+      return detection;
+    });
+
+  std::copy_if(
+    tmp_detections.begin(), tmp_detections.end(),
+    std::back_inserter(scene.calibration_lidar_detections),
+    [&](const LidartagDetection & detection) { return waypoint_ids_set_.count(detection.id) > 0; });
+
+  processExternalCamaeraImages(scene, external_camera_image_names);
+
+  return scene;
+}
+
+CalibrationScene CalibrationSceneExtractor::processScene(
+  const std::string & calibration_sensor_image_name,
+  const std::vector<std::string> & external_camera_image_names)
+{
+  setUp();
+
+  CalibrationScene scene;
+
+  auto calibration_sensor_detections = detect(
     calibration_sensor_detector_, calibration_sensor_intrinsics_, calibration_sensor_image_name);
 
   std::copy_if(
     calibration_sensor_detections.begin(), calibration_sensor_detections.end(),
-    std::back_inserter(scene.calibration_sensor_detections),
-    [&waypoint_ids_set](const ApriltagDetection & detection) {
-      return waypoint_ids_set.count(detection.id) > 0;
-    });
+    std::back_inserter(scene.calibration_camera_detections),
+    [&](const ApriltagDetection & detection) { return waypoint_ids_set_.count(detection.id) > 0; });
 
+  processExternalCamaeraImages(scene, external_camera_image_names);
+
+  return scene;
+}
+
+void CalibrationSceneExtractor::processExternalCamaeraImages(
+  CalibrationScene & scene, const std::vector<std::string> & external_camera_image_names)
+{
   for (const auto & image_name : external_camera_image_names) {
     std::vector<ApriltagDetection> detections =
-      detection_fn(external_camera_detector_, external_camera_intrinsics_, image_name);
+      detect(external_camera_detector_, external_camera_intrinsics_, image_name);
 
-    int num_waypoints = std::count_if(
-      detections.begin(), detections.end(),
-      [&waypoint_ids_set](const ApriltagDetection & detection) {
-        return waypoint_ids_set.count(detection.id) > 0;
-      });
-
-    if (num_waypoints == 0) {
+    if (detections.size() < 2) {
       continue;
     }
 
@@ -127,8 +171,8 @@ CalibrationScene CalibrationSceneExtractor::processScene(
 
     std::copy_if(
       detections.begin(), detections.end(), std::back_inserter(frame.detections),
-      [external_camera_tag_sizes](const ApriltagDetection & detection) {
-        return external_camera_tag_sizes.count(detection.id) > 0;
+      [&](const ApriltagDetection & detection) {
+        return external_camera_tag_sizes_.count(detection.id) > 0;
       });
 
     RCLCPP_INFO(
@@ -154,6 +198,11 @@ CalibrationScene CalibrationSceneExtractor::processScene(
             cv::line(
               img, detection.corners[i], detection.corners[j], color,
               static_cast<int>(std::max(tag_size / 256.0, 1.0)), cv::LINE_AA);
+
+            cv::putText(
+              img, std::to_string(i), detection.corners[i], cv::FONT_HERSHEY_SIMPLEX,
+              std::max(tag_size / 256.0, 1.0), color,
+              static_cast<int>(std::max(tag_size / 128.0, 1.0)));
           }
 
           cv::putText(
@@ -181,8 +230,39 @@ CalibrationScene CalibrationSceneExtractor::processScene(
       cv::imwrite(output_name, undistorted_img);
     }
   }
+}
 
-  return scene;
+std::vector<ApriltagDetection> CalibrationSceneExtractor::detect(
+  const ApriltagDetector & detector, const IntrinsicParameters & intrinsics,
+  const std::string & img_name)
+{
+  cv::Mat distorted_img = cv::imread(img_name, cv::IMREAD_GRAYSCALE);
+  cv::Mat undistorted_img;
+
+  cv::undistort(
+    distorted_img, undistorted_img, intrinsics.camera_matrix, intrinsics.dist_coeffs,
+    intrinsics.undistorted_camera_matrix);
+
+  return detector.detect(undistorted_img);
+}
+
+void CalibrationSceneExtractor::setUp()
+{
+  for (auto id : waypoint_tag_ids_) {
+    waypoint_ids_set_.insert(id);
+    calibration_sensor_tag_sizes_[id] = waypoint_tag_size_;
+    external_camera_tag_sizes_[id] = waypoint_tag_size_;
+  }
+
+  external_camera_tag_sizes_[left_wheel_tag_id_] = wheel_tag_size_;
+  external_camera_tag_sizes_[right_wheel_tag_id_] = wheel_tag_size_;
+
+  for (auto id : ground_tag_ids_) {
+    external_camera_tag_sizes_[id] = ground_tag_size_;
+  }
+
+  calibration_sensor_detector_.setTagSizes(calibration_sensor_tag_sizes_);
+  external_camera_detector_.setTagSizes(external_camera_tag_sizes_);
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

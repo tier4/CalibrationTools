@@ -92,6 +92,13 @@ struct ApriltagDetection
   double size;
 };
 
+struct LidartagDetection
+{
+  int id;
+  cv::Affine3d pose;
+  double size;
+};
+
 struct ExternalCameraFrame
 {
   std::string image_filename;
@@ -100,7 +107,8 @@ struct ExternalCameraFrame
 
 struct CalibrationScene
 {
-  std::vector<ApriltagDetection> calibration_sensor_detections;
+  std::vector<LidartagDetection> calibration_lidar_detections;
+  std::vector<ApriltagDetection> calibration_camera_detections;
   std::vector<ExternalCameraFrame> external_camera_frames;
 };
 struct UID

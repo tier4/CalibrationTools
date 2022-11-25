@@ -7,6 +7,7 @@
 
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
   <let name="lidar_model" value="velodyne_vls128"/>
+  <let name="calibration_sensor_frame" value="velodyne_top"/>
 
   <let name="image_decompressed_topic" value="/sensing/camera/camera0/image_rect_color/decompressed"/>
   <let name="image_compressed_topic" value="/sensing/camera/camera0/image_rect_color/compressed"/>
@@ -66,4 +67,12 @@
     <param name="measurement_noise_transl" value="0.2"/>
     <param name="process_noise_transl" value="0.02"/>
   </node>
+
+  <!-- base-lidar calibrator -->
+  <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/calibrator.launch.xml">
+    <arg name="calibration_sensor_frame" value="$(var calibration_sensor_frame)"/>
+    <arg name="calibration_sensor_type" value="lidar"/>
+    <arg name="apriltag_detections_topic" value="/apriltag/filtered/detection_array"/>
+    <arg name="lidartag_detections_topic" value="/lidartag/filtered/detections_array"/>
+  </include>
 </launch>

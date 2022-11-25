@@ -18,7 +18,12 @@
 #include <extrinsic_tag_based_base_calibrator/apriltag_detector.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 
+#include <apriltag_msgs/msg/april_tag_detection_array.hpp>
+#include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
+
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace extrinsic_tag_based_base_calibrator
@@ -48,6 +53,14 @@ public:
    * @param[in] parameters The intrinsics of the external camera
    */
   void setExternalCameraIntrinsics(IntrinsicParameters & parameters);
+
+  /*!
+   * Lidartag defines the size using the complete physical sizem whereas apriltag uses the inner
+   * size, so we need to adapt these definitions,
+   *  TODO(knzo25): check if this is the same for other tag families other than 16h5
+   * @param[in] scale The conversion scale
+   */
+  void setLidartagToApriltagScale(double scale);
 
   /*!
    * Sets the side-to-side size of the waypoint tags
@@ -93,19 +106,44 @@ public:
 
   /*!
    * Process a scene, rectifying the images in the scene and obtaining the detections and 3d poses
+   * @param[in] detections The lidartag detections
+   * @param[in] external_camera_image_names The vector containing the images of the scene
+   * corresponding to the external camera
+   */
+  CalibrationScene processScene(
+    const lidartag_msgs::msg::LidarTagDetectionArray & detections,
+    const std::vector<std::string> & external_camera_image_names);
+
+  /*!
+   * Process a scene, rectifying the images in the scene and obtaining the detections and 3d poses
    * @param[in] calibration_sensor_image_name The single image of the scene corresponding to the
    * calibration camera
    * @param[in] external_camera_image_names The vector containing the images of the scene
    * corresponding to the external camera
    */
   CalibrationScene processScene(
-    std::string calibration_sensor_image_name,
-    std::vector<std::string> external_camera_image_names);
+    const std::string & calibration_sensor_image_name,
+    const std::vector<std::string> & external_camera_image_names);
 
 protected:
+  /*!
+   * Process the external camera images
+   * @param[in] external_camera_image_names The vector containing the images of the scene
+   * corresponding to the external camera
+   */
+  void processExternalCamaeraImages(
+    CalibrationScene & scene, const std::vector<std::string> & external_camera_image_names);
+
+  std::vector<ApriltagDetection> detect(
+    const ApriltagDetector & detector, const IntrinsicParameters & intrinsics,
+    const std::string & img_name);
+
+  void setUp();
+
   ApriltagDetector calibration_sensor_detector_;
   ApriltagDetector external_camera_detector_;
 
+  double lidartag_to_apriltag_scale_;
   double waypoint_tag_size_;
   double wheel_tag_size_;
   double ground_tag_size_;
@@ -114,6 +152,10 @@ protected:
   int left_wheel_tag_id_;
   int right_wheel_tag_id_;
   std::vector<int> ground_tag_ids_;
+
+  std::unordered_set<int> waypoint_ids_set_;
+  std::unordered_map<int, double> calibration_sensor_tag_sizes_;
+  std::unordered_map<int, double> external_camera_tag_sizes_;
 
   IntrinsicParameters calibration_sensor_intrinsics_;
   IntrinsicParameters external_camera_intrinsics_;

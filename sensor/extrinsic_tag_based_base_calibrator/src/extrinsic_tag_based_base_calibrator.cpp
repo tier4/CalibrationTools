@@ -42,8 +42,6 @@
 #include <numeric>
 #include <random>
 
-#define UNUSED(x) (void)x;
-
 namespace extrinsic_tag_based_base_calibrator
 {
 
@@ -52,12 +50,16 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 : Node("extrinsic_tag_based_base_calibrator_node", options),
   data_(std::make_shared<CalibrationData>())
 {
+  calibration_sensor_frame_ =
+    this->declare_parameter<std::string>("calibration_sensor_frame", "sensor");
+  is_lidar_calibration_ =
+    this->declare_parameter<std::string>("calibration_sensor_type", "camera") == "lidar" ? true
+                                                                                         : false;
+
+  lidartag_to_apriltag_scale_ = this->declare_parameter<double>("lidartag_to_apriltag_scale", 0.75);
   waypoint_tag_size_ = this->declare_parameter<double>("waypoint_tag_size", 0.8);
   wheel_tag_size_ = this->declare_parameter<double>("wheel_tag_size", 0.8);
   ground_tag_size_ = this->declare_parameter<double>("ground_tag_size", 0.135);
-
-  calibration_sensor_type_ =
-    this->declare_parameter<std::string>("calibration_sensor_type", "camera");
 
   bool ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
   bool ba_share_intrinsics_ = this->declare_parameter<bool>("ba_share_intrinsics", false);
@@ -88,7 +90,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
   std::vector<int64_t> intrinsic_calibration_tag_ids =
     this->declare_parameter<std::vector<int64_t>>(
-      "intrinsic_calibration_tag_ids", std::vector<int64_t>{0, 3, 4, 7, 13});
+      "intrinsic_calibration_tag_ids", std::vector<int64_t>{0});
   std::transform(
     intrinsic_calibration_tag_ids.begin(), intrinsic_calibration_tag_ids.end(),
     std::back_inserter(intrinsic_calibration_tag_ids_),
@@ -123,6 +125,22 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   apriltag_parameters_.nthreads = this->declare_parameter<int>("apriltag_nthreads", 1);
   apriltag_parameters_.debug = this->declare_parameter<bool>("apriltag_debug", false);
   apriltag_parameters_.refine_edges = this->declare_parameter<bool>("apriltag_refine_edges", true);
+
+  if (is_lidar_calibration_) {
+    lidartag_detections_sub_ =
+      this->create_subscription<lidartag_msgs::msg::LidarTagDetectionArray>(
+        "lidartag/detection_array", 1,
+        std::bind(
+          &ExtrinsicTagBasedBaseCalibrator::lidartagDetectionsCallback, this,
+          std::placeholders::_1));
+  } else {
+    apriltag_detections_sub_ =
+      this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
+        "apriltag/detection_array", 1,
+        std::bind(
+          &ExtrinsicTagBasedBaseCalibrator::apriltagDetectionsCallback, this,
+          std::placeholders::_1));
+  }
 
   markers_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 10);
 
@@ -217,12 +235,34 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
                        std::placeholders::_1, std::placeholders::_2));
 }
 
+void ExtrinsicTagBasedBaseCalibrator::apriltagDetectionsCallback(
+  const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr detections_msg)
+{
+  if (detections_msg->header.frame_id != calibration_sensor_frame_) {
+    RCLCPP_ERROR(get_logger(), "Apriltag detections are not in the calibration frame !");
+    return;
+  }
+
+  latest_apriltag_detections_msg_ = *detections_msg;
+}
+
+void ExtrinsicTagBasedBaseCalibrator::lidartagDetectionsCallback(
+  const lidartag_msgs::msg::LidarTagDetectionArray::SharedPtr detections_msg)
+{
+  if (detections_msg->header.frame_id != calibration_sensor_frame_) {
+    RCLCPP_ERROR(get_logger(), "Lidartag detections are not in the calibration frame !");
+    return;
+  }
+
+  latest_lidartag_detections_msg_ = *detections_msg;
+}
+
 void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 {
   visualization_msgs::msg::MarkerArray markers;
 
   visualization_msgs::msg::Marker base_marker;
-  base_marker.header.frame_id = "/calibration_sensor";
+  base_marker.header.frame_id = calibration_sensor_frame_;
   base_marker.ns = "raw_detections";
   next_color_index_ = 0;
 
@@ -237,7 +277,14 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     color.b = 1.0;
     color.a = 1.0;
 
-    for (auto & detection : scene.calibration_sensor_detections) {
+    for (auto & detection : scene.calibration_camera_detections) {
+      sensor_to_waypoint_transform_map[detection.id] = detection.pose;
+
+      addTagMarkers(
+        markers, std::to_string(detection.id), detection.size, color, detection.pose, base_marker);
+    }
+
+    for (auto & detection : scene.calibration_lidar_detections) {
       sensor_to_waypoint_transform_map[detection.id] = detection.pose;
 
       addTagMarkers(
@@ -460,26 +507,51 @@ std_msgs::msg::ColorRGBA ExtrinsicTagBasedBaseCalibrator::getNextColor()
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addSceneCallback(
-  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  UNUSED(request);
-  UNUSED(response);
+  RCLCPP_INFO(this->get_logger(), "Attempting to add a new scene...");
 
-  RCLCPP_INFO(this->get_logger(), "Adding a new scene");
-
-  if (
-    current_external_camera_images_.size() == 0 || current_calibration_camera_images_.size() != 1) {
+  if (current_external_camera_images_.size() == 0) {
     RCLCPP_ERROR(
-      this->get_logger(),
-      "The scene must contain at least one external calibration image and exactly one calibration "
-      "image");
+      this->get_logger(), "The scene must contain at least one external calibration image");
     return false;
   }
 
-  scenes_external_camera_images_.push_back(current_external_camera_images_);
-  scenes_calibration_camera_images_.push_back(current_calibration_camera_images_[0]);
+  if (is_lidar_calibration_ && current_lidartag_detections_msg_.detections.size() == 0) {
+    RCLCPP_ERROR(this->get_logger(), "The scene must have at least one lidartag detection");
+    return false;
+  }
 
+  if (
+    !is_lidar_calibration_ && (current_apriltag_detections_msg_.detections.size() == 0 ||
+                               current_calibration_camera_images_.size() != 1)) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "The scene must have at least one apriltag detection or exactly one calibration image");
+    return false;
+  }
+
+  if (is_lidar_calibration_) {
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Adding a scene with %lu lidar detections and %lu external camera detections",
+      current_lidartag_detections_msg_.detections.size(), current_external_camera_images_.size());
+    scenes_calibration_lidartag_detections_.push_back(current_lidartag_detections_msg_);
+  } else if (current_calibration_camera_images_.size() == 1) {
+    RCLCPP_INFO(
+      this->get_logger(), "Adding a scene with %lu external camera detections",
+      current_external_camera_images_.size());
+    scenes_calibration_camera_images_.push_back(current_calibration_camera_images_[0]);
+  } else {
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Adding a scene with %lu camera detections and %lu external camera detections",
+      current_apriltag_detections_msg_.detections.size(), current_external_camera_images_.size());
+    scenes_calibration_apriltag_detections_.push_back(current_apriltag_detections_msg_);
+  }
+
+  scenes_external_camera_images_.push_back(current_external_camera_images_);
   return true;
 }
 
@@ -502,22 +574,26 @@ bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addLidarDetectionsCallback(
-  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  RCLCPP_ERROR(this->get_logger(), "Unimplemented!");
-  UNUSED(request);
-  UNUSED(response);
+  RCLCPP_INFO(
+    this->get_logger(), "Adding %lu calibration lidar detections to current scene",
+    latest_lidartag_detections_msg_.detections.size());
+
+  current_lidartag_detections_msg_ = latest_lidartag_detections_msg_;
   return true;
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addCameraDetectionsCallback(
-  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  RCLCPP_ERROR(this->get_logger(), "Unimplemented!");
-  UNUSED(request);
-  UNUSED(response);
+  RCLCPP_INFO(
+    this->get_logger(), "Adding %lu calibration camera detections to current scene",
+    latest_apriltag_detections_msg_.detections.size());
+
+  current_apriltag_detections_msg_ = latest_apriltag_detections_msg_;
   return true;
 }
 
@@ -648,18 +724,21 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCalibrationIntrinsicsCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
-  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  UNUSED(request);
-  UNUSED(response);
-
-  RCLCPP_INFO(this->get_logger(), "Processing scenes...");
+  RCLCPP_INFO(
+    this->get_logger(), "Processing %lu scenes...", scenes_external_camera_images_.size());
 
   CalibrationSceneExtractor calibration_scene_extractor(apriltag_parameters_);
-  calibration_scene_extractor.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
+
+  if (!is_lidar_calibration_) {
+    calibration_scene_extractor.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
+  }
+
   calibration_scene_extractor.setExternalCameraIntrinsics(external_camera_intrinsics_);
 
+  calibration_scene_extractor.setLidartagToApriltagScale(lidartag_to_apriltag_scale_);
   calibration_scene_extractor.setWaypointTagSize(waypoint_tag_size_);
   calibration_scene_extractor.setWheelTagSize(wheel_tag_size_);
   calibration_scene_extractor.setGroundTagSize(ground_tag_size_);
@@ -670,10 +749,28 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
   calibration_scene_extractor.setGroundTagIds(ground_tag_ids_);
 
   for (std::size_t i = 0; i < scenes_external_camera_images_.size(); i++) {
-    CalibrationScene scene = calibration_scene_extractor.processScene(
-      scenes_calibration_camera_images_[i], scenes_external_camera_images_[i]);
+    if (is_lidar_calibration_) {
+      RCLCPP_INFO(
+        this->get_logger(), "Scene %lu: %lu external images and %lu lidar detections", i,
+        scenes_external_camera_images_[i].size(),
+        scenes_calibration_lidartag_detections_[i].detections.size());
+      CalibrationScene scene = calibration_scene_extractor.processScene(
+        scenes_calibration_lidartag_detections_[i], scenes_external_camera_images_[i]);
 
-    data_->scenes.push_back(scene);
+      data_->scenes.push_back(scene);
+    } else if (
+      scenes_calibration_lidartag_detections_.size() == scenes_external_camera_images_.size()) {
+      // CalibrationScene scene = calibration_scene_extractor.processScene(
+      // scenes_calibration_apriltag_detections_[i], scenes_external_camera_images_[i]);
+
+      // data_->scenes.push_back(scene);
+      assert(false);  // not implemented
+    } else {
+      CalibrationScene scene = calibration_scene_extractor.processScene(
+        scenes_calibration_camera_images_[i], scenes_external_camera_images_[i]);
+
+      data_->scenes.push_back(scene);
+    }
   }
 
   // Estimate the the initial poses for all the tags
@@ -683,7 +780,12 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
     const CalibrationScene & scene = data_->scenes[scene_index];
 
     // Add the waypoints seen from the calibration sensor
-    for (auto & detection : scene.calibration_sensor_detections) {
+    for (auto & detection : scene.calibration_camera_detections) {
+      UID waypoint_uid = UID::makeWaypointUID(scene_index, detection.id);
+      poses_vector_map[waypoint_uid].push_back(detection.pose);
+    }
+
+    for (auto & detection : scene.calibration_lidar_detections) {
       UID waypoint_uid = UID::makeWaypointUID(scene_index, detection.id);
       poses_vector_map[waypoint_uid].push_back(detection.pose);
     }
@@ -913,11 +1015,12 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
-  const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  UNUSED(request);
-  UNUSED(response);
+  if (is_lidar_calibration_) {
+    calibration_problem_.setFixedWaypointPoses(true);
+  }
 
   calibration_problem_.setData(data_);
 

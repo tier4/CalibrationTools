@@ -101,6 +101,13 @@ public:
   void setCalibrationSensorIntrinsics(IntrinsicParameters & intrinsics);
 
   /*!
+   * Sets whether the waypoint poses should be fixed during optimization. This is used for base
+   * lidar calibration
+   * @param[in] fix_waypoint_poses whether the waypoint poses should be fixed during optimization
+   */
+  void setFixedWaypointPoses(bool fix_waypoint_poses);
+
+  /*!
    * Sets the calibration data
    * @param[in] data the calibration data
    */
@@ -184,6 +191,7 @@ protected:
   bool optimize_intrinsics_;
   bool share_intrinsics_;
   bool force_shared_ground_plane_;
+  bool fix_waypoint_poses_;
 
   IntrinsicParameters calibration_sensor_intrinsics_;
   IntrinsicParameters external_camera_intrinsics_;

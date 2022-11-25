@@ -64,14 +64,28 @@ bool computeGroundPlane(
 /*!
  * Computes the base link pose by projecting the mid point between the left and right wheel poses
  * into the ground plane
- * @param[int] the left whee pose
- * @param[int] the right whee pose
- * @param[in] the ground pose
+ * @param[in] left_wheel_pose the left whee pose
+ * @param[in] right_wheel_pose right whee pose
+ * @param[in] ground_pose ground pose
  * @returns the base link pose
  */
 cv::Affine3d computeBaseLink(
   const cv::Affine3d & left_wheel_pose, const cv::Affine3d right_wheel_pose,
   const cv::Affine3d & ground_pose);
+
+/*!
+ * Projects a point into an image using a distortion model
+ * @param[in] p the point to be projected
+ * @param[in] fx the focal point in x
+ * @param[in] fy the focal point in y
+ * @param[in] cx the optical center in x
+ * @param[in] cy the optical center in y
+ * @param[in] k1 the 1st radial distortion component
+ * @param[in] k2 the 2st radial distortion component
+ * @returns the base link pose
+ */
+cv::Point2d projectPoint(
+  const cv::Vec3d & p, double fx, double fy, double cx, double cy, double k1, double k2);
 
 }  // namespace extrinsic_tag_based_base_calibrator
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <extrinsic_tag_based_base_calibrator/math.hpp>
 #include <extrinsic_tag_based_base_calibrator/visualization.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -179,13 +180,16 @@ void addGrid(
 void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scalar color)
 {
   std::vector<double> edge_sizes;
+  cv::Point2d estimated_center(0.0, 0.0);
 
   for (std::size_t i = 0; i < detection.corners.size(); ++i) {
     std::size_t j = (i + 1) % detection.corners.size();
     edge_sizes.push_back(cv::norm(detection.corners[i] - detection.corners[j]));
+    estimated_center += detection.corners[i];
   }
 
   double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
+  estimated_center /= 4;
 
   for (std::size_t i = 0; i < detection.corners.size(); ++i) {
     std::size_t j = (i + 1) % detection.corners.size();
@@ -195,8 +199,34 @@ void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scala
   }
 
   cv::putText(
-    img, std::to_string(detection.id), detection.center, cv::FONT_HERSHEY_SIMPLEX,
+    img, std::to_string(detection.id), estimated_center, cv::FONT_HERSHEY_SIMPLEX,
     std::max(tag_size / 128.0, 1.0), color, static_cast<int>(std::max(tag_size / 128.0, 1.0)));
+}
+
+void drawAxes(
+  cv::Mat & img, const ApriltagDetection & detection, const cv::Point2d & center,
+  const cv::Point2d & px, const cv::Point2d & py, const cv::Point2d & pz)
+{
+  std::vector<double> edge_sizes;
+
+  for (std::size_t i = 0; i < detection.corners.size(); ++i) {
+    std::size_t j = (i + 1) % detection.corners.size();
+    edge_sizes.push_back(cv::norm(detection.corners[i] - detection.corners[j]));
+  }
+
+  double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
+
+  cv::line(
+    img, center, px, cv::Scalar(0, 0, 255), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
+    cv::LINE_AA);
+
+  cv::line(
+    img, center, py, cv::Scalar(0, 255, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
+    cv::LINE_AA);
+
+  cv::line(
+    img, center, pz, cv::Scalar(255, 0, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
+    cv::LINE_AA);
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator
