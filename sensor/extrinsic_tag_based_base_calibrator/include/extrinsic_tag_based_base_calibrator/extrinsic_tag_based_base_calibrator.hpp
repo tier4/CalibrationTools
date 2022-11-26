@@ -279,7 +279,11 @@ protected:
   int right_wheel_tag_id_;
   std::vector<int> wheel_tag_ids_;
   std::vector<int> ground_tag_ids_;
+
+  // Intrinsics calibration
   std::vector<int> intrinsic_calibration_tag_ids_;
+  bool initial_intrinsic_calibration_tangent_distortion_;
+  int initial_intrinsic_calibration_radial_distortion_coeffs_;
 
   std::map<int, double> tag_size_map_;
   std::unordered_set<int> waypoint_tag_ids_set_;

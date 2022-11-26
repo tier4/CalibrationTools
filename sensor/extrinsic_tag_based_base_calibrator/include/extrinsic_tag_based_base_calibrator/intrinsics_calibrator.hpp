@@ -30,8 +30,13 @@ class IntrinsicsCalibrator
 {
 public:
   IntrinsicsCalibrator(
-    const ApriltagParameters & parameters, const std::vector<int> tag_ids, bool debug = false)
-  : detector_(parameters), calibration_tag_ids_(tag_ids), debug_(debug)
+    const ApriltagParameters & parameters, const std::vector<int> tag_ids,
+    bool use_tangent_distortion, int num_radial_distortion_coeffs, bool debug = false)
+  : detector_(parameters),
+    calibration_tag_ids_(tag_ids),
+    use_tangent_distortion_(use_tangent_distortion),
+    num_radial_distortion_coeffs_(num_radial_distortion_coeffs),
+    debug_(debug)
   {
   }
 
@@ -52,6 +57,8 @@ public:
 
   std::vector<std::string> calibration_image_file_names_;
   std::vector<int> calibration_tag_ids_;
+  bool use_tangent_distortion_;
+  int num_radial_distortion_coeffs_;
 
   bool debug_;
 };

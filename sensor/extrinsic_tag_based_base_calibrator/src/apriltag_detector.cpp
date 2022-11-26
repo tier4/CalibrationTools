@@ -92,16 +92,45 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
       continue;
     }
 
-    RCLCPP_INFO(
-      rclcpp::get_logger("intrinsics_calibrator"), "Detected apriltag: %d \t margin: %.2f", det->id,
-      det->decision_margin);
-
     ApriltagDetection result;
     result.id = det->id;
     result.center = cv::Point2d(det->c[0], det->c[1]);
 
     for (int i = 0; i < 4; ++i) {
       result.corners.emplace_back(det->p[i][0], det->p[i][1]);
+    }
+
+    // Extra filter since the dectector finds false positives with a high margin for out-of-plane
+    // rotations
+    double max_homography_error = 0.0;
+
+    cv::Mat_<double> H(3, 3, det->H->data);
+    cv::Mat H_inv = H.inv();
+
+    for (std::size_t i = 0; i < result.corners.size(); i++) {
+      cv::Mat_<double> p_corner(3, 1);
+      p_corner(0, 0) = result.corners[i].x;
+      p_corner(1, 0) = result.corners[i].y;
+      p_corner(2, 0) = 1.0;
+
+      cv::Mat p_corner2 = H_inv * p_corner;
+
+      // According to the equation (x2, y2, 1) = H *(x1, y1, 1) the third component should be 1.0
+      double h_error = std::abs(p_corner2.at<double>(2, 0) - 1.0);
+      max_homography_error = std::max(max_homography_error, h_error);
+    }
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("intrinsics_calibrator"),
+      "Detected apriltag: %d \t margin: %.2f\t hom.error=%.2f", det->id, det->decision_margin,
+      max_homography_error);
+
+    if (max_homography_error > parameters_.max_homography_error) {
+      RCLCPP_INFO(
+        rclcpp::get_logger("intrinsics_calibrator"),
+        "Detection rejected due to its homography error. This may be due to its having a high "
+        "out-of-plane rotation but we prefer to void them");
+      continue;
     }
 
     if (tag_sizes_map_.count(det->id) > 0 && fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0) {

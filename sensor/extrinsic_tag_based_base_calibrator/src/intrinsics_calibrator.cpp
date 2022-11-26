@@ -36,6 +36,12 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
   intrinsics.size.height = -1;
   intrinsics.size.width = -1;
 
+  intrinsics.camera_matrix = cv::Mat_<double>::zeros(3, 3);
+  intrinsics.dist_coeffs = cv::Mat_<double>::zeros(3, 3);
+  intrinsics.undistorted_camera_matrix = cv::Mat_<double>::zeros(3, 3);
+  intrinsics.camera_matrix(0, 0) = intrinsics.undistorted_camera_matrix(0, 0) = 1.0;
+  intrinsics.camera_matrix(1, 1) = intrinsics.undistorted_camera_matrix(1, 1) = 1.0;
+
   RCLCPP_INFO(
     rclcpp::get_logger("intrinsics_calibrator"), "Calibration images: %lu",
     calibration_image_file_names_.size());
@@ -60,7 +66,12 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
       rclcpp::get_logger("intrinsics_calibrator"), "calibration image id: %lu file name: %s", i,
       calibration_image_file_names_[i].c_str());
 
-    cv::Mat grayscale_img = cv::imread(calibration_image_file_names_[i], cv::IMREAD_GRAYSCALE);
+    cv::Mat grayscale_img = cv::imread(
+      calibration_image_file_names_[i], cv::IMREAD_GRAYSCALE | cv::IMREAD_IGNORE_ORIENTATION);
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("intrinsics_calibrator"), "rows: %d cols: %d", grayscale_img.rows,
+      grayscale_img.cols);
 
     assert(intrinsics.size.height == -1 || intrinsics.size.height == grayscale_img.rows);
     assert(intrinsics.size.width == -1 || intrinsics.size.width == grayscale_img.cols);
@@ -96,9 +107,34 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
     rclcpp::get_logger("intrinsics_calibrator"), "Calibration views: %lu", image_points.size());
   std::vector<cv::Mat> rvecs;
   std::vector<cv::Mat> tvecs;
+
+  int flags = 0;
+
+  if (!use_tangent_distortion_) {
+    flags |= cv::CALIB_ZERO_TANGENT_DIST;
+  }
+
+  if (num_radial_distortion_coeffs_ < 3) {
+    flags |= cv::CALIB_FIX_K3;
+  }
+
+  if (num_radial_distortion_coeffs_ < 2) {
+    flags |= cv::CALIB_FIX_K2;
+  }
+
+  if (num_radial_distortion_coeffs_ < 1) {
+    flags |= cv::CALIB_FIX_K1;
+  }
+
   double reproj_error = cv::calibrateCamera(
     object_points, image_points, intrinsics.size, intrinsics.camera_matrix, intrinsics.dist_coeffs,
-    rvecs, tvecs);
+    rvecs, tvecs, flags);
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("intrinsics_calibrator"), "Tangent distortion: %d", use_tangent_distortion_);
+  RCLCPP_INFO(
+    rclcpp::get_logger("intrinsics_calibrator"), "Radial distortion coeffs: %d",
+    num_radial_distortion_coeffs_);
 
   RCLCPP_INFO(rclcpp::get_logger("intrinsics_calibrator"), "Reproj_error: %.2f", reproj_error);
   RCLCPP_INFO_STREAM(
@@ -146,7 +182,8 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
       std::string distorted_image_name = raw_name + "_distorted.jpg";
       std::string undistorted_image_name = raw_name + "_undistorted.jpg";
 
-      cv::Mat distorted_img = cv::imread(input_file_name, cv::IMREAD_COLOR);
+      cv::Mat distorted_img =
+        cv::imread(input_file_name, cv::IMREAD_COLOR | cv::IMREAD_IGNORE_ORIENTATION);
       cv::Mat undistorted_img;
 
       cv::undistort(

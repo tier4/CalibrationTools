@@ -117,14 +117,19 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   apriltag_parameters_.family = this->declare_parameter<std::string>("apriltag_family", "16h5");
   apriltag_parameters_.max_hamming = this->declare_parameter<int>("apriltag_max_hamming", 0);
   apriltag_parameters_.min_margin = this->declare_parameter<double>("apriltag_min_margin", 20.0);
-  apriltag_parameters_.max_h_error =
-    this->declare_parameter<double>("apriltag_max_h_error", 10000.0);
+  apriltag_parameters_.max_homography_error =
+    this->declare_parameter<double>("apriltag_max_homography_error", 0.5);
   apriltag_parameters_.quad_decimate =
     this->declare_parameter<double>("apriltag_quad_decimate", 1.0);
   apriltag_parameters_.quad_sigma = this->declare_parameter<double>("apriltag_quad_sigma", 0.0);
   apriltag_parameters_.nthreads = this->declare_parameter<int>("apriltag_nthreads", 1);
   apriltag_parameters_.debug = this->declare_parameter<bool>("apriltag_debug", false);
   apriltag_parameters_.refine_edges = this->declare_parameter<bool>("apriltag_refine_edges", true);
+
+  initial_intrinsic_calibration_tangent_distortion_ =
+    this->declare_parameter<bool>("initial_intrinsic_calibration_tangent_distortion", true);
+  initial_intrinsic_calibration_radial_distortion_coeffs_ =
+    this->declare_parameter<int>("initial_intrinsic_calibration_radial_distortion_coeffs", 2);
 
   if (is_lidar_calibration_) {
     lidartag_detections_sub_ =
@@ -631,6 +636,8 @@ bool ExtrinsicTagBasedBaseCalibrator::loadExternalIntrinsicsCallback(
 
   RCLCPP_INFO_STREAM(this->get_logger(), "k = " << external_camera_intrinsics_.camera_matrix);
   RCLCPP_INFO_STREAM(this->get_logger(), "d = " << external_camera_intrinsics_.dist_coeffs);
+  RCLCPP_INFO_STREAM(
+    this->get_logger(), "new_k = " << external_camera_intrinsics_.undistorted_camera_matrix);
 
   response->success = true;
   return true;
@@ -657,7 +664,9 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback(
   RCLCPP_INFO(this->get_logger(), "Calibrating external cameras intrinsics");
 
   IntrinsicsCalibrator external_camera_intrinsics_calibrator(
-    apriltag_parameters_, intrinsic_calibration_tag_ids_, true);
+    apriltag_parameters_, intrinsic_calibration_tag_ids_,
+    initial_intrinsic_calibration_tangent_distortion_,
+    initial_intrinsic_calibration_radial_distortion_coeffs_, true);
 
   external_camera_intrinsics_calibrator.setCalibrationImageFiles(request->files);
   external_camera_intrinsics_calibrator.calibrate(external_camera_intrinsics_);
@@ -665,6 +674,8 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback(
 
   RCLCPP_INFO_STREAM(this->get_logger(), "k = " << external_camera_intrinsics_.camera_matrix);
   RCLCPP_INFO_STREAM(this->get_logger(), "d = " << external_camera_intrinsics_.dist_coeffs);
+  RCLCPP_INFO_STREAM(
+    this->get_logger(), "new_k = " << external_camera_intrinsics_.undistorted_camera_matrix);
 
   response->success = true;
   return true;
@@ -686,6 +697,8 @@ bool ExtrinsicTagBasedBaseCalibrator::loadCalibrationIntrinsicsCallback(
 
   RCLCPP_INFO_STREAM(this->get_logger(), "k = " << calibration_sensor_intrinsics_.camera_matrix);
   RCLCPP_INFO_STREAM(this->get_logger(), "d = " << calibration_sensor_intrinsics_.dist_coeffs);
+  RCLCPP_INFO_STREAM(
+    this->get_logger(), "new_k = " << calibration_sensor_intrinsics_.undistorted_camera_matrix);
 
   response->success = true;
   return true;
@@ -710,7 +723,9 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCalibrationIntrinsicsCallback(
   RCLCPP_INFO(this->get_logger(), "Calibrating 'calibration sensor' intrinsics");
 
   IntrinsicsCalibrator calibration_sensor_intrinsics_calibrator(
-    apriltag_parameters_, intrinsic_calibration_tag_ids_, true);
+    apriltag_parameters_, intrinsic_calibration_tag_ids_,
+    initial_intrinsic_calibration_tangent_distortion_,
+    initial_intrinsic_calibration_radial_distortion_coeffs_, true);
 
   calibration_sensor_intrinsics_calibrator.setCalibrationImageFiles(request->files);
   calibration_sensor_intrinsics_calibrator.calibrate(calibration_sensor_intrinsics_);
@@ -718,6 +733,8 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCalibrationIntrinsicsCallback(
 
   RCLCPP_INFO_STREAM(this->get_logger(), "k = " << calibration_sensor_intrinsics_.camera_matrix);
   RCLCPP_INFO_STREAM(this->get_logger(), "d = " << calibration_sensor_intrinsics_.dist_coeffs);
+  RCLCPP_INFO_STREAM(
+    this->get_logger(), "new_k = " << calibration_sensor_intrinsics_.undistorted_camera_matrix);
 
   response->success = true;
   return true;
@@ -947,11 +964,6 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
     }
   }
 
-  for (auto it = poses_vector_map.begin(); it != poses_vector_map.end(); it++) {
-    RCLCPP_INFO(
-      this->get_logger(), "UID: %s \tposes: %lu", it->first.to_string().c_str(), it->second.size());
-  }
-
   std::array<double, CalibrationData::INTRINSICS_DIM> initial_intrinsics;
   initial_intrinsics[0] = external_camera_intrinsics_.undistorted_camera_matrix(0, 2);
   initial_intrinsics[1] = external_camera_intrinsics_.undistorted_camera_matrix(1, 2);
@@ -960,9 +972,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
   initial_intrinsics[4] = 0.0;
   initial_intrinsics[5] = 0.0;
 
+  // Obtain the initial poses from averages
   for (auto it = poses_vector_map.begin(); it != poses_vector_map.end(); it++) {
     const UID & uid = it->first;
     auto poses = it->second;
+
+    RCLCPP_INFO(
+      this->get_logger(), "UID: %s \tposes: %lu", it->first.to_string().c_str(), it->second.size());
 
     Eigen::Vector3d avg_translation = Eigen::Vector3d::Zero();
     std::vector<Eigen::Vector4d> quats;

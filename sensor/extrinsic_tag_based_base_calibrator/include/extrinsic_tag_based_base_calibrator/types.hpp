@@ -33,7 +33,7 @@ struct ApriltagParameters
   std::string family;
   int max_hamming;
   double min_margin;
-  double max_h_error;
+  double max_homography_error;
   double quad_decimate;
   double quad_sigma;
   int nthreads;

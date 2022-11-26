@@ -211,7 +211,8 @@ void CalibrationSceneExtractor::processExternalCamaeraImages(
             static_cast<int>(std::max(tag_size / 128.0, 1.0)));
         };
 
-      cv::Mat distorted_img = cv::imread(image_name, cv::IMREAD_COLOR);
+      cv::Mat distorted_img =
+        cv::imread(image_name, cv::IMREAD_COLOR | cv::IMREAD_IGNORE_ORIENTATION);
       cv::Mat undistorted_img;
       cv::undistort(
         distorted_img, undistorted_img, external_camera_intrinsics_.camera_matrix,
@@ -236,8 +237,19 @@ std::vector<ApriltagDetection> CalibrationSceneExtractor::detect(
   const ApriltagDetector & detector, const IntrinsicParameters & intrinsics,
   const std::string & img_name)
 {
-  cv::Mat distorted_img = cv::imread(img_name, cv::IMREAD_GRAYSCALE);
+  cv::Mat distorted_img =
+    cv::imread(img_name, cv::IMREAD_GRAYSCALE | cv::IMREAD_IGNORE_ORIENTATION);
   cv::Mat undistorted_img;
+
+  if (distorted_img.rows != intrinsics.size.height || distorted_img.cols != intrinsics.size.width) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("scene_extractor"),
+      "Input image has different dimensions that the intrinsics!");
+    RCLCPP_ERROR(rclcpp::get_logger("scene_extractor"), "Image name: %s", img_name.c_str());
+  }
+
+  assert(distorted_img.rows == intrinsics.size.height);
+  assert(distorted_img.cols == intrinsics.size.width);
 
   cv::undistort(
     distorted_img, undistorted_img, intrinsics.camera_matrix, intrinsics.dist_coeffs,

@@ -449,7 +449,8 @@ void CalibrationProblem::writeDebugImages()
       UID external_camera_uid = UID::makeCameraUID(scene_index, frame_id);
       std::string file_name = scene.external_camera_frames[frame_id].image_filename;
 
-      cv::Mat distorted_img = cv::imread(file_name, cv::IMREAD_COLOR);
+      cv::Mat distorted_img =
+        cv::imread(file_name, cv::IMREAD_COLOR | cv::IMREAD_IGNORE_ORIENTATION);
       cv::Mat undistorted_img;
       cv::undistort(
         distorted_img, undistorted_img, external_camera_intrinsics_.camera_matrix,

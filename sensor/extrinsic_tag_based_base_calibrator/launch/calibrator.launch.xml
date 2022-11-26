@@ -25,13 +25,20 @@
 
       <param name="apriltag_nthreads" value="$(var apriltag_detector_nthreads)"/>
 
+      <param name="initial_intrinsic_calibration_tangent_distortion" value="false"/>
+      <param name="initial_intrinsic_calibration_radial_distortion_coeffs" value="0"/>
+
       <param name="ba_optimize_intrinsics" value="true"/>
       <param name="ba_share_intrinsics" value="true"/>
-      <param name="ba_force_shared_ground_plane" value="false"/>
+      <param name="ba_force_shared_ground_plane" value="true"/>
 
       <param name="intrinsic_calibration_tag_ids" value="[0, 4]"/>
       <param name="ground_tag_ids" value="[6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]"/>
-      <param name="ground_tag_size" value="16.3"/>
+
+      <param name="left_wheel_tag_id" value="4"/>
+      <param name="right_wheel_tag_id" value="3"/>
+
+      <param name="ground_tag_size" value="0.163"/>
       <!--0.2185-->
       <param name="waypoint_tag_size" value="0.6"/>
       <param name="wheel_tag_size" value="0.6"/>
