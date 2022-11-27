@@ -34,6 +34,7 @@
 #include <boost/archive/text_oarchive.hpp>
 
 #include <ceres/ceres.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include <algorithm>
 #include <chrono>
@@ -48,8 +49,17 @@ namespace extrinsic_tag_based_base_calibrator
 ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   const rclcpp::NodeOptions & options)
 : Node("extrinsic_tag_based_base_calibrator_node", options),
+  calibration_done_(false),
   data_(std::make_shared<CalibrationData>())
 {
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+  base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
+  sensor_kit_frame_ = this->declare_parameter<std::string>("sensor_kit_frame", "sensor_kit_frame");
+  lidar_base_frame_ = this->declare_parameter<std::string>("lidar_base_frame", "lidar_base_link");
+  lidar_frame_ = this->declare_parameter<std::string>("lidar_frame", "lidar");
+
   calibration_sensor_frame_ =
     this->declare_parameter<std::string>("calibration_sensor_frame", "sensor");
   is_lidar_calibration_ =
@@ -153,31 +163,47 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this, get_clock(), std::chrono::seconds(1),
     std::bind(&ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback, this));
 
+  // Calibration API services
+  // The service server runs in a dedicated thread
+  srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+  base_link_to_sensor_kit_calibration_srv_ =
+    this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+      "base_link_to_sensor_kit_calibration",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback, this,
+        std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default, srv_callback_group_);
+
+  sensor_kit_to_lidar_calibration_srv_ =
+    this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+      "sensor_kit_to_lidar_calibration",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::sensorKitToLidarCalibrationCallback, this,
+        std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default, srv_callback_group_);
+
   // Scene related services
-  add_scene_srv_ = this->create_service<std_srvs::srv::Empty>(
-    "add_scene", std::bind(
-                   &ExtrinsicTagBasedBaseCalibrator::addSceneCallback, this, std::placeholders::_1,
-                   std::placeholders::_2));
+  add_external_camera_images_srv_ =
+    this->create_service<tier4_calibration_msgs::srv::FilesWithSceneId>(
+      "add_external_camera_images_to_scene",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback, this,
+        std::placeholders::_1, std::placeholders::_2));
 
-  add_external_camera_images_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
-    "add_external_camera_images_to_scene",
-    std::bind(
-      &ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback, this,
-      std::placeholders::_1, std::placeholders::_2));
-
-  add_lidar_detections_to_scene_srv_ = this->create_service<std_srvs::srv::Empty>(
-    "add_calibration_lidar_detections_to_scene",
+  add_lidar_detections_to_scene_srv_ = this->create_service<tier4_calibration_msgs::srv::Empty>(
+    "add_calibration_lidar_detections_to_new_scene",
     std::bind(
       &ExtrinsicTagBasedBaseCalibrator::addLidarDetectionsCallback, this, std::placeholders::_1,
       std::placeholders::_2));
-  add_camera_detections_to_scene_srv_ = this->create_service<std_srvs::srv::Empty>(
-    "add_calibration_camera_detections_to_scene",
+  add_camera_detections_to_scene_srv_ = this->create_service<tier4_calibration_msgs::srv::Empty>(
+    "add_calibration_camera_detections_to_new_scene",
     std::bind(
       &ExtrinsicTagBasedBaseCalibrator::addCameraDetectionsCallback, this, std::placeholders::_1,
       std::placeholders::_2));
 
   add_calibration_camera_images_srv_ = this->create_service<tier4_calibration_msgs::srv::Files>(
-    "add_calibration_camera_images_to_scene",
+    "add_calibration_camera_images_to_new_scene",
     std::bind(
       &ExtrinsicTagBasedBaseCalibrator::addCalibrationImagesCallback, this, std::placeholders::_1,
       std::placeholders::_2));
@@ -220,11 +246,11 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
         std::placeholders::_1, std::placeholders::_2));
 
   // Calibration related services
-  process_scenes_srv_ = this->create_service<std_srvs::srv::Empty>(
+  process_scenes_srv_ = this->create_service<tier4_calibration_msgs::srv::Empty>(
     "process_scenes", std::bind(
                         &ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback, this,
                         std::placeholders::_1, std::placeholders::_2));
-  calibration_srv_ = this->create_service<std_srvs::srv::Empty>(
+  calibration_srv_ = this->create_service<tier4_calibration_msgs::srv::Empty>(
     "calibrate", std::bind(
                    &ExtrinsicTagBasedBaseCalibrator::calibrationCallback, this,
                    std::placeholders::_1, std::placeholders::_2));
@@ -238,6 +264,135 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     "save_database", std::bind(
                        &ExtrinsicTagBasedBaseCalibrator::saveDatabaseCallback, this,
                        std::placeholders::_1, std::placeholders::_2));
+}
+
+void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
+  __attribute__((unused))
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+    request,
+  __attribute__((unused))
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
+    response)
+{
+  using std::chrono_literals::operator""s;
+
+  // Loop until the calibration finishes
+  while (rclcpp::ok()) {
+    rclcpp::sleep_for(1s);
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    if (calibration_done_) {
+      break;
+    }
+
+    RCLCPP_WARN_THROTTLE(
+      this->get_logger(), *this->get_clock(), 30000, "Waiting for the calibration to end");
+  }
+
+  cv::Affine3d ground_pose;
+
+  if (
+    !computeGroundPlane(data_->optimized_ground_tag_poses, ground_tag_size_, ground_pose) ||
+    !data_->optimized_left_wheel_tag_pose || !data_->optimized_right_wheel_tag_pose) {
+    RCLCPP_ERROR(this->get_logger(), "Could not compute the base link");
+    response->success = false;
+    return;
+  }
+
+  cv::Affine3d lidar_to_base_link_pose = computeBaseLink(
+    *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose, ground_pose);
+  cv::Matx44d base_link_to_lidar_transform_cv = lidar_to_base_link_pose.inv().matrix;
+  Eigen::Matrix4d base_link_to_lidar_transform;
+  cv::cv2eigen(base_link_to_lidar_transform_cv, base_link_to_lidar_transform);
+  Eigen::Affine3d base_link_to_lidar_pose(base_link_to_lidar_transform);
+
+  geometry_msgs::msg::Transform lidar_base_to_lidar_msg;
+  Eigen::Affine3d lidar_base_to_lidar_pose;
+
+  // We calibrate the lidar base link, not the lidar, so we need to compute that pose
+  try {
+    rclcpp::Time t = rclcpp::Time(0);
+    rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
+
+    lidar_base_to_lidar_msg =
+      tf_buffer_->lookupTransform(lidar_base_frame_, lidar_frame_, t, timeout).transform;
+
+    lidar_base_to_lidar_pose = tf2::transformToEigen(lidar_base_to_lidar_msg);
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_ERROR(this->get_logger(), "Could not get the necessary tfs for calibration");
+    response->success = false;
+  }
+
+  Eigen::Affine3d base_link_to_lidar_base_pose =
+    base_link_to_lidar_pose * lidar_base_to_lidar_pose.inverse();
+
+  response->success = true;
+  response->result_pose = tf2::toMsg(base_link_to_lidar_base_pose);
+}
+
+void ExtrinsicTagBasedBaseCalibrator::sensorKitToLidarCalibrationCallback(
+  __attribute__((unused))
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+    request,
+  __attribute__((unused))
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
+    response)
+{
+  using std::chrono_literals::operator""s;
+
+  // Loop until the calibration finishes
+  while (rclcpp::ok()) {
+    rclcpp::sleep_for(1s);
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    if (calibration_done_) {
+      break;
+    }
+
+    RCLCPP_WARN_THROTTLE(
+      this->get_logger(), *this->get_clock(), 30000, "Waiting for the calibration to end");
+  }
+
+  cv::Affine3d ground_pose;
+
+  if (
+    !computeGroundPlane(data_->optimized_ground_tag_poses, ground_tag_size_, ground_pose) ||
+    !data_->optimized_left_wheel_tag_pose || !data_->optimized_right_wheel_tag_pose) {
+    RCLCPP_ERROR(this->get_logger(), "Could not compute the base link");
+    response->success = false;
+    return;
+  }
+
+  cv::Affine3d lidar_to_base_link_pose = computeBaseLink(
+    *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose, ground_pose);
+  cv::Matx44d base_link_to_lidar_transform_cv = lidar_to_base_link_pose.inv().matrix;
+  Eigen::Matrix4d base_link_to_lidar_transform;
+  cv::cv2eigen(base_link_to_lidar_transform_cv, base_link_to_lidar_transform);
+  Eigen::Affine3d base_link_to_lidar_pose(base_link_to_lidar_transform);
+
+  geometry_msgs::msg::Transform lidar_base_to_lidar_msg;
+  Eigen::Affine3d lidar_base_to_lidar_pose;
+
+  // We calibrate the lidar base link, not the lidar, so we need to compute that pose
+  try {
+    rclcpp::Time t = rclcpp::Time(0);
+    rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
+
+    lidar_base_to_lidar_msg =
+      tf_buffer_->lookupTransform(lidar_base_frame_, lidar_frame_, t, timeout).transform;
+
+    lidar_base_to_lidar_pose = tf2::transformToEigen(lidar_base_to_lidar_msg);
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_ERROR(this->get_logger(), "Could not get the necessary tfs for calibration");
+    response->success = false;
+  }
+
+  // Eigen::Affine3d base_link_to_lidar_base_pose = base_link_to_lidar_pose *
+  // lidar_base_to_lidar_pose.inverse();
+
+  response->success = true;
+  response->result_pose.orientation.w = 1.0;
+  // response->result_pose = tf2::toMsg(base_link_to_lidar_base_pose);
 }
 
 void ExtrinsicTagBasedBaseCalibrator::apriltagDetectionsCallback(
@@ -511,94 +666,85 @@ std_msgs::msg::ColorRGBA ExtrinsicTagBasedBaseCalibrator::getNextColor()
   return color;
 }
 
-bool ExtrinsicTagBasedBaseCalibrator::addSceneCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
-{
-  RCLCPP_INFO(this->get_logger(), "Attempting to add a new scene...");
-
-  if (current_external_camera_images_.size() == 0) {
-    RCLCPP_ERROR(
-      this->get_logger(), "The scene must contain at least one external calibration image");
-    return false;
-  }
-
-  if (is_lidar_calibration_ && current_lidartag_detections_msg_.detections.size() == 0) {
-    RCLCPP_ERROR(this->get_logger(), "The scene must have at least one lidartag detection");
-    return false;
-  }
-
-  if (
-    !is_lidar_calibration_ && (current_apriltag_detections_msg_.detections.size() == 0 ||
-                               current_calibration_camera_images_.size() != 1)) {
-    RCLCPP_ERROR(
-      this->get_logger(),
-      "The scene must have at least one apriltag detection or exactly one calibration image");
-    return false;
-  }
-
-  if (is_lidar_calibration_) {
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Adding a scene with %lu lidar detections and %lu external camera detections",
-      current_lidartag_detections_msg_.detections.size(), current_external_camera_images_.size());
-    scenes_calibration_lidartag_detections_.push_back(current_lidartag_detections_msg_);
-  } else if (current_calibration_camera_images_.size() == 1) {
-    RCLCPP_INFO(
-      this->get_logger(), "Adding a scene with %lu external camera detections",
-      current_external_camera_images_.size());
-    scenes_calibration_camera_images_.push_back(current_calibration_camera_images_[0]);
-  } else {
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Adding a scene with %lu camera detections and %lu external camera detections",
-      current_apriltag_detections_msg_.detections.size(), current_external_camera_images_.size());
-    scenes_calibration_apriltag_detections_.push_back(current_apriltag_detections_msg_);
-  }
-
-  scenes_external_camera_images_.push_back(current_external_camera_images_);
-  return true;
-}
-
 bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
-  std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
+  const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithSceneId::Request> request,
+  std::shared_ptr<tier4_calibration_msgs::srv::FilesWithSceneId::Response> response)
 {
-  RCLCPP_INFO(this->get_logger(), "Adding external camera images to the current scene");
+  std::size_t num_scenes = std::max(
+    std::max(
+      scenes_calibration_apriltag_detections_.size(),
+      scenes_calibration_lidartag_detections_.size()),
+    scenes_calibration_camera_images_.size());
+
+  RCLCPP_INFO(
+    this->get_logger(), "Attempting to add external camera images to scene id=%ld",
+    request->scene_id);
 
   if (request->files.size() == 0) {
     RCLCPP_ERROR(this->get_logger(), "We expected at least one image!");
     response->success = false;
-    return false;
+    return true;
   }
 
-  current_external_camera_images_ = request->files;
+  if (static_cast<std::size_t>(request->scene_id) >= num_scenes) {
+    RCLCPP_ERROR(this->get_logger(), "Attempting to add external images to an inexistent scene");
+    response->success = false;
+    return true;
+  }
+
+  scenes_external_camera_images_.resize(num_scenes);
+  scenes_external_camera_images_[request->scene_id] = request->files;
 
   response->success = true;
   return true;
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addLidarDetectionsCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request>
+    request,
+  __attribute__((unused)) std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
 {
-  RCLCPP_INFO(
-    this->get_logger(), "Adding %lu calibration lidar detections to current scene",
-    latest_lidartag_detections_msg_.detections.size());
+  if (
+    latest_lidartag_detections_msg_.detections.size() == 0 ||
+    scenes_calibration_apriltag_detections_.size() > 0 ||
+    scenes_external_camera_images_.size() > scenes_calibration_lidartag_detections_.size()) {
+    RCLCPP_ERROR(this->get_logger(), "Attempt to add lidar detections failed");
 
-  current_lidartag_detections_msg_ = latest_lidartag_detections_msg_;
+    response->success = false;
+    return true;
+  }
+
+  RCLCPP_INFO(
+    this->get_logger(), "Adding a new scene with %lu lidar detections",
+    latest_lidartag_detections_msg_.detections.size());
+  scenes_calibration_lidartag_detections_.push_back(latest_lidartag_detections_msg_);
+
+  response->success = true;
   return true;
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addCameraDetectionsCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request>
+    request,
+  __attribute__((unused)) std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
 {
-  RCLCPP_INFO(
-    this->get_logger(), "Adding %lu calibration camera detections to current scene",
-    latest_apriltag_detections_msg_.detections.size());
+  if (
+    latest_apriltag_detections_msg_.detections.size() == 0 ||
+    scenes_calibration_lidartag_detections_.size() > 0 ||
+    scenes_external_camera_images_.size() > scenes_calibration_apriltag_detections_.size() ||
+    scenes_calibration_camera_images_.size() > 0) {
+    RCLCPP_ERROR(this->get_logger(), "Attempt to add camera detections failed");
 
-  current_apriltag_detections_msg_ = latest_apriltag_detections_msg_;
+    response->success = false;
+    return true;
+  }
+
+  RCLCPP_INFO(
+    this->get_logger(), "Adding a new scene with %lu camera detections",
+    latest_apriltag_detections_msg_.detections.size());
+  scenes_calibration_apriltag_detections_.push_back(latest_apriltag_detections_msg_);
+
+  response->success = true;
   return true;
 }
 
@@ -606,15 +752,17 @@ bool ExtrinsicTagBasedBaseCalibrator::addCalibrationImagesCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
   std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response)
 {
-  RCLCPP_INFO(this->get_logger(), "Adding a calibration camera image to the current scene");
+  if (
+    request->files.size() != 1 || scenes_calibration_lidartag_detections_.size() > 0 ||
+    scenes_external_camera_images_.size() > scenes_calibration_camera_images_.size() ||
+    scenes_calibration_apriltag_detections_.size() > 0) {
+    RCLCPP_ERROR(this->get_logger(), "Attempt to add calibration camera images failed");
 
-  if (request->files.size() != 1) {
-    RCLCPP_ERROR(this->get_logger(), "We expected a single image!");
     response->success = false;
-    return false;
+    return true;
   }
 
-  current_calibration_camera_images_ = request->files;
+  scenes_calibration_camera_images_.push_back(request->files[0]);
 
   response->success = true;
   return true;
@@ -629,7 +777,7 @@ bool ExtrinsicTagBasedBaseCalibrator::loadExternalIntrinsicsCallback(
   if (!external_camera_intrinsics_.loadCalibration(request->files[0])) {
     RCLCPP_ERROR(this->get_logger(), "Could not load intrinsics");
     response->success = false;
-    return false;
+    return true;
   }
 
   calibration_problem_.setExternalCameraIntrinsics(external_camera_intrinsics_);
@@ -690,7 +838,7 @@ bool ExtrinsicTagBasedBaseCalibrator::loadCalibrationIntrinsicsCallback(
   if (!calibration_sensor_intrinsics_.loadCalibration(request->files[0])) {
     RCLCPP_ERROR(this->get_logger(), "Could not load intrinsics");
     response->success = false;
-    return false;
+    return true;
   }
 
   calibration_problem_.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
@@ -741,9 +889,42 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCalibrationIntrinsicsCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request>
+    request,
+  __attribute__((unused)) std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
 {
+  // Validate the scenes contents
+  std::size_t num_scenes = std::max(
+    std::max(
+      scenes_calibration_apriltag_detections_.size(),
+      scenes_calibration_lidartag_detections_.size()),
+    scenes_calibration_camera_images_.size());
+
+  if (
+    scenes_calibration_apriltag_detections_.size() *
+      scenes_calibration_lidartag_detections_.size() * scenes_calibration_camera_images_.size() !=
+    0) {
+    RCLCPP_ERROR(this->get_logger(), "Only single sensor calibration is supported");
+    response->success = false;
+    return true;
+  }
+
+  if (num_scenes != scenes_external_camera_images_.size()) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "The number of external camera scenes differs from the calibration sensor ones");
+    response->success = false;
+    return true;
+  }
+
+  for (const auto & external_camera_images : scenes_external_camera_images_) {
+    if (external_camera_images.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "External camera scenes can not be empty");
+      response->success = false;
+      return true;
+    }
+  }
+
   RCLCPP_INFO(
     this->get_logger(), "Processing %lu scenes...", scenes_external_camera_images_.size());
 
@@ -1027,12 +1208,14 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
     }
   }
 
+  response->success = true;
   return true;
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request>
+    request,
+  __attribute__((unused)) std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
 {
   if (is_lidar_calibration_) {
     calibration_problem_.setFixedWaypointPoses(true);
@@ -1048,6 +1231,8 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
   calibration_problem_.writeDebugImages();
   RCLCPP_INFO(this->get_logger(), "Finished optimization");
 
+  calibration_done_ = true;
+  response->success = true;
   return true;
 }
 

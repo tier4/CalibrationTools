@@ -630,6 +630,8 @@ void CalibrationProblem::pose3dToGroundTagPlaceholder(
   shrd_placeholder[ROTATION_Z_INDEX] = ground_quat.z();
   shrd_placeholder[GROUND_TAG_D_INDEX] = d;
 
+  assert(tag_pose_aux.rotation()(2, 2) > 0);
+
   std::fill(indep_placeholder.begin(), indep_placeholder.end(), 0);
   indep_placeholder[GROUND_TAG_YAW_INDEX] =
     std::atan2(tag_pose_aux.rotation()(1, 0), tag_pose_aux.rotation()(0, 0));

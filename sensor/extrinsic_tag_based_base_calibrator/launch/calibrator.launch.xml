@@ -2,10 +2,16 @@
 <launch>
   <arg name="ns" default=""/>
   <arg name="base_frame" default=""/>
-  <arg name="parent_frame" default=""/>
-  <arg name="child_frame" default=""/>
+  <arg name="sensor_kit_frame" default=""/>
+  <arg name="lidar_base_frame" default=""/>
+  <arg name="lidar_frame" default=""/>
+
   <arg name="calibration_sensor_frame" default="sensor"/>
   <arg name="calibration_sensor_type" default="lidar"/>
+
+  <arg name="base_link_to_sensor_kit_calibration_service" default="base_link_to_sensor_kit_calibration"/>
+  <arg name="sensor_kit_to_lidar_calibration_service" default="sensor_kit_to_lidar_calibration"/>
+
   <arg name="apriltag_detections_topic" default="apriltag/detection_array"/>
   <arg name="lidartag_detections_topic" default="lidartag/detection_array"/>
   <arg name="apriltag_detector_nthreads" default="12"/>
@@ -13,12 +19,16 @@
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
     <node pkg="extrinsic_tag_based_base_calibrator" exec="extrinsic_tag_based_base_calibrator" name="extrinsic_tag_based_base_calibrator" output="screen">
+      <remap from="base_link_to_sensor_kit_calibration" to="$(var base_link_to_sensor_kit_calibration_service)"/>
+      <remap from="sensor_kit_to_lidar_calibration" to="$(var sensor_kit_to_lidar_calibration_service)"/>
+
       <remap from="apriltag/detection_array" to="$(var apriltag_detections_topic)"/>
       <remap from="lidartag/detection_array" to="$(var lidartag_detections_topic)"/>
 
       <param name="base_frame" value="$(var base_frame)"/>
-      <param name="parent_frame" value="$(var parent_frame)"/>
-      <param name="child_frame" value="$(var child_frame)"/>
+      <param name="sensor_kit_frame" value="$(var sensor_kit_frame)"/>
+      <param name="lidar_base_frame" value="$(var lidar_base_frame)"/>
+      <param name="lidar_frame" value="$(var lidar_frame)"/>
 
       <param name="calibration_sensor_frame" value="$(var calibration_sensor_frame)"/>
       <param name="calibration_sensor_type" value="$(var calibration_sensor_type)"/>

@@ -19,12 +19,14 @@
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
-#include <std_srvs/srv/empty.hpp>
 
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
+#include <tier4_calibration_msgs/srv/empty.hpp>
+#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/files.hpp>
+#include <tier4_calibration_msgs/srv/files_with_scene_id.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <tf2/convert.h>
@@ -48,6 +50,24 @@ public:
   explicit ExtrinsicTagBasedBaseCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
+  /*!
+   * Callback to calibrate the base_link to sensor kit using the calibration api
+   * @param request the calibration request
+   * @param response the calibration reponse
+   */
+  void baseToSensorKitCalibrationCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+
+  /*!
+   * Callback to calibrate the sensor kit to the lidar using the calibration api
+   * @param request the calibration request
+   * @param response the calibration reponse
+   */
+  void sensorKitToLidarCalibrationCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+
   /*!
    * Callback method for incoming apriltag detections
    * @param detections_msg The apriltag detections
@@ -75,24 +95,14 @@ protected:
   std_msgs::msg::ColorRGBA getNextColor();
 
   /*!
-   * Attempts to add a new scene to the calibration set
-   * @param request Empty request
-   * @param response Empty response
-   * @returns whether or not the service callback succeeded
-   */
-  bool addSceneCallback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-    std::shared_ptr<std_srvs::srv::Empty::Response> response);
-
-  /*!
    * Attempts to add external camera images to the scene
    * @param request A vector of files to be added as external images
    * @param response Whether or not the service callback succeeded
    * @returns whether or not the service callback succeeded
    */
   bool addExternalCameraImagesCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithSceneId::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::FilesWithSceneId::Response> response);
 
   /*!
    * Attempts to add detections from the calibration lidar to the scene
@@ -101,8 +111,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool addLidarDetectionsCallback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response);
 
   /*!
    * Attempts to add detections from the calibration camera to the scene
@@ -111,8 +121,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool addCameraDetectionsCallback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response);
 
   /*!
    * Attempts to add images from the calibration camera to the scene
@@ -193,8 +203,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool preprocessScenesCallback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response);
 
   /*!
    * Calibrate the base link by estimating the 3d pose of all the tags usin BA and then setting the
@@ -204,8 +214,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool calibrationCallback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-    std::shared_ptr<std_srvs::srv::Empty::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response);
 
   // Calibration related services
   /*!
@@ -235,11 +245,18 @@ protected:
     lidartag_detections_sub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub_;
 
+  // Calibration API related services
+  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
+    base_link_to_sensor_kit_calibration_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
+    sensor_kit_to_lidar_calibration_srv_;
+
   // Scene related services
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr add_scene_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr add_external_camera_images_srv_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr add_lidar_detections_to_scene_srv_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr add_camera_detections_to_scene_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::FilesWithSceneId>::SharedPtr
+    add_external_camera_images_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr add_lidar_detections_to_scene_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr
+    add_camera_detections_to_scene_srv_;
   rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr add_calibration_camera_images_srv_;
 
   // Intrinsics realated services
@@ -258,12 +275,23 @@ protected:
     calibrate_calibration_camera_intrinsics_srv_;
 
   // Calibration related services
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr process_scenes_srv_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr calibration_srv_;
+  rclcpp::CallbackGroup::SharedPtr srv_callback_group_;
+  rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr process_scenes_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr calibration_srv_;
 
   // Calibration related services
   rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr load_database_srv_;
   rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr save_database_srv_;
+
+  // Calibration API parameters and variables
+  std::string base_frame_;
+  std::string sensor_kit_frame_;
+  std::string lidar_base_frame_;
+  std::string lidar_frame_;
+  std::mutex mutex_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
+  bool calibration_done_;
 
   // Parameters
   std::string calibration_sensor_frame_;
@@ -295,11 +323,6 @@ protected:
   lidartag_msgs::msg::LidarTagDetectionArray latest_lidartag_detections_msg_;
 
   // Scene building parameters
-  std::vector<std::string> current_external_camera_images_;
-  std::vector<std::string> current_calibration_camera_images_;
-  apriltag_msgs::msg::AprilTagDetectionArray current_apriltag_detections_msg_;
-  lidartag_msgs::msg::LidarTagDetectionArray current_lidartag_detections_msg_;
-
   std::vector<apriltag_msgs::msg::AprilTagDetectionArray> scenes_calibration_apriltag_detections_;
   std::vector<lidartag_msgs::msg::LidarTagDetectionArray> scenes_calibration_lidartag_detections_;
   std::vector<std::vector<std::string>> scenes_external_camera_images_;

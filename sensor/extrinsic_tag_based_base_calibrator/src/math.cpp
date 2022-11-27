@@ -116,13 +116,35 @@ bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & gr
     det = cv::determinant(rotation);
   }
 
+  assert(std::abs(det - 1.0) < 1e5);
+
   ground_pose = cv::Affine3d(rotation, translation);
 
   // Fix the ground origin to be the projection of the origin into the ground plane
-  cv::Vec3d fixed_translation = ground_pose.inv() * cv::Vec3d(0.0, 0.0, 0.0);
-  fixed_translation(2) = 0.0;
-  fixed_translation = ground_pose * fixed_translation;
-  ground_pose = cv::Affine3d(rotation, fixed_translation);
+  cv::Vec3d initial_ground_to_origin = ground_pose.inv() * cv::Vec3d(0.0, 0.0, 0.0);
+
+  cv::Vec3d aux = initial_ground_to_origin;
+  aux(2) = 0.0;
+  cv::Vec3d origin_to_new_ground = ground_pose * aux;
+
+  // Because the pose of apriltags points into the tag, we want the ground pose point into the
+  // ground in z
+  if (initial_ground_to_origin(2) > 0) {
+    // Invert z
+    rotation(0, 2) *= -1.0;
+    rotation(1, 2) *= -1.0;
+    rotation(2, 2) *= -1.0;
+
+    // Invert y to keep the right hand rule (det=1)
+    rotation(0, 1) *= -1.0;
+    rotation(1, 1) *= -1.0;
+    rotation(2, 1) *= -1.0;
+
+    auto det = cv::determinant(rotation);
+    assert(std::abs(det - 1.0) < 1e5);
+  }
+
+  ground_pose = cv::Affine3d(rotation, origin_to_new_ground);
 
   return true;
 }

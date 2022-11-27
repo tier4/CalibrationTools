@@ -196,6 +196,10 @@ void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scala
     cv::line(
       img, detection.corners[i], detection.corners[j], color,
       static_cast<int>(std::max(tag_size / 512.0, 1.0)), cv::LINE_AA);
+
+    cv::putText(
+      img, std::to_string(i), detection.corners[i], cv::FONT_HERSHEY_SIMPLEX,
+      std::max(tag_size / 256.0, 1.0), color, static_cast<int>(std::max(tag_size / 128.0, 1.0)));
   }
 
   cv::putText(

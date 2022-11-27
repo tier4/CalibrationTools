@@ -1,0 +1,4 @@
+string[] files
+int64 scene_id
+---
+bool success
