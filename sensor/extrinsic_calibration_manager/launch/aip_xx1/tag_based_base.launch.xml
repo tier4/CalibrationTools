@@ -8,6 +8,7 @@
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
   <let name="lidar_model" value="velodyne_vls128"/>
   <let name="calibration_sensor_frame" value="velodyne_top"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_base_calibrator)/rviz/velodyne_top.rviz"/>
 
   <let name="image_decompressed_topic" value="/sensing/camera/camera0/image_rect_color/decompressed"/>
   <let name="image_compressed_topic" value="/sensing/camera/camera0/image_rect_color/compressed"/>
@@ -127,4 +128,6 @@
     <arg name="apriltag_detections_topic" value="/apriltag/filtered/detection_array"/>
     <arg name="lidartag_detections_topic" value="/lidartag/filtered/detections_array"/>
   </include>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
 </launch>
