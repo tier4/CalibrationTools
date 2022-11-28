@@ -28,7 +28,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: top
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -180,10 +180,12 @@ Visualization Manager:
       Name: calibration markers
       Namespaces:
         initial_base_link: false
-        initial_estimations: false
+        initial_connections: false
+        initial_estimations: true
         initial_ground_plane: false
         optimized_base_link: true
-        optimized_estimations: false
+        optimized_connections: false
+        optimized_estimations: true
         optimized_ground_plane: false
         raw_detections: false
       Topic:
@@ -217,6 +219,13 @@ Visualization Manager:
       Name: base link
       Radius: 0.009999999776482582
       Reference Frame: base_link
+      Value: true
+    - Class: rviz_default_plugins/Axes
+      Enabled: true
+      Length: 1
+      Name: estimated_base link
+      Radius: 0.009999999776482582
+      Reference Frame: estimated_base_link
       Value: true
     - Class: rviz_default_plugins/Axes
       Enabled: true
@@ -279,14 +288,14 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8947969079017639
+      Pitch: 0.4947972297668457
       Position:
-        X: -0.37714841961860657
-        Y: 6.330107688903809
-        Z: 6.480892658233643
+        X: -0.03453357517719269
+        Y: 8.137449264526367
+        Z: 2.7927486896514893
       Target Frame: <Fixed Frame>
       Value: FPS (rviz_default_plugins)
-      Yaw: 4.748967170715332
+      Yaw: 4.723966598510742
     Saved: ~
 Window Geometry:
   Displays:

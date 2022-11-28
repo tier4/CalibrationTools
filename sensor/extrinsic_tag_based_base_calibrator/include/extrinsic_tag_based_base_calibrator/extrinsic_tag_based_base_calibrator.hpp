@@ -37,6 +37,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -289,9 +290,11 @@ protected:
   std::string lidar_base_frame_;
   std::string lidar_frame_;
   std::mutex mutex_;
+  tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
   bool calibration_done_;
+  cv::Affine3d calibrated_lidar_to_base_link_pose_;
 
   // Parameters
   std::string calibration_sensor_frame_;

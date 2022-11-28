@@ -129,5 +129,8 @@
     <arg name="lidartag_detections_topic" value="/lidartag/filtered/detections_array"/>
   </include>
 
-  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
+  <!-- calibration parameters-->
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="estimated_base_link_broadcaster" output="screen" args="0 0 0 0 0 0 velodyne_top estimated_base_link"/>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="log" args="-d $(var rviz_profile)" if="$(var rviz)"/>
 </launch>

@@ -49,6 +49,7 @@ namespace extrinsic_tag_based_base_calibrator
 ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   const rclcpp::NodeOptions & options)
 : Node("extrinsic_tag_based_base_calibrator_node", options),
+  tf_broadcaster_(this),
   calibration_done_(false),
   data_(std::make_shared<CalibrationData>())
 {
@@ -289,19 +290,7 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
       this->get_logger(), *this->get_clock(), 30000, "Waiting for the calibration to end");
   }
 
-  cv::Affine3d ground_pose;
-
-  if (
-    !computeGroundPlane(data_->optimized_ground_tag_poses, ground_tag_size_, ground_pose) ||
-    !data_->optimized_left_wheel_tag_pose || !data_->optimized_right_wheel_tag_pose) {
-    RCLCPP_ERROR(this->get_logger(), "Could not compute the base link");
-    response->success = false;
-    return;
-  }
-
-  cv::Affine3d lidar_to_base_link_pose = computeBaseLink(
-    *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose, ground_pose);
-  cv::Matx44d base_link_to_lidar_transform_cv = lidar_to_base_link_pose.inv().matrix;
+  cv::Matx44d base_link_to_lidar_transform_cv = calibrated_lidar_to_base_link_pose_.inv().matrix;
   Eigen::Matrix4d base_link_to_lidar_transform;
   cv::cv2eigen(base_link_to_lidar_transform_cv, base_link_to_lidar_transform);
   Eigen::Affine3d base_link_to_lidar_pose(base_link_to_lidar_transform);
@@ -326,8 +315,18 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
   Eigen::Affine3d base_link_to_lidar_base_pose =
     base_link_to_lidar_pose * lidar_base_to_lidar_pose.inverse();
 
+  // Since we want the sensor_kit -> lidar to be apure yaw rotation in +90 degrees, we adjust it
+  // here
+  tf2::Quaternion aux_quat;
+  aux_quat.setRPY(0.0, 0.0, M_PI_2);
+
+  Eigen::Affine3d aux_pose(
+    Eigen::Quaterniond(aux_quat.getW(), aux_quat.getX(), aux_quat.getY(), aux_quat.getZ()));
+  Eigen::Affine3d base_link_to_lidar_base_pose_without_yaw =
+    base_link_to_lidar_base_pose * aux_pose.inverse();
+
   response->success = true;
-  response->result_pose = tf2::toMsg(base_link_to_lidar_base_pose);
+  response->result_pose = tf2::toMsg(base_link_to_lidar_base_pose_without_yaw);
 }
 
 void ExtrinsicTagBasedBaseCalibrator::sensorKitToLidarCalibrationCallback(
@@ -353,46 +352,11 @@ void ExtrinsicTagBasedBaseCalibrator::sensorKitToLidarCalibrationCallback(
       this->get_logger(), *this->get_clock(), 30000, "Waiting for the calibration to end");
   }
 
-  cv::Affine3d ground_pose;
-
-  if (
-    !computeGroundPlane(data_->optimized_ground_tag_poses, ground_tag_size_, ground_pose) ||
-    !data_->optimized_left_wheel_tag_pose || !data_->optimized_right_wheel_tag_pose) {
-    RCLCPP_ERROR(this->get_logger(), "Could not compute the base link");
-    response->success = false;
-    return;
-  }
-
-  cv::Affine3d lidar_to_base_link_pose = computeBaseLink(
-    *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose, ground_pose);
-  cv::Matx44d base_link_to_lidar_transform_cv = lidar_to_base_link_pose.inv().matrix;
-  Eigen::Matrix4d base_link_to_lidar_transform;
-  cv::cv2eigen(base_link_to_lidar_transform_cv, base_link_to_lidar_transform);
-  Eigen::Affine3d base_link_to_lidar_pose(base_link_to_lidar_transform);
-
-  geometry_msgs::msg::Transform lidar_base_to_lidar_msg;
-  Eigen::Affine3d lidar_base_to_lidar_pose;
-
-  // We calibrate the lidar base link, not the lidar, so we need to compute that pose
-  try {
-    rclcpp::Time t = rclcpp::Time(0);
-    rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
-
-    lidar_base_to_lidar_msg =
-      tf_buffer_->lookupTransform(lidar_base_frame_, lidar_frame_, t, timeout).transform;
-
-    lidar_base_to_lidar_pose = tf2::transformToEigen(lidar_base_to_lidar_msg);
-  } catch (tf2::TransformException & ex) {
-    RCLCPP_ERROR(this->get_logger(), "Could not get the necessary tfs for calibration");
-    response->success = false;
-  }
-
-  // Eigen::Affine3d base_link_to_lidar_base_pose = base_link_to_lidar_pose *
-  // lidar_base_to_lidar_pose.inverse();
+  tf2::Quaternion aux_quat;
+  aux_quat.setRPY(0.0, 0.0, M_PI_2);
 
   response->success = true;
-  response->result_pose.orientation.w = 1.0;
-  // response->result_pose = tf2::toMsg(base_link_to_lidar_base_pose);
+  response->result_pose.orientation = tf2::toMsg(aux_quat);
 }
 
 void ExtrinsicTagBasedBaseCalibrator::apriltagDetectionsCallback(
@@ -675,6 +639,18 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
   }
 
   markers_pub_->publish(markers);
+
+  // Publish tf for visualization if available
+  if (calibration_done_) {
+    Eigen::Matrix4d lidar_to_base_link_transform;
+    cv::cv2eigen(calibrated_lidar_to_base_link_pose_.matrix, lidar_to_base_link_transform);
+
+    geometry_msgs::msg::TransformStamped tf_msg =
+      tf2::eigenToTransform(Eigen::Affine3d(lidar_to_base_link_transform));
+    tf_msg.header.frame_id = lidar_frame_;
+    tf_msg.child_frame_id = "estimated_base_link";
+    tf_broadcaster_.sendTransform(tf_msg);
+  }
 }
 
 std_msgs::msg::ColorRGBA ExtrinsicTagBasedBaseCalibrator::getNextColor()
@@ -1259,6 +1235,20 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
   calibration_problem_.evaluate();
   calibration_problem_.writeDebugImages();
   RCLCPP_INFO(this->get_logger(), "Finished optimization");
+
+  // Derive the base link pose
+  cv::Affine3d ground_pose;
+
+  if (
+    !computeGroundPlane(data_->optimized_ground_tag_poses, ground_tag_size_, ground_pose) ||
+    !data_->optimized_left_wheel_tag_pose || !data_->optimized_right_wheel_tag_pose) {
+    RCLCPP_ERROR(this->get_logger(), "Could not compute the base link");
+    response->success = false;
+    return false;
+  }
+
+  calibrated_lidar_to_base_link_pose_ = computeBaseLink(
+    *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose, ground_pose);
 
   calibration_done_ = true;
   response->success = true;
