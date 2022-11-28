@@ -74,7 +74,6 @@ double calculate_std_mean_const(const std::vector<T> & v, const double mean)
   return std::sqrt(error / v.size());
 }
 
-
 struct CompareMsgTimestamp
 {
   bool operator()(tier4_debug_msgs::msg::Float64Stamped const & t1, double const & t2) const
@@ -119,8 +118,7 @@ struct CompareMsgTimestamp
 };
 
 geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & vec_list,
-  const double time,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & vec_list, const double time,
   const double tolerance_sec);
 
 template <typename T>
@@ -153,8 +151,7 @@ void save_estimated_parameters(
 
 geometry_msgs::msg::Point integrate_position(
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
-  const double coef_vx,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double coef_vx,
   const double yaw_init);
 
 geometry_msgs::msg::Vector3 calculate_error_rpy(

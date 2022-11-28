@@ -66,20 +66,18 @@ void save_estimated_parameters(
 }
 
 geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & vec_list,
-  const double time,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & vec_list, const double time,
   const double tolerance_sec = 0.1)
 {
   std::vector<double> time_list{};
-  for (const auto & vec: vec_list)
-  {
+  for (const auto & vec : vec_list) {
     time_list.push_back(rclcpp::Time(vec.header.stamp).seconds());
   }
 
-  const int next_idx = std::upper_bound(time_list.begin(), time_list.end(), time) - time_list.begin();
+  const int next_idx =
+    std::upper_bound(time_list.begin(), time_list.end(), time) - time_list.begin();
 
-  if (next_idx == 0) 
-  {
+  if (next_idx == 0) {
     if (time_list.front() - time > tolerance_sec) {
       throw std::domain_error("interpolate_vector3_stamped failed! Query time is too small.");
     }
@@ -95,14 +93,14 @@ geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
     geometry_msgs::msg::Point interpolated_vec = tier4_autoware_utils::calcInterpolatedPoint(
       vec_list[prev_idx].vector, vec_list[next_idx].vector, ratio);
 
-    return tier4_autoware_utils::createVector3(interpolated_vec.x, interpolated_vec.y, interpolated_vec.z);
+    return tier4_autoware_utils::createVector3(
+      interpolated_vec.x, interpolated_vec.y, interpolated_vec.z);
   }
 }
 
 geometry_msgs::msg::Point integrate_position(
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
-  const double coef_vx,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double coef_vx,
   const double yaw_init)
 {
   double t_prev = rclcpp::Time(vx_list.front().stamp).seconds();
@@ -132,12 +130,10 @@ geometry_msgs::msg::Vector3 calculate_error_rpy(
   const geometry_msgs::msg::Vector3 rpy_1 =
     tier4_autoware_utils::getRPY(pose_list.back().pose.orientation);
   const geometry_msgs::msg::Vector3 d_rpy = integrate_orientation(gyro_list, gyro_bias);
-  
+
   geometry_msgs::msg::Vector3 error_rpy = tier4_autoware_utils::createVector3(
-    clip_radian(-rpy_1.x + rpy_0.x + d_rpy.x),
-    clip_radian(-rpy_1.y + rpy_0.y + d_rpy.y),
-    clip_radian(-rpy_1.z + rpy_0.z + d_rpy.z)
-  );
+    clip_radian(-rpy_1.x + rpy_0.x + d_rpy.x), clip_radian(-rpy_1.y + rpy_0.y + d_rpy.y),
+    clip_radian(-rpy_1.z + rpy_0.z + d_rpy.z));
   return error_rpy;
 }
 

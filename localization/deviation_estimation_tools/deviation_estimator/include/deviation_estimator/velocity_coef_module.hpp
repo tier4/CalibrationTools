@@ -28,8 +28,7 @@ public:
   void update_coef(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
     const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
-    const double dt);
+    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double dt);
   double get_coef() const;
   double get_coef_std() const;
   bool empty() const;

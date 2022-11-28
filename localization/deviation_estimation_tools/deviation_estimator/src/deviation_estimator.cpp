@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include "deviation_estimator/deviation_estimator.hpp"
-#include "deviation_estimator/utils.hpp"
 
-#include "tier4_autoware_utils/geometry/geometry.hpp"
+#include "deviation_estimator/utils.hpp"
 #include "rclcpp/logging.hpp"
+#include "tier4_autoware_utils/geometry/geometry.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -68,11 +68,9 @@ DeviationEstimator::DeviationEstimator(
   //   "in_twist_with_covariance_raw", 1,
   //   std::bind(&DeviationEstimator::callback_twist_with_covarianceRaw, this, _1));
   sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_wheel_odometry", 1,
-    std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
+    "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
   sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
-    "in_imu", 1,
-    std::bind(&DeviationEstimator::callback_imu, this, _1));
+    "in_imu", 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
   pub_coef_vx_ = create_publisher<std_msgs::msg::Float64>("estimated_coef_vx", 1);
   pub_bias_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_bias_angular_velocity", 1);
@@ -124,7 +122,6 @@ void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPt
 
   gyro_all_.push_back(gyro);
 }
-
 
 void DeviationEstimator::timer_callback()
 {
@@ -197,8 +194,8 @@ void DeviationEstimator::timer_callback()
   stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.x);
   stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.y);
   stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.z);
-  geometry_msgs::msg::Vector3 stddev_angvel_imu_msg = tier4_autoware_utils::createVector3(
-    stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
+  geometry_msgs::msg::Vector3 stddev_angvel_imu_msg =
+    tier4_autoware_utils::createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
   pub_stddev_angvel_->publish(stddev_angvel_imu_msg);
 
   if (!results_path_.empty()) {
@@ -211,8 +208,7 @@ void DeviationEstimator::timer_callback()
 double DeviationEstimator::estimate_stddev_velocity(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
-  const double t_window) const
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const
 {
   auto duration = rclcpp::Duration::from_seconds(t_window);
   std::vector<double> delta_x_list;
@@ -240,7 +236,8 @@ double DeviationEstimator::estimate_stddev_velocity(
 
     const double distance =
       norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
-    const auto d_pos = integrate_position(vx_sub_traj, gyro_sub_traj, vel_coef_module_->get_coef(),
+    const auto d_pos = integrate_position(
+      vx_sub_traj, gyro_sub_traj, vel_coef_module_->get_coef(),
       tf2::getYaw(pose_sub_traj.front().pose.orientation));
 
     const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
@@ -252,8 +249,7 @@ double DeviationEstimator::estimate_stddev_velocity(
 
 geometry_msgs::msg::Vector3 DeviationEstimator::estimate_stddev_angular_velocity(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
-  const double t_window) const
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const
 {
   auto duration = rclcpp::Duration::from_seconds(t_window);
   std::vector<double> delta_wx_list;
@@ -287,8 +283,7 @@ geometry_msgs::msg::Vector3 DeviationEstimator::estimate_stddev_angular_velocity
   geometry_msgs::msg::Vector3 stddev_angvel_base = tier4_autoware_utils::createVector3(
     calculate_std(delta_wx_list) / std::sqrt(t_window),
     calculate_std(delta_wy_list) / std::sqrt(t_window),
-    calculate_std(delta_wz_list) / std::sqrt(t_window)
-  );
+    calculate_std(delta_wz_list) / std::sqrt(t_window));
   return stddev_angvel_base;
 }
 
@@ -307,8 +302,7 @@ geometry_msgs::msg::Vector3 DeviationEstimator::add_bias_uncertainty_on_angular_
   geometry_msgs::msg::Vector3 stddev_angvel_prime_base = tier4_autoware_utils::createVector3(
     std::sqrt(pow(stddev_angvel_base.x, 2) + dt_design_ * pow(stddev_angvel_bias_base.x, 2)),
     std::sqrt(pow(stddev_angvel_base.y, 2) + dt_design_ * pow(stddev_angvel_bias_base.y, 2)),
-    std::sqrt(pow(stddev_angvel_base.z, 2) + dt_design_ * pow(stddev_angvel_bias_base.z, 2))
-  );
+    std::sqrt(pow(stddev_angvel_base.z, 2) + dt_design_ * pow(stddev_angvel_bias_base.z, 2)));
   return stddev_angvel_prime_base;
 }
 

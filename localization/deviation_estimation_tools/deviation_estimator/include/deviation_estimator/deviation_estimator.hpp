@@ -24,8 +24,8 @@
 
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-#include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
@@ -56,12 +56,10 @@ public:
   DeviationEstimator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    sub_pose_with_cov_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_with_cov_;
   rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
     sub_wheel_odometry_;
-  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr
-    sub_imu_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_coef_vx_;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_bias_angvel_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_stddev_vx_;
@@ -113,13 +111,11 @@ private:
   double estimate_stddev_velocity(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
     const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
-    const double t_window) const;
-  
+    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const;
+
   geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
     const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
-    const double t_window) const;
+    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const;
 
   double add_bias_uncertainty_on_velocity(
     const double stddev_vx, const double stddev_coef_vx) const;
