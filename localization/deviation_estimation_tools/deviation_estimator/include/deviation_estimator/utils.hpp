@@ -177,6 +177,9 @@ double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & g
 geometry_msgs::msg::Vector3 transform_vector3(
   const geometry_msgs::msg::Vector3 & vec, const geometry_msgs::msg::TransformStamped & transform);
 
+inline
+void fromMsg(const geometry_msgs::msg::Transform & in, tf2::Transform & out);
+
 geometry_msgs::msg::TransformStamped inverse_transform(
   const geometry_msgs::msg::TransformStamped & transform);
 

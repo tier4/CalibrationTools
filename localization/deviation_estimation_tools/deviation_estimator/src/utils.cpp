@@ -186,12 +186,24 @@ geometry_msgs::msg::Vector3 transform_vector3(
   return vec_stamped_transformed.vector;
 }
 
+/* This function is copied from tf2_geometry_msgs package, which should ideally be avoided.
+   However, at the time of implementation, we got the "undefined reference" error for fromMsg, 
+   and thus TEMPORARILY ported the function here. */
+inline
+void myFromMsg(const geometry_msgs::msg::Transform & in, tf2::Transform & out)
+{
+  out.setOrigin(tf2::Vector3(in.translation.x, in.translation.y, in.translation.z));
+  // w at the end in the constructor
+  out.setRotation(tf2::Quaternion(in.rotation.x, in.rotation.y, in.rotation.z, in.rotation.w));
+}
+
 geometry_msgs::msg::TransformStamped inverse_transform(
   const geometry_msgs::msg::TransformStamped & transform)
 {
   tf2::Transform tf;
-  tf2::fromMsg(transform, tf);
+  myFromMsg(transform.transform, tf);
   geometry_msgs::msg::TransformStamped transform_inv;
+  transform_inv.header = transform.header;
   transform_inv.transform = tf2::toMsg(tf.inverse());
   return transform_inv;
 }
