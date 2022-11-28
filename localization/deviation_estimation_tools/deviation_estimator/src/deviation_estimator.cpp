@@ -49,7 +49,6 @@ DeviationEstimator::DeviationEstimator(
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
   results_path_ = declare_parameter("results_path", "test");
-  imu_link_frame_ = declare_parameter("imu_link_frame", "tamagawa/imu_link");
   time_window_ = declare_parameter("time_window", 2.0);
   add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
 
@@ -64,9 +63,6 @@ DeviationEstimator::DeviationEstimator(
   sub_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_pose_with_covariance", 1,
     std::bind(&DeviationEstimator::callback_pose_with_covariance, this, _1));
-  // sub_twist_with_cov_raw_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-  //   "in_twist_with_covariance_raw", 1,
-  //   std::bind(&DeviationEstimator::callback_twist_with_covarianceRaw, this, _1));
   sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
     "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
   sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
@@ -78,13 +74,13 @@ DeviationEstimator::DeviationEstimator(
   pub_stddev_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
-  tf_base2imu_ptr_ = nullptr;
   save_estimated_parameters(
     results_path_, 0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{},
     geometry_msgs::msg::Vector3{});
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
+  transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
 
   DEBUG_INFO(this->get_logger(), "[Deviation Estimator] launch success");
 }
@@ -116,9 +112,17 @@ void DeviationEstimator::callback_wheel_odometry(
 
 void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr)
 {
+  tf_imu2base_ptr_ = transform_listener_->getLatestTransform(imu_msg_ptr->header.frame_id, output_frame_);
+  if (!tf_imu2base_ptr_) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Please publish TF %s to %s", output_frame_.c_str(),
+      (imu_msg_ptr->header.frame_id).c_str());
+    return;
+  }
+
   geometry_msgs::msg::Vector3Stamped gyro;
   gyro.header.stamp = imu_msg_ptr->header.stamp;
-  gyro.vector = imu_msg_ptr->angular_velocity;
+  gyro.vector = transform_vector3(imu_msg_ptr->angular_velocity, *tf_imu2base_ptr_);
 
   gyro_all_.push_back(gyro);
 }
@@ -174,17 +178,12 @@ void DeviationEstimator::timer_callback()
   coef_vx_msg.data = vel_coef_module_->get_coef();
   pub_coef_vx_->publish(coef_vx_msg);
 
-  geometry_msgs::msg::Vector3Stamped bias_angvel_base;
-  bias_angvel_base.header.stamp = this->now();
-  bias_angvel_base.vector = gyro_bias_module_->get_bias_base_link();
-
-  if (tf_base2imu_ptr_ == nullptr) {
-    tf_base2imu_ptr_ = std::make_shared<geometry_msgs::msg::TransformStamped>();
-    get_transform(imu_link_frame_, output_frame_, tf_base2imu_ptr_);
-  }
-  geometry_msgs::msg::Vector3Stamped bias_angvel_imu;
-  tf2::doTransform(bias_angvel_base, bias_angvel_imu, *tf_base2imu_ptr_);
-  pub_bias_angvel_->publish(bias_angvel_imu.vector);
+  // geometry_msgs::msg::Vector3Stamped bias_angvel_base;
+  // bias_angvel_base.header.stamp = this->now();
+  // bias_angvel_base.vector = gyro_bias_module_->get_bias_base_link();
+  geometry_msgs::msg::TransformStamped tf_base2imu = inverse_transform(*tf_imu2base_ptr_);
+  const geometry_msgs::msg::Vector3 bias_angvel_imu = transform_vector3(gyro_bias_module_->get_bias_base_link(), tf_base2imu);
+  pub_bias_angvel_->publish(bias_angvel_imu);
 
   std_msgs::msg::Float64 stddev_vx_msg;
   stddev_vx_msg.data = stddev_vx;
@@ -201,7 +200,7 @@ void DeviationEstimator::timer_callback()
   if (!results_path_.empty()) {
     save_estimated_parameters(
       results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
-      bias_angvel_base.vector.z, stddev_angvel_imu_msg, bias_angvel_imu.vector);
+      gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
   }
 }
 
@@ -304,45 +303,4 @@ geometry_msgs::msg::Vector3 DeviationEstimator::add_bias_uncertainty_on_angular_
     std::sqrt(pow(stddev_angvel_base.y, 2) + dt_design_ * pow(stddev_angvel_bias_base.y, 2)),
     std::sqrt(pow(stddev_angvel_base.z, 2) + dt_design_ * pow(stddev_angvel_bias_base.z, 2)));
   return stddev_angvel_prime_base;
-}
-
-bool DeviationEstimator::get_transform(
-  const std::string & target_frame, const std::string & source_frame,
-  const geometry_msgs::msg::TransformStamped::SharedPtr transform_stamped_ptr)
-{
-  if (target_frame == source_frame) {
-    transform_stamped_ptr->header.stamp = this->get_clock()->now();
-    transform_stamped_ptr->header.frame_id = target_frame;
-    transform_stamped_ptr->child_frame_id = source_frame;
-    transform_stamped_ptr->transform.translation.x = 0.0;
-    transform_stamped_ptr->transform.translation.y = 0.0;
-    transform_stamped_ptr->transform.translation.z = 0.0;
-    transform_stamped_ptr->transform.rotation.x = 0.0;
-    transform_stamped_ptr->transform.rotation.y = 0.0;
-    transform_stamped_ptr->transform.rotation.z = 0.0;
-    transform_stamped_ptr->transform.rotation.w = 1.0;
-    return true;
-  }
-
-  try {
-    *transform_stamped_ptr =
-      tf_buffer_.lookupTransform(target_frame, source_frame, tf2::TimePointZero);
-  } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(this->get_logger(), "%s", ex.what());
-    RCLCPP_ERROR(
-      this->get_logger(), "Please publish TF %s to %s", target_frame.c_str(), source_frame.c_str());
-
-    transform_stamped_ptr->header.stamp = this->get_clock()->now();
-    transform_stamped_ptr->header.frame_id = target_frame;
-    transform_stamped_ptr->child_frame_id = source_frame;
-    transform_stamped_ptr->transform.translation.x = 0.0;
-    transform_stamped_ptr->transform.translation.y = 0.0;
-    transform_stamped_ptr->transform.translation.z = 0.0;
-    transform_stamped_ptr->transform.rotation.x = 0.0;
-    transform_stamped_ptr->transform.rotation.y = 0.0;
-    transform_stamped_ptr->transform.rotation.z = 0.0;
-    transform_stamped_ptr->transform.rotation.w = 1.0;
-    return false;
-  }
-  return true;
 }

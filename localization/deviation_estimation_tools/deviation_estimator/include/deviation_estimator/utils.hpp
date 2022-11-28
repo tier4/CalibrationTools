@@ -20,6 +20,7 @@
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
@@ -27,6 +28,14 @@
 
 #include <fstream>
 #include <vector>
+
+#ifdef ROS_DISTRO_GALACTIC
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#else
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#endif
+#include "tf2/utils.h"
+
 
 double double_round(const double x, const int n);
 
@@ -165,5 +174,11 @@ geometry_msgs::msg::Vector3 integrate_orientation(
 
 double get_mean_abs_vx(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list);
 double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list);
+
+geometry_msgs::msg::Vector3 transform_vector3(
+  const geometry_msgs::msg::Vector3 & vec, const geometry_msgs::msg::TransformStamped & transform);
+
+geometry_msgs::msg::TransformStamped inverse_transform(
+  const geometry_msgs::msg::TransformStamped & transform);
 
 #endif  // DEVIATION_ESTIMATOR__UTILS_HPP_

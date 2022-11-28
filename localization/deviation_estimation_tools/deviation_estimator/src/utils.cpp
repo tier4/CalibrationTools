@@ -174,3 +174,24 @@ double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & g
   mean_abs_wz /= gyro_list.size();
   return mean_abs_wz;
 }
+
+geometry_msgs::msg::Vector3 transform_vector3(
+  const geometry_msgs::msg::Vector3 & vec, const geometry_msgs::msg::TransformStamped & transform)
+{
+  geometry_msgs::msg::Vector3Stamped vec_stamped;
+  vec_stamped.vector = vec;
+
+  geometry_msgs::msg::Vector3Stamped vec_stamped_transformed;
+  tf2::doTransform(vec_stamped, vec_stamped_transformed, transform);
+  return vec_stamped_transformed.vector;
+}
+
+geometry_msgs::msg::TransformStamped inverse_transform(
+  const geometry_msgs::msg::TransformStamped & transform)
+{
+  tf2::Transform tf;
+  tf2::fromMsg(transform, tf);
+  geometry_msgs::msg::TransformStamped transform_inv;
+  transform_inv.transform = tf2::toMsg(tf.inverse());
+  return transform_inv;
+}

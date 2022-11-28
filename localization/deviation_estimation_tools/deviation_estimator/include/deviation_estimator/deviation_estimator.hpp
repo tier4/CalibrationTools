@@ -18,37 +18,30 @@
 #include "deviation_estimator/gyro_bias_module.hpp"
 #include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/velocity_coef_module.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/utils.h"
 
-#include "geometry_msgs/msg/pose_array.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "tf2/utils.h"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
-#include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
+#include "tier4_autoware_utils/ros/transform_listener.hpp"
 
-#include <tf2/transform_datatypes.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_listener.h>
-
-#include <chrono>
-#include <fstream>
 #include <iostream>
 #include <memory>
-#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
 
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#else
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#endif
+
+#if __has_include(<tf2_geometry_msgs/tf2_geometry_msgs.hpp>)
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#else
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#endif 
 
 class DeviationEstimator : public rclcpp::Node
 {
@@ -76,7 +69,6 @@ private:
   std::string imu_link_frame_;
 
   std::vector<geometry_msgs::msg::PoseStamped> pose_all_;
-  // std::vector<geometry_msgs::msg::TwistStamped> twist_all_;
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_all_;
   std::vector<geometry_msgs::msg::PoseStamped> pose_buf_;
@@ -90,10 +82,12 @@ private:
   bool add_bias_uncertainty_;
 
   std::string output_frame_;
-  geometry_msgs::msg::TransformStamped::SharedPtr tf_base2imu_ptr_;
+  geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_imu2base_ptr_;
 
   std::unique_ptr<GyroBiasModule> gyro_bias_module_;
   std::unique_ptr<VelocityCoefModule> vel_coef_module_;
+
+  std::shared_ptr<tier4_autoware_utils::TransformListener> transform_listener_;
 
   void callback_pose_with_covariance(geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
@@ -123,9 +117,5 @@ private:
   geometry_msgs::msg::Vector3 add_bias_uncertainty_on_angular_velocity(
     const geometry_msgs::msg::Vector3 stddev_angvel_base,
     const geometry_msgs::msg::Vector3 stddev_angvel_bias_base) const;
-
-  bool get_transform(
-    const std::string & target_frame, const std::string & source_frame,
-    const geometry_msgs::msg::TransformStamped::SharedPtr transform_stamped_ptr);
 };
 #endif  // DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
