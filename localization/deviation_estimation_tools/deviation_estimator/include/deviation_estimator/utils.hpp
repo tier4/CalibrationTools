@@ -17,11 +17,9 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
-#include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
 #include <tf2/transform_datatypes.h>
