@@ -520,12 +520,20 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
   // Initial estimations
   base_marker.ns = "initial_estimations";
+  visualization_msgs::msg::Marker initial_connections_base_marker = base_marker;
+  initial_connections_base_marker.ns = "initial_connections";
 
   std_msgs::msg::ColorRGBA initial_estimations_color;
   initial_estimations_color.r = 1.f;
   initial_estimations_color.g = 0.f;
   initial_estimations_color.b = 0.f;
   initial_estimations_color.a = 1.f;
+
+  std_msgs::msg::ColorRGBA initial_connections_color;
+  initial_connections_color.r = 1.f;
+  initial_connections_color.g = 0.f;
+  initial_connections_color.b = 0.f;
+  initial_connections_color.a = 0.5f;
 
   for (auto it = data_->initial_tag_poses_map.begin(); it != data_->initial_tag_poses_map.end();
        it++) {
@@ -557,19 +565,27 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
                             : UID::makeGroundTagUID(detection.id);
 
       addLineMarker(
-        markers, initial_estimations_color, *camera_pose,
-        *data_->initial_tag_poses_map[detection_uid], base_marker);
+        markers, initial_connections_color, *camera_pose,
+        *data_->initial_tag_poses_map[detection_uid], initial_connections_base_marker);
     }
   }
 
-  // Initial estimations
+  // Optimized estimations
   base_marker.ns = "optimized_estimations";
+  visualization_msgs::msg::Marker optimized_connections_base_marker = base_marker;
+  optimized_connections_base_marker.ns = "optimized_connections";
 
   std_msgs::msg::ColorRGBA optimized_estimations_color;
   optimized_estimations_color.r = 0.f;
   optimized_estimations_color.g = 1.f;
   optimized_estimations_color.b = 0.f;
   optimized_estimations_color.a = 1.f;
+
+  std_msgs::msg::ColorRGBA optimized_connections_color;
+  optimized_connections_color.r = 0.f;
+  optimized_connections_color.g = 1.f;
+  optimized_connections_color.b = 0.f;
+  optimized_connections_color.a = 0.5f;
 
   for (auto it = data_->optimized_tag_poses_map.begin(); it != data_->optimized_tag_poses_map.end();
        it++) {
@@ -601,8 +617,8 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
                             : UID::makeGroundTagUID(detection.id);
 
       addLineMarker(
-        markers, optimized_estimations_color, *camera_pose,
-        *data_->optimized_tag_poses_map[detection_uid], base_marker);
+        markers, optimized_connections_color, *camera_pose,
+        *data_->optimized_tag_poses_map[detection_uid], optimized_connections_base_marker);
     }
   }
 

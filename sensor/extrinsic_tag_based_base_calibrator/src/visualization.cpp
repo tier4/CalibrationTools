@@ -51,7 +51,7 @@ void addTagMarkers(
   marker = base_marker;
   marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
   marker.color = color;
-  marker.scale.x = 0.01;
+  marker.scale.x = 0.001;
   marker.points.clear();
 
   std::array<cv::Matx31d, 4> template_points{
@@ -85,7 +85,7 @@ void addLineMarker(
   marker = base_marker;
   marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
   marker.color = color;
-  marker.scale.x = 0.005;
+  marker.scale.x = 0.001;
 
   auto vec_to_msg = [](const cv::Vec3d & v, geometry_msgs::msg::Point & p) {
     p.x = v(0);
