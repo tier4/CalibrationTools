@@ -19,8 +19,8 @@
 
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
 #include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
@@ -35,7 +35,6 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 #include "tf2/utils.h"
-
 
 double double_round(const double x, const int n);
 

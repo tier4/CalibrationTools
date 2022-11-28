@@ -112,7 +112,8 @@ void DeviationEstimator::callback_wheel_odometry(
 
 void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr)
 {
-  tf_imu2base_ptr_ = transform_listener_->getLatestTransform(imu_msg_ptr->header.frame_id, output_frame_);
+  tf_imu2base_ptr_ =
+    transform_listener_->getLatestTransform(imu_msg_ptr->header.frame_id, output_frame_);
   if (!tf_imu2base_ptr_) {
     RCLCPP_ERROR(
       this->get_logger(), "Please publish TF %s to %s", output_frame_.c_str(),
@@ -182,7 +183,8 @@ void DeviationEstimator::timer_callback()
   // bias_angvel_base.header.stamp = this->now();
   // bias_angvel_base.vector = gyro_bias_module_->get_bias_base_link();
   geometry_msgs::msg::TransformStamped tf_base2imu = inverse_transform(*tf_imu2base_ptr_);
-  const geometry_msgs::msg::Vector3 bias_angvel_imu = transform_vector3(gyro_bias_module_->get_bias_base_link(), tf_base2imu);
+  const geometry_msgs::msg::Vector3 bias_angvel_imu =
+    transform_vector3(gyro_bias_module_->get_bias_base_link(), tf_base2imu);
   pub_bias_angvel_->publish(bias_angvel_imu);
 
   std_msgs::msg::Float64 stddev_vx_msg;
