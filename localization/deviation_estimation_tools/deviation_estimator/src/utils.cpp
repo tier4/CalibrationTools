@@ -187,10 +187,9 @@ geometry_msgs::msg::Vector3 transform_vector3(
 }
 
 /* This function is copied from tf2_geometry_msgs package, which should ideally be avoided.
-   However, at the time of implementation, we got the "undefined reference" error for fromMsg, 
+   However, at the time of implementation, we got the "undefined reference" error for fromMsg,
    and thus TEMPORARILY ported the function here. */
-inline
-void myFromMsg(const geometry_msgs::msg::Transform & in, tf2::Transform & out)
+inline void myFromMsg(const geometry_msgs::msg::Transform & in, tf2::Transform & out)
 {
   out.setOrigin(tf2::Vector3(in.translation.x, in.translation.y, in.translation.z));
   // w at the end in the constructor
