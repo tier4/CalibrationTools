@@ -414,7 +414,20 @@ void ExtrinsicTagBasedBaseCalibrator::lidartagDetectionsCallback(
     return;
   }
 
-  latest_lidartag_detections_msg_ = *detections_msg;
+  // We also filter by ids and only accept on of each id
+  lidartag_msgs::msg::LidarTagDetectionArray filtered_detections_msg;
+  filtered_detections_msg.frame_index = detections_msg->frame_index;
+  filtered_detections_msg.header = detections_msg->header;
+  std::set<int> accepted_ids;
+
+  std::copy_if(
+    detections_msg->detections.begin(), detections_msg->detections.end(),
+    std::back_inserter(filtered_detections_msg.detections),
+    [this, &accepted_ids](const auto & detection) {
+      return waypoint_tag_ids_set_.count(detection.id) > 0 && accepted_ids.count(detection.id) == 0;
+    });
+
+  latest_lidartag_detections_msg_ = filtered_detections_msg;
 }
 
 void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()

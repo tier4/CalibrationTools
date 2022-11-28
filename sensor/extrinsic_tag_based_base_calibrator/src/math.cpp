@@ -142,6 +142,10 @@ bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & gr
 
     auto det = cv::determinant(rotation);
     assert(std::abs(det - 1.0) < 1e5);
+
+    if (std::abs(det - 1.0) > 1e5) {
+      return false;
+    }
   }
 
   ground_pose = cv::Affine3d(rotation, origin_to_new_ground);
