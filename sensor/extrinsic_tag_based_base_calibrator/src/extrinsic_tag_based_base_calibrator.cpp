@@ -298,6 +298,9 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
   geometry_msgs::msg::Transform lidar_base_to_lidar_msg;
   Eigen::Affine3d lidar_base_to_lidar_pose;
 
+  geometry_msgs::msg::Transform initial_base_link_to_lidar_msg;
+  Eigen::Affine3d initial_base_link_to_lidar_pose;
+
   // We calibrate the lidar base link, not the lidar, so we need to compute that pose
   try {
     rclcpp::Time t = rclcpp::Time(0);
@@ -307,6 +310,11 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
       tf_buffer_->lookupTransform(lidar_base_frame_, lidar_frame_, t, timeout).transform;
 
     lidar_base_to_lidar_pose = tf2::transformToEigen(lidar_base_to_lidar_msg);
+
+    initial_base_link_to_lidar_msg =
+      tf_buffer_->lookupTransform(base_frame_, lidar_frame_, t, timeout).transform;
+
+    initial_base_link_to_lidar_pose = tf2::transformToEigen(initial_base_link_to_lidar_msg);
   } catch (tf2::TransformException & ex) {
     RCLCPP_ERROR(this->get_logger(), "Could not get the necessary tfs for calibration");
     response->success = false;
@@ -327,6 +335,35 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
 
   response->success = true;
   response->result_pose = tf2::toMsg(base_link_to_lidar_base_pose_without_yaw);
+
+  // Display the correction in calibration
+  Eigen::Affine3d initial_base_link_to_calibrated_base_link_pose =
+    initial_base_link_to_lidar_pose * base_link_to_lidar_pose.inverse();
+  Eigen::Matrix3d initial_base_link_to_calibrated_base_link_rot =
+    initial_base_link_to_calibrated_base_link_pose.rotation();
+  Eigen::Vector3d initial_base_link_to_calibrated_base_link_translation =
+    initial_base_link_to_calibrated_base_link_pose.translation();
+
+  Eigen::Vector3d initial_normal(0.0, 0.0, 1.0);
+  Eigen::Vector3d optimized_norm =
+    initial_base_link_to_calibrated_base_link_rot * Eigen::Vector3d(0.0, 0.0, 1.0);
+  const double normal_angle_diff = std::acos(initial_normal.dot(optimized_norm));
+  const double yaw_angle_diff = std::atan2(
+    initial_base_link_to_calibrated_base_link_rot(1, 0),
+    initial_base_link_to_calibrated_base_link_rot(0, 0));
+
+  RCLCPP_INFO(this->get_logger(), "base_link: initial to calibrated information");
+  RCLCPP_INFO(
+    this->get_logger(), "\t normal angle difference: %.3f degrees",
+    180.0 * normal_angle_diff / M_PI);
+  RCLCPP_INFO(
+    this->get_logger(), "\t yaw angle difference: %.3f degrees", 180.0 * yaw_angle_diff / M_PI);
+  RCLCPP_INFO(
+    this->get_logger(), "\t x: %.3f m", initial_base_link_to_calibrated_base_link_translation.x());
+  RCLCPP_INFO(
+    this->get_logger(), "\t y: %.3f m", initial_base_link_to_calibrated_base_link_translation.y());
+  RCLCPP_INFO(
+    this->get_logger(), "\t z: %.3f m", initial_base_link_to_calibrated_base_link_translation.z());
 }
 
 void ExtrinsicTagBasedBaseCalibrator::sensorKitToLidarCalibrationCallback(

@@ -22,13 +22,14 @@ Panels:
   - Class: rviz_common/Views
     Expanded:
       - /Current View1
+      - /Current View1/Position1
     Name: Views
     Splitter Ratio: 0.5
   - Class: rviz_common/Time
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: left
 Visualization Manager:
   Class: ""
   Displays:
@@ -183,7 +184,7 @@ Visualization Manager:
         initial_connections: false
         initial_estimations: true
         initial_ground_plane: false
-        optimized_base_link: true
+        optimized_base_link: false
         optimized_connections: false
         optimized_estimations: true
         optimized_ground_plane: false
@@ -198,7 +199,7 @@ Visualization Manager:
     - Alpha: 0.5
       Cell Size: 0.10000000149011612
       Class: rviz_default_plugins/Grid
-      Color: 160; 160; 164
+      Color: 171; 171; 171
       Enabled: true
       Line Style:
         Line Width: 0.029999999329447746
@@ -213,6 +214,24 @@ Visualization Manager:
       Plane Cell Count: 80
       Reference Frame: base_link
       Value: true
+    - Alpha: 0.5
+      Cell Size: 0.10000000149011612
+      Class: rviz_default_plugins/Grid
+      Color: 0; 255; 127
+      Enabled: false
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: estimated_base_link_grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 80
+      Reference Frame: estimated_base_link
+      Value: false
     - Class: rviz_default_plugins/Axes
       Enabled: true
       Length: 1
@@ -288,14 +307,14 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4947972297668457
+      Pitch: 0.6399995684623718
       Position:
-        X: -0.03453357517719269
-        Y: 8.137449264526367
-        Z: 2.7927486896514893
+        X: -0.173440620303154
+        Y: 7.8769612312316895
+        Z: 3.8270888328552246
       Target Frame: <Fixed Frame>
       Value: FPS (rviz_default_plugins)
-      Yaw: 4.723966598510742
+      Yaw: 4.7139716148376465
     Saved: ~
 Window Geometry:
   Displays:
