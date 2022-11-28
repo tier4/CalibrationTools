@@ -30,9 +30,6 @@ void VelocityCoefModule::update_coef(
 
   double d_coef_vx = (d_pos.x * dx + d_pos.y * dy) / (d_pos.x * d_pos.x + d_pos.y * d_pos.y);
 
-  std::cout << "KOJI x " << d_pos.x << ", " << dx << std::endl;
-  std::cout << "KOJI y " << d_pos.y << ", " << dy << std::endl;
-
   double time_factor = (rclcpp::Time(vx_list.back().stamp).seconds() -
                         rclcpp::Time(vx_list.front().stamp).seconds()) /
                        dt;
