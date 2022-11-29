@@ -42,6 +42,11 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 
+geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
+  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window,
+  const geometry_msgs::msg::Vector3 & gyro_bias);
+
 class DeviationEstimator : public rclcpp::Node
 {
 public:
@@ -106,9 +111,9 @@ private:
     const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
     const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const;
 
-  geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
-    const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const;
+  // geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
+  //   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
+  //   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const;
 
   double add_bias_uncertainty_on_velocity(
     const double stddev_vx, const double stddev_coef_vx) const;

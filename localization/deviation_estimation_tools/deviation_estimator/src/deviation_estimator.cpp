@@ -33,6 +33,49 @@
 // clang-format on
 using std::placeholders::_1;
 
+
+geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
+  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window,
+  const geometry_msgs::msg::Vector3 & gyro_bias)
+{
+  auto duration = rclcpp::Duration::from_seconds(t_window);
+  std::vector<double> delta_wx_list;
+  std::vector<double> delta_wy_list;
+  std::vector<double> delta_wz_list;
+
+  const rclcpp::Time t_pose_start = rclcpp::Time(pose_list.front().header.stamp);
+  const rclcpp::Time t_pose_end = rclcpp::Time(pose_list.back().header.stamp);
+  // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
+  for (int i = 0; i < (t_pose_end - t_pose_start).seconds() / duration.seconds() - 1; ++i) {
+    const rclcpp::Time t0_rclcpp_time = t_pose_start + duration * i;
+    const rclcpp::Time t1_rclcpp_time = t_pose_start + duration * (i + 1);
+    const std::vector<geometry_msgs::msg::PoseStamped> pose_sub_traj =
+      extract_sub_trajectory(pose_list, t0_rclcpp_time, t1_rclcpp_time);
+
+    const auto t1_pose = rclcpp::Time(pose_sub_traj.back().header.stamp);
+    const auto t0_pose = rclcpp::Time(pose_sub_traj.front().header.stamp);
+    if (t0_pose > t1_pose) continue;
+
+    const std::vector<geometry_msgs::msg::Vector3Stamped> gyro_sub_traj =
+      extract_sub_trajectory(gyro_list, t0_pose, t1_pose);
+    const size_t n_twist = gyro_sub_traj.size();
+
+    const auto error_rpy =
+      calculate_error_rpy(pose_sub_traj, gyro_sub_traj, gyro_bias);
+    delta_wx_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.x);
+    delta_wy_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.y);
+    delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
+  }
+
+  geometry_msgs::msg::Vector3 stddev_angvel_base = tier4_autoware_utils::createVector3(
+    calculate_std(delta_wx_list) / std::sqrt(t_window),
+    calculate_std(delta_wy_list) / std::sqrt(t_window),
+    calculate_std(delta_wz_list) / std::sqrt(t_window));
+  return stddev_angvel_base;
+}
+
+
 DeviationEstimator::DeviationEstimator(
   const std::string & node_name, const rclcpp::NodeOptions & node_options)
 : rclcpp::Node(node_name, node_options),
@@ -43,8 +86,8 @@ DeviationEstimator::DeviationEstimator(
   show_debug_info_ = declare_parameter("show_debug_info", false);
   dt_design_ = declare_parameter("dt_design", 10.0);
   dx_design_ = declare_parameter("dx_design", 30.0);
-  vx_threshold_ = declare_parameter("vx_threshold", 1.5);
-  wz_threshold_ = declare_parameter("wz_threshold", 0.01);
+  vx_threshold_ = declare_parameter("vx_threshold", -1.5);
+  wz_threshold_ = declare_parameter("wz_threshold", 10.01);
   estimation_freq_ = declare_parameter("estimation_freq", 0.5);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
@@ -167,7 +210,7 @@ void DeviationEstimator::timer_callback()
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
   double stddev_vx = estimate_stddev_velocity(pose_all_, vx_all_, gyro_all_, time_window_);
-  auto stddev_angvel_base = estimate_stddev_angular_velocity(pose_all_, gyro_all_, time_window_);
+  auto stddev_angvel_base = estimate_stddev_angular_velocity(pose_all_, gyro_all_, time_window_, gyro_bias_module_->get_bias_base_link());
   if (add_bias_uncertainty_) {
     stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(
@@ -248,45 +291,45 @@ double DeviationEstimator::estimate_stddev_velocity(
   return calculate_std(delta_x_list) / std::sqrt(t_window);
 }
 
-geometry_msgs::msg::Vector3 DeviationEstimator::estimate_stddev_angular_velocity(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const
-{
-  auto duration = rclcpp::Duration::from_seconds(t_window);
-  std::vector<double> delta_wx_list;
-  std::vector<double> delta_wy_list;
-  std::vector<double> delta_wz_list;
+// geometry_msgs::msg::Vector3 DeviationEstimator::estimate_stddev_angular_velocity(
+//   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
+//   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window) const
+// {
+//   auto duration = rclcpp::Duration::from_seconds(t_window);
+//   std::vector<double> delta_wx_list;
+//   std::vector<double> delta_wy_list;
+//   std::vector<double> delta_wz_list;
 
-  const rclcpp::Time t_pose_start = rclcpp::Time(pose_list.front().header.stamp);
-  const rclcpp::Time t_pose_end = rclcpp::Time(pose_list.back().header.stamp);
-  // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
-  for (int i = 0; i < (t_pose_end - t_pose_start).seconds() / duration.seconds() - 1; ++i) {
-    const rclcpp::Time t0_rclcpp_time = t_pose_start + duration * i;
-    const rclcpp::Time t1_rclcpp_time = t_pose_start + duration * (i + 1);
-    const std::vector<geometry_msgs::msg::PoseStamped> pose_sub_traj =
-      extract_sub_trajectory(pose_list, t0_rclcpp_time, t1_rclcpp_time);
+//   const rclcpp::Time t_pose_start = rclcpp::Time(pose_list.front().header.stamp);
+//   const rclcpp::Time t_pose_end = rclcpp::Time(pose_list.back().header.stamp);
+//   // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
+//   for (int i = 0; i < (t_pose_end - t_pose_start).seconds() / duration.seconds() - 1; ++i) {
+//     const rclcpp::Time t0_rclcpp_time = t_pose_start + duration * i;
+//     const rclcpp::Time t1_rclcpp_time = t_pose_start + duration * (i + 1);
+//     const std::vector<geometry_msgs::msg::PoseStamped> pose_sub_traj =
+//       extract_sub_trajectory(pose_list, t0_rclcpp_time, t1_rclcpp_time);
 
-    const auto t1_pose = rclcpp::Time(pose_sub_traj.back().header.stamp);
-    const auto t0_pose = rclcpp::Time(pose_sub_traj.front().header.stamp);
-    if (t0_pose > t1_pose) continue;
+//     const auto t1_pose = rclcpp::Time(pose_sub_traj.back().header.stamp);
+//     const auto t0_pose = rclcpp::Time(pose_sub_traj.front().header.stamp);
+//     if (t0_pose > t1_pose) continue;
 
-    const std::vector<geometry_msgs::msg::Vector3Stamped> gyro_sub_traj =
-      extract_sub_trajectory(gyro_list, t0_pose, t1_pose);
-    const size_t n_twist = gyro_sub_traj.size();
+//     const std::vector<geometry_msgs::msg::Vector3Stamped> gyro_sub_traj =
+//       extract_sub_trajectory(gyro_list, t0_pose, t1_pose);
+//     const size_t n_twist = gyro_sub_traj.size();
 
-    const auto error_rpy =
-      calculate_error_rpy(pose_sub_traj, gyro_sub_traj, gyro_bias_module_->get_bias_base_link());
-    delta_wx_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.x);
-    delta_wy_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.y);
-    delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
-  }
+//     const auto error_rpy =
+//       calculate_error_rpy(pose_sub_traj, gyro_sub_traj, gyro_bias_module_->get_bias_base_link());
+//     delta_wx_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.x);
+//     delta_wy_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.y);
+//     delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
+//   }
 
-  geometry_msgs::msg::Vector3 stddev_angvel_base = tier4_autoware_utils::createVector3(
-    calculate_std(delta_wx_list) / std::sqrt(t_window),
-    calculate_std(delta_wy_list) / std::sqrt(t_window),
-    calculate_std(delta_wz_list) / std::sqrt(t_window));
-  return stddev_angvel_base;
-}
+//   geometry_msgs::msg::Vector3 stddev_angvel_base = tier4_autoware_utils::createVector3(
+//     calculate_std(delta_wx_list) / std::sqrt(t_window),
+//     calculate_std(delta_wy_list) / std::sqrt(t_window),
+//     calculate_std(delta_wz_list) / std::sqrt(t_window));
+//   return stddev_angvel_base;
+// }
 
 double DeviationEstimator::add_bias_uncertainty_on_velocity(
   const double stddev_vx, const double stddev_coef_vx) const
