@@ -125,8 +125,8 @@ DeviationEstimator::DeviationEstimator(
   show_debug_info_ = declare_parameter("show_debug_info", false);
   dt_design_ = declare_parameter("dt_design", 10.0);
   dx_design_ = declare_parameter("dx_design", 30.0);
-  vx_threshold_ = declare_parameter("vx_threshold", -1.5);
-  wz_threshold_ = declare_parameter("wz_threshold", 10.01);
+  vx_threshold_ = declare_parameter("vx_threshold", 1.5);
+  wz_threshold_ = declare_parameter("wz_threshold", 0.01);
   estimation_freq_ = declare_parameter("estimation_freq", 0.5);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
