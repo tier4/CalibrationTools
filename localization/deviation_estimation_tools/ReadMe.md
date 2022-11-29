@@ -143,10 +143,10 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 #### Input
 
-| Name                                                      | Type                                             | Description           |
-| --------------------------------------------------------- | ------------------------------------------------ | --------------------- |
-| `/localization/pose_estimator/pose_with_covariance`       | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose |
-| `/sensing/imu/imu_data` | `sensor_msgs::msg::Imu` | Input IMU data |
+| Name                                                        | Type                                             | Description          |
+| ----------------------------------------------------------- | ------------------------------------------------ | -------------------- |
+| `/localization/pose_estimator/pose_with_covariance`         | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose           |
+| `/sensing/imu/imu_data`                                     | `sensor_msgs::msg::Imu`                          | Input IMU data       |
 | `/sensing/vehicle_velocity_converter/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input wheel odometry |
 
 #### Output
@@ -160,13 +160,13 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 ### Parameters for deviation estimator
 
-| Name                      | Type   | Description                                                                                 | Default value            |
-| ------------------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------ |
-| show_debug_info           | bool   | Flag to display debug info                                                                  | true                     |
-| t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                     |
-| x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
-| estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                      |
-| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
+| Name            | Type   | Description                                                                                 | Default value            |
+| --------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------ |
+| show_debug_info | bool   | Flag to display debug info                                                                  | true                     |
+| t_design        | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                     |
+| x_design        | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
+| estimation_freq | double | Estimation frequency [Hz]                                                                   | 0.5                      |
+| results_path    | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
 
 ### Functions
 
@@ -249,18 +249,18 @@ The architecture of `deviation_evaluator` is shown below. It launches two `ekf_l
 
 #### Input
 
-| Name                                                      | Type                                             | Description |
-| --------------------------------------------------------- | ------------------------------------------------ | ----------- |
-| `/sensing/imu/imu_data` | `sensor_msgs::msg::Imu` | Input IMU data |
+| Name                                                        | Type                                             | Description               |
+| ----------------------------------------------------------- | ------------------------------------------------ | ------------------------- |
+| `/sensing/imu/imu_data`                                     | `sensor_msgs::msg::Imu`                          | Input IMU data            |
 | `/sensing/vehicle_velocity_converter/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input wheel odometry data |
-| `/localization/pose_estimator/pose_with_covariance`       | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose  |
+| `/localization/pose_estimator/pose_with_covariance`         | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose                |
 
 #### Output
 
 | Name                                                                      | Type                                             | Description                                      |
 | ------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
-| `/deviation_evaluator/imu/imu_data`              | `sensor_msgs::msg::Imu` | Output IMU (for `gyro_odometer`)          |
-| `/deviation_evaluator/vehicle_velocity_converter/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output wheel odometry (for `gyro_odometer`)           |
+| `/deviation_evaluator/imu/imu_data`                                       | `sensor_msgs::msg::Imu`                          | Output IMU (for `gyro_odometer`)                 |
+| `/deviation_evaluator/vehicle_velocity_converter/twist_with_covariance`   | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output wheel odometry (for `gyro_odometer`)      |
 | `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`) |
 | `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)   |
 | `/deviation_evaluator/initialpose3d`                                      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output initial pose (for both `ekf_localizer`)   |
