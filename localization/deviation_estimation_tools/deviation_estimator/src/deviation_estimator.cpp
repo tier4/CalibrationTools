@@ -107,8 +107,8 @@ double estimate_stddev_velocity(
 
     const double distance =
       norm_xy(pose_sub_traj.front().pose.position, pose_sub_traj.back().pose.position);
-    const auto d_pos = integrate_position(vx_sub_traj, gyro_sub_traj, coef_vx,
-      tf2::getYaw(pose_sub_traj.front().pose.orientation));
+    const auto d_pos = integrate_position(
+      vx_sub_traj, gyro_sub_traj, coef_vx, tf2::getYaw(pose_sub_traj.front().pose.orientation));
 
     const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
     const double delta = std::sqrt(n_twist / t_window) * (distance - distance_from_twist);
@@ -251,8 +251,11 @@ void DeviationEstimator::timer_callback()
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
-  double stddev_vx = estimate_stddev_velocity(pose_all_, vx_all_, gyro_all_, time_window_, vel_coef_module_->get_coef(), vx_threshold_, wz_threshold_);
-  auto stddev_angvel_base = estimate_stddev_angular_velocity(pose_all_, gyro_all_, time_window_, gyro_bias_module_->get_bias_base_link());
+  double stddev_vx = estimate_stddev_velocity(
+    pose_all_, vx_all_, gyro_all_, time_window_, vel_coef_module_->get_coef(), vx_threshold_,
+    wz_threshold_);
+  auto stddev_angvel_base = estimate_stddev_angular_velocity(
+    pose_all_, gyro_all_, time_window_, gyro_bias_module_->get_bias_base_link());
   if (add_bias_uncertainty_) {
     stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(
