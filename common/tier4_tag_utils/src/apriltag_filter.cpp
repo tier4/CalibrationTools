@@ -140,7 +140,8 @@ void ApriltagFilter::detectionsCallback(
     }
 
     if (hypotheses_map_.count(detection.id) == 0) {
-      hypotheses_map_[detection.id] = ApriltagHypothesis(detection.id, pinhole_camera_model_);
+      hypotheses_map_[detection.id] =
+        tier4_tag_utils::ApriltagHypothesis(detection.id, pinhole_camera_model_);
       auto & h = hypotheses_map_[detection.id];
       h.setMaxConvergenceThreshold(0.0);
       h.setMaxNoObservationTime(max_no_observation_time_);

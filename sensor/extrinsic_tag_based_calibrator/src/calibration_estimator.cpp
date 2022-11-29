@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cv/sqpnp.hpp>
 #include <extrinsic_tag_based_calibrator/brute_force_matcher.hpp>
 #include <extrinsic_tag_based_calibrator/calibration_estimator.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/imgproc.hpp>
+#include <tier4_tag_utils/cv/sqpnp.hpp>
 
 #include <pcl/point_types.h>
 #include <tf2/utils.h>
@@ -27,7 +27,7 @@
 #include <random>
 
 CalibrationEstimator::CalibrationEstimator()
-: dynamics_model_(DynamicsModel::Static),
+: dynamics_model_(tier4_tag_utils::DynamicsModel::Static),
   min_pnp_pairs_(4),
   min_convergence_time_(5.0),
   max_no_observation_time_(2.0),
@@ -80,7 +80,8 @@ void CalibrationEstimator::update(
   }
 
   // 1) Create a new hypothesis for comparison convenienve
-  auto new_h = std::make_shared<ApriltagHypothesis>(detection.id, pinhole_camera_model_);
+  auto new_h =
+    std::make_shared<tier4_tag_utils::ApriltagHypothesis>(detection.id, pinhole_camera_model_);
   new_h->setMaxConvergenceThreshold(apriltag_convergence_transl_);
   new_h->setMaxNoObservationTime(max_no_observation_time_);
   new_h->setMeasurementNoise(apriltag_measurement_noise_transl_);
@@ -92,7 +93,7 @@ void CalibrationEstimator::update(
 
   // 2) Compare with already converged hypotheses
   cv::Point3d new_center = new_h->getCenter3d();
-  for (std::shared_ptr<ApriltagHypothesis> & h : converged_apriltag_hypotheses_) {
+  for (std::shared_ptr<tier4_tag_utils::ApriltagHypothesis> & h : converged_apriltag_hypotheses_) {
     cv::Point3d center = h->getCenter3d();
     double distance = cv::norm(new_center - center);
 
@@ -102,7 +103,8 @@ void CalibrationEstimator::update(
   }
 
   // 3) Compare with active hypotheses (not yet converged)
-  for (std::pair<int, std::shared_ptr<ApriltagHypothesis>> h : active_apriltag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> h :
+       active_apriltag_hypotheses_) {
     if (h.first != detection.id) {
       continue;
     }
@@ -132,7 +134,7 @@ void CalibrationEstimator::update(
 
   // 1) Create a new hypothesis for conevnience
   int hypothesis_id = detection.id >= 0 ? detection.id : (-active_lidartag_hypotheses_.size() - 1);
-  auto new_h = std::make_shared<LidartagHypothesis>(hypothesis_id);
+  auto new_h = std::make_shared<tier4_tag_utils::LidartagHypothesis>(hypothesis_id);
   new_h->setDynamicsModel(dynamics_model_);
   new_h->setMaxNoObservationTime(max_no_observation_time_);
   new_h->setMinConvergenceTime(min_convergence_time_);
@@ -150,7 +152,7 @@ void CalibrationEstimator::update(
   // 2) Compare with converged hypotheses
   cv::Point3d new_center = new_h->getCenter();
 
-  for (std::shared_ptr<LidartagHypothesis> h : converged_lidartag_hypotheses_) {
+  for (std::shared_ptr<tier4_tag_utils::LidartagHypothesis> h : converged_lidartag_hypotheses_) {
     cv::Point3d center = h->getCenter();
     double distance = cv::norm(new_center - center);
 
@@ -159,7 +161,8 @@ void CalibrationEstimator::update(
     }
   }
 
-  for (std::pair<int, std::shared_ptr<LidartagHypothesis>> h : active_lidartag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> h :
+       active_lidartag_hypotheses_) {
     if (detection.id >= 0 && h.first != detection.id) {
       continue;
     } else if (
@@ -183,13 +186,15 @@ bool CalibrationEstimator::update(const rclcpp::Time & stamp)
 {
   // 1) Update the hypotheses
   std::vector<int> lidartag_delete_ids, apriltag_delete_ids;
-  for (std::pair<int, std::shared_ptr<LidartagHypothesis>> h : active_lidartag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> h :
+       active_lidartag_hypotheses_) {
     if (!h.second->update(stamp)) {
       lidartag_delete_ids.push_back(h.first);
     }
   }
 
-  for (std::pair<int, std::shared_ptr<ApriltagHypothesis>> h : active_apriltag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> h :
+       active_apriltag_hypotheses_) {
     if (!h.second->update(stamp)) {
       apriltag_delete_ids.push_back(h.first);
     }
@@ -205,7 +210,8 @@ bool CalibrationEstimator::update(const rclcpp::Time & stamp)
 
   // 2) Check if all the hypotheses converged
   bool apriltag_to_lidartag_match = true;
-  for (std::pair<int, std::shared_ptr<ApriltagHypothesis>> h : active_apriltag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> h :
+       active_apriltag_hypotheses_) {
     if (!h.second->converged()) {
       return true;
     }
@@ -213,7 +219,8 @@ bool CalibrationEstimator::update(const rclcpp::Time & stamp)
     apriltag_to_lidartag_match &= active_lidartag_hypotheses_.count(h.first) == 1;
   }
 
-  for (std::pair<int, std::shared_ptr<LidartagHypothesis>> h : active_lidartag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> h :
+       active_lidartag_hypotheses_) {
     if (
       apriltag_to_lidartag_match && active_apriltag_hypotheses_.count(h.first) == 1 &&
       !h.second->converged()) {
@@ -225,7 +232,8 @@ bool CalibrationEstimator::update(const rclcpp::Time & stamp)
 
   // 3) Add the hypotheses to the converged list
   if (apriltag_to_lidartag_match) {
-    for (std::pair<int, std::shared_ptr<ApriltagHypothesis>> h : active_apriltag_hypotheses_) {
+    for (std::pair<int, std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> h :
+         active_apriltag_hypotheses_) {
       auto & h_apriltag = h.second;
       auto & h_lidartag = active_lidartag_hypotheses_[h.first];
 
@@ -237,11 +245,13 @@ bool CalibrationEstimator::update(const rclcpp::Time & stamp)
       return true;
     }
 
-    for (std::pair<int, std::shared_ptr<LidartagHypothesis>> h : active_lidartag_hypotheses_) {
+    for (std::pair<int, std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> h :
+         active_lidartag_hypotheses_) {
       converged_lidartag_hypotheses_.push_back(h.second);
     }
 
-    for (std::pair<int, std::shared_ptr<ApriltagHypothesis>> h : active_apriltag_hypotheses_) {
+    for (std::pair<int, std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> h :
+         active_apriltag_hypotheses_) {
       converged_apriltag_hypotheses_.push_back(h.second);
     }
   }
@@ -258,7 +268,8 @@ void CalibrationEstimator::getCalibrationPoints(
 {
   bool negative_id = false;
 
-  for (const std::shared_ptr<LidartagHypothesis> & h : converged_lidartag_hypotheses_) {
+  for (const std::shared_ptr<tier4_tag_utils::LidartagHypothesis> & h :
+       converged_lidartag_hypotheses_) {
     if (h->getId() < 0) {
       negative_id = true;
       break;
@@ -278,9 +289,11 @@ void CalibrationEstimator::getCalibrationPointsIdBased(
 {
   assert(converged_lidartag_hypotheses_.size() == converged_apriltag_hypotheses_.size());
 
-  for (unsigned long i = 0; i < converged_lidartag_hypotheses_.size(); ++i) {
-    std::shared_ptr<LidartagHypothesis> & lidartag_h = converged_lidartag_hypotheses_[i];
-    std::shared_ptr<ApriltagHypothesis> & apriltag_h = converged_apriltag_hypotheses_[i];
+  for (std::size_t i = 0; i < converged_lidartag_hypotheses_.size(); ++i) {
+    std::shared_ptr<tier4_tag_utils::LidartagHypothesis> & lidartag_h =
+      converged_lidartag_hypotheses_[i];
+    std::shared_ptr<tier4_tag_utils::ApriltagHypothesis> & apriltag_h =
+      converged_apriltag_hypotheses_[i];
 
     std::vector<cv::Point3d> h_lidartag_object_points;
     std::vector<cv::Point2d> h_apriltag_image_points;
@@ -313,9 +326,11 @@ void CalibrationEstimator::getCalibrationPointsIdless(
 
   double min_board_size = std::numeric_limits<double>::max();
 
-  for (unsigned long i = 0; i < converged_lidartag_hypotheses_.size(); ++i) {
-    std::shared_ptr<LidartagHypothesis> & lidartag_h = converged_lidartag_hypotheses_[i];
-    std::shared_ptr<ApriltagHypothesis> & apriltag_h = converged_apriltag_hypotheses_[i];
+  for (std::size_t i = 0; i < converged_lidartag_hypotheses_.size(); ++i) {
+    std::shared_ptr<tier4_tag_utils::LidartagHypothesis> & lidartag_h =
+      converged_lidartag_hypotheses_[i];
+    std::shared_ptr<tier4_tag_utils::ApriltagHypothesis> & apriltag_h =
+      converged_apriltag_hypotheses_[i];
 
     double board_size = tag_sizes_map_[apriltag_h->getId()];
     min_board_size = std::min(min_board_size, board_size);
@@ -418,7 +433,7 @@ void CalibrationEstimator::getCalibrationPointsIdless(
   object_points.clear();
   image_points.clear();
 
-  for (unsigned long i = 0; i < apriltag_indexes.size(); i++) {
+  for (std::size_t i = 0; i < apriltag_indexes.size(); i++) {
     object_points.push_back(lidartag_object_points[lidartag_indexes[i]]);
     image_points.push_back(apriltag_image_points[apriltag_indexes[i]]);
   }
@@ -508,7 +523,7 @@ void CalibrationEstimator::computeCrossValidationReprojError(
 
   std::mt19937 g(0);  // Same seed for all calls
 
-  unsigned long training_size = crossvalidation_training_ratio_ * object_points.size();
+  std::size_t training_size = crossvalidation_training_ratio_ * object_points.size();
 
   if (static_cast<int>(training_size) < min_pnp_pairs_) {
     return;
@@ -522,7 +537,7 @@ void CalibrationEstimator::computeCrossValidationReprojError(
     std::vector<cv::Point3d> training_object_points, test_object_points;
     std::vector<cv::Point2d> training_image_points, test_image_points;
 
-    for (unsigned long i = 0; i < indexes.size(); i++) {
+    for (std::size_t i = 0; i < indexes.size(); i++) {
       if (i < training_size) {
         training_object_points.push_back(object_points[indexes[i]]);
         training_image_points.push_back(image_points[indexes[i]]);
@@ -548,7 +563,7 @@ void CalibrationEstimator::computeCrossValidationReprojError(
       eval_projected_points);
 
     double reproj_error = 0.0;
-    for (unsigned long i = 0; i < test_image_points.size(); i++) {
+    for (std::size_t i = 0; i < test_image_points.size(); i++) {
       double dist = cv::norm(test_image_points[i] - eval_projected_points[i]);
       reproj_error += dist;
     }
@@ -568,37 +583,39 @@ bool CalibrationEstimator::converged() const
 
 bool CalibrationEstimator::valid() const { return valid_; }
 
-std::vector<std::shared_ptr<LidartagHypothesis>> CalibrationEstimator::getActiveLidartagHypotheses()
-  const
+std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>>
+CalibrationEstimator::getActiveLidartagHypotheses() const
 {
-  std::vector<std::shared_ptr<LidartagHypothesis>> v;
+  std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> v;
 
-  for (std::pair<int, std::shared_ptr<LidartagHypothesis>> h : active_lidartag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> h :
+       active_lidartag_hypotheses_) {
     v.push_back(h.second);
   }
 
   return v;
 }
 
-std::vector<std::shared_ptr<ApriltagHypothesis>> CalibrationEstimator::getActiveApriltagHypotheses()
-  const
+std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>>
+CalibrationEstimator::getActiveApriltagHypotheses() const
 {
-  std::vector<std::shared_ptr<ApriltagHypothesis>> v;
+  std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> v;
 
-  for (std::pair<int, std::shared_ptr<ApriltagHypothesis>> h : active_apriltag_hypotheses_) {
+  for (std::pair<int, std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> h :
+       active_apriltag_hypotheses_) {
     v.push_back(h.second);
   }
 
   return v;
 }
 
-std::vector<std::shared_ptr<LidartagHypothesis>>
+std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>>
 CalibrationEstimator::getConvergedLidartagHypotheses() const
 {
   return converged_lidartag_hypotheses_;
 }
 
-std::vector<std::shared_ptr<ApriltagHypothesis>>
+std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>>
 CalibrationEstimator::getConvergedApriltagHypotheses() const
 {
   return converged_apriltag_hypotheses_;
@@ -633,7 +650,7 @@ void CalibrationEstimator::getFilteredPose(
   rot_matrix = hypothesis_rotation_matrix_;
 }
 
-void CalibrationEstimator::setDynamicsModel(DynamicsModel dynamics_mode)
+void CalibrationEstimator::setDynamicsModel(tier4_tag_utils::DynamicsModel dynamics_mode)
 {
   dynamics_model_ = dynamics_mode;
 }
@@ -669,7 +686,7 @@ void CalibrationEstimator::setTagSizes(
 {
   assert(tag_ids.size() == tag_sizes.size());
 
-  for (unsigned long i = 0; i < tag_ids.size(); ++i) {
+  for (std::size_t i = 0; i < tag_ids.size(); ++i) {
     tag_sizes_map_[tag_ids[i]] = tag_sizes[i];
   }
 }

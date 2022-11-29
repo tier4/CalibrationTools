@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cv/sqpnp.hpp>
 #include <extrinsic_tag_based_calibrator/extrinsic_tag_based_calibrator.hpp>
-#include <extrinsic_tag_based_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/imgproc.hpp>
 #include <rclcpp/time.hpp>
+#include <tier4_tag_utils/cv/sqpnp.hpp>
+#include <tier4_tag_utils/types.hpp>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf2/utils.h>
 #include <tf2_eigen/tf2_eigen.h>
-
-using namespace std::chrono_literals;
 
 ExtrinsicTagBasedCalibrator::ExtrinsicTagBasedCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_tag_based_calibrator_node", options),
@@ -113,8 +111,8 @@ ExtrinsicTagBasedCalibrator::ExtrinsicTagBasedCalibrator(const rclcpp::NodeOptio
     "calibration_points", 10);
 
   estimator_.setDynamicsModel(
-    dynamics_model == "constant_velocity" ? DynamicsModel::ConstantVelocity
-                                          : DynamicsModel::Static);
+    dynamics_model == "constant_velocity" ? tier4_tag_utils::DynamicsModel::ConstantVelocity
+                                          : tier4_tag_utils::DynamicsModel::Static);
 
   estimator_.setCrossvalidationTrainingRatio(calibration_crossvalidation_training_ratio);
   estimator_.setCalibrationConvergenceCriteria(
@@ -298,6 +296,7 @@ void ExtrinsicTagBasedCalibrator::requestReceivedCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   CV_UNUSED(request);
+  using std::chrono_literals::operator""s;
 
   // Wait for subscription topic
   while (rclcpp::ok()) {
@@ -368,7 +367,6 @@ void ExtrinsicTagBasedCalibrator::tfTimerCallback()
       visualizer_->setBaseLidarTransform(base_lidar_trans_vector, base_lidar_rot_matrix);
 
       got_initial_transform = true;
-
     } catch (tf2::TransformException & ex) {
       RCLCPP_WARN(this->get_logger(), "could not get initial tf. %s", ex.what());
       return;
@@ -459,7 +457,7 @@ void ExtrinsicTagBasedCalibrator::automaticCalibrationTimerCallback()
     auto reprojection_error = [](auto & points1, auto & points2) {
       double error = 0.0;
 
-      for (unsigned long i = 0; i < points1.size(); i++) {
+      for (std::size_t i = 0; i < points1.size(); i++) {
         error += cv::norm(points1[i] - points2[i]);
       }
 
@@ -490,7 +488,7 @@ void ExtrinsicTagBasedCalibrator::publishCalibrationPoints(
 
   assert(object_points.size() == image_points.size());
 
-  for (unsigned long i = 0; i < object_points.size(); ++i) {
+  for (std::size_t i = 0; i < object_points.size(); ++i) {
     object_point.x = object_points[i].x;
     object_point.y = object_points[i].y;
     object_point.z = object_points[i].z;

@@ -16,11 +16,11 @@
 #define EXTRINSIC_TAG_BASED_CALIBRATOR__TAG_CALIBRATOR_VISUALIZER_HPP_
 
 #include <Eigen/Core>
-#include <extrinsic_tag_based_calibrator/apriltag_hypothesis.hpp>
 #include <extrinsic_tag_based_calibrator/calibration_estimator.hpp>
-#include <extrinsic_tag_based_calibrator/lidartag_hypothesis.hpp>
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tier4_tag_utils/apriltag_hypothesis.hpp>
+#include <tier4_tag_utils/lidartag_hypothesis.hpp>
 
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 #include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
@@ -29,7 +29,10 @@
 
 #include <image_geometry/pinhole_camera_model.h>
 
+#include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 class TagCalibratorVisualizer
 {
@@ -40,7 +43,8 @@ public:
     Converged
   };
 
-  TagCalibratorVisualizer(rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr & pub);
+  explicit TagCalibratorVisualizer(
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr & pub);
 
   void setTagSizes(std::vector<int64_t> & tag_id, std::vector<double> & tag_sizes);
 
@@ -74,11 +78,11 @@ public:
 
 private:
   void drawLidartagHypotheses(
-    const std::vector<std::shared_ptr<LidartagHypothesis>> & h_vector, HypothesisType type,
-    rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array);
+    const std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> & h_vector,
+    HypothesisType type, rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array);
   void drawApriltagHypotheses(
-    const std::vector<std::shared_ptr<ApriltagHypothesis>> & h_vector, HypothesisType type,
-    rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array);
+    const std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> & h_vector,
+    HypothesisType type, rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array);
   void drawCalibrationZone(
     rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array);
   void drawCalibrationStatusText(

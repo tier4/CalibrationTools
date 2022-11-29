@@ -21,7 +21,7 @@ namespace tier4_tag_utils
 ApriltagHypothesis::ApriltagHypothesis(
   int id, image_geometry::PinholeCameraModel & pinhole_camera_model)
 : first_observation_(true),
-  dynamics_model_(DynamicsModel::Static),
+  dynamics_model_(tier4_tag_utils::DynamicsModel::Static),
   id_(id),
   pinhole_camera_model_(pinhole_camera_model)
 {
