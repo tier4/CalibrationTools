@@ -16,6 +16,7 @@
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
 #include <gtest/gtest.h>
+
 #include <random>
 
 TEST(DeviationEstimatorGyroStddev, SmokeTestDefault)
@@ -35,8 +36,7 @@ TEST(DeviationEstimatorGyroStddev, SmokeTestDefault)
   std::normal_distribution<> dist(0.0, stddev_gyro);
 
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_data_while_stopped;
-  for (int i = 0; i < gyro_rate * t_all; ++i)
-  {
+  for (int i = 0; i < gyro_rate * t_all; ++i) {
     geometry_msgs::msg::Vector3Stamped gyro;
     gyro.header.stamp = t_start + rclcpp::Duration::from_seconds(1.0 * i / gyro_rate);
     gyro.vector.x = dist(engine) + gyro_bias.x;
@@ -46,21 +46,19 @@ TEST(DeviationEstimatorGyroStddev, SmokeTestDefault)
   }
 
   std::vector<geometry_msgs::msg::PoseStamped> pose_list;
-  for (int i = 0; i < ndt_rate * t_all; ++i)
-  {
+  for (int i = 0; i < ndt_rate * t_all; ++i) {
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = t_start + rclcpp::Duration::from_seconds(1.0 * i / ndt_rate);
     pose.pose.orientation = tier4_autoware_utils::createQuaternionFromRPY(0.0, 0.0, 0.0);
     pose_list.push_back(pose);
   }
 
-  geometry_msgs::msg::Vector3 estimated_gyro_stddev = estimate_stddev_angular_velocity(
-    pose_list, gyro_data_while_stopped, t_window, gyro_bias);
+  geometry_msgs::msg::Vector3 estimated_gyro_stddev =
+    estimate_stddev_angular_velocity(pose_list, gyro_data_while_stopped, t_window, gyro_bias);
   EXPECT_NEAR(estimated_gyro_stddev.x, stddev_gyro, stddev_gyro * ERROR_RATE);
   EXPECT_NEAR(estimated_gyro_stddev.y, stddev_gyro, stddev_gyro * ERROR_RATE);
   EXPECT_NEAR(estimated_gyro_stddev.z, stddev_gyro, stddev_gyro * ERROR_RATE);
 }
-
 
 TEST(DeviationEstimatorGyroStddev, SmokeTestWithBias)
 {
@@ -72,15 +70,15 @@ TEST(DeviationEstimatorGyroStddev, SmokeTestWithBias)
   const int gyro_rate = 30;
   const int ndt_rate = 10;
   const double t_window = 5;
-  const geometry_msgs::msg::Vector3 gyro_bias = tier4_autoware_utils::createVector3(0.005, 0.001, -0.01);
+  const geometry_msgs::msg::Vector3 gyro_bias =
+    tier4_autoware_utils::createVector3(0.005, 0.001, -0.01);
 
   std::random_device seed_gen;
   std::mt19937 engine(seed_gen());
   std::normal_distribution<> dist(0.0, stddev_gyro);
 
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_data_while_stopped;
-  for (int i = 0; i < gyro_rate * t_all; ++i)
-  {
+  for (int i = 0; i < gyro_rate * t_all; ++i) {
     geometry_msgs::msg::Vector3Stamped gyro;
     gyro.header.stamp = t_start + rclcpp::Duration::from_seconds(1.0 * i / gyro_rate);
     gyro.vector.x = dist(engine) + gyro_bias.x;
@@ -90,16 +88,15 @@ TEST(DeviationEstimatorGyroStddev, SmokeTestWithBias)
   }
 
   std::vector<geometry_msgs::msg::PoseStamped> pose_list;
-  for (int i = 0; i < ndt_rate * t_all; ++i)
-  {
+  for (int i = 0; i < ndt_rate * t_all; ++i) {
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = t_start + rclcpp::Duration::from_seconds(1.0 * i / ndt_rate);
     pose.pose.orientation = tier4_autoware_utils::createQuaternionFromRPY(0.0, 0.0, 0.0);
     pose_list.push_back(pose);
   }
 
-  geometry_msgs::msg::Vector3 estimated_gyro_stddev = estimate_stddev_angular_velocity(
-    pose_list, gyro_data_while_stopped, t_window, gyro_bias);
+  geometry_msgs::msg::Vector3 estimated_gyro_stddev =
+    estimate_stddev_angular_velocity(pose_list, gyro_data_while_stopped, t_window, gyro_bias);
   EXPECT_NEAR(estimated_gyro_stddev.x, stddev_gyro, stddev_gyro * ERROR_RATE);
   EXPECT_NEAR(estimated_gyro_stddev.y, stddev_gyro, stddev_gyro * ERROR_RATE);
   EXPECT_NEAR(estimated_gyro_stddev.z, stddev_gyro, stddev_gyro * ERROR_RATE);

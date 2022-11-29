@@ -33,7 +33,6 @@
 // clang-format on
 using std::placeholders::_1;
 
-
 geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window,
@@ -61,8 +60,7 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
       extract_sub_trajectory(gyro_list, t0_pose, t1_pose);
     const size_t n_twist = gyro_sub_traj.size();
 
-    const auto error_rpy =
-      calculate_error_rpy(pose_sub_traj, gyro_sub_traj, gyro_bias);
+    const auto error_rpy = calculate_error_rpy(pose_sub_traj, gyro_sub_traj, gyro_bias);
     delta_wx_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.x);
     delta_wy_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.y);
     delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
@@ -74,7 +72,6 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
     calculate_std(delta_wz_list) / std::sqrt(t_window));
   return stddev_angvel_base;
 }
-
 
 DeviationEstimator::DeviationEstimator(
   const std::string & node_name, const rclcpp::NodeOptions & node_options)
@@ -210,7 +207,8 @@ void DeviationEstimator::timer_callback()
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
   double stddev_vx = estimate_stddev_velocity(pose_all_, vx_all_, gyro_all_, time_window_);
-  auto stddev_angvel_base = estimate_stddev_angular_velocity(pose_all_, gyro_all_, time_window_, gyro_bias_module_->get_bias_base_link());
+  auto stddev_angvel_base = estimate_stddev_angular_velocity(
+    pose_all_, gyro_all_, time_window_, gyro_bias_module_->get_bias_base_link());
   if (add_bias_uncertainty_) {
     stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(
