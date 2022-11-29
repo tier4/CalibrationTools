@@ -25,10 +25,12 @@ ament_export_include_directories(
 #========================================================================
 ament_auto_add_executable(extrinsic_tag_based_base_calibrator
   src/ceres/calibration_problem.cpp
+  src/intrinsics_calibration/intrinsics_calibrator.cpp
+  src/intrinsics_calibration/apriltag_based_calibrator.cpp
+  src/intrinsics_calibration/chessboard_based_calibrator.cpp
   src/calibration_scene_extractor.cpp
   src/extrinsic_tag_based_base_calibrator.cpp
   src/apriltag_detector.cpp
-  src/intrinsics_calibrator.cpp
   src/main.cpp
   src/math.cpp
   src/visualization.cpp

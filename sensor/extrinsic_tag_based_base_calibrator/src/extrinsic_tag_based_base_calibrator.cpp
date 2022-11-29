@@ -16,7 +16,9 @@
 #include <extrinsic_tag_based_base_calibrator/calibration_scene_extractor.hpp>
 #include <extrinsic_tag_based_base_calibrator/ceres/tag_reprojection_error.hpp>
 #include <extrinsic_tag_based_base_calibrator/extrinsic_tag_based_base_calibrator.hpp>
-#include <extrinsic_tag_based_base_calibrator/intrinsics_calibrator.hpp>
+#include <extrinsic_tag_based_base_calibrator/intrinsics_calibration/apriltag_calibrator.hpp>
+#include <extrinsic_tag_based_base_calibrator/intrinsics_calibration/chessboard_calibrator.hpp>
+#include <extrinsic_tag_based_base_calibrator/intrinsics_calibration/intrinsics_calibrator.hpp>
 #include <extrinsic_tag_based_base_calibrator/math.hpp>
 #include <extrinsic_tag_based_base_calibrator/serialization.hpp>
 #include <extrinsic_tag_based_base_calibrator/visualization.hpp>
@@ -99,6 +101,16 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     ground_tag_ids.begin(), ground_tag_ids.end(), std::back_inserter(ground_tag_ids_),
     [](auto & id) { return static_cast<int>(id); });
 
+  // Initial intrinsic calibration parameters
+  initial_intrinsic_calibration_board_type_ =
+    this->declare_parameter<std::string>("initial_intrinsic_calibration_board_type", "apriltag");
+  initial_intrinsic_calibration_tangent_distortion_ =
+    this->declare_parameter<bool>("initial_intrinsic_calibration_tangent_distortion", true);
+  initial_intrinsic_calibration_radial_distortion_coeffs_ =
+    this->declare_parameter<int>("initial_intrinsic_calibration_radial_distortion_coeffs", 2);
+  initial_intrinsic_calibration_debug_ =
+    this->declare_parameter<bool>("initial_intrinsic_calibration_debug", true);
+
   std::vector<int64_t> intrinsic_calibration_tag_ids =
     this->declare_parameter<std::vector<int64_t>>(
       "intrinsic_calibration_tag_ids", std::vector<int64_t>{0});
@@ -106,6 +118,11 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     intrinsic_calibration_tag_ids.begin(), intrinsic_calibration_tag_ids.end(),
     std::back_inserter(intrinsic_calibration_tag_ids_),
     [](auto & id) { return static_cast<int>(id); });
+
+  initial_intrinsic_calibration_board_cols_ =
+    this->declare_parameter<int>("initial_intrinsic_calibration_board_cols", 8);
+  initial_intrinsic_calibration_board_rows_ =
+    this->declare_parameter<int>("initial_intrinsic_calibration_board_rows", 6);
 
   for (const auto & id : waypoint_tag_ids_) {
     waypoint_tag_ids_set_.insert(id);
@@ -136,11 +153,6 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   apriltag_parameters_.nthreads = this->declare_parameter<int>("apriltag_nthreads", 1);
   apriltag_parameters_.debug = this->declare_parameter<bool>("apriltag_debug", false);
   apriltag_parameters_.refine_edges = this->declare_parameter<bool>("apriltag_refine_edges", true);
-
-  initial_intrinsic_calibration_tangent_distortion_ =
-    this->declare_parameter<bool>("initial_intrinsic_calibration_tangent_distortion", true);
-  initial_intrinsic_calibration_radial_distortion_coeffs_ =
-    this->declare_parameter<int>("initial_intrinsic_calibration_radial_distortion_coeffs", 2);
 
   if (is_lidar_calibration_) {
     lidartag_detections_sub_ =
@@ -853,13 +865,21 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback(
 {
   RCLCPP_INFO(this->get_logger(), "Calibrating external cameras intrinsics");
 
-  IntrinsicsCalibrator external_camera_intrinsics_calibrator(
-    apriltag_parameters_, intrinsic_calibration_tag_ids_,
-    initial_intrinsic_calibration_tangent_distortion_,
-    initial_intrinsic_calibration_radial_distortion_coeffs_, true);
+  IntrinsicsCalibrator::Ptr external_camera_intrinsics_calibrator;
+  if (initial_intrinsic_calibration_board_type_ == "apriltag") {
+    external_camera_intrinsics_calibrator = IntrinsicsCalibrator::Ptr(new ApriltagBasedCalibrator(
+      apriltag_parameters_, intrinsic_calibration_tag_ids_,
+      initial_intrinsic_calibration_tangent_distortion_,
+      initial_intrinsic_calibration_radial_distortion_coeffs_, true));
+  } else if (initial_intrinsic_calibration_board_type_ == "chessboard") {
+    external_camera_intrinsics_calibrator = IntrinsicsCalibrator::Ptr(new ChessboardBasedCalibrator(
+      initial_intrinsic_calibration_board_rows_, initial_intrinsic_calibration_board_cols_,
+      initial_intrinsic_calibration_tangent_distortion_,
+      initial_intrinsic_calibration_radial_distortion_coeffs_, true));
+  }
 
-  external_camera_intrinsics_calibrator.setCalibrationImageFiles(request->files);
-  external_camera_intrinsics_calibrator.calibrate(external_camera_intrinsics_);
+  external_camera_intrinsics_calibrator->setCalibrationImageFiles(request->files);
+  external_camera_intrinsics_calibrator->calibrate(external_camera_intrinsics_);
   calibration_problem_.setExternalCameraIntrinsics(external_camera_intrinsics_);
 
   RCLCPP_INFO_STREAM(this->get_logger(), "k = " << external_camera_intrinsics_.camera_matrix);
@@ -912,13 +932,24 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateCalibrationIntrinsicsCallback(
 {
   RCLCPP_INFO(this->get_logger(), "Calibrating 'calibration sensor' intrinsics");
 
-  IntrinsicsCalibrator calibration_sensor_intrinsics_calibrator(
-    apriltag_parameters_, intrinsic_calibration_tag_ids_,
-    initial_intrinsic_calibration_tangent_distortion_,
-    initial_intrinsic_calibration_radial_distortion_coeffs_, true);
+  IntrinsicsCalibrator::Ptr calibration_sensor_intrinsics_calibrator;
 
-  calibration_sensor_intrinsics_calibrator.setCalibrationImageFiles(request->files);
-  calibration_sensor_intrinsics_calibrator.calibrate(calibration_sensor_intrinsics_);
+  if (initial_intrinsic_calibration_board_type_ == "apriltag") {
+    calibration_sensor_intrinsics_calibrator =
+      IntrinsicsCalibrator::Ptr(new ApriltagBasedCalibrator(
+        apriltag_parameters_, intrinsic_calibration_tag_ids_,
+        initial_intrinsic_calibration_tangent_distortion_,
+        initial_intrinsic_calibration_radial_distortion_coeffs_, true));
+  } else if (initial_intrinsic_calibration_board_type_ == "chessboard") {
+    calibration_sensor_intrinsics_calibrator =
+      IntrinsicsCalibrator::Ptr(new ChessboardBasedCalibrator(
+        initial_intrinsic_calibration_board_rows_, initial_intrinsic_calibration_board_cols_,
+        initial_intrinsic_calibration_tangent_distortion_,
+        initial_intrinsic_calibration_radial_distortion_coeffs_, true));
+  }
+
+  calibration_sensor_intrinsics_calibrator->setCalibrationImageFiles(request->files);
+  calibration_sensor_intrinsics_calibrator->calibrate(calibration_sensor_intrinsics_);
   calibration_problem_.setCalibrationSensorIntrinsics(calibration_sensor_intrinsics_);
 
   RCLCPP_INFO_STREAM(this->get_logger(), "k = " << calibration_sensor_intrinsics_.camera_matrix);

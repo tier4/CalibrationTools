@@ -312,9 +312,17 @@ protected:
   std::vector<int> ground_tag_ids_;
 
   // Intrinsics calibration
-  std::vector<int> intrinsic_calibration_tag_ids_;
+  std::string initial_intrinsic_calibration_board_type_;
   bool initial_intrinsic_calibration_tangent_distortion_;
   int initial_intrinsic_calibration_radial_distortion_coeffs_;
+  bool initial_intrinsic_calibration_debug_;
+
+  // Intrinsics calibration : apriltag
+  std::vector<int> intrinsic_calibration_tag_ids_;
+
+  // Intrinsics calibration : chessboard
+  int initial_intrinsic_calibration_board_cols_;
+  int initial_intrinsic_calibration_board_rows_;
 
   std::map<int, double> tag_size_map_;
   std::unordered_set<int> waypoint_tag_ids_set_;

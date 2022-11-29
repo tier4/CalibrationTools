@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATOR_HPP_
-#define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATION__INTRINSICS_CALIBRATOR_HPP_
+#define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATION__INTRINSICS_CALIBRATOR_HPP_
 
 #include <extrinsic_tag_based_base_calibrator/apriltag_detector.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
@@ -29,12 +29,11 @@ namespace extrinsic_tag_based_base_calibrator
 class IntrinsicsCalibrator
 {
 public:
+  using Ptr = std::shared_ptr<IntrinsicsCalibrator>;
+
   IntrinsicsCalibrator(
-    const ApriltagParameters & parameters, const std::vector<int> tag_ids,
     bool use_tangent_distortion, int num_radial_distortion_coeffs, bool debug = false)
-  : detector_(parameters),
-    calibration_tag_ids_(tag_ids),
-    use_tangent_distortion_(use_tangent_distortion),
+  : use_tangent_distortion_(use_tangent_distortion),
     num_radial_distortion_coeffs_(num_radial_distortion_coeffs),
     debug_(debug)
   {
@@ -53,10 +52,17 @@ public:
    */
   bool calibrate(IntrinsicParameters & intrinsics);
 
-  ApriltagDetector detector_;
+protected:
+  virtual void extractCalibrationPoints() = 0;
+  virtual void writeDebugImages(const IntrinsicParameters & intrinsics) = 0;
+
+  cv::Size size_;
+  std::vector<std::vector<cv::Point3f>> object_points_;
+  std::vector<std::vector<cv::Point2f>> image_points_;
+  std::vector<cv::Mat> rvecs_;
+  std::vector<cv::Mat> tvecs_;
 
   std::vector<std::string> calibration_image_file_names_;
-  std::vector<int> calibration_tag_ids_;
   bool use_tangent_distortion_;
   int num_radial_distortion_coeffs_;
 
@@ -65,4 +71,4 @@ public:
 
 }  // namespace extrinsic_tag_based_base_calibrator
 
-#endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATION__INTRINSICS_CALIBRATOR_HPP_
