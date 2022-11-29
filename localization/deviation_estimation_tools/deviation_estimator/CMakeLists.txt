@@ -11,7 +11,6 @@ ament_auto_add_executable(deviation_estimator
   src/gyro_bias_module.cpp
   src/velocity_coef_module.cpp
 )
-ament_target_dependencies(deviation_estimator)
 
 ament_auto_package(
   INSTALL_TO_SHARE
