@@ -47,19 +47,17 @@ DeviationEvaluator::DeviationEvaluator(
 
   save2YamlFile();
 
-  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>("in_imu", 1,
-    std::bind(&DeviationEvaluator::callbackImu, this, _1));
+  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
+    "in_imu", 1, std::bind(&DeviationEvaluator::callbackImu, this, _1));
   sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_wheel_odometry", 1,
-    std::bind(&DeviationEvaluator::callbackWheelOdometry, this, _1));
+    "in_wheel_odometry", 1, std::bind(&DeviationEvaluator::callbackWheelOdometry, this, _1));
   sub_ndt_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_ndt_pose_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackNDTPoseWithCovariance, this, _1));
 
-  pub_calibrated_imu_ = create_publisher<sensor_msgs::msg::Imu>(
-    "out_imu", 1);
-  pub_calibrated_wheel_odometry_ = create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "out_wheel_odometry", 1);
+  pub_calibrated_imu_ = create_publisher<sensor_msgs::msg::Imu>("out_imu", 1);
+  pub_calibrated_wheel_odometry_ =
+    create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>("out_wheel_odometry", 1);
   pub_pose_with_cov_dr_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_pose_with_covariance_dr", 1);
   pub_pose_with_cov_gt_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -71,8 +69,7 @@ DeviationEvaluator::DeviationEvaluator(
   has_published_initial_pose_ = false;
 }
 
-void DeviationEvaluator::callbackImu(
-  const sensor_msgs::msg::Imu::SharedPtr msg)
+void DeviationEvaluator::callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg)
 {
   msg->angular_velocity.z -= bias_wz_;
   msg->angular_velocity_covariance[2 * 3 + 2] = stddev_wz_ * stddev_wz_;

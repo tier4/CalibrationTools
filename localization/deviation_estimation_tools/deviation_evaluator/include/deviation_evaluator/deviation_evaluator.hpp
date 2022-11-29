@@ -19,11 +19,11 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
-#include "sensor_msgs/msg/imu.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
@@ -45,7 +45,8 @@ private:
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     sub_ndt_pose_with_cov_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_calibrated_imu_;
-  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr pub_calibrated_wheel_odometry_;
+  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
+    pub_calibrated_wheel_odometry_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
@@ -68,8 +69,7 @@ private:
 
   void callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg);
 
-  void callbackWheelOdometry(
-    const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
+  void callbackWheelOdometry(const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
 
   void callbackNDTPoseWithCovariance(
     const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);

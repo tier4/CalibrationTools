@@ -27,6 +27,7 @@ You can check the estimated results either by looking at the output of `/estimat
 If you are using rosbag, it should contain the following topics:
 
 <!-- - /localization/twist_estimator/twist_with_covariance_raw -->
+
 - /sensing/imu/imu_data
 - /sensing/vehicle_velocity_converter/twist_with_covariance
 - /localization/pose_estimator/pose_with_covariance
