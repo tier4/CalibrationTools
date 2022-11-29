@@ -1,15 +1,11 @@
 /**:
   ros__parameters:
     # Parameters that you want to evaluate
-    stddev_vx: 0.3 # [m/s]
-    stddev_wz: 0.02 # [rad/s]
-    coef_vx: 1.0 # [.]
-    bias_wz: 0.0 # [rad/s]
+    stddev_vx: 0.60024
+    stddev_wz: 0.01403
+    coef_vx: 1.02128
+    bias_wz: -0.00439
 
     # Dead Reckoning configuration
     period: 10.0 # [s]
     cut: 9.0 # [s]
-
-    # Stop mask threshold (this should be manually synced with gyro_odometer in Autoware Universe)
-    vx_threshold: 0.01 # [m/s]
-    wz_threshold: 0.01 # [m/s]

@@ -44,20 +44,22 @@ DeviationEvaluator::DeviationEvaluator(
   period_ = declare_parameter("period", 10.0);
   cut_ = declare_parameter("cut", 9.0);
   save_dir_ = declare_parameter("save_dir", "");
-  vx_threshold_ = declare_parameter<double>("vx_threshold");
-  wz_threshold_ = declare_parameter<double>("wz_threshold");
 
   save2YamlFile();
 
-  sub_twist_with_cov_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_twist_with_covariance", 1,
-    std::bind(&DeviationEvaluator::callbackTwistWithCovariance, this, _1));
+  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>("in_imu", 1,
+    std::bind(&DeviationEvaluator::callbackImu, this, _1));
+  sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
+    "in_wheel_odometry", 1,
+    std::bind(&DeviationEvaluator::callbackWheelOdometry, this, _1));
   sub_ndt_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_ndt_pose_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackNDTPoseWithCovariance, this, _1));
 
-  pub_twist_with_cov_ = create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "out_twist_with_covariance", 1);
+  pub_calibrated_imu_ = create_publisher<sensor_msgs::msg::Imu>(
+    "out_imu", 1);
+  pub_calibrated_wheel_odometry_ = create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>(
+    "out_wheel_odometry", 1);
   pub_pose_with_cov_dr_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_pose_with_covariance_dr", 1);
   pub_pose_with_cov_gt_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -69,29 +71,22 @@ DeviationEvaluator::DeviationEvaluator(
   has_published_initial_pose_ = false;
 }
 
-/*
- * callbackTwistWithCovariance
- */
-void DeviationEvaluator::callbackTwistWithCovariance(
+void DeviationEvaluator::callbackImu(
+  const sensor_msgs::msg::Imu::SharedPtr msg)
+{
+  msg->angular_velocity.z -= bias_wz_;
+  msg->angular_velocity_covariance[2 * 3 + 2] = stddev_wz_ * stddev_wz_;
+  pub_calibrated_imu_->publish(*msg);
+}
+
+void DeviationEvaluator::callbackWheelOdometry(
   const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg)
 {
   msg->twist.twist.linear.x *= coef_vx_;
-  msg->twist.twist.angular.z -= bias_wz_;
-
   msg->twist.covariance[0] = stddev_vx_ * stddev_vx_;
-  msg->twist.covariance[0 * 6 + 5] = 0.0;
-  msg->twist.covariance[5 * 6 + 0] = 0.0;
-  msg->twist.covariance[5 * 6 + 5] = stddev_wz_ * stddev_wz_;
-  if (msg->twist.twist.linear.x < vx_threshold_ && msg->twist.twist.angular.z < wz_threshold_) {
-    msg->twist.twist.linear.x = 0.0;
-    msg->twist.twist.angular.z = 0.0;
-  }
-  pub_twist_with_cov_->publish(*msg);
+  pub_calibrated_wheel_odometry_->publish(*msg);
 }
 
-/*
- * callbackNDTPoseWithCovariance
- */
 void DeviationEvaluator::callbackNDTPoseWithCovariance(
   const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
 {
@@ -122,9 +117,6 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   }
 }
 
-/*
- * save2YamlFile
- */
 void DeviationEvaluator::save2YamlFile()
 {
   std::ofstream file(save_dir_ + "/config.yaml");
