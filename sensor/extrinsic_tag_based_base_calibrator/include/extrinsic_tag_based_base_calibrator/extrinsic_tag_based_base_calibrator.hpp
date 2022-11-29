@@ -56,16 +56,7 @@ protected:
    * @param request the calibration request
    * @param response the calibration reponse
    */
-  void baseToSensorKitCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
-
-  /*!
-   * Callback to calibrate the sensor kit to the lidar using the calibration api
-   * @param request the calibration request
-   * @param response the calibration reponse
-   */
-  void sensorKitToLidarCalibrationCallback(
+  void calibrationRequestCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
@@ -247,10 +238,7 @@ protected:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub_;
 
   // Calibration API related services
-  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
-    base_link_to_sensor_kit_calibration_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
-    sensor_kit_to_lidar_calibration_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr calibration_api_srv_;
 
   // Scene related services
   rclcpp::Service<tier4_calibration_msgs::srv::FilesWithSceneId>::SharedPtr

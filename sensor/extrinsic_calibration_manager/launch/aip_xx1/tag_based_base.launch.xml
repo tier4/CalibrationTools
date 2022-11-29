@@ -93,24 +93,6 @@
     [sensor_kit_base_link]"/>
   </node>
 
-  <!-- sensor_kit -> lidar_base: extrinsic_calibration_client -->
-  <arg name="sensor_kit_to_lidar_base_src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensor_kit_calibration.yaml"/>
-  <arg name="sensor_kit_to_lidar_base_dst_yaml" default="$(env HOME)/sensor_kit_calibration.yaml"/>
-
-  <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="sensor_kit_to_lidar_extrinsic_calibration_client" output="screen">
-    <remap from="extrinsic_calibration_manager" to="sensor_kit_to_lidar_extrinsic_calibration_manager"/>
-    <param name="src_path" value="$(var sensor_kit_to_lidar_base_src_yaml)"/>
-    <param name="dst_path" value="$(var sensor_kit_to_lidar_base_dst_yaml)"/>
-  </node>
-
-  <!-- sensor_kit -> lidar_base: extrinsic_calibration_manager -->
-  <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="sensor_kit_to_lidar_extrinsic_calibration_manager" output="screen">
-    <remap from="extrinsic_calibration_manager" to="sensor_kit_to_lidar_extrinsic_calibration_manager"/>
-    <param name="parent_frame" value="sensor_kit_base_link"/>
-    <param name="child_frames" value="
-    [velodyne_top_base_link]"/>
-  </node>
-
   <!-- base-lidar calibrator -->
   <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/calibrator.launch.xml">
     <!-- calibration api parameters -->
@@ -120,7 +102,6 @@
     <arg name="lidar_frame" value="$(var lidar_frame)"/>
 
     <arg name="base_link_to_sensor_kit_calibration_service" value="base_link/sensor_kit_base_link/extrinsic_calibration"/>
-    <arg name="sensor_kit_to_lidar_calibration_service" value="sensor_kit_base_link/velodyne_top_base_link/extrinsic_calibration"/>
 
     <!-- calibration parameters-->
     <arg name="calibration_sensor_frame" value="$(var calibration_sensor_frame)"/>

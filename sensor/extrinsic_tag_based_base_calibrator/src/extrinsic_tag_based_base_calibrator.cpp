@@ -180,21 +180,12 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   // The service server runs in a dedicated thread
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  base_link_to_sensor_kit_calibration_srv_ =
-    this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
-      "base_link_to_sensor_kit_calibration",
-      std::bind(
-        &ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback, this,
-        std::placeholders::_1, std::placeholders::_2),
-      rmw_qos_profile_services_default, srv_callback_group_);
-
-  sensor_kit_to_lidar_calibration_srv_ =
-    this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
-      "sensor_kit_to_lidar_calibration",
-      std::bind(
-        &ExtrinsicTagBasedBaseCalibrator::sensorKitToLidarCalibrationCallback, this,
-        std::placeholders::_1, std::placeholders::_2),
-      rmw_qos_profile_services_default, srv_callback_group_);
+  calibration_api_srv_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+    "extrinsic_calibration",
+    std::bind(
+      &ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback, this, std::placeholders::_1,
+      std::placeholders::_2),
+    rmw_qos_profile_services_default, srv_callback_group_);
 
   // Scene related services
   add_external_camera_images_srv_ =
@@ -279,7 +270,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
                        std::placeholders::_1, std::placeholders::_2));
 }
 
-void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
+void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
   __attribute__((unused))
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
@@ -307,6 +298,9 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
   cv::cv2eigen(base_link_to_lidar_transform_cv, base_link_to_lidar_transform);
   Eigen::Affine3d base_link_to_lidar_pose(base_link_to_lidar_transform);
 
+  geometry_msgs::msg::Transform sensor_kit_to_lidar_base_msg;
+  Eigen::Affine3d sensor_kit_to_lidar_base_pose;
+
   geometry_msgs::msg::Transform lidar_base_to_lidar_msg;
   Eigen::Affine3d lidar_base_to_lidar_pose;
 
@@ -317,6 +311,11 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
   try {
     rclcpp::Time t = rclcpp::Time(0);
     rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
+
+    sensor_kit_to_lidar_base_msg =
+      tf_buffer_->lookupTransform(sensor_kit_frame_, lidar_base_frame_, t, timeout).transform;
+
+    sensor_kit_to_lidar_base_pose = tf2::transformToEigen(sensor_kit_to_lidar_base_msg);
 
     lidar_base_to_lidar_msg =
       tf_buffer_->lookupTransform(lidar_base_frame_, lidar_frame_, t, timeout).transform;
@@ -332,21 +331,12 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
     response->success = false;
   }
 
-  Eigen::Affine3d base_link_to_lidar_base_pose =
-    base_link_to_lidar_pose * lidar_base_to_lidar_pose.inverse();
-
-  // Since we want the sensor_kit -> lidar to be apure yaw rotation in +90 degrees, we adjust it
-  // here
-  tf2::Quaternion aux_quat;
-  aux_quat.setRPY(0.0, 0.0, M_PI_2);
-
-  Eigen::Affine3d aux_pose(
-    Eigen::Quaterniond(aux_quat.getW(), aux_quat.getX(), aux_quat.getY(), aux_quat.getZ()));
-  Eigen::Affine3d base_link_to_lidar_base_pose_without_yaw =
-    base_link_to_lidar_base_pose * aux_pose.inverse();
+  Eigen::Affine3d base_link_to_sensor_kit_pose = base_link_to_lidar_pose *
+                                                 lidar_base_to_lidar_pose.inverse() *
+                                                 sensor_kit_to_lidar_base_pose.inverse();
 
   response->success = true;
-  response->result_pose = tf2::toMsg(base_link_to_lidar_base_pose_without_yaw);
+  response->result_pose = tf2::toMsg(base_link_to_sensor_kit_pose);
 
   // Display the correction in calibration
   Eigen::Affine3d initial_base_link_to_calibrated_base_link_pose =
@@ -376,36 +366,6 @@ void ExtrinsicTagBasedBaseCalibrator::baseToSensorKitCalibrationCallback(
     this->get_logger(), "\t y: %.3f m", initial_base_link_to_calibrated_base_link_translation.y());
   RCLCPP_INFO(
     this->get_logger(), "\t z: %.3f m", initial_base_link_to_calibrated_base_link_translation.z());
-}
-
-void ExtrinsicTagBasedBaseCalibrator::sensorKitToLidarCalibrationCallback(
-  __attribute__((unused))
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
-    request,
-  __attribute__((unused))
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
-    response)
-{
-  using std::chrono_literals::operator""s;
-
-  // Loop until the calibration finishes
-  while (rclcpp::ok()) {
-    rclcpp::sleep_for(1s);
-    std::unique_lock<std::mutex> lock(mutex_);
-
-    if (calibration_done_) {
-      break;
-    }
-
-    RCLCPP_WARN_THROTTLE(
-      this->get_logger(), *this->get_clock(), 30000, "Waiting for the calibration to end");
-  }
-
-  tf2::Quaternion aux_quat;
-  aux_quat.setRPY(0.0, 0.0, M_PI_2);
-
-  response->success = true;
-  response->result_pose.orientation = tf2::toMsg(aux_quat);
 }
 
 void ExtrinsicTagBasedBaseCalibrator::apriltagDetectionsCallback(

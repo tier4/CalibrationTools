@@ -9,8 +9,7 @@
   <arg name="calibration_sensor_frame" default="sensor"/>
   <arg name="calibration_sensor_type" default="lidar"/>
 
-  <arg name="base_link_to_sensor_kit_calibration_service" default="base_link_to_sensor_kit_calibration"/>
-  <arg name="sensor_kit_to_lidar_calibration_service" default="sensor_kit_to_lidar_calibration"/>
+  <arg name="base_link_to_sensor_kit_calibration_service" default="extrinsic_calibration"/>
 
   <arg name="apriltag_detections_topic" default="apriltag/detection_array"/>
   <arg name="lidartag_detections_topic" default="lidartag/detection_array"/>
@@ -19,8 +18,7 @@
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
     <node pkg="extrinsic_tag_based_base_calibrator" exec="extrinsic_tag_based_base_calibrator" name="extrinsic_tag_based_base_calibrator" output="screen">
-      <remap from="base_link_to_sensor_kit_calibration" to="$(var base_link_to_sensor_kit_calibration_service)"/>
-      <remap from="sensor_kit_to_lidar_calibration" to="$(var sensor_kit_to_lidar_calibration_service)"/>
+      <remap from="extrinsic_calibration" to="$(var base_link_to_sensor_kit_calibration_service)"/>
 
       <remap from="apriltag/detection_array" to="$(var apriltag_detections_topic)"/>
       <remap from="lidartag/detection_array" to="$(var lidartag_detections_topic)"/>
