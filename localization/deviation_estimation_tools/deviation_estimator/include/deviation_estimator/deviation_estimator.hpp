@@ -108,21 +108,6 @@ private:
 
   void timer_callback();
 
-  void update_bias(
-    const std::vector<geometry_msgs::msg::PoseStamped> & pose_buf,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_all);
-
-  // double estimate_stddev_velocity(
-  //   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  //   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-  //   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window)
-  //   const;
-
-  // geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
-  //   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  //   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window)
-  //   const;
-
   double add_bias_uncertainty_on_velocity(
     const double stddev_vx, const double stddev_coef_vx) const;
 
