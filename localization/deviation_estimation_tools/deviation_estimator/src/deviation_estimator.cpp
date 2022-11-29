@@ -73,8 +73,6 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
   return stddev_angvel_base;
 }
 
-<<<<<<< HEAD
-=======
 double estimate_stddev_velocity(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
@@ -117,7 +115,6 @@ double estimate_stddev_velocity(
   return calculate_std(delta_x_list) / std::sqrt(t_window);
 }
 
->>>>>>> e8c8a14 (completely migrated stddev estimation utility from member func to normal func)
 DeviationEstimator::DeviationEstimator(
   const std::string & node_name, const rclcpp::NodeOptions & node_options)
 : rclcpp::Node(node_name, node_options),
