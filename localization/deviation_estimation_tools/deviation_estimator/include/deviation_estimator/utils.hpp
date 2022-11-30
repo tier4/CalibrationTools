@@ -17,15 +17,22 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
-#include "geometry_msgs/msg/vector3.hpp"
+#include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
 #include <tf2/transform_datatypes.h>
 
 #include <fstream>
 #include <vector>
+
+#ifdef ROS_DISTRO_GALACTIC
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#else
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#endif
+#include "tf2/utils.h"
 
 double double_round(const double x, const int n);
 
@@ -75,6 +82,16 @@ double calculate_std_mean_const(const std::vector<T> & v, const double mean)
 
 struct CompareMsgTimestamp
 {
+  bool operator()(tier4_debug_msgs::msg::Float64Stamped const & t1, double const & t2) const
+  {
+    return rclcpp::Time(t1.stamp).seconds() < t2;
+  }
+
+  bool operator()(tier4_debug_msgs::msg::Float64Stamped const & t1, rclcpp::Time const & t2) const
+  {
+    return rclcpp::Time(t1.stamp).seconds() < t2.seconds();
+  }
+
   template <typename T1>
   bool operator()(T1 const & t1, double const & t2) const
   {
@@ -106,6 +123,10 @@ struct CompareMsgTimestamp
   }
 };
 
+geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & vec_list, const double time,
+  const double tolerance_sec);
+
 template <typename T>
 std::vector<T> extract_sub_trajectory(
   const std::vector<T> & msg_list, const rclcpp::Time & t0, const rclcpp::Time & t1)
@@ -134,16 +155,29 @@ void save_estimated_parameters(
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset);
 
-geometry_msgs::msg::Point calculate_error_pos(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double coef_vx);
+geometry_msgs::msg::Point integrate_position(
+  const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double coef_vx,
+  const double yaw_init);
 
 geometry_msgs::msg::Vector3 calculate_error_rpy(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
   const geometry_msgs::msg::Vector3 & gyro_bias);
 
-double get_mean_abs_vx(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
-double get_mean_abs_wz(const std::vector<geometry_msgs::msg::TwistStamped> & twist_list);
+geometry_msgs::msg::Vector3 integrate_orientation(
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
+  const geometry_msgs::msg::Vector3 & gyro_bias);
+
+double get_mean_abs_vx(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list);
+double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list);
+
+geometry_msgs::msg::Vector3 transform_vector3(
+  const geometry_msgs::msg::Vector3 & vec, const geometry_msgs::msg::TransformStamped & transform);
+
+inline void myFromMsg(const geometry_msgs::msg::Transform & in, tf2::Transform & out);
+
+geometry_msgs::msg::TransformStamped inverse_transform(
+  const geometry_msgs::msg::TransformStamped & transform);
 
 #endif  // DEVIATION_ESTIMATOR__UTILS_HPP_

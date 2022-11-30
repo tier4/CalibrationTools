@@ -15,21 +15,24 @@
 #include "deviation_estimator/velocity_coef_module.hpp"
 
 #include "deviation_estimator/utils.hpp"
+#include "tier4_autoware_utils/geometry/geometry.hpp"
 
 void VelocityCoefModule::update_coef(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::TwistStamped> & twist_list, const double dt)
+  const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
+  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double dt)
 {
-  const auto d_pos = calculate_error_pos(pose_list, twist_list, 1.0);
+  const auto d_pos =
+    integrate_position(vx_list, gyro_list, 1.0, tf2::getYaw(pose_list.front().pose.orientation));
   double dx = pose_list.back().pose.position.x - pose_list.front().pose.position.x;
   double dy = pose_list.back().pose.position.y - pose_list.front().pose.position.y;
   if (d_pos.x * d_pos.x + d_pos.y * d_pos.y == 0) return;
 
   double d_coef_vx = (d_pos.x * dx + d_pos.y * dy) / (d_pos.x * d_pos.x + d_pos.y * d_pos.y);
 
-  double time_factor = (rclcpp::Time(twist_list.back().header.stamp).seconds() -
-                        rclcpp::Time(twist_list.front().header.stamp).seconds()) /
-                       dt;
+  double time_factor =
+    (rclcpp::Time(vx_list.back().stamp).seconds() - rclcpp::Time(vx_list.front().stamp).seconds()) /
+    dt;
   coef_vx_.first += d_coef_vx * time_factor;
   coef_vx_.second += 1;
   coef_vx_list_.push_back(d_coef_vx);

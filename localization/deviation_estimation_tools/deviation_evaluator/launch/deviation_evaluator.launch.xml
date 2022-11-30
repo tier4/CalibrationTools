@@ -7,8 +7,12 @@
   <arg name="save_dir" default="$(env HOME)/deviation_evaluator_sample"/>
   <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.param.yaml"/>
 
-  <arg name="in_twist_with_covariance" default="/localization/twist_estimator/twist_with_covariance_raw"/>
+  <arg name="in_imu" default="/sensing/imu/imu_data"/>
+  <arg name="in_wheel_odometry" default="/sensing/vehicle_velocity_converter/twist_with_covariance"/>
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>
+
+  <arg name="out_imu" default="/deviation_evaluator/imu/imu_data"/>
+  <arg name="out_wheel_odometry" default="/deviation_evaluator/vehicle_velocity_converter/twist_with_covariance"/>
   <arg name="out_ekf_odom_dr" default="/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic_state"/>
   <arg name="out_ekf_odom_gt" default="/deviation_evaluator/ground_truth/ekf_localizer/kinematic_state"/>
   <arg name="out_twist_with_covariance" default="/deviation_evaluator/twist_estimator/twist_with_covariance"/>
@@ -17,17 +21,31 @@
   <arg name="out_init_pose_with_covariance" default="/deviation_evaluator/initialpose3d"/>
   <arg name="lanelet2_map_file" default="$(var map_path)/lanelet2_map.osm"/>
 
-  <node pkg="deviation_evaluator" exec="deviation_evaluator" name="deviation_evaluator" output="screen">
-    <remap from="in_twist_with_covariance" to="$(var in_twist_with_covariance)"/>
-    <remap from="in_ndt_pose_with_covariance" to="$(var in_ndt_pose_with_covariance)"/>
-    <remap from="out_twist_with_covariance" to="$(var out_twist_with_covariance)"/>
-    <remap from="out_pose_with_covariance_dr" to="$(var out_pose_with_covariance_dr)"/>
-    <remap from="out_pose_with_covariance_gt" to="$(var out_pose_with_covariance_gt)"/>
-    <remap from="out_initial_pose_with_covariance" to="$(var out_init_pose_with_covariance)"/>
+  <group>
+    <node pkg="deviation_evaluator" exec="deviation_evaluator" name="deviation_evaluator" output="screen">
+      <remap from="in_imu" to="$(var in_imu)"/>
+      <remap from="in_wheel_odometry" to="$(var in_wheel_odometry)"/>
+      <remap from="in_ndt_pose_with_covariance" to="$(var in_ndt_pose_with_covariance)"/>
 
-    <param name="save_dir" value="$(var save_dir)"/>
-    <param from="$(var param_path)"/>
-  </node>
+      <remap from="out_imu" to="$(var out_imu)"/>
+      <remap from="out_wheel_odometry" to="$(var out_wheel_odometry)"/>
+      <remap from="out_twist_with_covariance" to="$(var out_twist_with_covariance)"/>
+      <remap from="out_pose_with_covariance_dr" to="$(var out_pose_with_covariance_dr)"/>
+      <remap from="out_pose_with_covariance_gt" to="$(var out_pose_with_covariance_gt)"/>
+      <remap from="out_initial_pose_with_covariance" to="$(var out_init_pose_with_covariance)"/>
+
+      <param name="save_dir" value="$(var save_dir)"/>
+      <param from="$(var param_path)"/>
+    </node>
+  </group>
+
+  <group>
+    <include file="$(find-pkg-share gyro_odometer)/launch/gyro_odometer.launch.xml">
+      <arg name="input_imu_topic" value="$(var out_imu)"/>
+      <arg name="input_vehicle_twist_with_covariance_topic" value="$(var out_wheel_odometry)"/>
+      <arg name="output_twist_with_covariance_topic" value="$(var out_twist_with_covariance)"/>
+    </include>
+  </group>
 
   <group>
     <push-ros-namespace namespace="dead_reckoning"/>
