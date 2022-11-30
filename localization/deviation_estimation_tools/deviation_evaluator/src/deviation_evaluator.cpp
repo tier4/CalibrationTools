@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "deviation_evaluator/deviation_evaluator.hpp"
-#include "tier4_autoware_utils/geometry/geometry.hpp"
 
 #include "rclcpp/logging.hpp"
+#include "tier4_autoware_utils/geometry/geometry.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -172,7 +172,7 @@ void DeviationEvaluator::callbackEKFGTOdom(const Odometry::SharedPtr msg)
     last_gt_pose_ptr_ = nullptr;
     return;
   }
- 
+
   geometry_msgs::msg::Pose target_pose;
   try {
     target_pose = interpolatePose(target_time);

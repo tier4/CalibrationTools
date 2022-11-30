@@ -27,12 +27,12 @@
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <deque>
 
 class DeviationEvaluator : public rclcpp::Node
 {
@@ -53,19 +53,15 @@ public:
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
-  rclcpp::Subscription<TwistWithCovarianceStamped>::SharedPtr
-    sub_wheel_odometry_;
-  rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr
-    sub_ndt_pose_with_cov_;
+  rclcpp::Subscription<TwistWithCovarianceStamped>::SharedPtr sub_wheel_odometry_;
+  rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr sub_ndt_pose_with_cov_;
   rclcpp::Subscription<Odometry>::SharedPtr sub_dr_odom_;
   rclcpp::Subscription<Odometry>::SharedPtr sub_gt_odom_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_calibrated_imu_;
-  rclcpp::Publisher<TwistWithCovarianceStamped>::SharedPtr
-    pub_calibrated_wheel_odometry_;
+  rclcpp::Publisher<TwistWithCovarianceStamped>::SharedPtr pub_calibrated_wheel_odometry_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
-  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr
-    pub_init_pose_with_cov_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_init_pose_with_cov_;
 
   bool show_debug_info_;
   std::string save_dir_;
@@ -83,7 +79,6 @@ private:
   std::deque<PoseStamped::SharedPtr> dr_pose_queue_;
 
   PoseStamped::SharedPtr last_gt_pose_ptr_;
-
 
   PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
   PoseStamped::SharedPtr current_ndt_pose_ptr_;
