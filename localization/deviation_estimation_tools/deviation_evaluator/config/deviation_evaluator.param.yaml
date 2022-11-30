@@ -7,5 +7,5 @@
     bias_wz: 0.0 # [rad/s]
 
     # Dead Reckoning configuration
-    period: 10.0 # [s]
-    cut: 9.0 # [s]
+    wait_duration: 4.0 # [s]
+    wait_scale: 1.3

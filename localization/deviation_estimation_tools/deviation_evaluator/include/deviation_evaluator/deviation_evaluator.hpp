@@ -32,24 +32,39 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <deque>
 
 class DeviationEvaluator : public rclcpp::Node
 {
+private:
+  using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
+  using TwistWithCovarianceStamped = geometry_msgs::msg::TwistWithCovarianceStamped;
+  using PoseStamped = geometry_msgs::msg::PoseStamped;
+  using Odometry = nav_msgs::msg::Odometry;
+  struct Errors
+  {
+    double lateral;
+    double long_radius;
+    Errors() : lateral(0), long_radius(0){};
+  };
+
 public:
   DeviationEvaluator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
-  rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
+  rclcpp::Subscription<TwistWithCovarianceStamped>::SharedPtr
     sub_wheel_odometry_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+  rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr
     sub_ndt_pose_with_cov_;
+  rclcpp::Subscription<Odometry>::SharedPtr sub_dr_odom_;
+  rclcpp::Subscription<Odometry>::SharedPtr sub_gt_odom_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_calibrated_imu_;
-  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
+  rclcpp::Publisher<TwistWithCovarianceStamped>::SharedPtr
     pub_calibrated_wheel_odometry_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr
     pub_init_pose_with_cov_;
 
   bool show_debug_info_;
@@ -59,20 +74,33 @@ private:
   double stddev_wz_;
   double coef_vx_;
   double bias_wz_;
-  double period_;
-  double cut_;
+  // double period_;
+  // double cut_;
+  double wait_duration_;
+  Errors errors_threshold_;
+  Errors current_errors_;
 
-  geometry_msgs::msg::PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
-  geometry_msgs::msg::PoseStamped::SharedPtr current_ndt_pose_ptr_;
+  std::deque<PoseStamped::SharedPtr> dr_pose_queue_;
+
+  PoseStamped::SharedPtr last_gt_pose_ptr_;
+
+
+  PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
+  PoseStamped::SharedPtr current_ndt_pose_ptr_;
 
   bool has_published_initial_pose_;
 
   void callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg);
 
-  void callbackWheelOdometry(const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
+  void callbackWheelOdometry(const TwistWithCovarianceStamped::SharedPtr msg);
 
-  void callbackNDTPoseWithCovariance(
-    const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+  void callbackNDTPoseWithCovariance(const PoseWithCovarianceStamped::SharedPtr msg);
+
+  void callbackEKFDROdom(const Odometry::SharedPtr msg);
+
+  void callbackEKFGTOdom(const Odometry::SharedPtr msg);
+
+  geometry_msgs::msg::Pose interpolatePose(const double timestamp_seconds);
 
   void save2YamlFile();
 };
