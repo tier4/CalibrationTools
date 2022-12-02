@@ -21,7 +21,8 @@
 
 TEST(DeviationEstimatorGyroBias, SmokeTestDefault)
 {
-  const geometry_msgs::msg::Vector3 gyro_bias = tier4_autoware_utils::createVector3(0.01, -0.005, -0.015);
+  const geometry_msgs::msg::Vector3 gyro_bias =
+    tier4_autoware_utils::createVector3(0.01, -0.005, -0.015);
 
   const double ERROR_RATE = 0.1;
   const int num_data = 1000;
@@ -38,8 +39,7 @@ TEST(DeviationEstimatorGyroBias, SmokeTestDefault)
   engine.seed();
   std::normal_distribution<> dist(0.0, stddev_gyro);
 
-  for (int i = 0; i < num_data; ++i)
-  {
+  for (int i = 0; i < num_data; ++i) {
     std::vector<geometry_msgs::msg::Vector3Stamped> gyro_data_while_stopped;
     for (int i = 0; i < gyro_rate * dt; ++i) {
       geometry_msgs::msg::Vector3Stamped gyro;
