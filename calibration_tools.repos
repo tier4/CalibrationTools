@@ -2,7 +2,7 @@ repositories:
   autoware/calibration_tools:
     type: git
     url: git@github.com:tier4/CalibrationTools.git
-    version: tier4/universe
+    version: humble
   vendor/lidartag:
     type: git
     url: git@github.com:tier4/LiDARTag.git
