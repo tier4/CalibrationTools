@@ -121,7 +121,7 @@ DeviationEstimator::DeviationEstimator(
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
   output_frame_(declare_parameter("base_link", "base_link")),
-  imu_frame_(declare_parameter<std::string>("imu_link"))
+  imu_frame_(declare_parameter<std::string>("imu_frame"))
 {
   show_debug_info_ = declare_parameter("show_debug_info", false);
   dt_design_ = declare_parameter("dt_design", 10.0);
