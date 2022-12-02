@@ -269,8 +269,7 @@ void DeviationEstimator::timer_callback()
     transform_listener_->getLatestTransform(output_frame_, imu_frame_);
   if (!tf_base2imu_ptr) {
     RCLCPP_ERROR(
-      this->get_logger(), "Please publish TF %s to %s", imu_frame_.c_str(),
-      output_frame_.c_str());
+      this->get_logger(), "Please publish TF %s to %s", imu_frame_.c_str(), output_frame_.c_str());
     return;
   }
   const geometry_msgs::msg::Vector3 bias_angvel_imu =
