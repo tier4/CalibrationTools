@@ -33,7 +33,8 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 
   set(TEST_FILES
-    test/test_gyro_stddev.cpp)
+    test/test_gyro_stddev.cpp
+    test/test_gyro_bias.cpp)
 
   foreach(filepath ${TEST_FILES})
     add_testcase(${filepath})
