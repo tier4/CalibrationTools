@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "deviation_estimator/data_validation_module.hpp"
+
 #include "deviation_estimator/utils.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
@@ -22,8 +23,7 @@ DataValidationModule::DataValidationModule(rclcpp::Node * node)
 {
 }
 
-void DataValidationModule::update_pose(
-  const geometry_msgs::msg::PoseStamped & pose)
+void DataValidationModule::update_pose(const geometry_msgs::msg::PoseStamped & pose)
 {
   distance_travelled_ += norm_xy(pose.pose.position, latest_pose_ptr_->pose.position);
   latest_pose_ptr_ = std::make_shared<geometry_msgs::msg::PoseStamped>(pose);

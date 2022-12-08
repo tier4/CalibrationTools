@@ -47,29 +47,26 @@ DeviationEvaluator::DeviationEvaluator(
   cut_ = declare_parameter("cut", 9.0);
   save_dir_ = declare_parameter("save_dir", "");
 
-  client_trigger_ekf_dr_ = create_client<std_srvs::srv::SetBool>("out_ekf_dr_trigger", rmw_qos_profile_services_default);
-  client_trigger_ekf_gt_ = create_client<std_srvs::srv::SetBool>("out_ekf_gt_trigger", rmw_qos_profile_services_default);
+  client_trigger_ekf_dr_ =
+    create_client<std_srvs::srv::SetBool>("out_ekf_dr_trigger", rmw_qos_profile_services_default);
+  client_trigger_ekf_gt_ =
+    create_client<std_srvs::srv::SetBool>("out_ekf_gt_trigger", rmw_qos_profile_services_default);
 
-  if (declare_parameter<bool>("need_ekf_initial_trigger"))
-  {
+  if (declare_parameter<bool>("need_ekf_initial_trigger")) {
     while (!client_trigger_ekf_dr_->wait_for_service(1s)) {
       if (!rclcpp::ok()) break;
       RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for EKF trigger service...");
     }
     auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
     client_trigger_ekf_dr_->async_send_request(
-      req,
-      [this]([[maybe_unused]] rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture result) {}
-    );
+      req, [this]([[maybe_unused]] rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture result) {});
 
     while (!client_trigger_ekf_gt_->wait_for_service(1s)) {
       if (!rclcpp::ok()) break;
       RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for EKF trigger service...");
     }
     client_trigger_ekf_gt_->async_send_request(
-      req,
-      [this]([[maybe_unused]] rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture result) {}
-    );
+      req, [this]([[maybe_unused]] rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture result) {});
     RCLCPP_INFO(this->get_logger(), "EKF initialization finished");
   }
 

@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #include "deviation_estimator/deviation_estimator.hpp"
-#include "deviation_estimator/write_result_file.hpp"
+
 #include "deviation_estimator/utils.hpp"
+#include "deviation_estimator/write_result_file.hpp"
 #include "rclcpp/logging.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
@@ -286,12 +287,8 @@ void DeviationEstimator::timer_callback()
 
   if (!results_path_.empty()) {
     save_estimated_result(
-      results_path_,
-      stddev_vx, stddev_angvel_base.z,
-      vel_coef_module_->get_coef(),
-      gyro_bias_module_->get_bias_base_link().z,
-      stddev_angvel_imu_msg,
-      bias_angvel_imu,
+      results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
+      gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu,
       data_validation_module_->is_data_valid());
   }
 }

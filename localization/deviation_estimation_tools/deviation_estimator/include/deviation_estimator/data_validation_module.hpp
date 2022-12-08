@@ -15,8 +15,9 @@
 #ifndef DEVIATION_ESTIMATOR__DATA_VALIDATION_MODULE_HPP_
 #define DEVIATION_ESTIMATOR__DATA_VALIDATION_MODULE_HPP_
 
-#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
+
+#include "geometry_msgs/msg/pose_stamped.hpp"
 
 #include <memory>
 

@@ -17,9 +17,10 @@
 
 #include "geometry_msgs/msg/vector3.hpp"
 
-#include <string>
-#include <fstream>
 #include <fmt/core.h>
+
+#include <fstream>
+#include <string>
 
 void save_estimated_result(
   const std::string output_path, const double stddev_vx, const double stddev_wz,
@@ -31,12 +32,10 @@ void save_estimated_result(
   const std::string output_path, const double stddev_vx, const double stddev_wz,
   const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
-  const geometry_msgs::msg::Vector3 & angular_velocity_offset,
-  const bool is_distance_valid);
+  const geometry_msgs::msg::Vector3 & angular_velocity_offset, const bool is_distance_valid);
 
 std::string generate_estimation_section(
-  const double stddev_vx, const double stddev_wz,
-  const double coef_vx, const double bias_wz,
+  const double stddev_vx, const double stddev_wz, const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset);
 
