@@ -120,7 +120,8 @@ DeviationEstimator::DeviationEstimator(
 : rclcpp::Node(node_name, node_options),
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
-  output_frame_(declare_parameter("base_link", "base_link"))
+  output_frame_(declare_parameter("base_link", "base_link")),
+  imu_frame_(declare_parameter<std::string>("imu_frame"))
 {
   show_debug_info_ = declare_parameter("show_debug_info", false);
   dt_design_ = declare_parameter("dt_design", 10.0);
@@ -130,7 +131,7 @@ DeviationEstimator::DeviationEstimator(
   estimation_freq_ = declare_parameter("estimation_freq", 0.5);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
-  results_path_ = declare_parameter("results_path", "test");
+  results_path_ = declare_parameter<std::string>("results_path");
   time_window_ = declare_parameter("time_window", 2.0);
   add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
 
@@ -194,9 +195,9 @@ void DeviationEstimator::callback_wheel_odometry(
 
 void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr)
 {
-  tf_imu2base_ptr_ =
+  geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_imu2base_ptr =
     transform_listener_->getLatestTransform(imu_msg_ptr->header.frame_id, output_frame_);
-  if (!tf_imu2base_ptr_) {
+  if (!tf_imu2base_ptr) {
     RCLCPP_ERROR(
       this->get_logger(), "Please publish TF %s to %s", output_frame_.c_str(),
       (imu_msg_ptr->header.frame_id).c_str());
@@ -205,7 +206,7 @@ void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPt
 
   geometry_msgs::msg::Vector3Stamped gyro;
   gyro.header.stamp = imu_msg_ptr->header.stamp;
-  gyro.vector = transform_vector3(imu_msg_ptr->angular_velocity, *tf_imu2base_ptr_);
+  gyro.vector = transform_vector3(imu_msg_ptr->angular_velocity, *tf_imu2base_ptr);
 
   gyro_all_.push_back(gyro);
 }
@@ -264,9 +265,15 @@ void DeviationEstimator::timer_callback()
   coef_vx_msg.data = vel_coef_module_->get_coef();
   pub_coef_vx_->publish(coef_vx_msg);
 
-  geometry_msgs::msg::TransformStamped tf_base2imu = inverse_transform(*tf_imu2base_ptr_);
+  geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_base2imu_ptr =
+    transform_listener_->getLatestTransform(output_frame_, imu_frame_);
+  if (!tf_base2imu_ptr) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Please publish TF %s to %s", imu_frame_.c_str(), output_frame_.c_str());
+    return;
+  }
   const geometry_msgs::msg::Vector3 bias_angvel_imu =
-    transform_vector3(gyro_bias_module_->get_bias_base_link(), tf_base2imu);
+    transform_vector3(gyro_bias_module_->get_bias_base_link(), *tf_base2imu_ptr);
   pub_bias_angvel_->publish(bias_angvel_imu);
 
   std_msgs::msg::Float64 stddev_vx_msg;
@@ -281,11 +288,9 @@ void DeviationEstimator::timer_callback()
     tier4_autoware_utils::createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
   pub_stddev_angvel_->publish(stddev_angvel_imu_msg);
 
-  if (!results_path_.empty()) {
-    save_estimated_parameters(
-      results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
-      gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
-  }
+  save_estimated_parameters(
+    results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
+    gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
 }
 
 double DeviationEstimator::add_bias_uncertainty_on_velocity(
