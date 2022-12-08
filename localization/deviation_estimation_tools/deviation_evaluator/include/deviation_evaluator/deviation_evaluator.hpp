@@ -16,6 +16,7 @@
 #define DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 
 #include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 
@@ -26,7 +27,6 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
-#include "std_srvs/srv/set_bool.hpp"
 
 #include <fstream>
 #include <iostream>
