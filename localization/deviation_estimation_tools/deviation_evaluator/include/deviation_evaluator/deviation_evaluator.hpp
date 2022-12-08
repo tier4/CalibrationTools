@@ -26,6 +26,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -51,6 +52,9 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     pub_init_pose_with_cov_;
+
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_dr_;
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_gt_;
 
   bool show_debug_info_;
   std::string save_dir_;
