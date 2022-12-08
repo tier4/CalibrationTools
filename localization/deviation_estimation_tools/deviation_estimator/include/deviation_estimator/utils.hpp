@@ -24,7 +24,6 @@
 
 #include <tf2/transform_datatypes.h>
 
-#include <fstream>
 #include <vector>
 
 #ifdef ROS_DISTRO_GALACTIC
@@ -33,8 +32,6 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 #include "tf2/utils.h"
-
-double double_round(const double x, const int n);
 
 template <typename T>
 double calculate_mean(const std::vector<T> & v)
@@ -148,12 +145,6 @@ double norm_xy(const T p1, const U p2)
 }
 
 double clip_radian(const double rad);
-
-void save_estimated_parameters(
-  const std::string output_path, const double stddev_vx, const double stddev_wz,
-  const double coef_vx, const double bias_wz,
-  const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
-  const geometry_msgs::msg::Vector3 & angular_velocity_offset);
 
 geometry_msgs::msg::Point integrate_position(
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "deviation_estimator/deviation_estimator.hpp"
-
+#include "deviation_estimator/write_result_file.hpp"
 #include "deviation_estimator/utils.hpp"
 #include "rclcpp/logging.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
@@ -156,12 +156,13 @@ DeviationEstimator::DeviationEstimator(
   pub_stddev_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
-  save_estimated_parameters(
+  save_estimated_result(
     results_path_, 0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{},
-    geometry_msgs::msg::Vector3{});
+    geometry_msgs::msg::Vector3{}, false);
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
+  data_validation_module_ = std::make_unique<DataValidationModule>(this);
   transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
 
   DEBUG_INFO(this->get_logger(), "[Deviation Estimator] launch success");
@@ -176,6 +177,8 @@ void DeviationEstimator::callback_pose_with_covariance(
   pose.pose = msg->pose.pose;
   pose_buf_.push_back(pose);
   pose_all_.push_back(pose);
+
+  data_validation_module_->update_pose(pose);
 }
 
 void DeviationEstimator::callback_wheel_odometry(
@@ -282,9 +285,14 @@ void DeviationEstimator::timer_callback()
   pub_stddev_angvel_->publish(stddev_angvel_imu_msg);
 
   if (!results_path_.empty()) {
-    save_estimated_parameters(
-      results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
-      gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
+    save_estimated_result(
+      results_path_,
+      stddev_vx, stddev_angvel_base.z,
+      vel_coef_module_->get_coef(),
+      gyro_bias_module_->get_bias_base_link().z,
+      stddev_angvel_imu_msg,
+      bias_angvel_imu,
+      data_validation_module_->is_data_valid());
   }
 }
 
