@@ -91,7 +91,7 @@ private:
   bool add_bias_uncertainty_;
 
   std::string output_frame_;
-  geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_imu2base_ptr_;
+  std::string imu_frame_;
 
   std::unique_ptr<GyroBiasModule> gyro_bias_module_;
   std::unique_ptr<VelocityCoefModule> vel_coef_module_;

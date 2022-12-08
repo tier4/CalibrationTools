@@ -167,6 +167,7 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 | x_design        | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
 | estimation_freq | double | Estimation frequency [Hz]                                                                   | 0.5                      |
 | results_path    | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
+| imu_frame       | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"      |
 
 ### Functions
 
