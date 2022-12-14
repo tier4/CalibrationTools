@@ -46,12 +46,23 @@ class CollectedData:
             return np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf
 
         center_2d = detection.get_center_2d()
-        normalized_center_x_distances = np.abs(
-            self.normalized_center_x - (center_2d[0] / detection.get_image_width())
+        normalized_center_2d_x = center_2d[0] / (
+            detection.get_image_width()
+            - (
+                detection.get_flattened_image_points()[:, 0].max()
+                - detection.get_flattened_image_points()[:, 0].min()
+            )
         )
-        normalized_center_y_distances = np.abs(
-            self.normalized_center_y - (center_2d[1] / detection.get_image_height())
+        normalized_center_2d_y = center_2d[1] / (
+            detection.get_image_height()
+            - (
+                detection.get_flattened_image_points()[:, 1].max()
+                - detection.get_flattened_image_points()[:, 1].min()
+            )
         )
+
+        normalized_center_x_distances = np.abs(self.normalized_center_x - normalized_center_2d_x)
+        normalized_center_y_distances = np.abs(self.normalized_center_y - normalized_center_2d_y)
         normalized_skews_distances = np.abs(self.normalized_skews - detection.get_normalized_skew())
         normalized_size_distances = np.abs(self.normalized_sizes - detection.get_normalized_size())
 
@@ -94,19 +105,35 @@ class CollectedData:
 
         self.normalized_center_x = np.array(
             [
-                detection.get_center_2d()[0] / detection.get_image_width()
+                detection.get_center_2d()[0]
+                / (
+                    detection.get_image_width()
+                    - (
+                        detection.get_flattened_image_points()[:, 0].max()
+                        - detection.get_flattened_image_points()[:, 0].min()
+                    )
+                )
                 for detection in self.detections
             ]
         ).flatten()
+
         self.normalized_center_y = np.array(
             [
-                detection.get_center_2d()[1] / detection.get_image_height()
+                detection.get_center_2d()[1]
+                / (
+                    detection.get_image_height()
+                    - (
+                        detection.get_flattened_image_points()[:, 1].max()
+                        - detection.get_flattened_image_points()[:, 1].min()
+                    )
+                )
                 for detection in self.detections
             ]
         ).flatten()
         self.normalized_skews = np.array(
             [detection.get_normalized_skew() for detection in self.detections]
         ).flatten()
+
         self.normalized_sizes = np.array(
             [detection.get_normalized_size() for detection in self.detections]
         ).flatten()
@@ -134,7 +161,7 @@ class DataCollector(ParameteredClass):
     def __init__(self, cfg: dict = dict(), **kwargs):  # noqa C408
         super().__init__(cfg=cfg, **kwargs)
 
-        self.max_samples = Parameter(int, value=100, min_value=6, max_value=500)
+        self.max_samples = Parameter(int, value=500, min_value=6, max_value=500)
         self.decorrelate_eval_samples = Parameter(int, value=5, min_value=1, max_value=100)
         self.max_allowed_tilt = Parameter(float, value=45.0, min_value=0.0, max_value=90.0)
 
@@ -154,13 +181,13 @@ class DataCollector(ParameteredClass):
 
         self.filter_by_2d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)
         self.min_normalized_2d_center_difference = Parameter(
-            float, value=0.1, min_value=0.0, max_value=1.0
+            float, value=0.05, min_value=0.0, max_value=1.0
         )
         self.min_normalized_skew_difference = Parameter(
-            float, value=0.1, min_value=0.0, max_value=1.0
+            float, value=0.05, min_value=0.0, max_value=1.0
         )
         self.min_normalized_2d_size_difference = Parameter(
-            float, value=0.1, min_value=0.0, max_value=1.0
+            float, value=0.05, min_value=0.0, max_value=1.0
         )
 
         self.filter_by_3d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)

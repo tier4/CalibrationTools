@@ -61,12 +61,6 @@ from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
 import numpy as np
 import rclpy
 
-# import time
-
-
-# debugpy.listen(5678)
-# debugpy.wait_for_client()
-
 
 class OperationMode(Enum):
     IDLE = 0

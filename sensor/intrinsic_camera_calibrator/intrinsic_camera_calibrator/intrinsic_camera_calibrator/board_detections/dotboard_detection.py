@@ -102,6 +102,7 @@ class DotBoardDetection(BoardDetection):
         p = b + c
         q = a + b
 
+        # The sqrt is to assign more "resolution" to close distances
         self._cached_normalized_size = np.sqrt(
             np.abs(p[0] * q[1] - p[1] * q[0]) / (2.0 * self.height * self.width)
         )
