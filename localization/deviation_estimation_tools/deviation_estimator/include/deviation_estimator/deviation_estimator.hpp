@@ -74,7 +74,6 @@ private:
   std::string results_path_;
   std::string imu_link_frame_;
 
-  // std::vector<geometry_msgs::msg::PoseStamped> pose_all_;
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_all_;
   std::vector<geometry_msgs::msg::PoseStamped> pose_buf_;

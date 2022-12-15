@@ -48,11 +48,7 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
   std::vector<double> delta_wy_list;
   std::vector<double> delta_wz_list;
 
-  // const rclcpp::Time t_pose_start = rclcpp::Time(pose_list.front().header.stamp);
-  // const rclcpp::Time t_pose_end = rclcpp::Time(pose_list.back().header.stamp);
-  // // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
-  // for (int i = 0; i < (t_pose_end - t_pose_start).seconds() / duration.seconds() - 1; ++i) {
-  for (const TrajectoryData & traj_data : traj_data_list) {
+  for (const TrajectoryData & traj_data: traj_data_list) {
     const auto t1_pose = rclcpp::Time(traj_data.pose_list.back().header.stamp);
     const auto t0_pose = rclcpp::Time(traj_data.pose_list.front().header.stamp);
     if (t0_pose > t1_pose) continue;
@@ -85,11 +81,8 @@ double estimate_stddev_velocity(
   t_window /= traj_data_list.size();
 
   std::vector<double> delta_x_list;
-  // const rclcpp::Time t_pose_start = rclcpp::Time(pose_list.front().header.stamp);
-  // const rclcpp::Time t_pose_end = rclcpp::Time(pose_list.back().header.stamp);
-  // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
-  // for (int i = 0; i < (t_pose_end - t_pose_start).seconds() / duration.seconds() - 1; ++i) {
-  for (const TrajectoryData & traj_data : traj_data_list) {
+
+  for (const TrajectoryData & traj_data: traj_data_list) {
     const auto t1_pose = rclcpp::Time(traj_data.pose_list.back().header.stamp);
     const auto t0_pose = rclcpp::Time(traj_data.pose_list.front().header.stamp);
     if (t0_pose > t1_pose) continue;
@@ -174,7 +167,6 @@ void DeviationEstimator::callback_pose_with_covariance(
   pose.header = msg->header;
   pose.pose = msg->pose.pose;
   pose_buf_.push_back(pose);
-  // pose_all_.push_back(pose);
 }
 
 void DeviationEstimator::callback_wheel_odometry(
@@ -219,10 +211,6 @@ void DeviationEstimator::timer_callback()
     RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "No wheel odometry");
     return;
   }
-  // if (pose_all_.empty()) {
-  //   RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "No pose");
-  //   return;
-  // }
   if (pose_buf_.size() == 0) return;
   rclcpp::Time t0_rclcpp_time = rclcpp::Time(pose_buf_.front().header.stamp);
   rclcpp::Time t1_rclcpp_time = rclcpp::Time(pose_buf_.back().header.stamp);
