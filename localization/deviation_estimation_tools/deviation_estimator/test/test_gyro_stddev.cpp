@@ -30,8 +30,7 @@ TEST(DeviationEstimatorGyroStddev, SmokeTestDefault)
   const int gyro_rate = 100;
   const int ndt_rate = 10;
   const double t_window = 5;
-  const geometry_msgs::msg::Vector3 gyro_bias = tier4_autoware_utils::createVector3(0.0, 0.0,
-  0.0);
+  const geometry_msgs::msg::Vector3 gyro_bias = tier4_autoware_utils::createVector3(0.0, 0.0, 0.0);
 
   std::mt19937 engine;
   engine.seed();
