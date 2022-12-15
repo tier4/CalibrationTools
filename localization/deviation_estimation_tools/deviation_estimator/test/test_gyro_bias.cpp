@@ -41,7 +41,7 @@ TEST(DeviationEstimatorGyroBias, SmokeTestDefault)
 
   for (int i = 0; i < num_data; ++i) {
     std::vector<geometry_msgs::msg::Vector3Stamped> gyro_data_while_stopped;
-    for (int i = 0; i < gyro_rate * dt; ++i) {
+    for (int i = 0; i <= gyro_rate * dt; ++i) {
       geometry_msgs::msg::Vector3Stamped gyro;
       gyro.header.stamp = t_start + rclcpp::Duration::from_seconds(1.0 * i / gyro_rate);
       gyro.vector.x = dist(engine) + gyro_bias.x;
@@ -51,7 +51,7 @@ TEST(DeviationEstimatorGyroBias, SmokeTestDefault)
     }
 
     std::vector<geometry_msgs::msg::PoseStamped> pose_list;
-    for (int i = 0; i < ndt_rate * dt; ++i) {
+    for (int i = 0; i <= ndt_rate * dt; ++i) {
       geometry_msgs::msg::PoseStamped pose;
       pose.header.stamp = t_start + rclcpp::Duration::from_seconds(1.0 * i / ndt_rate);
       pose.pose.orientation = tier4_autoware_utils::createQuaternionFromRPY(0.0, 0.0, 0.0);
