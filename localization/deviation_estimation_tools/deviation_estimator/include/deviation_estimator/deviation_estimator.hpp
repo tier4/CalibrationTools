@@ -42,14 +42,11 @@
 #endif
 
 geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window,
+  const std::vector<TrajectoryData> & traj_data_list,
   const geometry_msgs::msg::Vector3 & gyro_bias);
 
 double estimate_stddev_velocity(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window,
+  const std::vector<TrajectoryData> & traj_data_list,
   const double coef_vx, const double vx_threshold, const double wz_threshold);
 
 class DeviationEstimator : public rclcpp::Node
@@ -77,15 +74,17 @@ private:
   std::string results_path_;
   std::string imu_link_frame_;
 
-  std::vector<geometry_msgs::msg::PoseStamped> pose_all_;
+  // std::vector<geometry_msgs::msg::PoseStamped> pose_all_;
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_all_;
   std::vector<geometry_msgs::msg::PoseStamped> pose_buf_;
+  std::vector<TrajectoryData> traj_data_list_;
 
   double dt_design_;
   double dx_design_;
   double wz_threshold_;
   double vx_threshold_;
+  double accel_threshold_;
   double estimation_freq_;
   double time_window_;
   bool add_bias_uncertainty_;

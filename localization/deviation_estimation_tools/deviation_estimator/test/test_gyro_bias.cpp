@@ -58,7 +58,11 @@ TEST(DeviationEstimatorGyroBias, SmokeTestDefault)
       pose_list.push_back(pose);
     }
 
-    gyro_bias_module.update_bias(pose_list, gyro_data_while_stopped, dt);
+    TrajectoryData traj_data;
+    traj_data.pose_list = pose_list;
+    traj_data.gyro_list = gyro_data_while_stopped;
+
+    gyro_bias_module.update_bias(traj_data);
   }
 
   const geometry_msgs::msg::Vector3 estimated_gyro_bias = gyro_bias_module.get_bias_base_link();
