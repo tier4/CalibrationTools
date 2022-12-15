@@ -16,6 +16,7 @@
 #define DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 
 #include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 
@@ -51,6 +52,9 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     pub_init_pose_with_cov_;
+
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_dr_;
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_gt_;
 
   bool show_debug_info_;
   std::string save_dir_;

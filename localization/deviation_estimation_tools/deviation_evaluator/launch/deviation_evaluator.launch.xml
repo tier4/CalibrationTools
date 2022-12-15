@@ -11,6 +11,8 @@
   <arg name="in_wheel_odometry" default="/sensing/vehicle_velocity_converter/twist_with_covariance"/>
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>
 
+  <arg name="out_ekf_dr_trigger" default="/deviation_evaluator/ekf_dr_trigger"/>
+  <arg name="out_ekf_gt_trigger" default="/deviation_evaluator/ekf_gt_trigger"/>
   <arg name="out_imu" default="/deviation_evaluator/imu/imu_data"/>
   <arg name="out_wheel_odometry" default="/deviation_evaluator/vehicle_velocity_converter/twist_with_covariance"/>
   <arg name="out_ekf_odom_dr" default="/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic_state"/>
@@ -33,6 +35,8 @@
       <remap from="out_pose_with_covariance_dr" to="$(var out_pose_with_covariance_dr)"/>
       <remap from="out_pose_with_covariance_gt" to="$(var out_pose_with_covariance_gt)"/>
       <remap from="out_initial_pose_with_covariance" to="$(var out_init_pose_with_covariance)"/>
+      <remap from="out_ekf_dr_trigger" to="$(var out_ekf_dr_trigger)"/>
+      <remap from="out_ekf_gt_trigger" to="$(var out_ekf_gt_trigger)"/>
 
       <param name="save_dir" value="$(var save_dir)"/>
       <param from="$(var param_path)"/>
@@ -54,6 +58,7 @@
       <arg name="input_twist_with_cov_name" value="$(var out_twist_with_covariance)"/>
       <arg name="input_initial_pose_name" value="$(var out_init_pose_with_covariance)"/>
       <arg name="output_odom_name" value="$(var out_ekf_odom_dr)"/>
+      <arg name="input_trigger_node_service_name" value="$(var out_ekf_dr_trigger)"/>
 
       <arg name="proc_stddev_vx_c" value="10.0"/>
       <arg name="proc_stddev_wz_c" value="5.0"/>
@@ -67,6 +72,7 @@
       <arg name="input_twist_with_cov_name" value="$(var out_twist_with_covariance)"/>
       <arg name="input_initial_pose_name" value="$(var out_init_pose_with_covariance)"/>
       <arg name="output_odom_name" value="$(var out_ekf_odom_gt)"/>
+      <arg name="input_trigger_node_service_name" value="$(var out_ekf_gt_trigger)"/>
 
       <arg name="proc_stddev_vx_c" value="10.0"/>
       <arg name="proc_stddev_wz_c" value="5.0"/>
