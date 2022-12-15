@@ -48,7 +48,7 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
   std::vector<double> delta_wy_list;
   std::vector<double> delta_wz_list;
 
-  for (const TrajectoryData & traj_data: traj_data_list) {
+  for (const TrajectoryData & traj_data : traj_data_list) {
     const auto t1_pose = rclcpp::Time(traj_data.pose_list.back().header.stamp);
     const auto t0_pose = rclcpp::Time(traj_data.pose_list.front().header.stamp);
     if (t0_pose > t1_pose) continue;
@@ -82,7 +82,7 @@ double estimate_stddev_velocity(
 
   std::vector<double> delta_x_list;
 
-  for (const TrajectoryData & traj_data: traj_data_list) {
+  for (const TrajectoryData & traj_data : traj_data_list) {
     const auto t1_pose = rclcpp::Time(traj_data.pose_list.back().header.stamp);
     const auto t0_pose = rclcpp::Time(traj_data.pose_list.front().header.stamp);
     if (t0_pose > t1_pose) continue;
