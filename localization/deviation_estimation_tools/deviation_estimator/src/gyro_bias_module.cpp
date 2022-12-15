@@ -23,7 +23,8 @@ void GyroBiasModule::update_bias(const TrajectoryData & traj_data)
   const rclcpp::Time t1_rclcpp_time = rclcpp::Time(traj_data.pose_list.back().header.stamp);
   const double dt = t1_rclcpp_time.seconds() - t0_rclcpp_time.seconds();
 
-  const auto error_rpy = calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, geometry_msgs::msg::Vector3{});
+  const auto error_rpy =
+    calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, geometry_msgs::msg::Vector3{});
   gyro_bias_pair_.first.x += dt * error_rpy.x;
   gyro_bias_pair_.first.y += dt * error_rpy.y;
   gyro_bias_pair_.first.z += dt * error_rpy.z;

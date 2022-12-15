@@ -30,7 +30,8 @@
 //   const int gyro_rate = 100;
 //   const int ndt_rate = 10;
 //   const double t_window = 5;
-//   const geometry_msgs::msg::Vector3 gyro_bias = tier4_autoware_utils::createVector3(0.0, 0.0, 0.0);
+//   const geometry_msgs::msg::Vector3 gyro_bias = tier4_autoware_utils::createVector3(0.0, 0.0,
+//   0.0);
 
 //   std::mt19937 engine;
 //   engine.seed();
@@ -58,7 +59,8 @@
 //   traj_data.pose_list = pose_list;
 //   traj_data.gyro_list = gyro_data_while_stopped;
 
-//   geometry_msgs::msg::Vector3 estimated_gyro_stddev = estimate_stddev_angular_velocity(traj_data, gyro_bias);
+//   geometry_msgs::msg::Vector3 estimated_gyro_stddev = estimate_stddev_angular_velocity(traj_data,
+//   gyro_bias);
 
 //   EXPECT_NEAR(estimated_gyro_stddev.x, stddev_gyro, stddev_gyro * ERROR_RATE);
 //   EXPECT_NEAR(estimated_gyro_stddev.y, stddev_gyro, stddev_gyro * ERROR_RATE);
@@ -109,7 +111,8 @@ TEST(DeviationEstimatorGyroStddev, SmokeTestWithBias)
     traj_data_list.push_back(traj_data);
   }
 
-  geometry_msgs::msg::Vector3 estimated_gyro_stddev = estimate_stddev_angular_velocity(traj_data_list, gyro_bias);
+  geometry_msgs::msg::Vector3 estimated_gyro_stddev =
+    estimate_stddev_angular_velocity(traj_data_list, gyro_bias);
 
   EXPECT_NEAR(estimated_gyro_stddev.x, stddev_gyro, stddev_gyro * ERROR_RATE);
   EXPECT_NEAR(estimated_gyro_stddev.y, stddev_gyro, stddev_gyro * ERROR_RATE);

@@ -34,8 +34,7 @@
 using std::placeholders::_1;
 
 geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
-  const std::vector<TrajectoryData> & traj_data_list,
-  const geometry_msgs::msg::Vector3 & gyro_bias)
+  const std::vector<TrajectoryData> & traj_data_list, const geometry_msgs::msg::Vector3 & gyro_bias)
 {
   double t_window = 0.0;
   for (const TrajectoryData & traj_data : traj_data_list) {
@@ -53,7 +52,7 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
   // const rclcpp::Time t_pose_end = rclcpp::Time(pose_list.back().header.stamp);
   // // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
   // for (int i = 0; i < (t_pose_end - t_pose_start).seconds() / duration.seconds() - 1; ++i) {
-  for (const TrajectoryData & traj_data: traj_data_list) {
+  for (const TrajectoryData & traj_data : traj_data_list) {
     const auto t1_pose = rclcpp::Time(traj_data.pose_list.back().header.stamp);
     const auto t0_pose = rclcpp::Time(traj_data.pose_list.front().header.stamp);
     if (t0_pose > t1_pose) continue;
@@ -74,8 +73,8 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
 }
 
 double estimate_stddev_velocity(
-  const std::vector<TrajectoryData> & traj_data_list,
-  const double coef_vx, const double vx_threshold, const double wz_threshold)
+  const std::vector<TrajectoryData> & traj_data_list, const double coef_vx,
+  const double vx_threshold, const double wz_threshold)
 {
   double t_window = 0.0;
   for (const TrajectoryData & traj_data : traj_data_list) {
@@ -90,7 +89,7 @@ double estimate_stddev_velocity(
   // const rclcpp::Time t_pose_end = rclcpp::Time(pose_list.back().header.stamp);
   // Iterate over the whole sub_trajectory every time. Calculation cost ~ O(T^2)
   // for (int i = 0; i < (t_pose_end - t_pose_start).seconds() / duration.seconds() - 1; ++i) {
-  for (const TrajectoryData & traj_data: traj_data_list) {
+  for (const TrajectoryData & traj_data : traj_data_list) {
     const auto t1_pose = rclcpp::Time(traj_data.pose_list.back().header.stamp);
     const auto t0_pose = rclcpp::Time(traj_data.pose_list.front().header.stamp);
     if (t0_pose > t1_pose) continue;
@@ -103,7 +102,8 @@ double estimate_stddev_velocity(
     const double distance =
       norm_xy(traj_data.pose_list.front().pose.position, traj_data.pose_list.back().pose.position);
     const auto d_pos = integrate_position(
-      traj_data.vx_list, traj_data.gyro_list, coef_vx, tf2::getYaw(traj_data.pose_list.front().pose.orientation));
+      traj_data.vx_list, traj_data.gyro_list, coef_vx,
+      tf2::getYaw(traj_data.pose_list.front().pose.orientation));
 
     const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
     const double delta = std::sqrt(n_twist / t_window) * (distance - distance_from_twist);
@@ -245,8 +245,10 @@ void DeviationEstimator::timer_callback()
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
-  double stddev_vx = estimate_stddev_velocity(traj_data_list_, vel_coef_module_->get_coef(), vx_threshold_, wz_threshold_);
-  auto stddev_angvel_base = estimate_stddev_angular_velocity(traj_data_list_, gyro_bias_module_->get_bias_base_link());
+  double stddev_vx = estimate_stddev_velocity(
+    traj_data_list_, vel_coef_module_->get_coef(), vx_threshold_, wz_threshold_);
+  auto stddev_angvel_base =
+    estimate_stddev_angular_velocity(traj_data_list_, gyro_bias_module_->get_bias_base_link());
   if (add_bias_uncertainty_) {
     stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(

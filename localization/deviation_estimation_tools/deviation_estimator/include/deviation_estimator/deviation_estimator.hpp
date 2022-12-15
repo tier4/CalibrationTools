@@ -46,8 +46,8 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
   const geometry_msgs::msg::Vector3 & gyro_bias);
 
 double estimate_stddev_velocity(
-  const std::vector<TrajectoryData> & traj_data_list,
-  const double coef_vx, const double vx_threshold, const double wz_threshold);
+  const std::vector<TrajectoryData> & traj_data_list, const double coef_vx,
+  const double vx_threshold, const double wz_threshold);
 
 class DeviationEstimator : public rclcpp::Node
 {
