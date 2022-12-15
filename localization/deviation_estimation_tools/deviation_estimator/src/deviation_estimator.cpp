@@ -119,20 +119,19 @@ DeviationEstimator::DeviationEstimator(
   vx_threshold_ = declare_parameter("vx_threshold", 1.5);
   wz_threshold_ = declare_parameter("wz_threshold", 0.01);
   accel_threshold_ = declare_parameter("accel_threshold", 0.3);
-  estimation_freq_ = declare_parameter("estimation_freq", 0.5);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
   results_path_ = declare_parameter<std::string>("results_path");
-  time_window_ = declare_parameter("time_window", 2.0);
+  time_window_ = declare_parameter("time_window", 4.0);
   add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
 
-  auto timer_control_callback = std::bind(&DeviationEstimator::timer_callback, this);
+  auto timer_callback = std::bind(&DeviationEstimator::timer_callback, this);
   auto period_control = std::chrono::duration_cast<std::chrono::nanoseconds>(
-    std::chrono::duration<double>(1.0 / estimation_freq_));
-  timer_control_ = std::make_shared<rclcpp::GenericTimer<decltype(timer_control_callback)>>(
-    this->get_clock(), period_control, std::move(timer_control_callback),
+    std::chrono::duration<double>(time_window_));
+  timer_ = std::make_shared<rclcpp::GenericTimer<decltype(timer_callback)>>(
+    this->get_clock(), period_control, std::move(timer_callback),
     this->get_node_base_interface()->get_context());
-  this->get_node_timers_interface()->add_timer(timer_control_, nullptr);
+  this->get_node_timers_interface()->add_timer(timer_, nullptr);
 
   sub_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_pose_with_covariance", 1,

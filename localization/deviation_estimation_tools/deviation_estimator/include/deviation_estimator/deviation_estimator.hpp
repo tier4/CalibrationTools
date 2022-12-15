@@ -63,7 +63,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_bias_angvel_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_stddev_vx_;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_stddev_angvel_;
-  rclcpp::TimerBase::SharedPtr timer_control_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
