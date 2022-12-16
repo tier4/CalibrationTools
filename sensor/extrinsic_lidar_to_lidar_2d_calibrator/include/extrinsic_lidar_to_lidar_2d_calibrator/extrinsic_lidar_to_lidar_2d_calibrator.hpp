@@ -31,7 +31,11 @@
 #include <pcl/registration/gicp.h>
 #include <pcl/registration/icp.h>
 #include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>

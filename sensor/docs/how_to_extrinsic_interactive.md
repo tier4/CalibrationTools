@@ -261,7 +261,7 @@ The `Data collection tools` implement several optional functionalities meant to 
 
 1. `Pause/Play`: Whether or not the Interactive calibration tool listens to new data from the sensor topics. It is useful for debugging, evaluation, and calibration purposes, since it enables the user to focus on a single time step of synchronized data.
 2. `Take screenshot`: Takes a screenshot of the widget of the UI and the image with the drawings and saves them into the current folder.
-3. `Republish calibration data`: Whether or not the synchronized data that is displayed in the Interactive calibrator UI is republished. The advantange of using this feature is that used together with the `Paused/Play` button, the user can calibrate on a fixed pair of image/point cloud (in the usual case, clicking points of the point cloud may prove difficult).
+3. `Republish calibration data`: Whether or not the synchronized data that is displayed in the Interactive calibrator UI is republished. The advantage of using this feature is that used together with the `Paused/Play` button, the user can calibrate on a fixed pair of image/point cloud (in the usual case, clicking points of the point cloud may prove difficult).
 4. `Publish /tf`: Whether or not the Interactive calibrator tool publishes in the `/tf` topic the estimated extrinsics.
 
 <figure align="center">
@@ -275,8 +275,8 @@ The `Calibration status` implement shows several numerical results of the calibr
 
 1. `Calibration points`: The current number of image-object pairs of points.
 2. `Reproj error`: The reprojection error of the current pairs of points. On the left, the reprojection of the calibrated extrinsics is displayed, whereas on the right, the reprojection of the extrinsics used for visualization is displayed (this allows, for example, to compare the reprojection error of the current calibration with the initial one).
-3. `Inliers`: The number of points that are considered to be inliers for a specific calibration. Same as with `Reproj error`, the inliers for the calibrated and visualizaion extrinsics are displayed.
-4. `Save calibration`: Selects a folder to save the currente calibration. It outputs the image-object calibration pairs of points, the camera-lidar extrinsics (not the one requested by the `Calibration tools`, which is usually the `sensor_kit` to `camera`), and the optimized intrinsics (when they are computed).
+3. `Inliers`: The number of points that are considered to be inliers for a specific calibration. Same as with `Reproj error`, the inliers for the calibrated and visualization extrinsics are displayed.
+4. `Save calibration`: Selects a folder to save the current calibration. It outputs the image-object calibration pairs of points, the camera-lidar extrinsics (not the one requested by the `Calibration tools`, which is usually the `sensor_kit` to `camera`), and the optimized intrinsics (when they are computed).
 5. `Load calibration`: Selects a folder to load a previous calibration from the Interactive calibration tool. This only loads the image-object pairs of points (not the intrinsics/extrinsics).
 
 <figure align="center">
@@ -288,7 +288,7 @@ The `Calibration status` implement shows several numerical results of the calibr
 
 The `Calibration options` implement several optional functionalities that affect the calibration process.
 
-1. `Calibrate extrinsics`: Executes the calibration algorithm. Although it is excecuted automatically in some situations, it can also be executed manually (e.g., when points are added or deleted, the calibration is executed automatically).
+1. `Calibrate extrinsics`: Executes the calibration algorithm. Although it is executed automatically in some situations, it can also be executed manually (e.g., when points are added or deleted, the calibration is executed automatically).
 2. `Calibrate intrinsics (experimental)`: As explained in previous sections, the Interactive calibrator UI offers an alternative way to calibrate the camera intrinsics.
 3. `Use RANSAC`: In the case the calibration points are suspected of containing inliers, the user can enable the use of RANSAC, which wil automatically discard outliers and find the best calibration on the largest set of inliers possible.
 4. `Use optimized K`: In the case of having optimized the camera intrinsics, whether or not to use the optimized intrinsics for visualization and calibration.
@@ -309,13 +309,13 @@ The Interactive calibration tools implements several visualization options to he
 3. `Marker units`: The units used for the markers. These can be either pixels or meters.
 4. `Marker color channel`: The channel used for visualizing the point cloud. It can be either cartesian axis or the intensity channel.
 5. `Render pointcloud`: Whether or not the point cloud should be rendered.
-6. `Render calibration points`: Whether or not thecalibration points should be rendered.
+6. `Render calibration points`: Whether or not the calibration points should be rendered.
 7. `Render inliers`: Whether or not the inlier status of the calibration points should be displayed.
 8. `Marker size (px)`: The marker size in pixels (only used when the marker type is pixels).
 9. `Marker size (m)`: The marker size in meters (only used when the marker type is meters).
-10. `Rainbow distance (m)`: The distance at which the color palete completes s cycle (only works when the color channel is not intensity).
+10. `Rainbow distance (m)`: The distance at which the color palette completes s cycle (only works when the color channel is not intensity).
 11. `Rainbow offset`: The starting value in the color channel palette (in normalized units between 0 and 1).
-12. `Rendering alpha` The transaparency value for the point cloud and other elements (with a numerical value bwtween 0 and 1, which 0 bein transparent and 1 having full opacity):
+12. `Rendering alpha` The transparency value for the point cloud and other elements (with a numerical value between 0 and 1, which 0 being transparent and 1 having full opacity):
 13. `PC subsample factor`: A subsample factor to render the point cloud. Some point clouds can contain over 10k points, causing unnecessary rendering overload, In those causes an integer value over 1 is useful to reduce this burden. If the complete point cloud is required, this factor should be set to 1.
-14. `Min rendering distance (m)`: The minimum distanceat which points will be rendered,
+14. `Min rendering distance (m)`: The minimum distance at which points will be rendered,
 15. `Max rendering distance (m)`: The maximum distance at which points will be rendered.
