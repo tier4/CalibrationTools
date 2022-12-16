@@ -1,3 +1,4 @@
+import copy
 from enum import Enum
 from typing import List
 from typing import Optional
@@ -21,6 +22,7 @@ class CollectedData:
     def __init__(self):
 
         self.detections: List[BoardDetection] = []
+        self.distorted_images: List[np.array] = []
 
         # self.center_pixels = np.array()
         self.normalized_center_x = None
@@ -31,6 +33,11 @@ class CollectedData:
         self.center_3d = None
         self.tilt_x = None
         self.tilt_y = None
+
+    def clone_without_images(self):
+
+        clone = copy.deepcopy(self, {id(self.distorted_images): None})
+        return clone
 
     def get_detections(self) -> List[BoardDetection]:
         return self.detections
@@ -94,8 +101,11 @@ class CollectedData:
             center_3d_distances,
         )
 
-    def add_sample(self, detection: BoardDetection, camera_model: Optional[CameraModel] = None):
+    def add_sample(
+        self, image: np.array, detection: BoardDetection, camera_model: Optional[CameraModel] = None
+    ):
 
+        self.distorted_images.append(image)
         self.detections.append(detection)
 
         self.pre_compute_stats(camera_model)
@@ -191,8 +201,8 @@ class DataCollector(ParameteredClass):
         )
 
         self.filter_by_3d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)
-        self.min_3d_center_difference = Parameter(float, value=0.3, min_value=0.0, max_value=2.0)
-        self.min_tilt_difference = Parameter(float, value=10.0, min_value=0.0, max_value=True)
+        self.min_3d_center_difference = Parameter(float, value=1.0, min_value=0.1, max_value=100.0)
+        self.min_tilt_difference = Parameter(float, value=15.0, min_value=0.0, max_value=90)
 
         # Visualization parameters
         self.heatmap_cells = Parameter(int, value=16, min_value=2, max_value=100)
@@ -214,11 +224,27 @@ class DataCollector(ParameteredClass):
         self.training_occupancy_rate = 0.0
         self.evaluation_occupancy_rate = 0.0
 
+    def clone_without_images(self):
+
+        training_data = self.training_data.clone_without_images()
+        evaluation_data = self.evaluation_data.clone_without_images()
+        clone = copy.deepcopy(
+            self, {id(self.training_data): training_data, id(self.evaluation_data): evaluation_data}
+        )
+
+        return clone
+
     def get_training_data(self) -> CollectedData:
         return self.training_data
 
     def get_evaluation_data(self) -> CollectedData:
         return self.evaluation_data
+
+    def get_training_detections(self) -> List[BoardDetection]:
+        return self.training_data.get_detections()
+
+    def get_evaluation_detections(self) -> List[BoardDetection]:
+        return self.evaluation_data.get_detections()
 
     def get_flattened_image_training_points(self):
 
@@ -252,12 +278,12 @@ class DataCollector(ParameteredClass):
         normalized_2d_center_y_distance: float,
         normalized_skew_distance: float,
         normalized_2d_size_distance: float,
-        center_distance: float,
         tilt_x_distance: float,
         tilt_y_distance: float,
+        center_distance: float,
     ) -> bool:
 
-        status = True
+        status = False
 
         if self.filter_by_2d_redundancy.value:
 
@@ -274,20 +300,18 @@ class DataCollector(ParameteredClass):
                 normalized_2d_size_distance > self.min_normalized_2d_size_difference.value
             )
 
-            status &= np.logical_and.reduce(
-                np.logical_or.reduce(
-                    np.stack(
-                        [
-                            normalized_2d_center_x_distance_test,
-                            normalized_2d_center_y_distance_test,
-                            normalized_skew_distance_test,
-                            normalized_2d_size_distance_test,
-                        ],
-                        axis=-1,
-                    ),
-                    axis=-1,
-                )
-            )
+            joint_test = np.stack(
+                [
+                    normalized_2d_center_x_distance_test,
+                    normalized_2d_center_y_distance_test,
+                    normalized_skew_distance_test,
+                    normalized_2d_size_distance_test,
+                ],
+                axis=-1,
+            ).sum(axis=-1)
+
+            status_2d = joint_test.min() > 0
+            status |= status_2d
 
         if self.filter_by_3d_redundancy:
 
@@ -295,19 +319,16 @@ class DataCollector(ParameteredClass):
             tilt_x_distance_test = tilt_x_distance > self.min_tilt_difference.value
             tilt_y_distance_test = tilt_y_distance > self.min_tilt_difference.value
 
-            status &= np.logical_and.reduce(
-                np.logical_or.reduce(
-                    np.stack(
-                        [center_distance_test, tilt_x_distance_test, tilt_y_distance_test], axis=-1
-                    ),
-                    axis=-1,
-                )
-            )
+            joint_test = np.stack(
+                [center_distance_test, tilt_x_distance_test, tilt_y_distance_test], axis=-1
+            ).sum(axis=-1)
+            status_3d = joint_test.min() > 0
+            status |= status_3d
 
         return status
 
     def process_detection(
-        self, detection: BoardDetection, camera_model: Optional[CameraModel] = None
+        self, image: np.array, detection: BoardDetection, camera_model: Optional[CameraModel] = None
     ) -> CollectionStatus:
 
         accepted = True
@@ -319,10 +340,10 @@ class DataCollector(ParameteredClass):
             accepted &= speed < self.max_allowed_speed
 
         if self.filter_by_reprojection_error:
-            reprojection_errors = np.linalg.norm(
-                detection.get_reprojection_errors(camera_model), axis=-1
-            )
-            reprojection_error_max = np.abs(reprojection_errors).max()
+            reprojection_errors = detection.get_reprojection_errors(camera_model)
+            reprojection_errors_norm = np.linalg.norm(reprojection_errors, axis=-1)
+
+            reprojection_error_max = reprojection_errors_norm.max()
             reprojection_error_rms = np.sqrt(np.power(reprojection_errors, 2).mean())
 
             accepted &= (
@@ -349,7 +370,7 @@ class DataCollector(ParameteredClass):
             self.recompute_heatmaps()
 
         if status_training and len(self.training_data) < self.max_samples.value:
-            self.training_data.add_sample(detection)
+            self.training_data.add_sample(image=image, detection=detection)
             self.training_occupancy_rate = self.update_collection_heatmap(
                 self.training_heatmap, detection
             )
@@ -360,7 +381,7 @@ class DataCollector(ParameteredClass):
             and not status_training
             and len(self.evaluation_data) < self.max_samples.value
         ):
-            self.evaluation_data.add_sample(detection)
+            self.evaluation_data.add_sample(image=image, detection=detection)
             self.evaluation_occupancy_rate = self.update_collection_heatmap(
                 self.evaluation_heatmap, detection
             )

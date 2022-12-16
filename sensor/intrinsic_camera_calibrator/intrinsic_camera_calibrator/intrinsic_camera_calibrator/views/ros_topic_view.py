@@ -10,6 +10,7 @@ from intrinsic_camera_calibrator.data_sources.ros_topic_data_source import RosTo
 class RosTopicView(QWidget):
 
     failed = Signal()
+    success = Signal()
 
     def __init__(self, data_source: RosTopicDataSource):
         self.data_source = data_source
@@ -63,6 +64,7 @@ class RosTopicView(QWidget):
         self.topic_selected = True
 
         self.data_source.set_image_topic(image_topic)
+        self.success.emit()
         self.close()
 
     def closeEvent(self, event):

@@ -91,7 +91,7 @@ class BoardDetection:
             return self._cached_reprojection_errors
 
         self._cached_camera_model = model
-        self._cached_reprojection_errors = model.get_reprojection_erros(self)
+        self._cached_reprojection_errors = model.get_reprojection_errors(self)
 
         return self._cached_reprojection_errors
 

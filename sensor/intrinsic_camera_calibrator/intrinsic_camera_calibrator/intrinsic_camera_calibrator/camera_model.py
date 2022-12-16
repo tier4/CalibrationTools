@@ -36,6 +36,7 @@ class CameraModel:
         width: int,
         object_points_list: List[np.array],
         image_points_list: List[np.array],
+        flags: Optional[int] = 0,
     ):
 
         assert len(object_points_list) == len(image_points_list)
@@ -55,6 +56,7 @@ class CameraModel:
             (self.width, self.height),
             cameraMatrix=None,
             distCoeffs=None,
+            flags=flags,
         )
 
     def get_pose(
@@ -75,7 +77,7 @@ class CameraModel:
 
         return rvec, tvec
 
-    def get_reprojection_erros(
+    def get_reprojection_rms_error(
         self,
         board_detection: Optional["BoardDetection"] = None,  # noqa F821
         object_points: Optional[np.array] = None,
@@ -83,6 +85,38 @@ class CameraModel:
         rvec: Optional[np.array] = None,
         tvec: Optional[np.array] = None,
     ) -> float:
+
+        return np.sqrt(
+            np.power(
+                self.get_reprojection_errors(
+                    board_detection, object_points, image_points, rvec, tvec
+                ),
+                2,
+            ).mean()
+        )
+
+    def get_reprojection_error(
+        self,
+        board_detection: Optional["BoardDetection"] = None,  # noqa F821
+        object_points: Optional[np.array] = None,
+        image_points: Optional[np.array] = None,
+        rvec: Optional[np.array] = None,
+        tvec: Optional[np.array] = None,
+    ) -> float:
+
+        return np.linalg.norm(
+            self.get_reprojection_errors(board_detection, object_points, image_points, rvec, tvec),
+            axis=-1,
+        ).mean()
+
+    def get_reprojection_errors(
+        self,
+        board_detection: Optional["BoardDetection"] = None,  # noqa F821
+        object_points: Optional[np.array] = None,
+        image_points: Optional[np.array] = None,
+        rvec: Optional[np.array] = None,
+        tvec: Optional[np.array] = None,
+    ) -> np.array:
 
         if board_detection is not None and object_points is None and image_points is None:
             object_points = board_detection.get_flattened_object_points()
@@ -98,3 +132,15 @@ class CameraModel:
 
     def rectify(self, img: np.array) -> np.array:
         raise NotImplementedError
+
+
+class CameraModelWithBoardDistortion(CameraModel):
+    def __init__(
+        self,
+        k: Optional[np.array] = None,
+        d: Optional[np.array] = None,
+        height: Optional[int] = None,
+        width: Optional[int] = None,
+        board_distortion: Optional[np.array] = None,
+    ):
+        pass

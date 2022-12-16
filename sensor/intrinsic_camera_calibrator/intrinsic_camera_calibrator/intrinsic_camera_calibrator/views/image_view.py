@@ -125,6 +125,8 @@ class ImageView(QGraphicsItem, QObject):
 
         self.is_draw_detection_points = True
         self.detection_points_array = None
+        self.training_heatmap = None
+        self.evaluation_heatmap = None
 
         self.line_pen = QPen()
         self.line_pen.setWidth(2)
@@ -417,10 +419,10 @@ class ImageView(QGraphicsItem, QObject):
         if self.is_draw_evaluation_points:
             self.draw_points(painter, self.evaluation_points)
 
-        if self.is_draw_training_heatmap:
+        if self.is_draw_training_heatmap and self.training_heatmap is not None:
             self.draw_heatmap(painter, self.training_heatmap, display_size)
 
-        if self.is_draw_evaluation_heatmap:
+        if self.is_draw_evaluation_heatmap and self.evaluation_heatmap is not None:
             self.draw_heatmap(painter, self.evaluation_heatmap, display_size)
 
     def boundingRect(self):

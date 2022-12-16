@@ -38,7 +38,9 @@ class ParameterView(QWidget):
             if isinstance(v.value, bool):
                 checkbox = QCheckBox()
                 checkbox.setChecked(v.value)
-                checkbox.stateChanged.connect(partial(on_value_changed, k))
+                checkbox.stateChanged.connect(
+                    partial(lambda k1, v1: on_value_changed(k1, v1 != 0), k)
+                )
                 self.layout.addWidget(checkbox, i, 1)
 
             elif isinstance(v.value, int):

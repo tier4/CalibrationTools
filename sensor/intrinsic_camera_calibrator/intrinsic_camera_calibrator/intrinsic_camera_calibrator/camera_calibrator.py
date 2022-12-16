@@ -16,10 +16,10 @@
 
 from collections import defaultdict
 import copy
-from enum import Enum
 import signal
 import sys
 import threading
+from typing import Dict
 
 from PySide2.QtCore import QThread
 from PySide2.QtCore import Qt
@@ -46,33 +46,25 @@ from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDete
 from intrinsic_camera_calibrator.board_detectors.board_detector_factory import make_detector
 from intrinsic_camera_calibrator.boards import BoardEnum
 from intrinsic_camera_calibrator.boards import BoardParameters
+from intrinsic_camera_calibrator.calibrators.calibrator import Calibrator
+from intrinsic_camera_calibrator.calibrators.calibrator import CalibratorEnum
+from intrinsic_camera_calibrator.calibrators.calibrator_factory import make_calibrator
+from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_collector import CollectionStatus
 from intrinsic_camera_calibrator.data_collector import DataCollector
-from intrinsic_camera_calibrator.data_sources.data_source import DataSourceEnum
-from intrinsic_camera_calibrator.data_sources.data_source_factory import make_data_source
+from intrinsic_camera_calibrator.data_sources.data_source import DataSource
+from intrinsic_camera_calibrator.types import ImageViewMode
+from intrinsic_camera_calibrator.types import OperationMode
 from intrinsic_camera_calibrator.views.data_collector_view import DataCollectorView
 from intrinsic_camera_calibrator.views.image_view import CustomQGraphicsView
 from intrinsic_camera_calibrator.views.image_view import ImageView
+from intrinsic_camera_calibrator.views.initialization_view import InitializationView
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
-from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
 
 # from rosidl_runtime_py.convert import message_to_ordereddict
 # from intrinsic_camera_calibrator.ros_interface import RosInterface
 import numpy as np
 import rclpy
-
-
-class OperationMode(Enum):
-    IDLE = 0
-    CALIBRATION = 1
-    EVALUATION = 2
-
-
-class ImageViewMode(Enum):
-    SOURCE_UNRECTIFIED = 0
-    SOURCE_RECTIFIED = 1
-    DB_UNRECTIFIED = 2
-    DB_RECTIFIED = 3
 
 
 class CameraIntrinsicsCalibratorUI(QMainWindow):
@@ -97,16 +89,31 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.detector_thread = QThread()
         self.detector_thread.start()
 
-        self.plotting_thread = QThread()
-        self.plotting_thread.start()
+        self.calibration_thread = QThread()
+        self.calibration_thread.start()
 
         self.operation_mode = OperationMode.IDLE
         self.board_type = BoardEnum.CHESSBOARD
         self.board_parameters = BoardParameters(lock=self.lock, cfg=self.cfg["board_parameters"])
-        self.detector = BoardDetector(lock=self.lock, board_parameters=self.board_parameters)
+        self.detector: BoardDetector = None
         self.data_collector = DataCollector()
+        self.calibrator_dict: Dict[CalibratorEnum, Calibrator] = {}
 
-        self.data_source_dict = {}
+        for calibrator_type in CalibratorEnum:
+            calibrator_cfg = defaultdict()
+
+            if (
+                "calibrator_type" in self.cfg
+                and calibrator_type.value["name"] == self.cfg["calibrator_type"]
+            ):
+                calibrator_cfg = self.cfg["calibration_parameters"]
+
+            calibrator = make_calibrator(calibrator_type, lock=self.lock, cfg=calibrator_cfg)
+            self.calibrator_dict[calibrator_type] = calibrator
+
+            calibrator.moveToThread(self.calibration_thread)
+            calibrator.calibration_results_signal.connect(self.process_calibration_results)
+
         self.image_view_mode = ImageViewMode.SOURCE_UNRECTIFIED
         self.paused = False
 
@@ -138,6 +145,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         # Mode group
         self.make_mode_group()
 
+        # Calibration group
+        self.make_calibration_group()
+
         # Detector group
         self.make_detector_group()
 
@@ -151,6 +161,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.make_visualization_group()
 
         # self.menu_layout.addWidget(label)
+        self.left_menu_layout.addWidget(self.calibration_group)
         self.left_menu_layout.addWidget(self.detector_options_group)
         self.left_menu_layout.addWidget(self.raw_detection_results_group)
         self.left_menu_layout.addWidget(self.single_shot_detection_results_group)
@@ -169,6 +180,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.layout.addWidget(self.right_menu_widget)
 
         self.show()
+        self.setEnabled(False)
+
+        self.initialization_view = InitializationView(self, cfg)
 
     def make_image_view(self):
 
@@ -194,32 +208,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.mode_options_group = QGroupBox("Mode options")
         self.mode_options_group.setFlat(True)
 
-        data_source_label = QLabel("Data source:")
-        self.data_source_combobox = QComboBox()
-        # self.data_source_combobox.currentTextChanged.connect(self.tf_source_callback)
-
-        for data_source in DataSourceEnum:
-            self.data_source_combobox.addItem(str(data_source), data_source)
-
-        self.calibration_mode_button = QPushButton("Calibration Mode")
-        self.evaluation_mode_button = QPushButton("Evaluation Mode")
         self.pause_button = QPushButton("Pause")
-
-        def calibration_mode_callback():
-            self.operation_mode = OperationMode.CALIBRATION
-            self.data_source_combobox.setEnabled(False)
-            self.calibration_mode_button.setEnabled(False)
-            self.evaluation_mode_button.setEnabled(False)
-            print("Calibration mode")
-            self.init_data_source()
-
-        def evaluation_mode_callback():
-            self.operation_mode = OperationMode.EVALUATION
-            self.data_source_combobox.setEnabled(False)
-            self.calibration_mode_button.setEnabled(False)
-            self.evaluation_mode_button.setEnabled(False)
-            print("Evaluation mode")
-            self.init_data_source()
 
         def pause_callback():
             if self.paused:
@@ -230,50 +219,90 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 self.paused = True
                 self.should_process_image.emit()
 
-        self.calibration_mode_button.clicked.connect(calibration_mode_callback)
-        self.evaluation_mode_button.clicked.connect(evaluation_mode_callback)
         self.pause_button.clicked.connect(pause_callback)
 
         mode_options_layout = QVBoxLayout()
-        mode_options_layout.addWidget(data_source_label)
-        mode_options_layout.addWidget(self.data_source_combobox)
-        mode_options_layout.addWidget(self.calibration_mode_button)
-        mode_options_layout.addWidget(self.evaluation_mode_button)
         mode_options_layout.addWidget(self.pause_button)
         self.mode_options_group.setLayout(mode_options_layout)
 
-    def make_detector_group(self):
-        def board_type_on_changed(i):  # create a new
-            # Create the corresponding detector
-            # load the parameters from teh yaml file
-            print(f"On changed: {i}")
-            self.board_type = BoardEnum.from_index(i)
+    def make_calibration_group(self):
 
-            detector_cfg = self.cfg[self.board_type.value["name"] + "_detector"]
+        self.calibration_group = QGroupBox("Calibration options")
+        self.calibration_group.setFlat(True)
 
-            if self.board_type not in self.detector_dict:
+        self.calibrator_type_combobox = QComboBox()
+        self.calibration_parameters_button = QPushButton(
+            "Calibration parameters"
+        )  # this view should disable the previous combobox
+        self.calibration_button = QPushButton("Calibrate")
+        self.calibration_status_label = QLabel("Calibration status: idle")
+        self.calibration_time_label = QLabel("Calibration time:")
+        self.calibration_training_samples_label = QLabel("Training samples:")
+        self.calibration_pre_rejection_inliers_label = QLabel("Pre rejection inliers:")
+        self.calibration_post_rejection_inliers_label = QLabel("Post rejection inliers:")
+        self.calibration_evaluation_samples_label = QLabel("Evaluation samples:")
 
-                self.detector = make_detector(
-                    board_type=self.board_type,
-                    lock=self.lock,
-                    board_parameters=self.board_parameters,
-                    cfg=detector_cfg,
+        self.calibration_training_rms_label = QLabel("Training (all) rms error:")
+        self.calibration_inlier_rms_label = QLabel("Training (inlier) rms error:")
+        self.calibration_evaluation_rms_label = QLabel("Evaluation (all) rms error:")
+
+        def on_parameters_view_closed():
+            self.calibrator_type_combobox.setEnabled(True)
+            self.calibration_parameters_button.setEnabled(True)
+
+        def on_parameters_button_clicked():
+            self.calibrator_type_combobox.setEnabled(False)
+            self.calibration_parameters_button.setEnabled(False)
+            calibrator_type = self.calibrator_type_combobox.currentData()
+
+            data_collection_parameters_view = ParameterView(self.calibrator_dict[calibrator_type])
+            data_collection_parameters_view.closed.connect(on_parameters_view_closed)
+
+        def on_calibration_clicked():
+            calibrator_type = self.calibrator_type_combobox.currentData()
+            self.calibrator_dict[calibrator_type].calibration_request.emit(
+                self.data_collector.clone_without_images()
+            )
+
+            self.calibrator_type_combobox.setEnabled(False)
+            self.calibration_parameters_button.setEnabled(False)
+            self.calibration_button.setEnabled(False)
+
+            self.calibration_status_label.setText("Calibration status: calibrating")
+
+        self.calibration_parameters_button.clicked.connect(on_parameters_button_clicked)
+        self.calibration_button.clicked.connect(on_calibration_clicked)
+
+        for calibrator_type in CalibratorEnum:
+            self.calibrator_type_combobox.addItem(calibrator_type.value["display"], calibrator_type)
+
+        if "calibrator_type" in self.cfg:
+            try:
+                self.calibrator_type_combobox.setCurrentIndex(
+                    CalibratorEnum.from_name(self.cfg["calibrator_type"]).get_id()
                 )
+            except Exception as e:
+                print(f"Invalid calibration_type: {e}")
+        else:
+            self.calibrator_type_combobox.setCurrentIndex(0)
 
-                self.detector.moveToThread(self.detector_thread)
-                self.detector.detection_results_signal.connect(self.process_detection_results)
-                self.request_image_detection.connect(self.detector.detect)
+        calibration_layout = QVBoxLayout()
+        calibration_layout.addWidget(self.calibrator_type_combobox)
+        calibration_layout.addWidget(self.calibration_parameters_button)
+        calibration_layout.addWidget(self.calibration_button)
+        calibration_layout.addWidget(self.calibration_status_label)
+        calibration_layout.addWidget(self.calibration_time_label)
+        calibration_layout.addWidget(self.calibration_training_samples_label)
+        calibration_layout.addWidget(self.calibration_pre_rejection_inliers_label)
+        calibration_layout.addWidget(self.calibration_post_rejection_inliers_label)
+        calibration_layout.addWidget(self.calibration_evaluation_samples_label)
+        calibration_layout.addWidget(self.calibration_training_rms_label)
+        calibration_layout.addWidget(self.calibration_inlier_rms_label)
+        calibration_layout.addWidget(self.calibration_evaluation_rms_label)
 
-                self.detector_dict[self.board_type] = self.detector
-            else:
-                self.detector = self.detector_dict[self.board_type]
+        self.calibration_group.setLayout(calibration_layout)
 
-        def board_parameters_button_callback():
-            print("board_parameters_button_callback")  # here we whould
-            self.board_parameters_view = ParameterView(self.board_parameters)
-            self.board_parameters_view.parameter_changed.connect(self.on_parameter_changed)
-            self.board_type_combobox.setEnabled(False)
-
+    def make_detector_group(self):
         def detector_parameters_button_callback():
             print("detector_parameters_button_callback")
             self.detector_parameters_view = ParameterView(self.detector)
@@ -283,30 +312,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.detector_options_group = QGroupBox("Detection options")
         self.detector_options_group.setFlat(True)
 
-        board_type_label = QLabel("Board type:")
-        self.board_type_combobox = QComboBox()
-
-        self.board_parameters_button = QPushButton("Board parameters")
         self.detector_parameters_button = QPushButton("Detector parameters")
 
-        for board_type in BoardEnum:
-            self.board_type_combobox.addItem(board_type.value["display"], board_type)
-
-        self.board_type_combobox.currentIndexChanged.connect(board_type_on_changed)
-
-        if self.cfg["board_type"] != "":
-            board_type = BoardEnum.from_name(self.cfg["board_type"])
-            self.board_type_combobox.setCurrentIndex(board_type.get_id())
-        else:
-            self.board_type_combobox.setCurrentIndex(0)
-
-        self.board_parameters_button.clicked.connect(board_parameters_button_callback)
         self.detector_parameters_button.clicked.connect(detector_parameters_button_callback)
 
         detector_options_layout = QVBoxLayout()
-        detector_options_layout.addWidget(board_type_label)
-        detector_options_layout.addWidget(self.board_type_combobox)
-        detector_options_layout.addWidget(self.board_parameters_button)
         detector_options_layout.addWidget(self.detector_parameters_button)
         self.detector_options_group.setLayout(detector_options_layout)
 
@@ -365,13 +375,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         def view_data_collection_statistics_callback():
 
             print("view_data_collection_statistics_callback")  # here we whould
-            data_collection_statistics_view = DataCollectorView(copy.deepcopy(self.data_collector))
-
-            # self.data_collection_statistics_view.moveToThread(self.plotting_thread)
-            # self.detector.detection_results_signal.connect(self.process_detection_results)
-            # self.data_collection_statistics_view.plot_request.emit()
+            data_collection_statistics_view = DataCollectorView(
+                self.data_collector.clone_without_images()
+            )
             data_collection_statistics_view.plot()
-            # self.data_collection_statistics_view.closed.connect(view_data_collection_statistics_closed_callback)
 
         def data_collection_parameters_closed_callback():
             self.data_collection_parameters_button.setEnabled(True)
@@ -473,27 +480,70 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         visualization_options_layout.addWidget(self.rendering_alpha_spinbox)
         self.visualization_options_group.setLayout(visualization_options_layout)
 
-    def init_data_source(self):
+    def start(self, mode: OperationMode, data_source: DataSource, board_type: BoardEnum):
+        self.operation_mode = mode
+        self.data_source = data_source
+        self.board_type = board_type
+        self.setEnabled(True)
 
-        # Construct the corresponsing object and use whateverit takes to condfigure it without returning... maybe
+        print("Init")
+        print(f"mode : {mode}")
+        print(f"data_source : {data_source}")
+        print(f"board_type : {board_type}")
 
-        def on_failed():
-            self.data_source_combobox.setEnabled(True)
-            self.calibration_mode_button.setEnabled(True)
-            self.evaluation_mode_button.setEnabled(True)
+        detector_cfg = self.cfg[self.board_type.value["name"] + "_detector"]
 
-        if self.data_source_combobox.currentData() == DataSourceEnum.TOPIC:
+        self.detector = make_detector(
+            board_type=self.board_type,
+            lock=self.lock,
+            board_parameters=self.board_parameters,
+            cfg=detector_cfg,
+        )
 
-            if DataSourceEnum.TOPIC not in self.data_source_dict:
-                self.data_source_dict[DataSourceEnum.TOPIC] = make_data_source(
-                    self.data_source_combobox.currentData()
-                )
-                self.data_source_dict[DataSourceEnum.TOPIC].set_data_callback(
-                    self.data_source_external_callback
-                )
+        self.detector.moveToThread(self.detector_thread)
+        self.detector.detection_results_signal.connect(self.process_detection_results)
+        self.request_image_detection.connect(self.detector.detect)
 
-            self.data_source_view = RosTopicView(self.data_source_dict[DataSourceEnum.TOPIC])
-            self.data_source_view.failed.connect(on_failed)
+    def process_calibration_results(
+        self,
+        calibrated_model: CameraModel,
+        dt: float,
+        num_training_detections: int,
+        num_pre_rejection_inliers: int,
+        num_post_rejection_inliers: int,
+        num_evaluation_detections: int,
+        training_rms_error: float,
+        inlier_rms_error: float,
+        evaluation_rms_error: float,
+    ):
+        self.calibration_status_label.setText("Calibration status: idle")
+        self.calibration_time_label.setText(f"Calibration time: {dt:.2f}s")
+        self.calibration_training_samples_label.setText(
+            f"Training samples: {num_training_detections}"
+        )
+        self.calibration_pre_rejection_inliers_label.setText(
+            f"Pre rejection inliers: {num_pre_rejection_inliers}"
+        )
+        self.calibration_post_rejection_inliers_label.setText(
+            f"Post rejection inliers: {num_post_rejection_inliers}"
+        )
+        self.calibration_evaluation_samples_label.setText(
+            f"Evaluation samples: {num_evaluation_detections}"
+        )
+
+        self.calibration_training_rms_label.setText(
+            f"Training (all) rms error: {training_rms_error:.2f}"
+        )
+        self.calibration_inlier_rms_label.setText(
+            f"Training (inlier) rms error: {inlier_rms_error:.2f}"
+        )
+        self.calibration_evaluation_rms_label.setText(
+            f"Evaluation (all) rms error: {evaluation_rms_error:.2f}"
+        )
+
+        self.calibrator_type_combobox.setEnabled(True)
+        self.calibration_parameters_button.setEnabled(True)
+        self.calibration_button.setEnabled(True)
 
     def process_detection_results(self, img: np.array, detection: BoardDetection):
         if img is None:
@@ -538,7 +588,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         elif self.board_type == BoardEnum.CHESSBOARD or self.board_type == BoardEnum.DOTBOARD:
 
-            filter_result = self.data_collector.process_detection(detection)
+            filter_result = self.data_collector.process_detection(image=img, detection=detection)
             filter_result_color_dict = {
                 CollectionStatus.REJECTED: QColor(255, 0, 0),
                 CollectionStatus.REDUNDANT: QColor(255, 192, 0),
@@ -558,16 +608,17 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.image_view.set_detection_ordered_points(odered_image_points)
             self.image_view.set_grid_size_pixels(detection.get_flattened_cell_sizes().mean())
 
-            reprojection_errors = np.linalg.norm(detection.get_reprojection_errors(), axis=-1)
-            reprojection_error_max = np.abs(reprojection_errors).max()
-            reprojection_error_mean = np.abs(reprojection_errors).mean()
+            reprojection_errors = detection.get_reprojection_errors()
+            reprojection_errors_norm = np.linalg.norm(reprojection_errors, axis=-1)
+            reprojection_error_max = reprojection_errors_norm.max()
+            reprojection_error_mean = reprojection_errors_norm.mean()
             reprojection_error_rms = np.sqrt(np.power(reprojection_errors, 2).mean())
 
             cell_sizes = detection.get_flattened_cell_sizes()
-            reprojection_error_max_relative = np.abs(reprojection_errors / cell_sizes).max()
-            reprojection_error_mean_relative = np.abs(reprojection_errors / cell_sizes).mean()
+            reprojection_error_max_relative = np.abs(reprojection_errors_norm / cell_sizes).max()
+            reprojection_error_mean_relative = np.abs(reprojection_errors_norm / cell_sizes).mean()
             reprojection_error_rms_relative = np.sqrt(
-                np.power(reprojection_errors / cell_sizes, 2).mean()
+                np.power(reprojection_errors / cell_sizes.reshape(-1, 1), 2).mean()
             )
 
             pose_rotation, pose_translation = detection.get_pose()

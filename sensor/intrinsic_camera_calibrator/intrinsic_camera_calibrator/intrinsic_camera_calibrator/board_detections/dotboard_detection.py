@@ -1,10 +1,7 @@
 from typing import List
 from typing import Tuple
 
-# import cv2
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
-
-# from intrinsic_camera_calibrator.boards import BoardEnum
 import numpy as np
 
 
