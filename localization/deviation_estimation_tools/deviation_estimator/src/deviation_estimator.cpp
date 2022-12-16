@@ -231,9 +231,10 @@ void DeviationEstimator::timer_callback()
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
-  double stddev_vx = estimate_stddev_velocity(traj_data_list_for_velocity_, vel_coef_module_->get_coef());
-  auto stddev_angvel_base =
-    estimate_stddev_angular_velocity(traj_data_list_for_gyro_, gyro_bias_module_->get_bias_base_link());
+  double stddev_vx =
+    estimate_stddev_velocity(traj_data_list_for_velocity_, vel_coef_module_->get_coef());
+  auto stddev_angvel_base = estimate_stddev_angular_velocity(
+    traj_data_list_for_gyro_, gyro_bias_module_->get_bias_base_link());
   if (add_bias_uncertainty_) {
     stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(
