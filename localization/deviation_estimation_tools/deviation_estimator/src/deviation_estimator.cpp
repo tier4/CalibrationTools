@@ -217,17 +217,16 @@ void DeviationEstimator::timer_callback()
   traj_data.gyro_list = extract_sub_trajectory(gyro_all_, t0_rclcpp_time, t1_rclcpp_time);
   traj_data.is_straight = get_mean_abs_wz(traj_data.gyro_list) > wz_threshold_;
   traj_data.is_stopped = get_mean_abs_vx(traj_data.vx_list) < vx_threshold_;
+  traj_data.is_constant_velocity = std::abs(get_mean_accel(traj_data.vx_list)) < accel_threshold_;
 
-  if (traj_data.is_straight & !traj_data.is_stopped) {
+  if (traj_data.is_straight & !traj_data.is_stopped & traj_data.is_constant_velocity) {
     vel_coef_module_->update_coef(traj_data);
     traj_data_list_for_velocity_.push_back(traj_data);
-  } else {
-    DEBUG_INFO(
-      this->get_logger(),
-      "[Deviation Estimator] coef_vx estimation is not updated since the vehicle is not moving.");
   }
-  gyro_bias_module_->update_bias(traj_data);
-  traj_data_list_for_gyro_.push_back(traj_data);
+  if (traj_data.is_constant_velocity) {
+    gyro_bias_module_->update_bias(traj_data);
+    traj_data_list_for_gyro_.push_back(traj_data);
+  }
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
