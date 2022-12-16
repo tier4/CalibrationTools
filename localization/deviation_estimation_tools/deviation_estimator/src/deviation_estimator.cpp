@@ -88,8 +88,6 @@ double estimate_stddev_velocity(
 
     const size_t n_twist = traj_data.vx_list.size();
 
-    if (!traj_data.is_straight | traj_data.is_stopped) continue;
-
     const double distance =
       norm_xy(traj_data.pose_list.front().pose.position, traj_data.pose_list.back().pose.position);
     const auto d_pos = integrate_position(
@@ -219,22 +217,23 @@ void DeviationEstimator::timer_callback()
   traj_data.gyro_list = extract_sub_trajectory(gyro_all_, t0_rclcpp_time, t1_rclcpp_time);
   traj_data.is_straight = get_mean_abs_wz(traj_data.gyro_list) > wz_threshold_;
   traj_data.is_stopped = get_mean_abs_vx(traj_data.vx_list) < vx_threshold_;
-  traj_data_list_.push_back(traj_data);
 
   if (traj_data.is_straight & !traj_data.is_stopped) {
     vel_coef_module_->update_coef(traj_data);
+    traj_data_list_for_velocity_.push_back(traj_data);
   } else {
     DEBUG_INFO(
       this->get_logger(),
       "[Deviation Estimator] coef_vx estimation is not updated since the vehicle is not moving.");
   }
   gyro_bias_module_->update_bias(traj_data);
+  traj_data_list_for_gyro_.push_back(traj_data);
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
-  double stddev_vx = estimate_stddev_velocity(traj_data_list_, vel_coef_module_->get_coef());
+  double stddev_vx = estimate_stddev_velocity(traj_data_list_for_velocity_, vel_coef_module_->get_coef());
   auto stddev_angvel_base =
-    estimate_stddev_angular_velocity(traj_data_list_, gyro_bias_module_->get_bias_base_link());
+    estimate_stddev_angular_velocity(traj_data_list_for_gyro_, gyro_bias_module_->get_bias_base_link());
   if (add_bias_uncertainty_) {
     stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(

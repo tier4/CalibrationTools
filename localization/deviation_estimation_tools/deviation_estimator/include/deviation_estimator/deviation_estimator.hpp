@@ -77,7 +77,8 @@ private:
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_all_;
   std::vector<geometry_msgs::msg::PoseStamped> pose_buf_;
-  std::vector<TrajectoryData> traj_data_list_;
+  std::vector<TrajectoryData> traj_data_list_for_gyro_;
+  std::vector<TrajectoryData> traj_data_list_for_velocity_;
 
   double dt_design_;
   double dx_design_;
