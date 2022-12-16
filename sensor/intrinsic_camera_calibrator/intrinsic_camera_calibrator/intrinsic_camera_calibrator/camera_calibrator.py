@@ -120,6 +120,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.img_id = 0
         self.should_process_image.connect(self.process_data)  # , Qt.QueuedConnection
         self.produced_data_signal.connect(self.process_new_data)
+        self.consumed_data_signal.connect(self.on_consumed)
 
         self.detector_dict = {}
 
@@ -545,7 +546,13 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(True)
 
+    def on_consumed(self):
+        self.data_source.consumed()
+
     def process_detection_results(self, img: np.array, detection: BoardDetection):
+
+        self.consumed_data_signal.emit()
+
         if img is None:
             self.pending_detection_result = False
 

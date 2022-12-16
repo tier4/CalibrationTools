@@ -64,15 +64,14 @@ class RosTopicDataSource(DataSource, Node):
 
     def compressed_image_callback(self, msg):
         with self.lock:
-            # print("Compressed message callback")
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
             self.data_callback(image_data)
 
     def image_callback(self, msg):
         with self.lock:
-            # print("Normal image callback")
-            self.image_sync = self.bridge.imgmsg_to_cv2(self.image_sync)
+            image_data = self.bridge.imgmsg_to_cv2(self.image_sync)
+            self.data_callback(image_data)
 
     def spin(self):
 

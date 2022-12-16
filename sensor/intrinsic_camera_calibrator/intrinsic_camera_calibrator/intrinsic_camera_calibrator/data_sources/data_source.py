@@ -21,7 +21,8 @@ class DataSource:
 
     def set_data_callback(self, callback):
         self.data_callback = callback
+        self.pending_data_not_consumed = True
 
     def consumed(self):
         with self.lock:
-            self.pending_data_not_consumed = True
+            self.pending_data_not_consumed = False
