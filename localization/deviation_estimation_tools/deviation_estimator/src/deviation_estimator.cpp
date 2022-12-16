@@ -69,8 +69,7 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
 }
 
 double estimate_stddev_velocity(
-  const std::vector<TrajectoryData> & traj_data_list, const double coef_vx,
-  const double vx_threshold, const double wz_threshold)
+  const std::vector<TrajectoryData> & traj_data_list, const double coef_vx)
 {
   double t_window = 0.0;
   for (const TrajectoryData & traj_data : traj_data_list) {
@@ -89,8 +88,7 @@ double estimate_stddev_velocity(
 
     const size_t n_twist = traj_data.vx_list.size();
 
-    if (get_mean_abs_vx(traj_data.vx_list) < vx_threshold) continue;
-    if (get_mean_abs_wz(traj_data.gyro_list) > wz_threshold) continue;
+    if (!traj_data.is_straight | traj_data.is_stopped) continue;
 
     const double distance =
       norm_xy(traj_data.pose_list.front().pose.position, traj_data.pose_list.back().pose.position);
@@ -219,9 +217,11 @@ void DeviationEstimator::timer_callback()
   traj_data.pose_list = pose_buf_;
   traj_data.vx_list = extract_sub_trajectory(vx_all_, t0_rclcpp_time, t1_rclcpp_time);
   traj_data.gyro_list = extract_sub_trajectory(gyro_all_, t0_rclcpp_time, t1_rclcpp_time);
+  traj_data.is_straight = get_mean_abs_wz(traj_data.gyro_list) > wz_threshold_;
+  traj_data.is_stopped = get_mean_abs_vx(traj_data.vx_list) < vx_threshold_;
   traj_data_list_.push_back(traj_data);
 
-  if (get_mean_abs_vx(traj_data.vx_list) > vx_threshold_) {
+  if (traj_data.is_straight & !traj_data.is_stopped) {
     vel_coef_module_->update_coef(traj_data);
   } else {
     DEBUG_INFO(
@@ -232,8 +232,7 @@ void DeviationEstimator::timer_callback()
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
-  double stddev_vx = estimate_stddev_velocity(
-    traj_data_list_, vel_coef_module_->get_coef(), vx_threshold_, wz_threshold_);
+  double stddev_vx = estimate_stddev_velocity(traj_data_list_, vel_coef_module_->get_coef());
   auto stddev_angvel_base =
     estimate_stddev_angular_velocity(traj_data_list_, gyro_bias_module_->get_bias_base_link());
   if (add_bias_uncertainty_) {
