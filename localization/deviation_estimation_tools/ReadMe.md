@@ -26,11 +26,13 @@ You can check the estimated results either by looking at the output of `/estimat
 
 If you are using rosbag, it should contain the following topics:
 
-- /localization/twist_estimator/twist_with_covariance_raw
+<!-- - /localization/twist_estimator/twist_with_covariance_raw -->
+
+- /sensing/imu/imu_data
+- /sensing/vehicle_velocity_converter/twist_with_covariance
 - /localization/pose_estimator/pose_with_covariance
 - /clock
 - /tf_static (that contains transform from `base_link` to `imu_link`)
-- (/localization/twist_estimator/twist_with_covariance: required in the next step)
 
 NOTE that the pose and twist must be estimated with default parameters (see `known issues` section for detail).
 
@@ -44,21 +46,18 @@ ros2 bag play YOUR_BAG # You can also play in a faster rate, e.g. -r 5
 <p>
 
 ```sh
-Files:             localized_not_calibrated_0.db3
+Files:             localized_sensors_0.db3
 Bag size:          9.6 MiB
 Storage id:        sqlite3
 Duration:          76.539s
 Start:             Jul  8 2022 11:21:41.220 (1657246901.220)
 End:               Jul  8 2022 11:22:57.759 (1657246977.759)
 Messages:          32855
-Topic information: Topic: /localization/twist_estimator/twist_with_covariance_raw | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 2139 | Serialization Format: cdr
-                   Topic: /localization/kinematic_state | Type: nav_msgs/msg/Odometry | Count: 3792 | Serialization Format: cdr
-                   Topic: /localization/twist_estimator/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 2139 | Serialization Format: cdr
-                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 15308 | Serialization Format: cdr
-                   Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 4950 | Serialization Format: cdr
-                   Topic: /localization/pose_twist_fusion_filter/kinematic_state | Type: nav_msgs/msg/Odometry | Count: 3792 | Serialization Format: cdr
-                   Topic: /localization/pose_estimator/pose_with_covariance | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 731 | Serialization Format: cdr
-                   Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 4 | Serialization Format: cdr
+Topic information: Topic: /localization/pose_estimator/pose_with_covariance | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 2162 | Serialization Format: cdr
+                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 57309 | Serialization Format: cdr
+                   Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 2 | Serialization Format: cdr
+                   Topic: /sensing/imu/imu_data | Type: sensor_msgs/msg/Imu | Count: 8076 | Serialization Format: cdr
+                   Topic: /sensing/vehicle_velocity_converter/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 8275 | Serialization Format: cdr
 
 ```
 
@@ -144,12 +143,11 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 #### Input
 
-| Name                                                  | Type                                             | Description           |
-| ----------------------------------------------------- | ------------------------------------------------ | --------------------- |
-| `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose (default)  |
-| `/localization/pose_estimator/pose`                   | `geometry_msgs::msg::PoseStamped`                | Input pose            |
-| `/localization/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist (default) |
-| `/localization/twist_estimator/twist`                 | `geometry_msgs::msg::TwistStamped`               | Input twist           |
+| Name                                                        | Type                                             | Description          |
+| ----------------------------------------------------------- | ------------------------------------------------ | -------------------- |
+| `/localization/pose_estimator/pose_with_covariance`         | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose           |
+| `/sensing/imu/imu_data`                                     | `sensor_msgs::msg::Imu`                          | Input IMU data       |
+| `/sensing/vehicle_velocity_converter/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input wheel odometry |
 
 #### Output
 
@@ -162,16 +160,14 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 ### Parameters for deviation estimator
 
-| Name                      | Type   | Description                                                                                 | Default value            |
-| ------------------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------ |
-| show_debug_info           | bool   | Flag to display debug info                                                                  | true                     |
-| use_pose_with_covariance  | bool   | Flag to use PoseWithCovarianceStamped rostopic for pose. Use PoseStamped if false.          | true                     |
-| use_twist_with_covariance | bool   | Flag to use TwistWithCovarianceStamped rostopic for pose. Use TwistStamped if false.        | true                     |
-| t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                     |
-| x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
-| estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                      |
-| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
-| imu_link_frame            | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"      |
+| Name            | Type   | Description                                                                                 | Default value            |
+| --------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------ |
+| show_debug_info | bool   | Flag to display debug info                                                                  | true                     |
+| t_design        | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                     |
+| x_design        | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
+| estimation_freq | double | Estimation frequency [Hz]                                                                   | 0.5                      |
+| results_path    | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
+| imu_frame       | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"      |
 
 ### Functions
 
@@ -254,16 +250,18 @@ The architecture of `deviation_evaluator` is shown below. It launches two `ekf_l
 
 #### Input
 
-| Name                                                  | Type                                             | Description |
-| ----------------------------------------------------- | ------------------------------------------------ | ----------- |
-| `/localization/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist |
-| `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose  |
+| Name                                                        | Type                                             | Description               |
+| ----------------------------------------------------------- | ------------------------------------------------ | ------------------------- |
+| `/sensing/imu/imu_data`                                     | `sensor_msgs::msg::Imu`                          | Input IMU data            |
+| `/sensing/vehicle_velocity_converter/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input wheel odometry data |
+| `/localization/pose_estimator/pose_with_covariance`         | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose                |
 
 #### Output
 
 | Name                                                                      | Type                                             | Description                                      |
 | ------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
-| `/deviation_evaluator/twist_estimator/twist_with_covariance`              | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for both `ekf_localizer`)          |
+| `/deviation_evaluator/imu/imu_data`                                       | `sensor_msgs::msg::Imu`                          | Output IMU (for `gyro_odometer`)                 |
+| `/deviation_evaluator/vehicle_velocity_converter/twist_with_covariance`   | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output wheel odometry (for `gyro_odometer`)      |
 | `/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for dead reckoning `ekf_localizer`) |
 | `/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for ground truth `ekf_localizer`)   |
 | `/deviation_evaluator/initialpose3d`                                      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output initial pose (for both `ekf_localizer`)   |

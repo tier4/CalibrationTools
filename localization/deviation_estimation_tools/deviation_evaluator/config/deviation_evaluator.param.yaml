@@ -9,3 +9,5 @@
     # Dead Reckoning configuration
     period: 10.0 # [s]
     cut: 9.0 # [s]
+
+    need_ekf_initial_trigger: false

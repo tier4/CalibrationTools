@@ -15,34 +15,22 @@
 #ifndef DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 #define DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/LU"
 #include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
-#include "tf2_ros/transform_broadcaster.h"
-#include "tf2_ros/transform_listener.h"
 
-#include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-#include "geometry_msgs/msg/transform_stamped.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
-#include "std_msgs/msg/header.hpp"
-#include "tier4_debug_msgs/msg/float64_multi_array_stamped.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
-#include <chrono>
-#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <mutex>
-#include <queue>
 #include <string>
 #include <vector>
 
@@ -52,15 +40,21 @@ public:
   DeviationEvaluator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
   rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
-    sub_twist_with_cov_;
+    sub_wheel_odometry_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     sub_ndt_pose_with_cov_;
-  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr pub_twist_with_cov_;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_calibrated_imu_;
+  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
+    pub_calibrated_wheel_odometry_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     pub_init_pose_with_cov_;
+
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_dr_;
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_gt_;
 
   bool show_debug_info_;
   std::string save_dir_;
@@ -77,21 +71,13 @@ private:
 
   bool has_published_initial_pose_;
 
-  /**
-   * @brief set twistWithCovariance measurement
-   */
-  void callbackTwistWithCovariance(
-    const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
+  void callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg);
 
-  /**
-   * @brief set NDT poseWithCovariance measurement
-   */
+  void callbackWheelOdometry(const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
+
   void callbackNDTPoseWithCovariance(
     const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
-  /**
-   * @brief save to Yaml file
-   */
   void save2YamlFile();
 };
 
