@@ -41,7 +41,6 @@ from PySide2.QtWidgets import QSlider
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
 import cv2
-import debugpy
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
 from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDetector
 from intrinsic_camera_calibrator.board_detectors.board_detector_factory import make_detector
@@ -63,9 +62,6 @@ from intrinsic_camera_calibrator.views.initialization_view import Initialization
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 import numpy as np
 import rclpy
-
-debugpy.listen(5678)
-debugpy.wait_for_client()
 
 
 class CameraIntrinsicsCalibratorUI(QMainWindow):

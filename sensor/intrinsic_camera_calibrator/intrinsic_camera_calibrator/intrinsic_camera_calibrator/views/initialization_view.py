@@ -85,6 +85,7 @@ class InitializationView(QWidget):
 
         self.training_radio_button = QRadioButton("Calibration mode")
         self.evaluation_radio_button = QRadioButton("Evaluation mode")
+        self.evaluation_radio_button.setEnabled(False)  # TODO(knzo25) missing implementation
         self.training_radio_button.setChecked(True)
 
         mode_layout = QVBoxLayout()
