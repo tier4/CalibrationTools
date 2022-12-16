@@ -8,7 +8,7 @@ class OperationMode(Enum):
 
 
 class ImageViewMode(Enum):
-    SOURCE_UNRECTIFIED = 0
-    SOURCE_RECTIFIED = 1
-    DB_UNRECTIFIED = 2
-    DB_RECTIFIED = 3
+    SOURCE_UNRECTIFIED = "Source unrectified"
+    SOURCE_RECTIFIED = "Source rectified"
+    TRAINING_DB_UNRECTIFIED = "Training DB unrectified"
+    EVALUATION_DB_UNRECTIFIED = "Evaluation DB unrectified"

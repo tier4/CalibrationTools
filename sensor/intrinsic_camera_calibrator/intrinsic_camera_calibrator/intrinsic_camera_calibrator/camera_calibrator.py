@@ -22,6 +22,7 @@ import threading
 from typing import Dict
 
 from PySide2.QtCore import QThread
+from PySide2.QtCore import QTimer
 from PySide2.QtCore import Qt
 from PySide2.QtCore import Signal
 from PySide2.QtGui import QColor
@@ -36,11 +37,11 @@ from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtWidgets import QLabel
 from PySide2.QtWidgets import QMainWindow
 from PySide2.QtWidgets import QPushButton
+from PySide2.QtWidgets import QSlider
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
 import cv2
-
-# import debugpy
+import debugpy
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
 from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDetector
 from intrinsic_camera_calibrator.board_detectors.board_detector_factory import make_detector
@@ -60,11 +61,11 @@ from intrinsic_camera_calibrator.views.image_view import CustomQGraphicsView
 from intrinsic_camera_calibrator.views.image_view import ImageView
 from intrinsic_camera_calibrator.views.initialization_view import InitializationView
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
-
-# from rosidl_runtime_py.convert import message_to_ordereddict
-# from intrinsic_camera_calibrator.ros_interface import RosInterface
 import numpy as np
 import rclpy
+
+debugpy.listen(5678)
+debugpy.wait_for_client()
 
 
 class CameraIntrinsicsCalibratorUI(QMainWindow):
@@ -92,12 +93,30 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_thread = QThread()
         self.calibration_thread.start()
 
+        # Calibration results
+
+        # Camera models to use normally
+        self.current_distorted_camera_model: CameraModel = None
+        self.current_undistorted_camera_model: CameraModel = None
+
+        # Camera model produced via a full calibration
+        self.calibrated_distorted_camera_model: CameraModel = None
+        self.calibrated_undistorted_camera_model: CameraModel = None
+
+        # Camera model calibrated automatically as we collect data
+        self.partial_calibration_distorted_camera_model: CameraModel = None
+        self.partial_calibration_undistorted_camera_model: CameraModel = None
+
+        # General Configuration
         self.operation_mode = OperationMode.IDLE
         self.board_type = BoardEnum.CHESSBOARD
         self.board_parameters = BoardParameters(lock=self.lock, cfg=self.cfg["board_parameters"])
         self.detector: BoardDetector = None
         self.data_collector = DataCollector()
         self.calibrator_dict: Dict[CalibratorEnum, Calibrator] = {}
+
+        self.image_view_mode = ImageViewMode.SOURCE_UNRECTIFIED
+        self.paused = False
 
         for calibrator_type in CalibratorEnum:
             calibrator_cfg = defaultdict()
@@ -114,20 +133,13 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             calibrator.moveToThread(self.calibration_thread)
             calibrator.calibration_results_signal.connect(self.process_calibration_results)
 
-        self.image_view_mode = ImageViewMode.SOURCE_UNRECTIFIED
-        self.paused = False
-
-        self.img_id = 0
-        self.should_process_image.connect(self.process_data)  # , Qt.QueuedConnection
+        # Qt logic
+        self.img_id = 0  # TODO(knzo25): delete later
+        self.should_process_image.connect(self.process_data)
         self.produced_data_signal.connect(self.process_new_data)
         self.consumed_data_signal.connect(self.on_consumed)
 
-        self.detector_dict = {}
-
-        # Parent widget
         self.central_widget = QWidget(self)
-        # self.central_widget.resize(1000,1000)
-
         self.setCentralWidget(self.central_widget)
         self.layout = QHBoxLayout(self.central_widget)
 
@@ -138,10 +150,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.left_menu_widget = QWidget(self.central_widget)
         self.left_menu_widget.setFixedWidth(300)
         self.left_menu_layout = QVBoxLayout(self.left_menu_widget)
+        self.left_menu_layout.setAlignment(Qt.AlignTop)
 
         self.right_menu_widget = QWidget(self.central_widget)
         self.right_menu_widget.setFixedWidth(300)
         self.right_menu_layout = QVBoxLayout(self.right_menu_widget)
+        self.right_menu_layout.setAlignment(Qt.AlignTop)
 
         # Mode group
         self.make_mode_group()
@@ -166,16 +180,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.left_menu_layout.addWidget(self.detector_options_group)
         self.left_menu_layout.addWidget(self.raw_detection_results_group)
         self.left_menu_layout.addWidget(self.single_shot_detection_results_group)
-        # self.left_menu_layout.addWidget(self.calibration_status_group)
-        # self.left_menu_layout.addWidget(self.calibration_options_group)
 
         self.right_menu_layout.addWidget(self.mode_options_group)
         self.right_menu_layout.addWidget(self.data_collection_group)
         self.right_menu_layout.addWidget(self.visualization_options_group)
-        # self.right_menu_layout.addWidget(self.visualization_options_group)
 
         self.layout.addWidget(self.graphics_view)
-        # self.layout.addWidget(self.image_view)
 
         self.layout.addWidget(self.left_menu_widget)
         self.layout.addWidget(self.right_menu_widget)
@@ -188,8 +198,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
     def make_image_view(self):
 
         self.image_view = ImageView()
-        # self.image_view.set_pixmap(pixmap)
-        # self.image_view.clicked_signal.connect(self.image_click_callback)
 
         # We need the view to control the zoom
         self.graphics_view = CustomQGraphicsView(self.central_widget)
@@ -209,7 +217,23 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.mode_options_group = QGroupBox("Mode options")
         self.mode_options_group.setFlat(True)
 
+        data_control_label = QLabel("Data control:")
         self.pause_button = QPushButton("Pause")
+        image_view_label = QLabel("Image view type:")
+        self.image_view_type_combobox = QComboBox()
+
+        self.training_sample_label = QLabel("Training sample:")
+        self.training_sample_slider = QSlider(Qt.Horizontal)
+        self.training_sample_slider.setEnabled(False)
+
+        self.evaluation_sample_label = QLabel("Evaluation sample:")
+        self.evaluation_sample_slider = QSlider(Qt.Horizontal)
+        self.evaluation_sample_slider.setEnabled(False)
+
+        for image_view_type in ImageViewMode:
+            self.image_view_type_combobox.addItem(image_view_type.value, image_view_type)
+
+        self.image_view_type_combobox.setEnabled(False)
 
         def pause_callback():
             if self.paused:
@@ -220,10 +244,68 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 self.paused = True
                 self.should_process_image.emit()
 
+        def on_image_view_type_change(index):
+            image_view_type = self.image_view_type_combobox.itemData(index)
+
+            def delayed_change():
+
+                if self.pending_detection_result:
+                    QTimer.singleShot(1000, delayed_change)
+                    return
+
+                if image_view_type == ImageViewMode.TRAINING_DB_UNRECTIFIED:
+                    self.training_sample_slider.setRange(
+                        0, self.data_collector.get_num_training_samples() - 1
+                    )
+                    self.training_sample_slider.setValue(0)
+                    self.training_sample_slider.setEnabled(True)
+                    self.training_sample_slider.valueChanged.emit(0)
+
+                elif image_view_type == ImageViewMode.EVALUATION_DB_UNRECTIFIED:
+                    self.evaluation_sample_slider.setRange(
+                        0, self.data_collector.get_num_evaluation_samples() - 1
+                    )
+                    self.evaluation_sample_slider.setValue(0)
+                    self.evaluation_sample_slider.setEnabled(True)
+                    self.evaluation_sample_slider.valueChanged.emit(0)
+                else:
+                    self.training_sample_slider.setEnabled(False)
+                    self.evaluation_sample_slider.setEnabled(False)
+
+            if self.pending_detection_result:
+                QTimer.singleShot(1000, delayed_change)
+            else:
+                delayed_change()
+
+        def on_training_sample_changed(index):
+            print(f"on_training_sample_changed={index}")
+            self.training_sample_label.setText(f"Training sample: {index}")
+            img = self.data_collector.get_training_image(index)
+            self.process_db_data(img)
+
+        def on_evaluation_sample_changed(index):
+            print(f"on_evaluation_sample_changed={index}")
+            self.evaluation_sample_label.setText(f"Evaluation sample: {index}")
+            img = self.data_collector.get_evaluation_image(index)
+            self.process_db_data(img)
+
         self.pause_button.clicked.connect(pause_callback)
+        self.image_view_type_combobox.currentIndexChanged.connect(on_image_view_type_change)
+        self.training_sample_slider.valueChanged.connect(on_training_sample_changed)
+        self.evaluation_sample_slider.valueChanged.connect(on_evaluation_sample_changed)
 
         mode_options_layout = QVBoxLayout()
+        mode_options_layout.setAlignment(Qt.AlignTop)
+        mode_options_layout.addWidget(data_control_label)
         mode_options_layout.addWidget(self.pause_button)
+        mode_options_layout.addWidget(image_view_label)
+        mode_options_layout.addWidget(self.image_view_type_combobox)
+
+        mode_options_layout.addWidget(self.training_sample_label)
+        mode_options_layout.addWidget(self.training_sample_slider)
+        mode_options_layout.addWidget(self.evaluation_sample_label)
+        mode_options_layout.addWidget(self.evaluation_sample_slider)
+
         self.mode_options_group.setLayout(mode_options_layout)
 
     def make_calibration_group(self):
@@ -288,6 +370,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.calibrator_type_combobox.setCurrentIndex(0)
 
         calibration_layout = QVBoxLayout()
+        calibration_layout.setAlignment(Qt.AlignTop)
         calibration_layout.addWidget(self.calibrator_type_combobox)
         calibration_layout.addWidget(self.calibration_parameters_button)
         calibration_layout.addWidget(self.calibration_button)
@@ -318,6 +401,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.detector_parameters_button.clicked.connect(detector_parameters_button_callback)
 
         detector_options_layout = QVBoxLayout()
+        detector_options_layout.setAlignment(Qt.AlignTop)
         detector_options_layout.addWidget(self.detector_parameters_button)
         self.detector_options_group.setLayout(detector_options_layout)
 
@@ -332,20 +416,22 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.single_shot_detection_results_group.setFlat(True)
 
         self.raw_detection_label = QLabel("Detected:")
-        self.raw_linear_error_rms_label = QLabel("Linear error (rms):")
+        self.raw_linear_error_rms_label = QLabel("Linear error (rms): ###")
         self.rough_tilt_label = QLabel("Rough tilt:")
         self.rough_angles_label = QLabel("Rough angles:")
         self.rough_position_label = QLabel("Rough position:")
         self.skew_label = QLabel("Skew:")
         self.relative_area_label = QLabel("Relative area:")
 
-        self.single_shot_linear_error_rms_label = QLabel("Linear error (rms):")
         self.single_shot_reproj_error_max_label = QLabel("Reproj error (max):")
         self.single_shot_reproj_error_avg_label = QLabel("Reproj error (avg):")
         self.single_shot_reproj_error_rms_label = QLabel("Reproj error (rms):")
 
         raw_detection_results_layout = QVBoxLayout()
+        raw_detection_results_layout.setAlignment(Qt.AlignTop)
+
         single_shot_detection_results_layout = QVBoxLayout()
+        single_shot_detection_results_layout.setAlignment(Qt.AlignTop)
 
         raw_detection_results_layout.addWidget(self.raw_detection_label)
         raw_detection_results_layout.addWidget(self.rough_tilt_label)
@@ -355,7 +441,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         raw_detection_results_layout.addWidget(self.relative_area_label)
         raw_detection_results_layout.addWidget(self.raw_linear_error_rms_label)
 
-        single_shot_detection_results_layout.addWidget(self.single_shot_linear_error_rms_label)
         single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_max_label)
         single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_avg_label)
         single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_rms_label)
@@ -402,6 +487,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.data_collection_parameters_button.clicked.connect(data_collection_parameters_callback)
 
         data_collection_layout = QVBoxLayout()
+        data_collection_layout.setAlignment(Qt.AlignTop)
 
         data_collection_layout.addWidget(self.data_collection_training_label)
         data_collection_layout.addWidget(self.data_collection_evaluation_label)
@@ -471,7 +557,20 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.rendering_alpha_spinbox.setValue(1.0)
         self.rendering_alpha_spinbox.valueChanged.connect(lambda: self.should_process_image.emit())
 
+        undistortion_alpha_label = QLabel("Undistortion alpha:")
+
+        self.undistortion_alpha_spinbox = QDoubleSpinBox()
+        self.undistortion_alpha_spinbox.setDecimals(2)
+        self.undistortion_alpha_spinbox.setRange(0.0, 1.0)
+        self.undistortion_alpha_spinbox.setSingleStep(0.05)
+        self.undistortion_alpha_spinbox.setValue(0.0)
+        self.undistortion_alpha_spinbox.valueChanged.connect(
+            lambda: self.should_process_image.emit()
+        )
+        self.undistortion_alpha_spinbox.setEnabled(False)
+
         visualization_options_layout = QVBoxLayout()
+        visualization_options_layout.setAlignment(Qt.AlignTop)
         visualization_options_layout.addWidget(draw_detection_checkbox)
         visualization_options_layout.addWidget(self.draw_training_points_checkbox)
         visualization_options_layout.addWidget(self.draw_evaluation_points_checkbox)
@@ -479,6 +578,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         visualization_options_layout.addWidget(self.draw_evaluation_heatmap_checkbox)
         visualization_options_layout.addWidget(rendering_alpha_label)
         visualization_options_layout.addWidget(self.rendering_alpha_spinbox)
+        visualization_options_layout.addWidget(undistortion_alpha_label)
+        visualization_options_layout.addWidget(self.undistortion_alpha_spinbox)
         self.visualization_options_group.setLayout(visualization_options_layout)
 
     def start(self, mode: OperationMode, data_source: DataSource, board_type: BoardEnum):
@@ -488,9 +589,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.setEnabled(True)
 
         print("Init")
-        print(f"mode : {mode}")
-        print(f"data_source : {data_source}")
-        print(f"board_type : {board_type}")
+        print(f"\tmode : {mode}")
+        print(f"\tdata_source : {data_source}")
+        print(f"\tboard_type : {board_type}")
 
         detector_cfg = self.cfg[self.board_type.value["name"] + "_detector"]
 
@@ -517,6 +618,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         inlier_rms_error: float,
         evaluation_rms_error: float,
     ):
+        self.image_view_type_combobox.setEnabled(True)
+        self.undistortion_alpha_spinbox.setEnabled(True)
+        self.current_camera_model = calibrated_model
+        self.calibrated_camera_model = calibrated_model
+
         self.calibration_status_label.setText("Calibration status: idle")
         self.calibration_time_label.setText(f"Calibration time: {dt:.2f}s")
         self.calibration_training_samples_label.setText(
@@ -561,7 +667,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
             return
 
-        # print(f"{threading.get_ident()} -> process_detection_results: start")
         cv2.putText(
             img,
             f"image id = {self.img_id}",
@@ -588,15 +693,21 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.skew_label.setText("Skew:")
             self.relative_area_label.setText("Relative area:")
 
-            self.single_shot_linear_error_rms_label.setText("Linear error (rms):")
             self.single_shot_reproj_error_max_label.setText("Reproj error (max):")
             self.single_shot_reproj_error_avg_label.setText("Reproj error (avg):")
             self.single_shot_reproj_error_rms_label.setText("Reproj error (rms):")
 
         elif self.board_type == BoardEnum.CHESSBOARD or self.board_type == BoardEnum.DOTBOARD:
 
-            filter_result = self.data_collector.process_detection(image=img, detection=detection)
+            if self.image_view_type_combobox.currentData() == ImageViewMode.SOURCE_UNRECTIFIED:
+                filter_result = self.data_collector.process_detection(
+                    image=img, detection=detection
+                )
+            else:
+                filter_result = CollectionStatus.NOT_EVALUATED
+
             filter_result_color_dict = {
+                CollectionStatus.NOT_EVALUATED: QColor(255, 255, 255),
                 CollectionStatus.REJECTED: QColor(255, 0, 0),
                 CollectionStatus.REDUNDANT: QColor(255, 192, 0),
                 CollectionStatus.ACCEPTED: QColor(0, 255, 0),
@@ -698,7 +809,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         # Request a redrawing
         self.image_view.update()
         self.graphics_view.update()
-        # print(f"{threading.get_ident()} -> process_detection_results: end")
 
         self.pending_detection_result = False
 
@@ -706,35 +816,57 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.should_process_image.emit()
 
     def process_data(self):
-        # print(f"{threading.get_ident()} -> process_data: start")
+        # This should be done in another thread so we do a deepcopy (not really necessary)
 
-        # This should be done in another thread
-        img = copy.deepcopy(self.unprocessed_image)
-        # self.detector.detect(img)
+        if self.image_view_type_combobox.currentData() in {
+            ImageViewMode.SOURCE_UNRECTIFIED,
+            ImageViewMode.TRAINING_DB_UNRECTIFIED,
+            ImageViewMode.EVALUATION_DB_UNRECTIFIED,
+        }:
+            img = copy.deepcopy(self.unprocessed_image)
+        elif self.image_view_type_combobox.currentData() == ImageViewMode.SOURCE_RECTIFIED:
+            assert self.current_camera_model is not None
+            img = self.current_camera_model.rectify(
+                self.unprocessed_image, self.undistortion_alpha_spinbox.value()
+            )
+        else:
+            raise NotImplementedError
 
         self.pending_detection_request = False
         self.pending_detection_result = True
 
         self.request_image_detection.emit(img)
 
-        # print(f"{threading.get_ident()} -> process_data: end")
+    def process_db_data(self, img):
+
+        assert self.image_view_type_combobox.currentData() in set(
+            {ImageViewMode.TRAINING_DB_UNRECTIFIED, ImageViewMode.EVALUATION_DB_UNRECTIFIED}
+        )
+
+        with self.lock:
+            self.img_id += 1
+
+            self.unprocessed_image = img
+
+        if self.pending_detection_result:
+            self.pending_detection_request = True
+        else:
+            self.should_process_image.emit()
 
     def process_new_data(self):
 
         if self.paused:
             return
 
-        if self.image_view_mode not in set(
+        if self.image_view_type_combobox.currentData() not in set(
             {ImageViewMode.SOURCE_RECTIFIED, ImageViewMode.SOURCE_UNRECTIFIED}
         ):
             return
 
-        # print("process_new_data")
         with self.lock:
             self.img_id += 1
 
             if self.produced_image is not None:
-                # print("process_new_data: there was a self.produced_image pending !. Overwitting but not emitting!")
                 self.unprocessed_image = self.produced_image
             else:
                 self.unprocessed_image = self.produced_image

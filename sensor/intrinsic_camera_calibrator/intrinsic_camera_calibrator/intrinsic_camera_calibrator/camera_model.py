@@ -22,6 +22,9 @@ class CameraModel:
         self.height = height
         self.width = width
 
+        self._cached_undistorted_model = None
+        self._cached_undistortion_alpha = np.nan
+
     def __eq__(self, other: "CameraModel") -> bool:
         return (
             self.height == other.height
@@ -130,8 +133,33 @@ class CameraModel:
         projected_points = projected_points.reshape((num_points, 2))
         return projected_points - image_points
 
-    def rectify(self, img: np.array) -> np.array:
-        raise NotImplementedError
+    def get_undistorted_camera_model(self, alpha):
+        undistorted_k, _ = cv2.getOptimalNewCameraMatrix(
+            self.k, self.d, (self.width, self.height), alpha
+        )
+
+        return CameraModel(
+            k=undistorted_k, d=np.zeros_like(self.d), height=self.height, width=self.width
+        )
+
+    def rectify(self, img: np.array, alpha=0.0) -> np.array:
+
+        if np.abs(self.d).sum() == 0:
+            return img
+
+        if self._cached_undistorted_model is None or alpha != self._cached_undistortion_alpha:
+            self._cached_undistortion_alpha = alpha
+            self._cached_undistorted_model = self.get_undistorted_camera_model(alpha=alpha)
+            (
+                self._cached_undistortion_mapx,
+                self._cached_undistortion_mapy,
+            ) = cv2.initUndistortRectifyMap(
+                self.k, self.d, None, self._cached_undistorted_model.k, (self.width, self.height), 5
+            )
+
+        return cv2.remap(
+            img, self._cached_undistortion_mapx, self._cached_undistortion_mapy, cv2.INTER_LINEAR
+        )
 
 
 class CameraModelWithBoardDistortion(CameraModel):

@@ -13,9 +13,10 @@ import numpy as np
 
 
 class CollectionStatus(Enum):
-    REJECTED = 0
-    REDUNDANT = 1
-    ACCEPTED = 2
+    NOT_EVALUATED = 1
+    REJECTED = 2
+    REDUNDANT = 3
+    ACCEPTED = 4
 
 
 class CollectedData:
@@ -41,6 +42,15 @@ class CollectedData:
 
     def get_detections(self) -> List[BoardDetection]:
         return self.detections
+
+    def get_detection(self, index) -> BoardDetection:
+        return self.detections[index]
+
+    def get_images(self) -> List[np.array]:
+        return self.distorted_images
+
+    def get_image(self, index) -> np.array:
+        return self.distorted_images[index]
 
     def get_distances(
         self,
@@ -245,6 +255,24 @@ class DataCollector(ParameteredClass):
 
     def get_evaluation_detections(self) -> List[BoardDetection]:
         return self.evaluation_data.get_detections()
+
+    def get_training_images(self) -> List[np.array]:
+        return self.training_data.get_images()
+
+    def get_evaluation_images(self) -> List[np.array]:
+        return self.evaluation_data.get_images()
+
+    def get_training_detection(self, index) -> BoardDetection:
+        return self.training_data.get_detection(index)
+
+    def get_evaluation_detection(self, index) -> BoardDetection:
+        return self.evaluation_data.get_detection(index)
+
+    def get_training_image(self, index) -> np.array:
+        return self.training_data.get_image(index)
+
+    def get_evaluation_image(self, index) -> np.array:
+        return self.evaluation_data.get_image(index)
 
     def get_flattened_image_training_points(self):
 

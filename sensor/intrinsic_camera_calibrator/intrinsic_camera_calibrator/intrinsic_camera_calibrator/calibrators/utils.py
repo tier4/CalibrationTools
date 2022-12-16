@@ -276,8 +276,6 @@ def plot_calibration_results_statistics(
         single_shot_errors = np.take_along_axis(single_shot_errors, sorted_idxs, axis=0)
         label = np.take_along_axis(label, sorted_idxs, axis=0)
 
-        # Multi bar Chart
-
         axes2[j].set_title(name)
         axes2[j].bar(x_axis - 0.2, calibrated_errors, width=0.4, label="Calibrated intrinsics")
         axes2[j].bar(
@@ -287,12 +285,7 @@ def plot_calibration_results_statistics(
             label="Single-shot intrinsics (lower bound)",
         )
 
-        # Xticks
-
-        axes2[j].set_xticks(x_axis, label)
-
-        # Add legend
-
+        axes2[j].set_xticks(x_axis, label, rotation="vertical")
         axes2[j].legend()
 
     plot_detection_set(0, "Training", training_detections)
