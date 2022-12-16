@@ -114,7 +114,7 @@ DeviationEstimator::DeviationEstimator(
   dx_design_ = declare_parameter("dx_design", 30.0);
   vx_threshold_ = declare_parameter("vx_threshold", 1.5);
   wz_threshold_ = declare_parameter("wz_threshold", 0.01);
-  accel_threshold_ = declare_parameter("accel_threshold", 0.3);
+  accel_threshold_ = declare_parameter("accel_threshold", 0.2);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
   results_path_ = declare_parameter<std::string>("results_path");
