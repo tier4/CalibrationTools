@@ -115,12 +115,7 @@ double estimate_stddev_velocity(
 
     const double delta = std::sqrt(n_twist / t_window) * (distance - distance_from_twist);
     delta_x_list.push_back(delta);
-
-    std::cout << "error distance = " << distance - distance_from_twist << ", ";
-    std::cout << "accel = " << get_mean_accel(traj_data.vx_list) << ", ";
-    std::cout << "velocity = " << get_mean_abs_vx(traj_data.vx_list) << std::endl;
   }
-  std::cout << "size: " << delta_x_list.size() << std::endl;
   return calculate_std(delta_x_list) / std::sqrt(t_window);
 }
 
