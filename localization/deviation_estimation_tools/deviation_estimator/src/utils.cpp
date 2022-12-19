@@ -177,7 +177,8 @@ double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & g
 
 double get_mean_accel(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list)
 {
-  const double dt = (rclcpp::Time(vx_list.back().stamp) - rclcpp::Time(vx_list.front().stamp)).seconds();
+  const double dt =
+    (rclcpp::Time(vx_list.back().stamp) - rclcpp::Time(vx_list.front().stamp)).seconds();
   return (vx_list.back().data - vx_list.front().data) / dt;
 }
 

@@ -23,9 +23,14 @@ void GyroBiasModule::update_bias(const TrajectoryData & traj_data)
   const rclcpp::Time t1_rclcpp_time = rclcpp::Time(traj_data.pose_list.back().header.stamp);
   const double dt = t1_rclcpp_time.seconds() - t0_rclcpp_time.seconds();
 
-  auto error_rpy = calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, geometry_msgs::msg::Vector3{});
-  const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) - rclcpp::Time(traj_data.pose_list.front().header.stamp)).seconds();
-  const double dt_gyro = (rclcpp::Time(traj_data.gyro_list.back().header.stamp) - rclcpp::Time(traj_data.gyro_list.front().header.stamp)).seconds();
+  auto error_rpy =
+    calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, geometry_msgs::msg::Vector3{});
+  const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
+                          rclcpp::Time(traj_data.pose_list.front().header.stamp))
+                           .seconds();
+  const double dt_gyro = (rclcpp::Time(traj_data.gyro_list.back().header.stamp) -
+                          rclcpp::Time(traj_data.gyro_list.front().header.stamp))
+                           .seconds();
   error_rpy.x *= dt_pose / dt_gyro;
   error_rpy.y *= dt_pose / dt_gyro;
   error_rpy.z *= dt_pose / dt_gyro;

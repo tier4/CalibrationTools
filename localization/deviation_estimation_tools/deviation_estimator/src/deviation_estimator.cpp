@@ -57,8 +57,12 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
 <<<<<<< HEAD
 
     auto error_rpy = calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, gyro_bias);
-    const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) - rclcpp::Time(traj_data.pose_list.front().header.stamp)).seconds();
-    const double dt_gyro = (rclcpp::Time(traj_data.gyro_list.back().header.stamp) - rclcpp::Time(traj_data.gyro_list.front().header.stamp)).seconds();
+    const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
+                            rclcpp::Time(traj_data.pose_list.front().header.stamp))
+                             .seconds();
+    const double dt_gyro = (rclcpp::Time(traj_data.gyro_list.back().header.stamp) -
+                            rclcpp::Time(traj_data.gyro_list.front().header.stamp))
+                             .seconds();
     error_rpy.x *= dt_pose / dt_gyro;
     error_rpy.y *= dt_pose / dt_gyro;
     error_rpy.z *= dt_pose / dt_gyro;
@@ -105,10 +109,14 @@ double estimate_stddev_velocity(
       traj_data.vx_list, traj_data.gyro_list, coef_vx,
       tf2::getYaw(traj_data.pose_list.front().pose.orientation));
 
-    const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) - rclcpp::Time(traj_data.pose_list.front().header.stamp)).seconds();
-    const double dt_velocity = (rclcpp::Time(traj_data.vx_list.back().stamp) - rclcpp::Time(traj_data.vx_list.front().stamp)).seconds();
-    const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y) *
-      dt_pose / dt_velocity;
+    const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
+                            rclcpp::Time(traj_data.pose_list.front().header.stamp))
+                             .seconds();
+    const double dt_velocity =
+      (rclcpp::Time(traj_data.vx_list.back().stamp) - rclcpp::Time(traj_data.vx_list.front().stamp))
+        .seconds();
+    const double distance_from_twist =
+      std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y) * dt_pose / dt_velocity;
 
     const double delta = std::sqrt(n_twist / t_window) * (distance - distance_from_twist);
     delta_x_list.push_back(delta);
@@ -116,7 +124,6 @@ double estimate_stddev_velocity(
     std::cout << "error distance = " << distance - distance_from_twist << ", ";
     std::cout << "accel = " << get_mean_accel(traj_data.vx_list) << ", ";
     std::cout << "velocity = " << get_mean_abs_vx(traj_data.vx_list) << std::endl;
-
   }
   std::cout << "size: " << delta_x_list.size() << std::endl;
   return calculate_std(delta_x_list) / std::sqrt(t_window);

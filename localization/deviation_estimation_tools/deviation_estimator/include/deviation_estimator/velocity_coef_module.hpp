@@ -21,8 +21,8 @@
 #include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 class VelocityCoefModule
 {

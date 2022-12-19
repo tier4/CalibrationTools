@@ -25,8 +25,12 @@ void VelocityCoefModule::update_coef(const TrajectoryData & traj_data)
   auto d_pos = integrate_position(
     traj_data.vx_list, traj_data.gyro_list, 1.0,
     tf2::getYaw(traj_data.pose_list.front().pose.orientation));
-  const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) - rclcpp::Time(traj_data.pose_list.front().header.stamp)).seconds();
-  const double dt_velocity = (rclcpp::Time(traj_data.vx_list.back().stamp) - rclcpp::Time(traj_data.vx_list.front().stamp)).seconds();
+  const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
+                          rclcpp::Time(traj_data.pose_list.front().header.stamp))
+                           .seconds();
+  const double dt_velocity =
+    (rclcpp::Time(traj_data.vx_list.back().stamp) - rclcpp::Time(traj_data.vx_list.front().stamp))
+      .seconds();
   d_pos.x *= dt_pose / dt_velocity;
   d_pos.y *= dt_pose / dt_velocity;
 
