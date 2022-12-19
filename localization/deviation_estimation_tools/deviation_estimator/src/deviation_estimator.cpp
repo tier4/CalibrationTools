@@ -55,7 +55,17 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
 
     const size_t n_twist = traj_data.gyro_list.size();
 
-    const auto error_rpy = calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, gyro_bias);
+    auto error_rpy = calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, gyro_bias);
+    const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
+                            rclcpp::Time(traj_data.pose_list.front().header.stamp))
+                             .seconds();
+    const double dt_gyro = (rclcpp::Time(traj_data.gyro_list.back().header.stamp) -
+                            rclcpp::Time(traj_data.gyro_list.front().header.stamp))
+                             .seconds();
+    error_rpy.x *= dt_pose / dt_gyro;
+    error_rpy.y *= dt_pose / dt_gyro;
+    error_rpy.z *= dt_pose / dt_gyro;
+
     delta_wx_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.x);
     delta_wy_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.y);
     delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
@@ -94,7 +104,15 @@ double estimate_stddev_velocity(
       traj_data.vx_list, traj_data.gyro_list, coef_vx,
       tf2::getYaw(traj_data.pose_list.front().pose.orientation));
 
-    const double distance_from_twist = std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y);
+    const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
+                            rclcpp::Time(traj_data.pose_list.front().header.stamp))
+                             .seconds();
+    const double dt_velocity =
+      (rclcpp::Time(traj_data.vx_list.back().stamp) - rclcpp::Time(traj_data.vx_list.front().stamp))
+        .seconds();
+    const double distance_from_twist =
+      std::sqrt(d_pos.x * d_pos.x + d_pos.y * d_pos.y) * dt_pose / dt_velocity;
+
     const double delta = std::sqrt(n_twist / t_window) * (distance - distance_from_twist);
     delta_x_list.push_back(delta);
   }
@@ -114,7 +132,7 @@ DeviationEstimator::DeviationEstimator(
   dx_design_ = declare_parameter("dx_design", 30.0);
   vx_threshold_ = declare_parameter("vx_threshold", 1.5);
   wz_threshold_ = declare_parameter("wz_threshold", 0.01);
-  accel_threshold_ = declare_parameter("accel_threshold", 0.2);
+  accel_threshold_ = declare_parameter("accel_threshold", 0.3);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
   results_path_ = declare_parameter<std::string>("results_path");
@@ -215,19 +233,17 @@ void DeviationEstimator::timer_callback()
   traj_data.pose_list = pose_buf_;
   traj_data.vx_list = extract_sub_trajectory(vx_all_, t0_rclcpp_time, t1_rclcpp_time);
   traj_data.gyro_list = extract_sub_trajectory(gyro_all_, t0_rclcpp_time, t1_rclcpp_time);
-  traj_data.is_straight = get_mean_abs_wz(traj_data.gyro_list) > wz_threshold_;
-  traj_data.is_stopped = get_mean_abs_vx(traj_data.vx_list) < vx_threshold_;
+  bool is_straight = get_mean_abs_wz(traj_data.gyro_list) > wz_threshold_;
+  bool is_stopped = get_mean_abs_vx(traj_data.vx_list) < vx_threshold_;
+  bool is_constant_velocity = std::abs(get_mean_accel(traj_data.vx_list)) < accel_threshold_;
 
-  if (traj_data.is_straight & !traj_data.is_stopped) {
+  if (is_straight & !is_stopped & is_constant_velocity) {
     vel_coef_module_->update_coef(traj_data);
     traj_data_list_for_velocity_.push_back(traj_data);
-  } else {
-    DEBUG_INFO(
-      this->get_logger(),
-      "[Deviation Estimator] coef_vx estimation is not updated since the vehicle is not moving.");
   }
   gyro_bias_module_->update_bias(traj_data);
   traj_data_list_for_gyro_.push_back(traj_data);
+
   pose_buf_.clear();
 
   if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;

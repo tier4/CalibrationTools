@@ -25,6 +25,7 @@
 #include <tf2/transform_datatypes.h>
 
 #include <fstream>
+#include <string>
 #include <vector>
 
 #ifdef ROS_DISTRO_GALACTIC
@@ -39,8 +40,6 @@ struct TrajectoryData
   std::vector<geometry_msgs::msg::PoseStamped> pose_list;
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_list;
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_list;
-  bool is_straight;
-  bool is_stopped;
 };
 
 double double_round(const double x, const int n);
@@ -180,6 +179,7 @@ geometry_msgs::msg::Vector3 integrate_orientation(
 
 double get_mean_abs_vx(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list);
 double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list);
+double get_mean_accel(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list);
 
 geometry_msgs::msg::Vector3 transform_vector3(
   const geometry_msgs::msg::Vector3 & vec, const geometry_msgs::msg::TransformStamped & transform);
