@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 from typing import List
 
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
@@ -7,6 +24,7 @@ import numpy as np
 
 
 def get_entropy(array: np.array):
+    """Compute the entropy of an array interpreting it as flattened 1D discrete distribution."""
     array = array.flatten()
     array = array[array > 0] / array.sum()
     return -(array * np.log2(array)).sum()
@@ -14,14 +32,15 @@ def get_entropy(array: np.array):
 
 def add_detection(
     detection: BoardDetection,
+    camera_model: CameraModel,
     pixel_occupancy: np.array,
     tilt_occupancy: np.array,
     pixel_cells: int,
     tilt_cells: int,
     max_tilt_deg: float,
 ):
-
-    tilt = detection.get_rotation_angles()
+    """Add a detection to occupancy heatmaps."""
+    tilt = detection.get_rotation_angles(camera_model)
     tilt_x = tilt[0] / max_tilt_deg
     tilt_y = tilt[1] / max_tilt_deg
 
@@ -40,14 +59,15 @@ def add_detection(
 
 def add_detection_errors(
     detection: BoardDetection,
+    camera_model: CameraModel,
     pixel_errors: List[List[List[float]]],
     tilt_errors: np.array,
     pixel_cells: int,
     tilt_cells: int,
     max_tilt_deg: float,
 ):
-
-    tilt = detection.get_rotation_angles()
+    """Add a detection to error heatmaps."""
+    tilt = detection.get_rotation_angles(camera_model)
     tilt_x = tilt[0] / max_tilt_deg
     tilt_y = tilt[1] / max_tilt_deg
 
@@ -79,12 +99,10 @@ def plot_calibration_data_statistics(
     max_tilt_deg: float,
     z_cells: int,
 ):
-    print("plot_calibration_data_statistics", flush=True)
-
     tilt_cells: int = 2 * np.ceil(max_tilt_deg / tilt_resolution).astype(np.int)
 
     fig, axes = plt.subplots(3, 5, figsize=(20, 12))
-    fig.canvas.set_window_title("Calibraton data statistics")
+    fig.canvas.set_window_title("Calibration data statistics")
 
     def process_detections(detections: List[BoardDetection]):
 
@@ -95,9 +113,15 @@ def plot_calibration_data_statistics(
 
         for detection in detections:
             add_detection(
-                detection, pixel_occupancy, tilt_occupancy, pixel_cells, tilt_cells, max_tilt_deg
+                detection,
+                calibrated_model,
+                pixel_occupancy,
+                tilt_occupancy,
+                pixel_cells,
+                tilt_cells,
+                max_tilt_deg,
             )
-            rvec, tvec = detection.get_pose()
+            rvec, tvec = detection.get_pose(calibrated_model)
             z_list.append(tvec.flatten()[2])
 
         return pixel_occupancy, tilt_occupancy, np.array(z_list)
@@ -164,15 +188,13 @@ def plot_calibration_results_statistics(
     max_tilt_deg: float,
     z_cells: int,
 ):
-    print("plot_calibration_results_statistics", flush=True)
-
     tilt_cells: int = 2 * np.ceil(max_tilt_deg / tilt_resolution).astype(np.int)
 
     fig1, axes1 = plt.subplots(3, 4, figsize=(20, 12))
     fig2, axes2 = plt.subplots(3, 1, figsize=(20, 12))
 
-    fig1.canvas.set_window_title("Calibraton result statistics")
-    fig2.canvas.set_window_title("Calibraton result statistics vs single shot calibration")
+    fig1.canvas.set_window_title("Calibration result statistics")
+    fig2.canvas.set_window_title("Calibration result statistics vs single shot calibration")
 
     def process_detections(detections: List[BoardDetection]):
 
@@ -181,7 +203,13 @@ def plot_calibration_results_statistics(
 
         for detection in detections:
             add_detection_errors(
-                detection, pixel_errors, tilt_errors, pixel_cells, tilt_cells, max_tilt_deg
+                detection,
+                calibrated_model,
+                pixel_errors,
+                tilt_errors,
+                pixel_cells,
+                tilt_cells,
+                max_tilt_deg,
             )
 
         pixel_errors_mean = np.nan * np.ones((pixel_cells, pixel_cells))

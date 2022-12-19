@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QLabel
@@ -8,6 +24,9 @@ from intrinsic_camera_calibrator.data_sources.ros_topic_data_source import RosTo
 
 
 class RosTopicView(QWidget):
+    """Widget to configure and initialize a RosTopicDataSource."""
+
+    ""
 
     failed = Signal()
     success = Signal()
@@ -18,7 +37,6 @@ class RosTopicView(QWidget):
         super().__init__()
 
         self.setWindowTitle("Select ros topic")
-        # self.setAttribute(Qt.WA_DeleteOnClose)
 
         self.topic_selected = False
 
@@ -45,7 +63,7 @@ class RosTopicView(QWidget):
         self.show()
 
     def update_list_callback(self):
-
+        """Update the topics combobox and adjust the size of the widget based on the available topics."""
         image_topics = self.data_source.get_image_topics()
 
         self.combo_box.clear()
@@ -56,7 +74,7 @@ class RosTopicView(QWidget):
         self.adjustSize()
 
     def accept_callback(self):
-
+        """Process the user choice of topic."""
         if self.combo_box.count() == 0:
             return
 
@@ -68,12 +86,10 @@ class RosTopicView(QWidget):
         self.close()
 
     def closeEvent(self, event):
+        """When the widget is closed it should be marked for deletion and notify the event."""
         print("Ros topic data view: closeEvent")
         if not self.topic_selected:
             self.failed.emit()
         event.accept()
 
         self.deleteLater()
-
-    def __del__(self):
-        print("Ros topic data view: destructor")

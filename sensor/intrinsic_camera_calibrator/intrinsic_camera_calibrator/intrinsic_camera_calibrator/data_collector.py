@@ -1,5 +1,20 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import copy
-from enum import Enum
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -9,23 +24,18 @@ from intrinsic_camera_calibrator.board_detections.board_detection import BoardDe
 from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.parameter import Parameter
 from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.types import CollectionStatus
 import numpy as np
 
 
-class CollectionStatus(Enum):
-    NOT_EVALUATED = 1
-    REJECTED = 2
-    REDUNDANT = 3
-    ACCEPTED = 4
-
-
 class CollectedData:
+    """A class that contains a database of images and detections. Additionally, it contains a tensorized version of the statistics of the database to accelerate data comparison."""
+
     def __init__(self):
 
         self.detections: List[BoardDetection] = []
         self.distorted_images: List[np.array] = []
 
-        # self.center_pixels = np.array()
         self.normalized_center_x = None
         self.normalized_center_y = None
         self.normalized_skews = None
@@ -36,20 +46,24 @@ class CollectedData:
         self.tilt_y = None
 
     def clone_without_images(self):
-
+        """Return a lightweight-deep copy of the database (without the images)."""
         clone = copy.deepcopy(self, {id(self.distorted_images): None})
         return clone
 
     def get_detections(self) -> List[BoardDetection]:
+        """Return the detections of the database."""
         return self.detections
 
     def get_detection(self, index) -> BoardDetection:
+        """Return a single detection of the database."""
         return self.detections[index]
 
     def get_images(self) -> List[np.array]:
+        """Return the images from the dataset."""
         return self.distorted_images
 
     def get_image(self, index) -> np.array:
+        """Return a single image from the dataset."""
         return self.distorted_images[index]
 
     def get_distances(
@@ -58,7 +72,7 @@ class CollectedData:
         camera_model: Optional[CameraModel] = None,
         last_n_samples: Optional[int] = 0,
     ) -> Tuple[float, float, float]:
-
+        """Comute the 'distance' from a single detection to the ones in the dataset."""
         if len(self.detections) == 0:
             return np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf
 
@@ -114,7 +128,7 @@ class CollectedData:
     def add_sample(
         self, image: np.array, detection: BoardDetection, camera_model: Optional[CameraModel] = None
     ):
-
+        """Add a sample to the database and recomputes the statistics."""
         self.distorted_images.append(image)
         self.detections.append(detection)
 
@@ -122,7 +136,7 @@ class CollectedData:
         pass
 
     def pre_compute_stats(self, camera_model: CameraModel):
-
+        """Compute a tensorized version of the statistics of the database. Needs to be called whenever a sample is added to the database."""
         self.normalized_center_x = np.array(
             [
                 detection.get_center_2d()[0]
@@ -169,10 +183,15 @@ class CollectedData:
         ).flatten()
 
     def __len__(self):
+        """Overload operator to return the number of samples in the database."""
         return len(self.detections)
 
 
 class DataCollector(ParameteredClass):
+    """Class that manages training and evaluation datasets.
+
+    It also provides statistics about the datasets and implements logic to add new samples with redundancy concerns.
+    """
 
     new_training_sample = Signal()
     new_evaluation_sample = Signal()
@@ -181,14 +200,23 @@ class DataCollector(ParameteredClass):
     def __init__(self, cfg: dict = dict(), **kwargs):  # noqa C408
         super().__init__(cfg=cfg, **kwargs)
 
+        # Option to limit the amount of collection samples in case there are resource constraints
         self.max_samples = Parameter(int, value=500, min_value=6, max_value=500)
+
+        # In addition to the training dataset we also
         self.decorrelate_eval_samples = Parameter(int, value=5, min_value=1, max_value=100)
+
+        # Whille strong out-of-plane rotatins are needed for good calibrations, they also make detection innacurate so a trade-off is requried
         self.max_allowed_tilt = Parameter(float, value=45.0, min_value=0.0, max_value=90.0)
 
+        # Option to filter out moving targets.
+        # This is speciall important when using slower shutter speeds
         self.filter_by_speed = Parameter(bool, value=False, min_value=False, max_value=True)
         self.max_allowed_pixel_speed = Parameter(float, value=10, min_value=0.0, max_value=100)
         self.max_allowed_speed = Parameter(float, value=0.1, min_value=0.0, max_value=1.0)
 
+        # One way to filter out bad detections is too perform camera-calibration with one single sample.
+        # If the model can not fit the sample, it should be consideres an outlier
         self.filter_by_reprojection_error = Parameter(
             bool, value=True, min_value=False, max_value=True
         )
@@ -199,6 +227,8 @@ class DataCollector(ParameteredClass):
             float, value=0.3, min_value=0.0, max_value=2.0
         )
 
+        # New samples are required to be "different" from the ones already in the dataset
+        # Some criterias include the center of the detection, the area of the detection (related to the distance from the camera) and the estimated out-of-plane rotation in the form of skew
         self.filter_by_2d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)
         self.min_normalized_2d_center_difference = Parameter(
             float, value=0.05, min_value=0.0, max_value=1.0
@@ -210,6 +240,8 @@ class DataCollector(ParameteredClass):
             float, value=0.05, min_value=0.0, max_value=1.0
         )
 
+        # Other criteria for new samples is using 3d statistics
+        # They have the advantage of considering the different out-of-plane rotations instead of a single scalar (e.g., differentiatiation of left and right rotations)
         self.filter_by_3d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)
         self.min_3d_center_difference = Parameter(float, value=1.0, min_value=0.1, max_value=100.0)
         self.min_tilt_difference = Parameter(float, value=15.0, min_value=0.0, max_value=90)
@@ -235,7 +267,7 @@ class DataCollector(ParameteredClass):
         self.evaluation_occupancy_rate = 0.0
 
     def clone_without_images(self):
-
+        """Return a lightweight-deep copy of the databases (without the images)."""
         training_data = self.training_data.clone_without_images()
         evaluation_data = self.evaluation_data.clone_without_images()
         clone = copy.deepcopy(
@@ -245,37 +277,47 @@ class DataCollector(ParameteredClass):
         return clone
 
     def get_training_data(self) -> CollectedData:
+        """Return the training data."""
         return self.training_data
 
     def get_evaluation_data(self) -> CollectedData:
+        """Return the evaluation data."""
         return self.evaluation_data
 
     def get_training_detections(self) -> List[BoardDetection]:
+        """Return the training detections."""
         return self.training_data.get_detections()
 
     def get_evaluation_detections(self) -> List[BoardDetection]:
+        """Return the evaluation detections."""
         return self.evaluation_data.get_detections()
 
     def get_training_images(self) -> List[np.array]:
+        """Return the training images."""
         return self.training_data.get_images()
 
     def get_evaluation_images(self) -> List[np.array]:
+        """Return the evaluation images."""
         return self.evaluation_data.get_images()
 
     def get_training_detection(self, index) -> BoardDetection:
+        """Return the a single training detection."""
         return self.training_data.get_detection(index)
 
     def get_evaluation_detection(self, index) -> BoardDetection:
+        """Return the a single evaluation detection."""
         return self.evaluation_data.get_detection(index)
 
     def get_training_image(self, index) -> np.array:
+        """Return the a single training image."""
         return self.training_data.get_image(index)
 
     def get_evaluation_image(self, index) -> np.array:
+        """Return the a single evaluation image."""
         return self.evaluation_data.get_image(index)
 
     def get_flattened_image_training_points(self):
-
+        """Return a flattened (N,2) array of the training image points."""
         if len(self.cached_image_training_points) == len(self.training_data):
             return self.cached_image_training_points
 
@@ -288,7 +330,7 @@ class DataCollector(ParameteredClass):
         return self.cached_image_training_points
 
     def get_flattened_image_evaluation_points(self):
-
+        """Return a flattened (N,2) array of the evaluation image points."""
         if len(self.cached_image_evaluation_points) == len(self.evaluation_data):
             return self.cached_image_evaluation_points
 
@@ -300,6 +342,64 @@ class DataCollector(ParameteredClass):
         )
         return self.cached_image_evaluation_points
 
+    def get_num_training_samples(self):
+        """Return the number of training samples."""
+        return len(self.training_data)
+
+    def get_num_evaluation_samples(self):
+        """Return the number of evaluation samples."""
+        return len(self.evaluation_data)
+
+    def get_training_occupancy_rate(self) -> float:
+        """Return the training occupancy rate, which is defined as the ratio of cells in the pixel space that have at least one image point."""
+        return self.training_occupancy_rate
+
+    def get_evaluation_occupancy_rate(self) -> float:
+        """Return the evaluation occupancy rate, which is defined as the ratio of cells in the pixel space that have at least one image point."""
+        return self.evaluation_occupancy_rate
+
+    def get_training_occupancy_heatmap(self) -> np.array:
+        """Return the training heatmap, which defines the parts of the pixel space that have image points in it."""
+        return self.training_heatmap
+
+    def get_evaluation_occupancy_heatmap(self) -> np.array:
+        """Return the evaluation heatmap, which defines the parts of the pixel space that have image points in it."""
+        return self.evaluation_heatmap
+
+    def recompute_heatmaps(self):
+        """Recomputes the heatmaps of training and evaluation databases."""
+        self.training_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
+        self.evaluation_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
+
+        [
+            self.update_collection_heatmap(self.training_heatmap, detection)
+            for detection in self.training_data.get_detections()
+        ]
+        [
+            self.update_collection_heatmap(self.evaluation_heatmap, detection)
+            for detection in self.evaluation_data.get_detections()
+        ]
+
+        self.training_occupancy_rate = float(np.count_nonzero(self.training_heatmap > 0)) / np.prod(
+            self.training_heatmap.shape
+        )
+        self.evaluation_occupancy_rate = float(
+            np.count_nonzero(self.evaluation_heatmap > 0)
+        ) / np.prod(self.evaluation_heatmap.shape)
+
+    def update_collection_heatmap(self, heatmap: np.array, detection: BoardDetection) -> float:
+        """Update a heatmap with a single detecton's image points."""
+        if self.heatmap_cells.value != heatmap.shape[0]:
+            self.recompute_heatmaps()
+
+        for point in detection.get_flattened_image_points():
+            x = int(heatmap.shape[1] * point[0] / detection.width)
+            y = int(heatmap.shape[0] * point[1] / detection.height)
+            heatmap[y, x] += 1
+
+        occupied = float(np.count_nonzero(heatmap > 0)) / np.prod(heatmap.shape)
+        return occupied
+
     def evaluate_redundancy(
         self,
         normalized_2d_center_x_distance: float,
@@ -310,7 +410,7 @@ class DataCollector(ParameteredClass):
         tilt_y_distance: float,
         center_distance: float,
     ) -> bool:
-
+        """Evaluate if the distances from a detection to the dataset merits adding it."""
         status = False
 
         if self.filter_by_2d_redundancy.value:
@@ -358,7 +458,7 @@ class DataCollector(ParameteredClass):
     def process_detection(
         self, image: np.array, detection: BoardDetection, camera_model: Optional[CameraModel] = None
     ) -> CollectionStatus:
-
+        """Evaluate if a detection should be added to either the training or evaluation dataset."""
         accepted = True
 
         if self.filter_by_speed.value:
@@ -402,7 +502,6 @@ class DataCollector(ParameteredClass):
             self.training_occupancy_rate = self.update_collection_heatmap(
                 self.training_heatmap, detection
             )
-            # self.new_training_sample.emit()
 
         if (
             status_evaluation
@@ -413,62 +512,8 @@ class DataCollector(ParameteredClass):
             self.evaluation_occupancy_rate = self.update_collection_heatmap(
                 self.evaluation_heatmap, detection
             )
-            # self.new_evaluation_sample.emit()
 
         if status_training or status_evaluation:
-            # self.new_sample.emit()
             return CollectionStatus.ACCEPTED
 
         return CollectionStatus.REDUNDANT
-
-    def get_num_training_samples(self):
-        return len(self.training_data)
-
-    def get_num_evaluation_samples(self):
-        return len(self.evaluation_data)
-
-    def recompute_heatmaps(self):
-
-        self.training_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
-        self.evaluation_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
-
-        [
-            self.update_collection_heatmap(self.training_heatmap, detection)
-            for detection in self.training_data.get_detections()
-        ]
-        [
-            self.update_collection_heatmap(self.evaluation_heatmap, detection)
-            for detection in self.evaluation_data.get_detections()
-        ]
-
-        self.training_occupancy_rate = float(np.count_nonzero(self.training_heatmap > 0)) / np.prod(
-            self.training_heatmap.shape
-        )
-        self.evaluation_occupancy_rate = float(
-            np.count_nonzero(self.evaluation_heatmap > 0)
-        ) / np.prod(self.evaluation_heatmap.shape)
-
-    def update_collection_heatmap(self, heatmap: np.array, detection: BoardDetection) -> float:
-
-        if self.heatmap_cells.value != heatmap.shape[0]:
-            self.recompute_heatmaps()
-
-        for point in detection.get_flattened_image_points():
-            x = int(heatmap.shape[1] * point[0] / detection.width)
-            y = int(heatmap.shape[0] * point[1] / detection.height)
-            heatmap[y, x] += 1
-
-        occupied = float(np.count_nonzero(heatmap > 0)) / np.prod(heatmap.shape)
-        return occupied
-
-    def get_training_occupancy_rate(self) -> float:
-        return self.training_occupancy_rate
-
-    def get_evaluation_occupancy_rate(self) -> float:
-        return self.evaluation_occupancy_rate
-
-    def get_training_occupancy_heatmap(self) -> np.array:
-        return self.training_heatmap
-
-    def get_evaluation_occupancy_heatmap(self) -> np.array:
-        return self.evaluation_heatmap

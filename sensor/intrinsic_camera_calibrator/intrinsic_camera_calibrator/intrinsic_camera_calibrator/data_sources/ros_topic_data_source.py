@@ -1,4 +1,22 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import threading
+from typing import List
+from typing import Tuple
 
 import cv2
 from cv_bridge import CvBridge
@@ -20,61 +38,73 @@ class RosTopicDataSource(DataSource, Node):
         self.bridge = CvBridge()
         self.spin()
 
-    def get_filtered_image_topics_and_types(self):
-
+    def get_filtered_image_topics_and_types(self) -> List[Tuple[str, str]]:
+        """Return a list of image topics and their types."""
         topics_list = self.get_topic_names_and_types()
-        return [
-            (topic_name, topic_types)
-            for topic_name, topic_types in topics_list
-            if len(
-                set(topic_types).intersection(
-                    {"sensor_msgs/msg/Image", "sensor_msgs/msg/CompressedImage"}
+        with self.lock:
+            return [
+                (topic_name, topic_types)
+                for topic_name, topic_types in topics_list
+                if len(
+                    set(topic_types).intersection(
+                        {"sensor_msgs/msg/Image", "sensor_msgs/msg/CompressedImage"}
+                    )
                 )
-            )
-            > 0
-        ]
+                > 0
+            ]
 
-    def get_image_topics(self):
+    def get_image_topics(self) -> List[str]:
+        """Return a list of the available topics in string format."""
+        with self.lock:
+            filtered_topic_names_and_types = self.get_filtered_image_topics_and_types()
 
-        filtered_topic_names_and_types = self.get_filtered_image_topics_and_types()
+            return [topic_name for topic_name, _ in filtered_topic_names_and_types]
 
-        return [topic_name for topic_name, _ in filtered_topic_names_and_types]
+    def set_image_topic(self, image_topic: str):
+        """Set the data source topic and subscribes to it."""
+        with self.lock:
 
-    def set_image_topic(self, image_topic):
+            topics = self.get_filtered_image_topics_and_types()
+            topics_dict = dict(topics)
 
-        topics = self.get_filtered_image_topics_and_types()
-        topics_dict = dict(topics)
+            if image_topic not in topics_dict:
+                return False
 
-        if image_topic not in topics_dict:
-            return False
+            # Parse camera name
+            topic_namespaces = image_topic.split("/")
+            topic_namespaces.reverse()
+            image_index = [i for i, s in enumerate(topic_namespaces) if "image" in s][0]
+            self.camera_name = topic_namespaces[image_index + 1]
 
-        for image_type in topics_dict[image_topic]:
+            for image_type in topics_dict[image_topic]:
 
-            if image_type == "sensor_msgs/msg/CompressedImage":
-                self.compressed_image_sub = self.create_subscription(
-                    CompressedImage,
-                    image_topic,
-                    self.compressed_image_callback,
-                    qos_profile_sensor_data,
-                )
-            else:
-                self.image_sub = self.create_subscription(
-                    Image, image_topic, self.image_callback, qos_profile_sensor_data
-                )
+                if image_type == "sensor_msgs/msg/CompressedImage":
+                    self.compressed_image_sub = self.create_subscription(
+                        CompressedImage,
+                        image_topic,
+                        self.compressed_image_callback,
+                        qos_profile_sensor_data,
+                    )
+                else:
+                    self.image_sub = self.create_subscription(
+                        Image, image_topic, self.image_callback, qos_profile_sensor_data
+                    )
 
-    def compressed_image_callback(self, msg):
+    def compressed_image_callback(self, msg: CompressedImage):
+        """Process a compressed image."""
         with self.lock:
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
             self.data_callback(image_data)
 
-    def image_callback(self, msg):
+    def image_callback(self, msg: Image):
+        """Process a raw image."""
         with self.lock:
-            image_data = self.bridge.imgmsg_to_cv2(self.image_sync)
+            image_data = self.bridge.imgmsg_to_cv2(msg)
             self.data_callback(image_data)
 
     def spin(self):
-
+        """Start a new thread for ROS to spin in."""
         self.thread = threading.Thread(target=rclpy.spin, args=(self,))
         self.thread.setDaemon(True)
         self.thread.start()

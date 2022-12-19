@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Tier IV, Inc.
+# Copyright 2022 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from collections import defaultdict
 import copy
+import os
 import signal
 import sys
 import threading
@@ -30,6 +32,7 @@ from PySide2.QtWidgets import QApplication
 from PySide2.QtWidgets import QCheckBox
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QDoubleSpinBox
+from PySide2.QtWidgets import QFileDialog
 from PySide2.QtWidgets import QGraphicsScene
 from PySide2.QtWidgets import QGraphicsView
 from PySide2.QtWidgets import QGroupBox
@@ -62,6 +65,8 @@ from intrinsic_camera_calibrator.views.initialization_view import Initialization
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 import numpy as np
 import rclpy
+import ruamel.yaml
+import yaml
 
 
 class CameraIntrinsicsCalibratorUI(QMainWindow):
@@ -92,12 +97,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         # Calibration results
 
         # Camera models to use normally
-        self.current_distorted_camera_model: CameraModel = None
-        self.current_undistorted_camera_model: CameraModel = None
+        self.current_camera_model: CameraModel = None
 
         # Camera model produced via a full calibration
-        self.calibrated_distorted_camera_model: CameraModel = None
-        self.calibrated_undistorted_camera_model: CameraModel = None
+        self.calibrated_camera_model: CameraModel = None
 
         # Camera model calibrated automatically as we collect data
         self.partial_calibration_distorted_camera_model: CameraModel = None
@@ -130,7 +133,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             calibrator.calibration_results_signal.connect(self.process_calibration_results)
 
         # Qt logic
-        self.img_id = 0  # TODO(knzo25): delete later
         self.should_process_image.connect(self.process_data)
         self.produced_data_signal.connect(self.process_new_data)
         self.consumed_data_signal.connect(self.on_consumed)
@@ -310,10 +312,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_group.setFlat(True)
 
         self.calibrator_type_combobox = QComboBox()
-        self.calibration_parameters_button = QPushButton(
-            "Calibration parameters"
-        )  # this view should disable the previous combobox
+        self.calibration_parameters_button = QPushButton("Calibration parameters")
         self.calibration_button = QPushButton("Calibrate")
+        self.save_button = QPushButton("Save")
         self.calibration_status_label = QLabel("Calibration status: idle")
         self.calibration_time_label = QLabel("Calibration time:")
         self.calibration_training_samples_label = QLabel("Training samples:")
@@ -352,6 +353,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_parameters_button.clicked.connect(on_parameters_button_clicked)
         self.calibration_button.clicked.connect(on_calibration_clicked)
 
+        self.save_button.clicked.connect(self.on_save_clicked)
+        self.save_button.setEnabled(False)
+
         for calibrator_type in CalibratorEnum:
             self.calibrator_type_combobox.addItem(calibrator_type.value["display"], calibrator_type)
 
@@ -370,6 +374,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         calibration_layout.addWidget(self.calibrator_type_combobox)
         calibration_layout.addWidget(self.calibration_parameters_button)
         calibration_layout.addWidget(self.calibration_button)
+        calibration_layout.addWidget(self.save_button)
         calibration_layout.addWidget(self.calibration_status_label)
         calibration_layout.addWidget(self.calibration_time_label)
         calibration_layout.addWidget(self.calibration_training_samples_label)
@@ -456,9 +461,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         def view_data_collection_statistics_callback():
 
-            print("view_data_collection_statistics_callback")  # here we whould
+            print("view_data_collection_statistics_callback")
             data_collection_statistics_view = DataCollectorView(
-                self.data_collector.clone_without_images()
+                self.data_collector.clone_without_images(), self.current_camera_model
             )
             data_collection_statistics_view.plot()
 
@@ -468,7 +473,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         def data_collection_parameters_callback():
             self.data_collection_parameters_button.setEnabled(False)
 
-            print("data_collection_parameters_callback")  # here we whould
+            print("data_collection_parameters_callback")
             data_collection_parameters_view = ParameterView(self.data_collector)
             data_collection_parameters_view.closed.connect(
                 data_collection_parameters_closed_callback
@@ -647,12 +652,61 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibrator_type_combobox.setEnabled(True)
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(True)
+        self.save_button.setEnabled(True)
 
     def on_consumed(self):
         self.data_source.consumed()
 
-    def process_detection_results(self, img: np.array, detection: BoardDetection):
+    def on_save_clicked(self):
+        output_folder = QFileDialog.getExistingDirectory(
+            None,
+            "Select directory to save the calibration result",
+            ".",
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
+        )
 
+        if output_folder is None or output_folder == "":
+            return
+
+        print(f"Saving calibration results to {output_folder}")
+
+        data = self.calibrated_camera_model.as_dict(self.undistortion_alpha_spinbox.value())
+        camera_name = self.data_source.get_camera_name()
+        data["camera_name"] = camera_name
+
+        def flist(data):
+            if isinstance(data, list):
+                retval = ruamel.yaml.comments.CommentedSeq(data)
+                retval.fa.set_flow_style()
+                return retval
+            elif isinstance(data, dict):
+                return {k: flist(v) for k, v in data.items()}
+            else:
+                return data
+
+        data = flist(data)
+
+        with open(os.path.join(output_folder, f"{camera_name}_info.yaml"), "w") as f:
+            yaml = ruamel.yaml.YAML()
+            yaml.dump(data, f)
+
+        training_folder = os.path.join(output_folder, "training_images")
+        evaluation_folder = os.path.join(output_folder, "evaluation_images")
+
+        if not os.path.exists(training_folder):
+            os.mkdir(training_folder)
+        if not os.path.exists(evaluation_folder):
+            os.mkdir(evaluation_folder)
+
+        for index, image in enumerate(self.data_collector.get_training_images()):
+            cv2.imwrite(os.path.join(training_folder, f"{index:04d}.jpg"), image)
+
+        for index, image in enumerate(self.data_collector.get_evaluation_images()):
+            cv2.imwrite(os.path.join(evaluation_folder, f"{index:04d}.jpg"), image)
+
+    def process_detection_results(self, img: np.array, detection: BoardDetection):
+        """Process the results from an object detection."""
+        # Signal that the detector is free
         self.consumed_data_signal.emit()
 
         if img is None:
@@ -662,17 +716,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 self.should_process_image.emit()
 
             return
-
-        cv2.putText(
-            img,
-            f"image id = {self.img_id}",
-            (100, 100),
-            cv2.FONT_HERSHEY_COMPLEX,
-            5,
-            (255, 0, 255),
-            1,
-            cv2.LINE_AA,
-        )
 
         # Set general options
         self.image_view.set_rendering_alpha(self.rendering_alpha_spinbox.value())
@@ -735,8 +778,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 np.power(reprojection_errors / cell_sizes.reshape(-1, 1), 2).mean()
             )
 
-            pose_rotation, pose_translation = detection.get_pose()
-            rough_angles = detection.get_rotation_angles()
+            pose_rotation, pose_translation = detection.get_pose(self.current_camera_model)
+            rough_angles = detection.get_rotation_angles(self.current_camera_model)
+
+            if self.current_camera_model is not None and pose_translation[2] > 10.0:
+                self.paused = True
 
             self.raw_detection_label.setText("Detected: True")
             self.raw_linear_error_rms_label.setText(
@@ -808,12 +854,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         self.pending_detection_result = False
 
+        # If there was a pending detection, we process it now
         if self.pending_detection_request:
             self.should_process_image.emit()
 
     def process_data(self):
-        # This should be done in another thread so we do a deepcopy (not really necessary)
-
+        """Request the detector to process the image (the detector itself runs in another thread). Depending on the ImageViewMode selected, the image is also rectified."""
         if self.image_view_type_combobox.currentData() in {
             ImageViewMode.SOURCE_UNRECTIFIED,
             ImageViewMode.TRAINING_DB_UNRECTIFIED,
@@ -840,8 +886,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         )
 
         with self.lock:
-            self.img_id += 1
-
             self.unprocessed_image = img
 
         if self.pending_detection_result:
@@ -850,7 +894,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.should_process_image.emit()
 
     def process_new_data(self):
-
+        """Attempt to request the detector to process an image. However, if it there is an image being processed, does not enqueue them indefinitely. Istead, only leave the last one."""
         if self.paused:
             return
 
@@ -860,8 +904,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             return
 
         with self.lock:
-            self.img_id += 1
-
             if self.produced_image is not None:
                 self.unprocessed_image = self.produced_image
             else:
@@ -879,38 +921,15 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         The producer generally has its own thread so synchronization it is neeeded
         Args:
-            img (np.array): the produced image coming from any data source
+            img (np.array): the produced image coming from any data source.
         """
+        # We depcouple the the data coming from the source with the processing slot to avoid dropping frames in case we cann not process them all
         with self.lock:
-            # We depcouple the the data coming from the source with the processing slot to avoid dropping frames in case we cann not process them all
             self.produced_image = img
-            self.produced_data_signal.emit()
+            self.produced_data_signal.emit()  # Using a signal from another thread results in the slot being executed in the class Qt thread
 
     def on_parameter_changed(self):
-
-        # print("Some parameter has changed. Should we do anything ?")
         self.should_process_image.emit()
-
-    def sensor_data_callback(self):
-
-        # This method is executed in the UI thread
-        with self.lock:
-
-            self.image_view.set_pixmap(self.pixmap_tmp)
-            self.image_view.set_pointcloud(self.pointcloud_tmp)
-
-            if not (
-                self.use_optimized_intrinsics_checkbox.isChecked()
-                and self.use_optimized_intrinsics_checkbox.isEnabled()
-            ):
-                self.camera_info = self.camera_info_tmp
-
-                self.image_view.set_camera_info(self.camera_info_tmp.k, self.camera_info_tmp.d)
-                self.calibrator.set_camera_info(self.camera_info_tmp.k, self.camera_info_tmp.d)
-
-            self.image_view.update()
-            self.graphics_view.update()
-            pass
 
 
 def main(args=None):
@@ -918,20 +937,17 @@ def main(args=None):
 
     rclpy.init(args=args)
 
-    import yaml
-
     cfg = {}
-    with open(sys.argv[1], "r") as stream:
-        try:
+    try:
+        with open(sys.argv[1], "r") as stream:
             cfg = yaml.safe_load(stream)
-        except yaml.YAMLError as e:
-            print(e)
+    except Exception as e:
+        print(f"Could not load the parameters from teh YAML file ({e})")
 
     try:
         signal.signal(signal.SIGINT, sigint_handler)
 
         ui = CameraIntrinsicsCalibratorUI(cfg)  # noqa: F841
-
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
         print("Received sigint. Quiting...")

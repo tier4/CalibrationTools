@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import threading
 
 from PySide2.QtCore import Signal
@@ -11,6 +28,7 @@ from intrinsic_camera_calibrator.data_sources.ros_bag_data_source import RosBagD
 
 
 class RosBagView(QWidget):
+    """Widget to configure and initialize a RosBagDataSource."""
 
     failed = Signal()
     success = Signal()
@@ -58,13 +76,13 @@ class RosBagView(QWidget):
         self.show()
 
     def select_bag_callback(self):
-
+        """Create a blocking dialog to select a rosbag."""
         fname = QFileDialog.getOpenFileName()
         print(f"{threading.get_ident()}: QFiledialog selected = {fname[0]}")
         self.set_rosbag_request.emit(fname[0])
 
     def update_topics(self, topic_list):
-
+        """Update the topics combobox and adjust the size of the widget based on a list of topics."""
         topic_list.sort()
 
         for topic in topic_list:
@@ -77,7 +95,7 @@ class RosBagView(QWidget):
         self.adjustSize()
 
     def accept_callback(self):
-
+        """Process the user choice of topic."""
         if self.topic_combo_box.count() == 0:
             return
 
@@ -89,12 +107,9 @@ class RosBagView(QWidget):
         self.close()
 
     def closeEvent(self, event):
-        print("Ros bag data view: closeEvent")
+        """When the widget is closed it should be marked for deletion and notify the event."""
         if not self.topic_selected:
             self.failed.emit()
         event.accept()
 
         self.deleteLater()
-
-    def __del__(self):
-        print("Ros bag data view: destructor")

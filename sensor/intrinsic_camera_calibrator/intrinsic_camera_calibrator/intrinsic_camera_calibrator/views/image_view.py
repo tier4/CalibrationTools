@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Tier IV, Inc.
+# Copyright 2022 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 
 from typing import List
 
@@ -35,10 +34,12 @@ import numpy as np
 
 
 class CustomQGraphicsView(QGraphicsView):
+    """Custom subclass of QGraphicsView to control ImageView and add zoom, pan, and other interactions."""
+
     def __init__(self, parent=None):
         super(CustomQGraphicsView, self).__init__(parent)
 
-        self.is_pan = False
+        self.is_pan_active = False
         self.pan_start_x = None
         self.pan_start_y = None
 
@@ -50,7 +51,7 @@ class CustomQGraphicsView(QGraphicsView):
             item.update()
 
     def mouseMoveEvent(self, event):
-        if self.is_pan:
+        if self.is_pan_active:
             self.horizontalScrollBar().setValue(
                 self.horizontalScrollBar().value() - (event.x() - self.pan_start_x)
             )
@@ -66,7 +67,7 @@ class CustomQGraphicsView(QGraphicsView):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.is_pan = True
+            self.is_pan_active = True
             self.pan_start_x = event.x()
             self.pan_start_y = event.y()
             self.setCursor(Qt.ClosedHandCursor)
@@ -77,7 +78,7 @@ class CustomQGraphicsView(QGraphicsView):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.is_pan = False
+            self.is_pan_active = False
             self.pan_start_x = None
             self.pan_start_y = None
             self.setCursor(Qt.ArrowCursor)
@@ -116,6 +117,8 @@ class CustomQGraphicsView(QGraphicsView):
 
 
 class ImageView(QGraphicsItem, QObject):
+    """QGraphicsItem subclass to render the image and other useful statistics."""
+
     def __init__(self, parent=None):
         QGraphicsItem.__init__(self, parent)
         QObject.__init__(self, parent)
@@ -149,55 +152,63 @@ class ImageView(QGraphicsItem, QObject):
         self.draw_detection_color = QColor()
 
     def set_draw_detection_color(self, color: QColor):
+        """Set the color in which to draw the center of the detectins on."""
         self.draw_detection_color = color
 
     def set_draw_detection_points(self, value: bool):
+        """Set the flag of wether to draw the detectin points or not."""
         self.is_draw_detection_points = value
 
     def set_draw_training_points(self, value: bool):
+        """Set the flag of wether or not to draw all the detection points present in the training dataset."""
         self.is_draw_training_points = value
 
     def set_draw_evaluation_points(self, value: bool):
+        """Set the flag of wether or not to draw all the detection points present in the training dataset."""
         self.is_draw_evaluation_points = value
 
     def set_draw_training_heatmap(self, value: bool):
+        """Set the flag of wether or not to draw the occupancy heatmap of the training dataset."""
         self.is_draw_training_heatmap = value
 
     def set_draw_evaluation_heatmap(self, value: bool):
+        """Set the flag of wether or not to draw the occupancy heatmap of the evaluaton dataset."""
         self.is_draw_evaluation_heatmap = value
 
     def set_detection_ordered_points(self, points_list: List[np.array]):
+        """Set the detection points to draw. The points are expected to be in a list of rows, where each row is rendered in a different color."""
         self.points_list = points_list
 
     def set_training_points(self, value: np.array):
+        """Set the detection points from the training dataset."""
         self.training_points = value
 
     def set_evaluation_points(self, value: np.array):
+        """Set the detection points from the evaluation dataset."""
         self.evaluation_points = value
 
     def set_training_heatmap(self, value: np.array):
+        """Set the occupancy heatmap to draw from the training dataset."""
         self.training_heatmap = value
 
     def set_evaluation_heatmap(self, value: np.array):
+        """Set the occupancy heatmap to draw from the evaluation dataset."""
         self.evaluation_heatmap = value
 
     def set_grid_size_pixels(self, cell_size_pixels):
+        """Set the size in which to draw the detection's corners."""
         self.cell_size_pixels = cell_size_pixels
 
     def set_rendering_alpha(self, value: float):
+        """Set the alpha channel of the drawings."""
         self.rendering_alpha = value
 
-    def pixmap(self):
+    def pixmap(self) -> QPixmap:
+        """Return the rendering QPixmap."""
         return self.raw_pixmap
 
     def set_image(self, img: np.array):
-
-        # Just debugging the frame for now
-        img[0, :, 0] = 255
-        img[-1, :, 0] = 255
-        img[:, 0, 0] = 255
-        img[:, -1, 0] = 255
-
+        """Set the image to render from an array to a QPixmap an resize the window if necessary."""
         height, width, channel = img.shape
         assert channel == 3
         bytes_per_line = channel * width
@@ -208,13 +219,18 @@ class ImageView(QGraphicsItem, QObject):
             self.prepareGeometryChange()
 
     def minimumSizeHint(self):
+        """Return a size for Qt to infer the correct size of the view."""
         return QSize(1000, 400)
 
     def sizeHint(self):
+        """Return a size for Qt to infer the correct size of the view."""
         return QSize(1000, 1000)
 
     def draw_detection_points(self, painter: QPainter):
+        """Draw the detection's corners in the view.
 
+        Each corner is drawn as a detection, and each row is connected through a line of the same color.
+        """
         if self.points_list is None:
             return
 
@@ -272,7 +288,7 @@ class ImageView(QGraphicsItem, QObject):
             painter.drawLine(QPointF(p1[0], p1[1]), QPointF(p2[0], p2[1]))
 
     def draw_points(self, painter: QPainter, points: np.array):
-
+        """Draw a set of points as rectangles."""
         pen = QPen(QColor(255, 0.0, 255, int(255 * self.rendering_alpha)))
         painter.setPen(pen)
 
@@ -285,7 +301,7 @@ class ImageView(QGraphicsItem, QObject):
         painter.drawRects(qrects_list)
 
     def draw_heatmap(self, painter: QPainter, heatmap: np.array, display_size: QSize):
-
+        """Draws a heatmap as rectangles."""
         w, h = heatmap.shape
         xscale = display_size.width() / float(w)
         yscale = display_size.height() / float(h)
@@ -304,7 +320,7 @@ class ImageView(QGraphicsItem, QObject):
                 painter.drawRect(QRectF(i * xscale, j * yscale, xscale, yscale))
 
     def paint(self, painter: QPainter, option, widget):
-
+        """Reimlemented method to perform all of the image related rendering operations."""
         self.widget_size = widget.size()
 
         if self.raw_pixmap.isNull():
@@ -322,9 +338,7 @@ class ImageView(QGraphicsItem, QObject):
         self.display_pixmap = self.raw_pixmap.scaled(
             display_size, Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
-        display_size = (
-            self.display_pixmap.size()
-        )  # There are cases where the previous one is not preserved
+        display_size = self.display_pixmap.size()
 
         # This offset is needed to that the coordinate (0,0) is in the midle of the pixel rather than one of the corners
         offset = -0.5
@@ -426,6 +440,7 @@ class ImageView(QGraphicsItem, QObject):
             self.draw_heatmap(painter, self.evaluation_heatmap, display_size)
 
     def boundingRect(self):
+        """Return the size of the Widget to let other widgets  adjust correctly."""
         if self.display_pixmap.size().width() == 0:
             return QRectF(0, 0, 500, 500)
 

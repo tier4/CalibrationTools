@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 from functools import partial
 
 from PySide2.QtCore import Signal
@@ -11,6 +28,7 @@ from intrinsic_camera_calibrator.parameter import ParameteredClass
 
 
 class ParameterView(QWidget):
+    """A simple widget to visualize and edit a ParameteredClass's parameters."""
 
     parameter_changed = Signal()
     closed = Signal()
@@ -26,7 +44,6 @@ class ParameterView(QWidget):
         self.parametered_class = parametered_class
 
         for i, (k, v) in enumerate(self.parametered_class.parameters().items()):
-            # print(f"{k}: {v}")
             label = QLabel(k)
             self.layout.addWidget(label, i, 0)
 
@@ -65,10 +82,7 @@ class ParameterView(QWidget):
         self.show()
 
     def closeEvent(self, event):
-        print("Parameter view: closeEvent")
+        """When the widget is closed it should be marked for delection and notify the event."""
         self.closed.emit()
         event.accept()
         self.deleteLater()
-
-    def __del__(self):
-        print("Parameter view: destructor")

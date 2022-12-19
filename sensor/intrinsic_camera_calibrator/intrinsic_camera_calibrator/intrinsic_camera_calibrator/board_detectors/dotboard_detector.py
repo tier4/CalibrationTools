@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import cv2
 from intrinsic_camera_calibrator.board_detections.dotboard_detection import DotBoardDetection
 from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDetector
@@ -7,6 +24,8 @@ import numpy as np
 
 
 class DotBoardDetector(BoardDetector):
+    """Detector class for a/symmetric circle/dot boards."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.dotboard_int_param = Parameter(int, value=1, min_value=1, max_value=4)
@@ -25,12 +44,10 @@ class DotBoardDetector(BoardDetector):
         pass
 
     def detect(self, img: np.array):
-
+        """Slot to detect boards from an image. Results are sent through the detection_results signals."""
         if img is None:
             self.detection_results_signal.emit(None, None)
             return
-
-        # print(f"{threading.get_ident()} -> threaded detect: start")
 
         with self.lock:
             h, w = img.shape[0:2]
@@ -46,21 +63,7 @@ class DotBoardDetector(BoardDetector):
                 self.min_dist_between_blobs_percentage.value * max(h, w) / 100.0
             )
 
-            # params.minArea = 250
-            # params.maxArea = 30000
-            # params.minDistBetweenBlobs = 20
-            # params.filterByConvexity = False
-            # params.minCircularity = 0.1
-            # params.filterByInertia = True
-            # params.minInertiaRatio = 0.01
-
             detector = cv2.SimpleBlobDetector_create(params)
-
-            # Visualize blob detection
-            # keypoints = detector.detect(mono)
-            # mono_with_keypoints = cv2.drawKeypoints(
-            #     mono, keypoints, numpy.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-            # cv2.imshow("blob", mono_with_keypoints)
 
             flags = 0
             flags |= cv2.CALIB_CB_CLUSTERING if self.clustering.value else 0
@@ -70,24 +73,18 @@ class DotBoardDetector(BoardDetector):
                 else cv2.CALIB_CB_ASYMMETRIC_GRID
             )
 
-        # flags = cv2.CALIB_CB_SYMMETRIC_GRID | cv2.CALIB_CB_CLUSTERING
-
         grayscale = to_grayscale(img)
-        grayscale = np.array(grayscale)  # Is this really needed (?)
 
         (ok, corners) = cv2.findCirclesGrid(
             grayscale, (cols, rows), flags=flags, blobDetector=detector
         )
 
-        # In symmetric case, findCirclesGrid does not detect the target if it's turned sideways. So we try
-        # again with dimensions swapped - not so efficient.
-        # TODO Better to add as second board? Corner ordering will change.
         if not ok:
             (ok, corners) = cv2.findCirclesGrid(
                 grayscale, (cols, rows), flags=flags, blobDetector=detector
             )
 
-            # We need to swap the axes of the detections back to make it consistent
+            # we need to swap the axes of the detections back to make it consistent
             if ok:
                 corners_2d_array = corners.reshape((cols, rows, 2))
                 corners_transposed = np.transpose(corners_2d_array, (1, 0, 2))
@@ -96,8 +93,6 @@ class DotBoardDetector(BoardDetector):
         if not ok:
             self.detection_results_signal.emit(img, None)
             return
-
-        # cv2.drawChessboardCorners(img, (cols, rows), corners, ok)
 
         # reverse the corners if needed
         if np.linalg.norm(corners[0]) > np.linalg.norm(corners[1]):
@@ -117,5 +112,4 @@ class DotBoardDetector(BoardDetector):
             image_points=image_points,
         )
 
-        # print(f"{threading.get_ident()} -> threaded detect: end")
         self.detection_results_signal.emit(img, detection)

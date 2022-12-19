@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from enum import Enum
 import multiprocessing as mp
 import threading
@@ -5,6 +21,7 @@ import time
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from PySide2.QtCore import QObject
 from PySide2.QtCore import Signal
@@ -47,6 +64,7 @@ class CalibratorEnum(Enum):
 
 
 class Calibrator(ParameteredClass, QObject):
+    """Base clase of camera intrinsic calibrator. Most of the logic should be implemented here abd the subclasses only implement the core method."""
 
     calibration_request = Signal(object)
     calibration_results_signal = Signal(object, float, int, int, int, int, float, float, float)
@@ -93,7 +111,13 @@ class Calibrator(ParameteredClass, QObject):
         self.calibration_request.connect(self._calibrate)
 
     def _calibrate(self, data_collector: DataCollector) -> CameraModel:
+        """General calibration routine.
 
+        1) rejects outlier via ransac
+        2) subsample the outliers if necessary
+        3) calibrate with the subsamples inliers
+        4) calibrates again with only the inliers.
+        """
         with self.lock:
             use_ransac_pre_rejection = self.use_ransac_pre_rejection.value
             max_calibration_samples = self.max_calibration_samples.value
@@ -110,8 +134,12 @@ class Calibrator(ParameteredClass, QObject):
         num_training_detections = len(raw_training_detections)
         num_evaluation_detections = len(raw_evaluation_detections)
 
+        calibrated_model = None
+
         if use_ransac_pre_rejection:
-            pre_rejection_inliers = self._pre_rejection_filter_impl(raw_training_detections)
+            calibrated_model, pre_rejection_inliers = self._pre_rejection_filter_impl(
+                raw_training_detections
+            )
         else:
             pre_rejection_inliers = raw_training_detections
 
@@ -120,7 +148,7 @@ class Calibrator(ParameteredClass, QObject):
         if num_pre_rejection_inliers > max_calibration_samples:
             if use_entropy_maximization_subsampling:
                 calibration_training_detections = self._entropy_maximization_subsampling_impl(
-                    pre_rejection_inliers
+                    pre_rejection_inliers, calibrated_model
                 )
             else:
                 calibration_training_detections = self._random_subsampling_impl(
@@ -205,8 +233,10 @@ class Calibrator(ParameteredClass, QObject):
             evaluation_rms_error,
         )
 
-    def _pre_rejection_filter_impl(self, detections: List[BoardDetection]) -> List[BoardDetection]:
-
+    def _pre_rejection_filter_impl(
+        self, detections: List[BoardDetection]
+    ) -> Tuple[CameraModel, List[BoardDetection]]:
+        """Implement a rejection filter via ransc."""
         with self.lock:
             pre_rejection_min_hipotheses = self.pre_rejection_min_hipotheses.value
             pre_rejection_iterations = self.pre_rejection_iterations.value
@@ -220,7 +250,7 @@ class Calibrator(ParameteredClass, QObject):
         min_samples = pre_rejection_min_hipotheses
 
         if num_detections < min_samples:
-            return detections
+            return None, detections
 
         height = detections[0].get_image_height()
         width = detections[0].get_image_width()
@@ -265,12 +295,12 @@ class Calibrator(ParameteredClass, QObject):
             f"Pre rejection inliers = {max_inliers}/{len(detections)} | threshold = {pre_rejection_max_rms_error:.2f}"
         )
 
-        return [detections[i] for i in best_inlier_mask.nonzero()[0]]
+        return model, [detections[i] for i in best_inlier_mask.nonzero()[0]]
 
     def _entropy_maximization_subsampling_impl(
-        self, detections: List[BoardDetection]
+        self, detections: List[BoardDetection], camera_model: CameraModel
     ) -> List[BoardDetection]:
-
+        """Subsample detections via greedy entropy maximization."""
         with self.lock:
             subsampling_pixel_cells = self.subsampling_pixel_cells.value
             subsampling_max_tilt_deg = self.subsampling_max_tilt_deg.value
@@ -296,6 +326,7 @@ class Calibrator(ParameteredClass, QObject):
 
         add_detection(
             detections[initial_idx],
+            camera_model,
             accepted_pixel_occupancy,
             accepted_tilt_occupancy,
             pixel_cells,
@@ -320,6 +351,7 @@ class Calibrator(ParameteredClass, QObject):
 
                 add_detection(
                     detections[idx],
+                    camera_model,
                     pixel_occupancy,
                     tilt_occupancy,
                     pixel_cells,
@@ -339,6 +371,7 @@ class Calibrator(ParameteredClass, QObject):
             accepted_array[max_delta_entropy_idx] = True
             add_detection(
                 detections[max_delta_entropy_idx],
+                camera_model,
                 accepted_pixel_occupancy,
                 accepted_tilt_occupancy,
                 pixel_cells,
@@ -349,7 +382,7 @@ class Calibrator(ParameteredClass, QObject):
         return [detections[i] for i in accepted_array.nonzero()[0]]
 
     def _random_subsampling_impl(self, detections: List[BoardDetection]) -> List[BoardDetection]:
-
+        """Subsample the detections uniforminly."""
         with self.lock:
             max_calibration_samples = self.max_calibration_samples.value
 
@@ -359,7 +392,6 @@ class Calibrator(ParameteredClass, QObject):
     def _post_rejection_impl(
         self, detections: List[BoardDetection], model: CameraModel
     ) -> List[BoardDetection]:
-
         with self.lock:
             post_rejection_max_rms_error = self.post_rejection_max_rms_error.value
 
@@ -383,6 +415,7 @@ class Calibrator(ParameteredClass, QObject):
         post_rejection_inlier_detections: List[BoardDetection],
         evaluation_detections: List[BoardDetection],
     ):
+        """Plot the statistics of the different set of data involved in the calibration. Since the implementation is in matplotlib it requires to be done in another process."""
         with self.lock:
             viz_pixel_cells = self.viz_pixel_cells.value
             viz_tilt_resolution = self.viz_tilt_resolution.value
@@ -414,7 +447,7 @@ class Calibrator(ParameteredClass, QObject):
         inlier_detections: List[BoardDetection],
         evaluation_detections: List[BoardDetection],
     ):
-
+        """Plot the calibration result statistics of the different set of data involved in the calibration. Since the implementation is in matplotlib it requires to be done in another process."""
         with self.lock:
             viz_pixel_cells = self.viz_pixel_cells.value
             viz_tilt_resolution = self.viz_tilt_resolution.value
@@ -438,5 +471,5 @@ class Calibrator(ParameteredClass, QObject):
         plot_process.start()
 
     def _calibration_impl(self, detections: List[BoardDetection]) -> CameraModel:
-
+        """Actual implementation of the calibration. Since this is an abstact class it remains unimplemented."""
         raise NotImplementedError

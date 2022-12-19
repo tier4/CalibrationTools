@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Tier IV, Inc.
+# Copyright 2022 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
 # limitations under the License.
 
 import cv2
+import numpy as np
 
-# import numpy as np
 
-
-def to_grayscale(img):
+def to_grayscale(img: np.array) -> np.array:
+    """Convert a image to grayscale."""
     if len(img.shape) == 3 and img.shape[2] == 3:
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     else:

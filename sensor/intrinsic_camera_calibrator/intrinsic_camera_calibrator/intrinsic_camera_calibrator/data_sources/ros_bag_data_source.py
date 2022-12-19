@@ -1,6 +1,20 @@
-import os
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from pathlib import Path
-import sys
 import threading
 
 from PySide2.QtCore import QObject
@@ -16,13 +30,6 @@ from rosidl_runtime_py.utilities import get_message
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Image
 
-if os.environ.get("ROSBAG2_PY_TEST_WITH_RTLD_GLOBAL", None) is not None:
-    # This is needed on Linux when compiling with clang/libc++.
-    # TL;DR This makes class_loader work when using a python extension compiled with libc++.
-    #
-    # For the fun RTTI ABI details, see https://whatofhow.wordpress.com/2015/03/17/odr-rtti-dso/.
-    sys.setdlopenflags(os.RTLD_GLOBAL | os.RTLD_LAZY)
-
 
 def get_rosbag_options(path, serialization_format="cdr"):
     storage_options = rosbag2_py.StorageOptions(uri=path, storage_id="sqlite3")
@@ -36,6 +43,7 @@ def get_rosbag_options(path, serialization_format="cdr"):
 
 
 class RosBagDataSource(DataSource, QObject):
+    """Class that imlements the DataSource to produce samples from a rosbag."""
 
     rosbag_topics_signal = Signal(object)
     consumed_signal = Signal()
@@ -55,7 +63,7 @@ class RosBagDataSource(DataSource, QObject):
         self.consumed_signal.connect(self.on_consumed)
 
     def set_rosbag_file(self, rosbag_path):
-
+        """Set the rosbag file and sendss a signal with all the image topic names if possible. If the file is metadata.yaml it instead reads the folder."""
         if Path(rosbag_path).name == "metadata.yaml":
             self.rosbag_path = str(Path(rosbag_path).parent)
         else:
@@ -82,6 +90,12 @@ class RosBagDataSource(DataSource, QObject):
 
     def start(self, topic_name):
 
+        # Parse camera name
+        topic_namespaces = topic_name.split("/")
+        topic_namespaces.reverse()
+        image_index = [i for i, s in enumerate(topic_namespaces) if "image" in s][0]
+        self.camera_name = topic_namespaces[image_index + 1]
+
         input_storage_options, input_converter_options = get_rosbag_options(self.rosbag_path)
 
         self.reader = rosbag2_py.SequentialReader()
@@ -89,7 +103,6 @@ class RosBagDataSource(DataSource, QObject):
 
         topic_types = self.reader.get_all_topics_and_types()
 
-        # Create a map for quicker lookup
         self.type_map = {topic_types[i].name: topic_types[i].type for i in range(len(topic_types))}
 
         storage_filter = rosbag2_py.StorageFilter(topics=[topic_name])
@@ -100,10 +113,11 @@ class RosBagDataSource(DataSource, QObject):
             self.send_data(topic, data)
 
     def consumed(self):
+        """Send signal to the consumer having consumed an image. This method is executed in another thread, to a signal it is used to decouple."""
         self.consumed_signal.emit()
 
     def on_consumed(self):
-
+        """Acts on the consumer having consumed an image. This method is executed in he source thread as it is connected to a local signal."""
         if self.reader.has_next():
             (topic, data, t) = self.reader.read_next()
             self.send_data(topic, data)
@@ -111,17 +125,15 @@ class RosBagDataSource(DataSource, QObject):
             print("bag ended !", flush=True)
 
     def send_data(self, topic, data):
-
+        """Send a image message to the consumer prior transformation to a numpy array."""
         msg_type = get_message(self.type_map[topic])
         msg = deserialize_message(data, msg_type)
 
         if isinstance(msg, Image):
-
             image_data = self.bridge.imgmsg_to_cv2(msg)
             self.data_callback(image_data)
 
         elif isinstance(msg, CompressedImage):
-
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
             self.data_callback(image_data)

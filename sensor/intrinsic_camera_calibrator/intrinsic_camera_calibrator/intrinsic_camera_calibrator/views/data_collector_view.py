@@ -1,7 +1,25 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import multiprocessing as mp
 
 from PySide2.QtCore import QObject
 from PySide2.QtCore import Signal
+from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_collector import CollectedData
 from intrinsic_camera_calibrator.data_collector import DataCollector
 import matplotlib.pyplot as plt
@@ -9,12 +27,13 @@ import numpy as np
 
 
 def _create_rotation_heatmap(
-    data_collector: DataCollector, collected_data: CollectedData, angle_resolution=10
+    collected_data: CollectedData, camera_model: CameraModel, max_angle: float, angle_resolution=10
 ) -> np.array:
+    """Create an occupancy heatmap of the rotation space of a set of detections."""
+    rotations = [
+        detection.get_rotation_angles(camera_model) for detection in collected_data.get_detections()
+    ]
 
-    rotations = [detection.get_rotation_angles() for detection in collected_data.get_detections()]
-
-    max_angle = data_collector.max_allowed_tilt.value
     cells = 2 * np.ceil(max_angle / angle_resolution).astype(np.int)
 
     heatmap = np.zeros((cells, cells), dtype=np.int)
@@ -28,21 +47,24 @@ def _create_rotation_heatmap(
 
 
 def _get_2d_points(collected_data: CollectedData) -> np.array:
-
+    """Auxiliar method to group all the dataset image points into an (N, 2) array."""
     return np.array(
         [detection.get_flattened_image_points() for detection in collected_data.get_detections()]
     ).reshape(-1, 2)
 
 
-def _get_3d_points(collected_data: CollectedData) -> np.array:
-
+def _get_3d_points(collected_data: CollectedData, camera_model: CameraModel) -> np.array:
+    """Auxiliar method to group all the dataset object points into an (N, 3) array."""
     return np.array(
-        [detection.get_flattened_3d_points() for detection in collected_data.get_detections()]
+        [
+            detection.get_flattened_3d_points(camera_model)
+            for detection in collected_data.get_detections()
+        ]
     ).reshape(-1, 3)
 
 
-def _plot_data_collection(data_collector: DataCollector):
-
+def _plot_data_collection(data_collector: DataCollector, camera_model: CameraModel):
+    """Plot the statistics of a dataset. Since matplotlib is used, this function needs to be called into its own process."""
     if (
         len(data_collector.get_training_data().get_detections()) == 0
         and len(data_collector.get_evaluation_data().get_detections()) == 0
@@ -57,10 +79,15 @@ def _plot_data_collection(data_collector: DataCollector):
     if len(data_collector.get_training_data().get_detections()) > 0:
 
         training_rotation_heatmap = _create_rotation_heatmap(
-            data_collector, data_collector.get_training_data(), angle_resolution=angle_resolution
-        )
+            data_collector.get_training_data(),
+            camera_model,
+            max_angle=max_angle,
+            angle_resolution=angle_resolution,
+        ).astype(np.float32)
+        training_rotation_heatmap[training_rotation_heatmap == 0] = np.nan
+
         training_points_2d = _get_2d_points(data_collector.get_training_data())
-        training_points_3d = _get_3d_points(data_collector.get_training_data())
+        training_points_3d = _get_3d_points(data_collector.get_training_data(), camera_model)
 
         axes[0, 0].set_title("Training rotation heatmap")
 
@@ -103,10 +130,15 @@ def _plot_data_collection(data_collector: DataCollector):
 
     if len(data_collector.get_evaluation_data().get_detections()) > 0:
         evaluation_rotation_heatmap = _create_rotation_heatmap(
-            data_collector, data_collector.get_evaluation_data(), angle_resolution=angle_resolution
-        )
+            data_collector.get_evaluation_data(),
+            camera_model,
+            max_angle=max_angle,
+            angle_resolution=angle_resolution,
+        ).astype(np.float32)
+        evaluation_rotation_heatmap[evaluation_rotation_heatmap == 0] = np.nan
+
         evaluation_points_2d = _get_2d_points(data_collector.get_evaluation_data())
-        evaluation_points_3d = _get_3d_points(data_collector.get_evaluation_data())
+        evaluation_points_3d = _get_3d_points(data_collector.get_evaluation_data(), camera_model)
 
         axes[1, 0].set_title("Evaluation rotation heatmap")
 
@@ -156,21 +188,18 @@ class DataCollectorView(QObject):
     closed = Signal()
     plot_request = Signal()
 
-    def __init__(self, data_collector: DataCollector):
+    def __init__(self, data_collector: DataCollector, camera_model: CameraModel):
         super().__init__()
         self.data_collector = data_collector
+        self.camera_model = camera_model
 
     def plot(self):
         self.plot_process = mp.Process(
-            target=_plot_data_collection, args=(self.data_collector,), daemon=True
+            target=_plot_data_collection, args=(self.data_collector, self.camera_model), daemon=True
         )
         self.plot_process.start()
 
     def closeEvent(self, event):
-        print("Data collector view: closeEvent")
         self.closed.emit()
         event.accept()
         self.deleteLater()
-
-    def __del__(self):
-        print("Data collector view: destructor")

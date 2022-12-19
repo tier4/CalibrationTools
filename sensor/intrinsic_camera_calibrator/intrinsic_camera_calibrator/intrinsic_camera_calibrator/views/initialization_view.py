@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+
+# Copyright 2022 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QGroupBox
@@ -16,6 +33,7 @@ from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
 
 
 class InitializationView(QWidget):
+    """Initial widget to let the user connfigure the calibrator."""
 
     parameter_changed = Signal()
     closed = Signal()
@@ -67,9 +85,7 @@ class InitializationView(QWidget):
             self.setEnabled(True)
 
         def board_parameters_button_callback():
-            print("board_parameters_button_callback")  # here we whould
             board_parameters_view = ParameterView(self.calibrator.board_parameters)
-            # board_parameters_view.parameter_changed.connect(self.on_parameter_changed)
             board_parameters_view.closed.connect(board_parameters_on_closed)
             self.setEnabled(False)
 
@@ -104,7 +120,10 @@ class InitializationView(QWidget):
         self.show()
 
     def on_start(self):
+        """Start the calibration process after receiving the user settings."""
+
         def on_success():
+            """Handle the successful initialization of the data source."""
             mode = (
                 OperationMode.CALIBRATION
                 if self.training_radio_button.isChecked()
@@ -115,6 +134,7 @@ class InitializationView(QWidget):
             self.close()
 
         def on_failed():
+            """Handle the unsuccessful initialization of the data source."""
             self.setEnabled(True)
 
         source_type = self.data_source_combobox.currentData()
@@ -141,10 +161,7 @@ class InitializationView(QWidget):
             raise NotImplementedError
 
     def closeEvent(self, event):
-        print("Initialization view: closeEvent")
+        """When the window is closet, the widget is marked for delection."""
         self.closed.emit()
         event.accept()
         self.deleteLater()
-
-    def __del__(self):
-        print("Initialization view: destructor")
