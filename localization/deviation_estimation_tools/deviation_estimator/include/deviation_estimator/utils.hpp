@@ -40,9 +40,6 @@ struct TrajectoryData
   std::vector<geometry_msgs::msg::PoseStamped> pose_list;
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_list;
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_list;
-  bool is_straight;
-  bool is_stopped;
-  bool is_constant_velocity;
 };
 
 double double_round(const double x, const int n);
