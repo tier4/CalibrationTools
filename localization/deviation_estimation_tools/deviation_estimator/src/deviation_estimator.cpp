@@ -54,7 +54,6 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
     if (t0_pose > t1_pose) continue;
 
     const size_t n_twist = traj_data.gyro_list.size();
-<<<<<<< HEAD
 
     auto error_rpy = calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, gyro_bias);
     const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
@@ -67,10 +66,6 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
     error_rpy.y *= dt_pose / dt_gyro;
     error_rpy.z *= dt_pose / dt_gyro;
 
-=======
-
-    const auto error_rpy = calculate_error_rpy(traj_data.pose_list, traj_data.gyro_list, gyro_bias);
->>>>>>> tier4/universe
     delta_wx_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.x);
     delta_wy_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.y);
     delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
