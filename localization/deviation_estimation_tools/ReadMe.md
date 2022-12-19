@@ -26,8 +26,6 @@ You can check the estimated results either by looking at the output of `/estimat
 
 If you are using rosbag, it should contain the following topics:
 
-<!-- - /localization/twist_estimator/twist_with_covariance_raw -->
-
 - /sensing/imu/imu_data
 - /sensing/vehicle_velocity_converter/twist_with_covariance
 - /localization/pose_estimator/pose_with_covariance
@@ -165,7 +163,7 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 | show_debug_info | bool   | Flag to display debug info                                                                  | true                     |
 | t_design        | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                     |
 | x_design        | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                     |
-| estimation_freq | double | Estimation frequency [Hz]                                                                   | 0.5                      |
+| time_window     | double | Estimation period [s]                                                                       | 4.0                      |
 | results_path    | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "$(env HOME)/output.txt" |
 | imu_frame       | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"      |
 
