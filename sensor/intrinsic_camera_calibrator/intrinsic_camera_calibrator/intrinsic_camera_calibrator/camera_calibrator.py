@@ -935,7 +935,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 def main(args=None):
     app = QApplication(sys.argv)
 
-    rclpy.init(args=args)
+    # rclpy.init(args=args)
 
     cfg = {}
     try:

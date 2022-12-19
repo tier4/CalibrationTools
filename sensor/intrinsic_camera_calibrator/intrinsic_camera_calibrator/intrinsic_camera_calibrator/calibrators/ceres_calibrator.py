@@ -29,8 +29,6 @@ class CeresCalibrator(Calibrator):
     def __init__(self, lock: threading.RLock, cfg: Dict = {}):
         super().__init__(lock, cfg)
 
-        print("Ceres calibrator constructor")
-
         self.some_parameter_name = Parameter(int, value=2, min_value=0, max_value=6)
         self.set_parameters(**cfg)
 

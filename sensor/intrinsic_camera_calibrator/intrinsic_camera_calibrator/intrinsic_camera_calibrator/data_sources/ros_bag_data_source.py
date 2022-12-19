@@ -15,7 +15,6 @@
 # limitations under the License.
 
 from pathlib import Path
-import threading
 
 from PySide2.QtCore import QObject
 from PySide2.QtCore import QThread
@@ -52,12 +51,7 @@ class RosBagDataSource(DataSource, QObject):
         DataSource.__init__(self)
         QObject.__init__(self, None)
 
-        self.thread = QThread()
-        self.thread.start()
-        self.moveToThread(self.thread)
-
         self.bridge = CvBridge()
-        self.lock = threading.RLock()
 
         self.rosbag_path = None
         self.consumed_signal.connect(self.on_consumed)
@@ -87,6 +81,10 @@ class RosBagDataSource(DataSource, QObject):
                 or topics_type == "sensor_msgs/msg/Image"
             ]
         )
+
+        self.thread = QThread()
+        self.thread.start()
+        self.moveToThread(self.thread)
 
     def start(self, topic_name):
 

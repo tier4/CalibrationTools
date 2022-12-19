@@ -1,0 +1,5 @@
+<launch>
+  <arg name="config_file" default="$(find-pkg-share intrinsic_camera_calibrator)/config/intrinsics_calibrator.yaml"/>
+
+  <node pkg="intrinsic_camera_calibrator" exec="camera_calibrator" name="camera_calibrator" output="screen" args="$(var config_file)"/>
+</launch>

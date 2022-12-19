@@ -14,98 +14,86 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import os
+
 from PySide2.QtCore import Signal
-from PySide2.QtWidgets import QComboBox
+from PySide2.QtWidgets import QCheckBox
 from PySide2.QtWidgets import QFileDialog
-from PySide2.QtWidgets import QLabel
 from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
-from intrinsic_camera_calibrator.data_sources.ros_bag_data_source import RosBagDataSource
+from intrinsic_camera_calibrator.data_sources.image_files_data_source import ImageFilesDataSource
 
 
-class RosBagView(QWidget):
+class ImageFilesView(QWidget):
     """Widget to configure and initialize a RosBagDataSource."""
 
     failed = Signal()
     success = Signal()
 
-    set_rosbag_request = Signal(str)
-    rosbag_start_request = Signal(str)
+    set_image_files_request = Signal(object)
+    start_request = Signal(bool)
 
-    def __init__(self, data_source: RosBagDataSource):
+    def __init__(self, data_source: ImageFilesDataSource):
         self.data_source = data_source
 
         super().__init__()
 
-        self.setWindowTitle("Select a ros bag and topic")
+        self.setWindowTitle("Select multiple images to calibrate")
         self.setMinimumWidth(300)
 
-        self.bag_selected = False
-        self.topic_selected = False
+        self.images_selected = False
 
         self.data_source = data_source
-        self.set_rosbag_request.connect(self.data_source.set_rosbag_file)
-        self.data_source.rosbag_topics_signal.connect(self.update_topics)
-        self.rosbag_start_request.connect(self.data_source.start)
+        self.set_image_files_request.connect(self.data_source.set_image_files)
+        self.start_request.connect(self.data_source.start)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.select_bag_button = QPushButton("Select ROS bag")
+        self.select_bag_button = QPushButton("Select image files")
         self.layout.addWidget(self.select_bag_button)
 
-        self.label = QLabel("Select topic")
-        self.layout.addWidget(self.label)
-
-        self.topic_combo_box = QComboBox()
-        self.topic_combo_box.setEnabled(False)
-        self.layout.addWidget(self.topic_combo_box)
+        self.loop_images_checkbox = QCheckBox("Loop images")
+        self.loop_images_checkbox.setChecked(False)
 
         self.accept_button = QPushButton("Ok")
         self.accept_button.setEnabled(False)
+        self.layout.addWidget(self.loop_images_checkbox)
         self.layout.addWidget(self.accept_button)
 
         self.select_bag_button.clicked.connect(self.select_bag_callback)
         self.accept_button.clicked.connect(self.accept_callback)
 
-        self.topic_combo_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.show()
 
     def select_bag_callback(self):
         """Create a blocking dialog to select a rosbag."""
-        fname = QFileDialog.getOpenFileName()
-        self.set_rosbag_request.emit(fname[0])
+        files = QFileDialog.getOpenFileNames(
+            self,
+            "Select calibration images",
+            os.getcwd(),
+            "files (*.png *.bmp *.jpg *.jpeg *.JPG *.JPEG)",
+        )[0]
 
-    def update_topics(self, topic_list):
-        """Update the topics combobox and adjust the size of the widget based on a list of topics."""
-        topic_list.sort()
-
-        for topic in topic_list:
-            self.topic_combo_box.addItem(topic)
-
-        if len(topic_list):
-            self.topic_combo_box.setEnabled(True)
-            self.accept_button.setEnabled(True)
-
-        self.adjustSize()
-
-    def accept_callback(self):
-        """Process the user choice of topic."""
-        if self.topic_combo_box.count() == 0:
+        if len(files) == 0:
+            self.failed.emit()
             return
 
-        image_topic = self.topic_combo_box.currentText()
-        self.topic_selected = True
+        self.images_selected = False
+        self.accept_button.setEnabled(True)
+        self.set_image_files_request.emit(files)
 
+    def accept_callback(self):
+        """Initialize the data source."""
         self.success.emit()
-        self.rosbag_start_request.emit(image_topic)
+        self.start_request.emit(self.loop_images_checkbox.isChecked())
         self.close()
 
     def closeEvent(self, event):
         """When the widget is closed it should be marked for deletion and notify the event."""
-        if not self.topic_selected:
+        if not self.images_selected:
             self.failed.emit()
         event.accept()
-
         self.deleteLater()

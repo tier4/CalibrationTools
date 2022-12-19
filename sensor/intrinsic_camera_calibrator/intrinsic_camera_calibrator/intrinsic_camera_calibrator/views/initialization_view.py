@@ -27,6 +27,7 @@ from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 from intrinsic_camera_calibrator.data_sources.data_source import DataSourceEnum
 from intrinsic_camera_calibrator.data_sources.data_source_factory import make_data_source
 from intrinsic_camera_calibrator.types import OperationMode
+from intrinsic_camera_calibrator.views.image_files_view import ImageFilesView
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 from intrinsic_camera_calibrator.views.ros_bag_view import RosBagView
 from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
@@ -136,6 +137,8 @@ class InitializationView(QWidget):
         def on_failed():
             """Handle the unsuccessful initialization of the data source."""
             self.setEnabled(True)
+            self.data_source = None
+            self.data_source_view = None
 
         source_type = self.data_source_combobox.currentData()
 
@@ -154,6 +157,14 @@ class InitializationView(QWidget):
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
             self.data_source_view = RosBagView(self.data_source)
+            self.data_source_view.failed.connect(on_failed)
+            self.data_source_view.success.connect(on_success)
+            self.setEnabled(False)
+        elif source_type == DataSourceEnum.FILES:
+            self.data_source = make_data_source(self.data_source_combobox.currentData())
+            self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
+
+            self.data_source_view = ImageFilesView(self.data_source)
             self.data_source_view.failed.connect(on_failed)
             self.data_source_view.success.connect(on_success)
             self.setEnabled(False)

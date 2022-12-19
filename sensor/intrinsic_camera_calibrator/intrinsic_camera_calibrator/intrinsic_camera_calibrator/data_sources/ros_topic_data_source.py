@@ -23,8 +23,8 @@ from cv_bridge import CvBridge
 from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 import numpy as np
 import rclpy
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Image
 
@@ -32,11 +32,16 @@ from sensor_msgs.msg import Image
 class RosTopicDataSource(DataSource, Node):
     def __init__(self):
         DataSource.__init__(self)
-        Node.__init__(self, "intrinsic_camera_calibrator")
 
-        self.ros_executor = None
         self.bridge = CvBridge()
-        self.spin()
+
+        self.ros_context = rclpy.context.Context()
+
+        rclpy.init(context=self.ros_context)
+        Node.__init__(self, "intrinsic_camera_calibrator", context=self.ros_context)
+
+        self.ros_executor = SingleThreadedExecutor(context=self.ros_context)
+        self.ros_executor.add_node(self)
 
     def get_filtered_image_topics_and_types(self) -> List[Tuple[str, str]]:
         """Return a list of image topics and their types."""
@@ -60,7 +65,12 @@ class RosTopicDataSource(DataSource, Node):
 
             return [topic_name for topic_name, _ in filtered_topic_names_and_types]
 
-    def set_image_topic(self, image_topic: str):
+    def set_image_topic(
+        self,
+        image_topic: str,
+        reliability: rclpy.qos.ReliabilityPolicy,
+        durability: rclpy.qos.DurabilityPolicy.VOLATILE,
+    ):
         """Set the data source topic and subscribes to it."""
         with self.lock:
 
@@ -76,6 +86,12 @@ class RosTopicDataSource(DataSource, Node):
             image_index = [i for i, s in enumerate(topic_namespaces) if "image" in s][0]
             self.camera_name = topic_namespaces[image_index + 1]
 
+            self.qos_profile = rclpy.qos.QoSProfile(
+                reliability=reliability,
+                durability=durability,
+                history=rclpy.qos.HistoryPolicy.SYSTEM_DEFAULT,
+            )
+
             for image_type in topics_dict[image_topic]:
 
                 if image_type == "sensor_msgs/msg/CompressedImage":
@@ -83,12 +99,14 @@ class RosTopicDataSource(DataSource, Node):
                         CompressedImage,
                         image_topic,
                         self.compressed_image_callback,
-                        qos_profile_sensor_data,
+                        self.qos_profile,
                     )
                 else:
                     self.image_sub = self.create_subscription(
-                        Image, image_topic, self.image_callback, qos_profile_sensor_data
+                        Image, image_topic, self.image_callback, self.qos_profile
                     )
+
+            self.spin()
 
     def compressed_image_callback(self, msg: CompressedImage):
         """Process a compressed image."""
@@ -105,6 +123,10 @@ class RosTopicDataSource(DataSource, Node):
 
     def spin(self):
         """Start a new thread for ROS to spin in."""
-        self.thread = threading.Thread(target=rclpy.spin, args=(self,))
+        self.thread = threading.Thread(target=self.ros_executor.spin, args=())
         self.thread.setDaemon(True)
         self.thread.start()
+
+    def stop(self):
+        with self.lock:
+            rclpy.shutdown(context=self.ros_context)

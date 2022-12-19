@@ -22,7 +22,7 @@ import threading
 class DataSourceEnum(Enum):
     TOPIC = "ROS topic"
     BAG2 = "ROS bag"
-    VIDEO = "Video file"
+    # VIDEO = "Video file"
     FILES = "Image files"
 
     def __str__(self):
