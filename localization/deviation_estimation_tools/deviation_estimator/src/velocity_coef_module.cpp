@@ -21,7 +21,6 @@ void VelocityCoefModule::update_coef(const TrajectoryData & traj_data)
 {
   const rclcpp::Time t0_rclcpp_time = rclcpp::Time(traj_data.pose_list.front().header.stamp);
   const rclcpp::Time t1_rclcpp_time = rclcpp::Time(traj_data.pose_list.back().header.stamp);
-  // const double dt = t1_rclcpp_time.seconds() - t0_rclcpp_time.seconds();
 
   auto d_pos = integrate_position(
     traj_data.vx_list, traj_data.gyro_list, 1.0,
@@ -39,9 +38,6 @@ void VelocityCoefModule::update_coef(const TrajectoryData & traj_data)
 
   const double d_coef_vx = (d_pos.x * dx + d_pos.y * dy) / (d_pos.x * d_pos.x + d_pos.y * d_pos.y);
 
-  // const double time_factor = (rclcpp::Time(traj_data.vx_list.back().stamp).seconds() -
-  //                       rclcpp::Time(traj_data.vx_list.front().stamp).seconds()) /
-  //                      dt;
   coef_vx_.first += d_coef_vx;
   coef_vx_.second += 1;
   coef_vx_list_.push_back(d_coef_vx);
