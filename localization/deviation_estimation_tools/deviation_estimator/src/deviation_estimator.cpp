@@ -15,6 +15,7 @@
 #include "deviation_estimator/deviation_estimator.hpp"
 
 #include "deviation_estimator/utils.hpp"
+#include "deviation_estimator/write_result_file.hpp"
 #include "rclcpp/logging.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
@@ -161,7 +162,7 @@ DeviationEstimator::DeviationEstimator(
   pub_stddev_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
-  save_estimated_parameters(
+  save_estimated_result(
     results_path_, 0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{},
     geometry_msgs::msg::Vector3{});
 
@@ -285,7 +286,7 @@ void DeviationEstimator::timer_callback()
     tier4_autoware_utils::createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
   pub_stddev_angvel_->publish(stddev_angvel_imu_msg);
 
-  save_estimated_parameters(
+  save_estimated_result(
     results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
     gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
 }
