@@ -33,20 +33,6 @@ void save_estimated_result(
   file.close();
 }
 
-void save_estimated_result(
-  const std::string output_path, const double stddev_vx, const double stddev_wz,
-  const double coef_vx, const double bias_wz,
-  const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
-  const geometry_msgs::msg::Vector3 & angular_velocity_offset, const bool is_distance_valid)
-{
-  std::ofstream file(output_path);
-  file << generate_validation_section(is_distance_valid);
-  file << "\n";
-  file << generate_estimation_section(
-    stddev_vx, stddev_wz, coef_vx, bias_wz, angular_velocity_stddev, angular_velocity_offset);
-  file.close();
-}
-
 std::string generate_estimation_section(
   const double stddev_vx, const double stddev_wz, const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,

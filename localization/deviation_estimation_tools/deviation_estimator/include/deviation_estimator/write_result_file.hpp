@@ -28,12 +28,6 @@ void save_estimated_result(
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset);
 
-void save_estimated_result(
-  const std::string output_path, const double stddev_vx, const double stddev_wz,
-  const double coef_vx, const double bias_wz,
-  const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
-  const geometry_msgs::msg::Vector3 & angular_velocity_offset, const bool is_distance_valid);
-
 std::string generate_estimation_section(
   const double stddev_vx, const double stddev_wz, const double coef_vx, const double bias_wz,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
