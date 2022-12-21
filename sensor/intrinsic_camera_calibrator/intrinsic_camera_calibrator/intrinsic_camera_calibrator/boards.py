@@ -24,7 +24,7 @@ from intrinsic_camera_calibrator.parameter import ParameteredClass
 class BoardEnum(Enum):
     CHESSBOARD = {"name": "chess_board", "display": "Chess board"}
     DOTBOARD = {"name": "dot_board", "display": "Dot board"}
-    APRILTAGGRID = {"name": "apriltag_grid", "display": "Apriltag grid"}
+    # APRILTAGGRID = {"name": "apriltag_grid", "display": "Apriltag grid"} TODO(knzo25): Implement this one later
 
     def from_name(name: str) -> "BoardEnum":
         for board in BoardEnum:

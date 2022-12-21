@@ -312,6 +312,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_group.setFlat(True)
 
         self.calibrator_type_combobox = QComboBox()
+        self.calibrator_type_combobox.setEnabled(False)  # TODO(knzo25): implement this later
+
         self.calibration_parameters_button = QPushButton("Calibration parameters")
         self.calibration_button = QPushButton("Calibrate")
         self.save_button = QPushButton("Save")
@@ -327,7 +329,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_evaluation_rms_label = QLabel("Evaluation (all) rms error:")
 
         def on_parameters_view_closed():
-            self.calibrator_type_combobox.setEnabled(True)
+            # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
             self.calibration_parameters_button.setEnabled(True)
 
         def on_parameters_button_clicked():
@@ -649,7 +651,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             f"Evaluation (all) rms error: {evaluation_rms_error:.2f}"
         )
 
-        self.calibrator_type_combobox.setEnabled(True)
+        # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(True)
         self.save_button.setEnabled(True)

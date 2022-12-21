@@ -14,28 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from intrinsic_camera_calibrator.board_detections.array_board_detection import ArrayBoardDetection
 
-from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
 
-
-class ChessBoardDetection:
-    def get_object_points(self):
-        raise NotImplementedError
-
-    def get_image_points(self):
-        raise NotImplementedError
-
-    def get_linear_error(self):
-        raise NotImplementedError
-
-    def get_rectified_linear_error(self):
-        raise NotImplementedError
-
-    def get_skew(self):
-        raise NotImplementedError
-
-    def get_size(self):
-        raise NotImplementedError
-
-    def get_speed(self, last: "BoardDetection"):
-        raise NotImplementedError
+class ChessBoardDetection(ArrayBoardDetection):
+    def __init__(
+        self,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
