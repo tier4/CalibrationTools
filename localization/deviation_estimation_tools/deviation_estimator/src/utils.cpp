@@ -23,8 +23,6 @@
 #include <iostream>
 #include <vector>
 
-double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
-
 double clip_radian(const double rad)
 {
   if (rad < -M_PI) {

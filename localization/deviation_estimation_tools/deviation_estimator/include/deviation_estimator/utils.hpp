@@ -42,8 +42,6 @@ struct TrajectoryData
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_list;
 };
 
-double double_round(const double x, const int n);
-
 template <typename T>
 double calculate_mean(const std::vector<T> & v)
 {
