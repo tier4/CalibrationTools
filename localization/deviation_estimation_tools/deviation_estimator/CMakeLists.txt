@@ -10,6 +10,7 @@ ament_auto_add_library(deviation_estimator_lib SHARED
   src/utils.cpp
   src/gyro_bias_module.cpp
   src/velocity_coef_module.cpp
+  src/write_result_file.cpp
 )
 
 ament_auto_add_executable(deviation_estimator src/deviation_estimator_node.cpp)
