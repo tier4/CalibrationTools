@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DEVIATION_ESTIMATOR__WRITE_RESULT_FILE_HPP_
-#define DEVIATION_ESTIMATOR__WRITE_RESULT_FILE_HPP_
+#ifndef DEVIATION_ESTIMATOR__LOGGER_HPP_
+#define DEVIATION_ESTIMATOR__LOGGER_HPP_
 
 #include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/validation_module.hpp"
@@ -30,14 +30,12 @@ class Logger
 public:
   Logger(const std::string output_path);
   void log_estimated_result_section(
-    const double stddev_vx, const double stddev_wz,
-    const double coef_vx, const double bias_wz,
+    const double stddev_vx, const double stddev_wz, const double coef_vx, const double bias_wz,
     const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
     const geometry_msgs::msg::Vector3 & angular_velocity_offset) const;
-  void log_validation_result_section(
-    const ValidationModule & validation_module) const;
+  void log_validation_result_section(const ValidationModule & validation_module) const;
 
 private:
   const std::string output_path_;
 };
-#endif  // DEVIATION_ESTIMATOR__WRITE_RESULT_FILE_HPP_
+#endif  // DEVIATION_ESTIMATOR__LOGGER_HPP_

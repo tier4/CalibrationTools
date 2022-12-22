@@ -14,8 +14,8 @@
 
 #include "deviation_estimator/deviation_estimator.hpp"
 
-#include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/logger.hpp"
+#include "deviation_estimator/utils.hpp"
 #include "rclcpp/logging.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
@@ -167,8 +167,8 @@ DeviationEstimator::DeviationEstimator(
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
   const Logger logger(results_path_);
-  logger.log_estimated_result_section(0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{},
-    geometry_msgs::msg::Vector3{});
+  logger.log_estimated_result_section(
+    0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
@@ -176,8 +176,7 @@ DeviationEstimator::DeviationEstimator(
     declare_parameter<double>("thres_coef_vx", 0.01),
     declare_parameter<double>("thres_stddev_vx", 0.05),
     declare_parameter<double>("thres_bias_gyro", 0.001),
-    declare_parameter<double>("thres_stddev_gyro", 0.01),
-    5);
+    declare_parameter<double>("thres_stddev_gyro", 0.01), 5);
   transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
 
   DEBUG_INFO(this->get_logger(), "[Deviation Estimator] launch success");
@@ -299,7 +298,8 @@ void DeviationEstimator::timer_callback()
   validation_module_->set_gyro_data(bias_angvel_imu, stddev_angvel_imu_msg);
 
   const Logger logger(results_path_);
-  logger.log_estimated_result_section(stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
+  logger.log_estimated_result_section(
+    stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
     gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
   logger.log_validation_result_section(*validation_module_);
 }

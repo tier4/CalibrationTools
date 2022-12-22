@@ -18,23 +18,22 @@
 #include "deviation_estimator/utils.hpp"
 
 #include "geometry_msgs/msg/vector3_stamped.hpp"
+
 #include <fmt/core.h>
 
+#include <limits>
 #include <utility>
 #include <vector>
-#include <limits>
 
 class ValidationModule
 {
 public:
   ValidationModule(
-    const double threshold_coef_vx,
-    const double threshold_stddev_vx,
-    const double threshold_bias_gyro,
-    const double threshold_stddev_gyro,
-    const size_t num_history);
+    const double threshold_coef_vx, const double threshold_stddev_vx,
+    const double threshold_bias_gyro, const double threshold_stddev_gyro, const size_t num_history);
   void set_velocity_data(const double coef_vx, const double stddev_vx);
-  void set_gyro_data(const geometry_msgs::msg::Vector3 & bias_gyro, const geometry_msgs::msg::Vector3 & stddev_gyro);
+  void set_gyro_data(
+    const geometry_msgs::msg::Vector3 & bias_gyro, const geometry_msgs::msg::Vector3 & stddev_gyro);
 
   std::pair<double, double> get_min_max(const std::string key) const;
   bool is_valid(const std::string key) const;

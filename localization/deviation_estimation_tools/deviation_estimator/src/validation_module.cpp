@@ -14,13 +14,9 @@
 
 #include "deviation_estimator/validation_module.hpp"
 
-
 ValidationModule::ValidationModule(
-  const double threshold_coef_vx,
-  const double threshold_stddev_vx,
-  const double threshold_bias_gyro,
-  const double threshold_stddev_gyro,
-  const size_t num_history)
+  const double threshold_coef_vx, const double threshold_stddev_vx,
+  const double threshold_bias_gyro, const double threshold_stddev_gyro, const size_t num_history)
 : num_history_(num_history)
 {
   threshold_dict_["coef_vx"] = threshold_coef_vx;
@@ -56,7 +52,8 @@ void ValidationModule::set_velocity_data(const double coef_vx, const double stdd
   data_list_dict_["stddev_vx"].push_back(stddev_vx);
 }
 
-void ValidationModule::set_gyro_data(const geometry_msgs::msg::Vector3 & bias_gyro, const geometry_msgs::msg::Vector3 & stddev_gyro)
+void ValidationModule::set_gyro_data(
+  const geometry_msgs::msg::Vector3 & bias_gyro, const geometry_msgs::msg::Vector3 & stddev_gyro)
 {
   if (data_list_dict_.count("angular_velocity_offset_x")) {
     if (bias_gyro.x == data_list_dict_["angular_velocity_offset_x"].back()) {
