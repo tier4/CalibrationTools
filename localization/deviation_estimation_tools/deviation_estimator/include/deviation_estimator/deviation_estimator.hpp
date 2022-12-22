@@ -18,6 +18,7 @@
 #include "deviation_estimator/gyro_bias_module.hpp"
 #include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/velocity_coef_module.hpp"
+#include "deviation_estimator/validation_module.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/utils.h"
 #include "tier4_autoware_utils/ros/transform_listener.hpp"
@@ -94,6 +95,7 @@ private:
 
   std::unique_ptr<GyroBiasModule> gyro_bias_module_;
   std::unique_ptr<VelocityCoefModule> vel_coef_module_;
+  std::unique_ptr<ValidationModule> validation_module_;
 
   std::shared_ptr<tier4_autoware_utils::TransformListener> transform_listener_;
 
