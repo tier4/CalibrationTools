@@ -58,6 +58,7 @@ DeviationEvaluator::DeviationEvaluator(
       RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for EKF trigger service...");
     }
     auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+    req->data = true;
     client_trigger_ekf_dr_->async_send_request(
       req, [this]([[maybe_unused]] rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture result) {});
 
