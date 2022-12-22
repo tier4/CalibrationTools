@@ -174,7 +174,7 @@ DeviationEstimator::DeviationEstimator(
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
   validation_module_ = std::make_unique<ValidationModule>(
     declare_parameter<double>("thres_coef_vx", 0.01),
-    declare_parameter<double>("thres_stddev_vx", 0.2),
+    declare_parameter<double>("thres_stddev_vx", 0.05),
     declare_parameter<double>("thres_bias_gyro", 0.001),
     declare_parameter<double>("thres_stddev_gyro", 0.01),
     5);
@@ -302,27 +302,6 @@ void DeviationEstimator::timer_callback()
   logger.log_estimated_result_section(stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
     gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
   logger.log_validation_result_section(*validation_module_);
-
-  //////////////////////////////////////
-  // std::cout << "KOJI # of vx data: " << traj_data_list_for_velocity_.size() << std::endl;
-  // std::cout << "KOJI # of gyro data: " << traj_data_list_for_gyro_.size() << std::endl;
-  // std::cout << "KOJI stddev_vx: " << stddev_vx << std::endl;
-
-  // std::cout << "KOJI stddev_wx in : " << validation_module_->get_min_max("stddev_wx", 5).first << ", " << validation_module_->get_min_max("stddev_wx", 5).second << std::endl;
-
-  std::ofstream file("/home/minoda/deviation_estimator_debug_logs.txt", std::ios::app);
-  file << traj_data_list_for_velocity_.size() << ", ";
-  file << traj_data_list_for_gyro_.size() << ", ";
-  file << vel_coef_module_->get_coef() << ", ";
-  file << stddev_vx << ", ";
-  file << gyro_bias_module_->get_bias_base_link().x << ", ";
-  file << stddev_angvel_imu << std::endl;
-  file.close();
-  //////////////////////////////////////
-
-  // save_estimated_result(
-  //   results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
-  //   gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
 }
 
 double DeviationEstimator::add_bias_uncertainty_on_velocity(
