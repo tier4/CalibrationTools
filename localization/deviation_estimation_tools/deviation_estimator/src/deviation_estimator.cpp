@@ -14,8 +14,8 @@
 
 #include "deviation_estimator/deviation_estimator.hpp"
 
+#include "deviation_estimator/logger.hpp"
 #include "deviation_estimator/utils.hpp"
-#include "deviation_estimator/write_result_file.hpp"
 #include "rclcpp/logging.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
@@ -37,6 +37,8 @@ using std::placeholders::_1;
 geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
   const std::vector<TrajectoryData> & traj_data_list, const geometry_msgs::msg::Vector3 & gyro_bias)
 {
+  if (traj_data_list.size() == 0) return geometry_msgs::msg::Vector3{};
+
   double t_window = 0.0;
   for (const TrajectoryData & traj_data : traj_data_list) {
     const rclcpp::Time t0_rclcpp_time = rclcpp::Time(traj_data.pose_list.front().header.stamp);
@@ -82,6 +84,8 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
 double estimate_stddev_velocity(
   const std::vector<TrajectoryData> & traj_data_list, const double coef_vx)
 {
+  if (traj_data_list.size() == 0) return 0.0;
+
   double t_window = 0.0;
   for (const TrajectoryData & traj_data : traj_data_list) {
     const rclcpp::Time t0_rclcpp_time = rclcpp::Time(traj_data.pose_list.front().header.stamp);
@@ -162,12 +166,17 @@ DeviationEstimator::DeviationEstimator(
   pub_stddev_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
-  save_estimated_result(
-    results_path_, 0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{},
-    geometry_msgs::msg::Vector3{});
+  const Logger logger(results_path_);
+  logger.log_estimated_result_section(
+    0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
+  validation_module_ = std::make_unique<ValidationModule>(
+    declare_parameter<double>("thres_coef_vx", 0.01),
+    declare_parameter<double>("thres_stddev_vx", 0.05),
+    declare_parameter<double>("thres_bias_gyro", 0.001),
+    declare_parameter<double>("thres_stddev_gyro", 0.01), 5);
   transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
 
   DEBUG_INFO(this->get_logger(), "[Deviation Estimator] launch success");
@@ -247,7 +256,6 @@ void DeviationEstimator::timer_callback()
 
   pose_buf_.clear();
 
-  if (vel_coef_module_->empty() | gyro_bias_module_->empty()) return;
   double stddev_vx =
     estimate_stddev_velocity(traj_data_list_for_velocity_, vel_coef_module_->get_coef());
   auto stddev_angvel_base = estimate_stddev_angular_velocity(
@@ -286,9 +294,14 @@ void DeviationEstimator::timer_callback()
     tier4_autoware_utils::createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
   pub_stddev_angvel_->publish(stddev_angvel_imu_msg);
 
-  save_estimated_result(
-    results_path_, stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
+  validation_module_->set_velocity_data(vel_coef_module_->get_coef(), stddev_vx);
+  validation_module_->set_gyro_data(bias_angvel_imu, stddev_angvel_imu_msg);
+
+  const Logger logger(results_path_);
+  logger.log_estimated_result_section(
+    stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
     gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
+  logger.log_validation_result_section(*validation_module_);
 }
 
 double DeviationEstimator::add_bias_uncertainty_on_velocity(
