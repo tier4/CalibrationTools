@@ -116,13 +116,13 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   if (!has_published_initial_pose_) {
     geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov;
     pose_with_cov = *msg;
-    pose_with_cov.pose.covariance[0] = 1.0;
-    pose_with_cov.pose.covariance[1 * 6 + 1] = 1.0;
+    pose_with_cov.pose.covariance[0 * 6 + 0] = 0.01;
+    pose_with_cov.pose.covariance[1 * 6 + 1] = 0.01;
     pose_with_cov.pose.covariance[2 * 6 + 2] = 0.01;
     pose_with_cov.pose.covariance[3 * 6 + 3] = 0.01;
     pose_with_cov.pose.covariance[4 * 6 + 4] = 0.01;
-    pose_with_cov.pose.covariance[5 * 6 + 5] = 0.2;
-    pub_init_pose_with_cov_->publish(*msg);
+    pose_with_cov.pose.covariance[5 * 6 + 5] = 0.01;
+    pub_init_pose_with_cov_->publish(pose_with_cov);
     has_published_initial_pose_ = true;
     return;
   }
@@ -137,6 +137,7 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   if (msg_time - start_time_ > period_) {
     DEBUG_INFO(this->get_logger(), "NDT cycle");
     start_time_ = msg_time;
+    has_published_initial_pose_ = false;
   }
 }
 
