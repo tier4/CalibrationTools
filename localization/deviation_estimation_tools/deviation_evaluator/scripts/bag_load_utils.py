@@ -343,38 +343,22 @@ def get_duration_to_error(timestamps, ndt_timestamps, error_lateral, ndt_freq=10
     return np.array(duration_to_error)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Apply some test here as a temporary measure.
     # Ideally this test should be implemented as a rostest.
 
     # get_long_axis_angles_from_covs
-    cov0 = np.array([
-        [1, 0],
-        [0, 2]
-    ])
-    cov1 = np.array([
-        [2, 0],
-        [0, 1]
-    ])
-    cov2 = np.linalg.inv(np.array([
-        [2, -1],
-        [-1, 2]
-    ]))
+    cov0 = np.array([[1, 0], [0, 2]])
+    cov1 = np.array([[2, 0], [0, 1]])
+    cov2 = np.linalg.inv(np.array([[2, -1], [-1, 2]]))
     covs = [cov0, cov1, cov2]
     angles = [90, 0, 45]
-    np.testing.assert_array_almost_equal(get_long_axis_angles_from_covs(covs),
-                                         np.deg2rad(angles)
-    )
+    np.testing.assert_array_almost_equal(get_long_axis_angles_from_covs(covs), np.deg2rad(angles))
 
     # transform_errors
     error = np.array([2, 0])
     errors = np.array([error, error, error, error])
     angles = np.deg2rad([0, 45, 90, 180])
-    errors_transformed = np.array([
-        [2, 0],
-        [np.sqrt(2), -np.sqrt(2)],
-        [0, -2],
-        [-2, 0]
-    ])
+    errors_transformed = np.array([[2, 0], [np.sqrt(2), -np.sqrt(2)], [0, -2], [-2, 0]])
     errors_transformed_calculated = transform_errors(errors, angles)
     np.testing.assert_array_almost_equal(errors_transformed, errors_transformed_calculated)
