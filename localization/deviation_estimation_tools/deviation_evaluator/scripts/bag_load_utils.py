@@ -269,6 +269,7 @@ def calc_interpolate(poses, timestamps, timestamps_target):
     )
     return poses_interpolated, valid_idxs
 
+
 def get_long_axis_angles_from_covs(covs):
     angles = []
     for cov in covs:
@@ -276,24 +277,23 @@ def get_long_axis_angles_from_covs(covs):
 
         idx = eigen_values.argsort()[::-1]
         eigen_values = eigen_values[idx]
-        eigen_vectors = eigen_vectors[:,idx]
+        eigen_vectors = eigen_vectors[:, idx]
         angle = np.arctan2(eigen_vectors[0, 0], eigen_vectors[0, 1])
         angles.append(angle)
     return angles
+
 
 def transform_errors(errors, angles):
     assert len(errors) == len(angles), "Length of errors and angles should be the same"
     assert errors.shape[1] == 2, "Dimension of errors should be 2 (x&y)"
     errors_transformed = []
     for error, angle in zip(errors, angles):
-        mat = np.array([
-            [np.cos(angle), np.sin(angle)],
-            [-np.sin(angle), np.cos(angle)]
-        ])
+        mat = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
         error_transformed = (mat @ error.reshape(-1, 1)).reshape(-1)
         errors_transformed.append(error_transformed)
     errors_transformed = np.array(errors_transformed)
     return errors_transformed
+
 
 def calc_body_frame_length(cov_list, pose_list):
     inv_2d = np.linalg.inv(cov_list[:, :2, :2])
