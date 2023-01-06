@@ -15,18 +15,19 @@
 #ifndef DEVIATION_ESTIMATOR__GYRO_BIAS_MODULE_HPP_
 #define DEVIATION_ESTIMATOR__GYRO_BIAS_MODULE_HPP_
 
+#include "deviation_estimator/utils.hpp"
+
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/vector3_stamped.hpp"
 
+#include <utility>
 #include <vector>
 
 class GyroBiasModule
 {
 public:
   GyroBiasModule() = default;
-  void update_bias(
-    const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double dt);
+  void update_bias(const TrajectoryData & traj_data);
   geometry_msgs::msg::Vector3 get_bias_base_link() const;
   geometry_msgs::msg::Vector3 get_bias_std() const;
   bool empty() const;

@@ -23,7 +23,10 @@
 #include <iostream>
 #include <vector>
 
-double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
+double double_round(const double x, const int n)
+{
+  return std::round(x * std::pow(10, n)) / std::pow(10, n);
+}
 
 double clip_radian(const double rad)
 {
@@ -34,35 +37,6 @@ double clip_radian(const double rad)
   } else {
     return rad;
   }
-}
-
-/*
- * save_estimated_parameters
- */
-void save_estimated_parameters(
-  const std::string output_path, const double stddev_vx, const double stddev_wz,
-  const double coef_vx, const double bias_wz,
-  const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
-  const geometry_msgs::msg::Vector3 & angular_velocity_offset)
-{
-  std::ofstream file(output_path);
-  file << "# Results expressed in base_link" << std::endl;
-  file << "# Copy the following to deviation_evaluator.param.yaml" << std::endl;
-  file << "stddev_vx: " << double_round(stddev_vx, 5) << std::endl;
-  file << "stddev_wz: " << double_round(stddev_wz, 5) << std::endl;
-  file << "coef_vx: " << double_round(coef_vx, 5) << std::endl;
-  file << "bias_wz: " << double_round(bias_wz, 5) << std::endl;
-  file << std::endl;
-  file << "# Results expressed in imu_link" << std::endl;
-  file << "# Copy the following to imu_corrector.param.yaml" << std::endl;
-  file << "angular_velocity_stddev_xx: " << double_round(angular_velocity_stddev.x, 5) << std::endl;
-  file << "angular_velocity_stddev_yy: " << double_round(angular_velocity_stddev.y, 5) << std::endl;
-  file << "angular_velocity_stddev_zz: " << double_round(angular_velocity_stddev.z, 5) << std::endl;
-  file << "angular_velocity_offset_x: " << double_round(angular_velocity_offset.x, 6) << std::endl;
-  file << "angular_velocity_offset_y: " << double_round(angular_velocity_offset.y, 6) << std::endl;
-  file << "angular_velocity_offset_z: " << double_round(angular_velocity_offset.z, 6) << std::endl;
-
-  file.close();
 }
 
 geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
@@ -173,6 +147,13 @@ double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & g
   }
   mean_abs_wz /= gyro_list.size();
   return mean_abs_wz;
+}
+
+double get_mean_accel(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list)
+{
+  const double dt =
+    (rclcpp::Time(vx_list.back().stamp) - rclcpp::Time(vx_list.front().stamp)).seconds();
+  return (vx_list.back().data - vx_list.front().data) / dt;
 }
 
 geometry_msgs::msg::Vector3 transform_vector3(

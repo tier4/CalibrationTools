@@ -10,6 +10,8 @@ ament_auto_add_library(deviation_estimator_lib SHARED
   src/utils.cpp
   src/gyro_bias_module.cpp
   src/velocity_coef_module.cpp
+  src/logger.cpp
+  src/validation_module.cpp
 )
 
 ament_auto_add_executable(deviation_estimator src/deviation_estimator_node.cpp)
@@ -33,7 +35,8 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 
   set(TEST_FILES
-    test/test_gyro_stddev.cpp)
+    test/test_gyro_stddev.cpp
+    test/test_gyro_bias.cpp)
 
   foreach(filepath ${TEST_FILES})
     add_testcase(${filepath})

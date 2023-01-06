@@ -17,6 +17,7 @@
 
 #include "deviation_estimator/gyro_bias_module.hpp"
 #include "deviation_estimator/utils.hpp"
+#include "deviation_estimator/validation_module.hpp"
 #include "deviation_estimator/velocity_coef_module.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/utils.h"
@@ -42,15 +43,12 @@
 #endif
 
 geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window,
+  const std::vector<TrajectoryData> & traj_data_list,
   const geometry_msgs::msg::Vector3 & gyro_bias);
 
 double estimate_stddev_velocity(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double t_window,
-  const double coef_vx, const double vx_threshold, const double wz_threshold);
+  const std::vector<TrajectoryData> & traj_data_list, const double coef_vx,
+  const double vx_threshold, const double wz_threshold);
 
 class DeviationEstimator : public rclcpp::Node
 {
@@ -66,7 +64,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_bias_angvel_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_stddev_vx_;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_stddev_angvel_;
-  rclcpp::TimerBase::SharedPtr timer_control_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -77,24 +75,27 @@ private:
   std::string results_path_;
   std::string imu_link_frame_;
 
-  std::vector<geometry_msgs::msg::PoseStamped> pose_all_;
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
   std::vector<geometry_msgs::msg::Vector3Stamped> gyro_all_;
   std::vector<geometry_msgs::msg::PoseStamped> pose_buf_;
+  std::vector<TrajectoryData> traj_data_list_for_gyro_;
+  std::vector<TrajectoryData> traj_data_list_for_velocity_;
 
   double dt_design_;
   double dx_design_;
   double wz_threshold_;
   double vx_threshold_;
+  double accel_threshold_;
   double estimation_freq_;
   double time_window_;
   bool add_bias_uncertainty_;
 
   std::string output_frame_;
-  geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_imu2base_ptr_;
+  std::string imu_frame_;
 
   std::unique_ptr<GyroBiasModule> gyro_bias_module_;
   std::unique_ptr<VelocityCoefModule> vel_coef_module_;
+  std::unique_ptr<ValidationModule> validation_module_;
 
   std::shared_ptr<tier4_autoware_utils::TransformListener> transform_listener_;
 

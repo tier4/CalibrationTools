@@ -10,7 +10,6 @@
   <arg name="use_predefined_coef_vx" default="true"/>
   <arg name="results_path" default="$(env HOME)/output.txt"/>
 
-  <arg name="estimation_freq" default="0.25" description="[Hz]"/>
   <arg name="show_debug_info" default="false"/>
 
   <arg name="input_pose_with_cov_name" default="/localization/pose_estimator/pose_with_covariance"/>
@@ -36,7 +35,6 @@
     <param name="use_predefined_coef_vx" value="$(var use_predefined_coef_vx)"/>
     <param name="wz_threshold" value="$(var wz_threshold)"/>
     <param name="vx_threshold" value="$(var vx_threshold)"/>
-    <param name="estimation_freq" value="$(var estimation_freq)"/>
     <param name="show_debug_info" value="$(var show_debug_info)"/>
     <param name="results_path" value="$(var results_path)"/>
 

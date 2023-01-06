@@ -31,6 +31,8 @@
 // clang-format on
 using std::placeholders::_1;
 
+using namespace std::chrono_literals;
+
 double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
 
 double norm_xy(const geometry_msgs::msg::Point & p1, const geometry_msgs::msg::Point & p2)
@@ -63,6 +65,30 @@ DeviationEvaluator::DeviationEvaluator(
   errors_threshold_.lateral =
     declare_parameter<double>("warn_ellipse_size_lateral_direction") * wait_scale;
   errors_threshold_.long_radius = declare_parameter<double>("warn_ellipse_size") * wait_scale;
+
+  client_trigger_ekf_dr_ =
+    create_client<std_srvs::srv::SetBool>("out_ekf_dr_trigger", rmw_qos_profile_services_default);
+  client_trigger_ekf_gt_ =
+    create_client<std_srvs::srv::SetBool>("out_ekf_gt_trigger", rmw_qos_profile_services_default);
+
+  if (declare_parameter<bool>("need_ekf_initial_trigger")) {
+    while (!client_trigger_ekf_dr_->wait_for_service(1s)) {
+      if (!rclcpp::ok()) break;
+      RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for EKF trigger service...");
+    }
+    auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+    req->data = true;
+    client_trigger_ekf_dr_->async_send_request(
+      req, [this]([[maybe_unused]] rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture result) {});
+
+    while (!client_trigger_ekf_gt_->wait_for_service(1s)) {
+      if (!rclcpp::ok()) break;
+      RCLCPP_INFO_STREAM(this->get_logger(), "Waiting for EKF trigger service...");
+    }
+    client_trigger_ekf_gt_->async_send_request(
+      req, [this]([[maybe_unused]] rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture result) {});
+    RCLCPP_INFO(this->get_logger(), "EKF initialization finished");
+  }
 
   save2YamlFile();
 
@@ -113,13 +139,13 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   if (!has_published_initial_pose_) {
     geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov;
     pose_with_cov = *msg;
-    pose_with_cov.pose.covariance[0 * 6 + 0] = 0.01;
-    pose_with_cov.pose.covariance[1 * 6 + 1] = 0.01;
-    pose_with_cov.pose.covariance[2 * 6 + 2] = 0.01;
-    pose_with_cov.pose.covariance[3 * 6 + 3] = 0.01;
-    pose_with_cov.pose.covariance[4 * 6 + 4] = 0.01;
-    pose_with_cov.pose.covariance[5 * 6 + 5] = 0.01;
-    pub_init_pose_with_cov_->publish(*msg);
+    pose_with_cov.pose.covariance[0 * 6 + 0] = 0.01 * 0.01;
+    pose_with_cov.pose.covariance[1 * 6 + 1] = 0.01 * 0.01;
+    pose_with_cov.pose.covariance[2 * 6 + 2] = 0.01 * 0.01;
+    pose_with_cov.pose.covariance[3 * 6 + 3] = 0.01 * 0.01;
+    pose_with_cov.pose.covariance[4 * 6 + 4] = 0.01 * 0.01;
+    pose_with_cov.pose.covariance[5 * 6 + 5] = 0.01 * 0.01;
+    pub_init_pose_with_cov_->publish(pose_with_cov);
     has_published_initial_pose_ = true;
     return;
   }

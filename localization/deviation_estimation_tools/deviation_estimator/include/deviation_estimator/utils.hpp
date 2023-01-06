@@ -25,6 +25,7 @@
 #include <tf2/transform_datatypes.h>
 
 #include <fstream>
+#include <string>
 #include <vector>
 
 #ifdef ROS_DISTRO_GALACTIC
@@ -33,6 +34,13 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 #include "tf2/utils.h"
+
+struct TrajectoryData
+{
+  std::vector<geometry_msgs::msg::PoseStamped> pose_list;
+  std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_list;
+  std::vector<geometry_msgs::msg::Vector3Stamped> gyro_list;
+};
 
 double double_round(const double x, const int n);
 
@@ -149,12 +157,6 @@ double norm_xy(const T p1, const U p2)
 
 double clip_radian(const double rad);
 
-void save_estimated_parameters(
-  const std::string output_path, const double stddev_vx, const double stddev_wz,
-  const double coef_vx, const double bias_wz,
-  const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
-  const geometry_msgs::msg::Vector3 & angular_velocity_offset);
-
 geometry_msgs::msg::Point integrate_position(
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double coef_vx,
@@ -171,6 +173,7 @@ geometry_msgs::msg::Vector3 integrate_orientation(
 
 double get_mean_abs_vx(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list);
 double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list);
+double get_mean_accel(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list);
 
 geometry_msgs::msg::Vector3 transform_vector3(
   const geometry_msgs::msg::Vector3 & vec, const geometry_msgs::msg::TransformStamped & transform);

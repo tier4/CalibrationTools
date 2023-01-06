@@ -9,3 +9,5 @@
     # Dead Reckoning configuration
     wait_duration: 4.0 # [s]
     wait_scale: 1.3
+
+    need_ekf_initial_trigger: false

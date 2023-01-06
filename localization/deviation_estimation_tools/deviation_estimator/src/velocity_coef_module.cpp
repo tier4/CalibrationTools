@@ -17,23 +17,32 @@
 #include "deviation_estimator/utils.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
-void VelocityCoefModule::update_coef(
-  const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-  const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
-  const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double dt)
+void VelocityCoefModule::update_coef(const TrajectoryData & traj_data)
 {
-  const auto d_pos =
-    integrate_position(vx_list, gyro_list, 1.0, tf2::getYaw(pose_list.front().pose.orientation));
-  double dx = pose_list.back().pose.position.x - pose_list.front().pose.position.x;
-  double dy = pose_list.back().pose.position.y - pose_list.front().pose.position.y;
+  const rclcpp::Time t0_rclcpp_time = rclcpp::Time(traj_data.pose_list.front().header.stamp);
+  const rclcpp::Time t1_rclcpp_time = rclcpp::Time(traj_data.pose_list.back().header.stamp);
+
+  auto d_pos = integrate_position(
+    traj_data.vx_list, traj_data.gyro_list, 1.0,
+    tf2::getYaw(traj_data.pose_list.front().pose.orientation));
+  const double dt_pose = (rclcpp::Time(traj_data.pose_list.back().header.stamp) -
+                          rclcpp::Time(traj_data.pose_list.front().header.stamp))
+                           .seconds();
+  const double dt_velocity =
+    (rclcpp::Time(traj_data.vx_list.back().stamp) - rclcpp::Time(traj_data.vx_list.front().stamp))
+      .seconds();
+  d_pos.x *= dt_pose / dt_velocity;
+  d_pos.y *= dt_pose / dt_velocity;
+
+  const double dx =
+    traj_data.pose_list.back().pose.position.x - traj_data.pose_list.front().pose.position.x;
+  const double dy =
+    traj_data.pose_list.back().pose.position.y - traj_data.pose_list.front().pose.position.y;
   if (d_pos.x * d_pos.x + d_pos.y * d_pos.y == 0) return;
 
-  double d_coef_vx = (d_pos.x * dx + d_pos.y * dy) / (d_pos.x * d_pos.x + d_pos.y * d_pos.y);
+  const double d_coef_vx = (d_pos.x * dx + d_pos.y * dy) / (d_pos.x * d_pos.x + d_pos.y * d_pos.y);
 
-  double time_factor =
-    (rclcpp::Time(vx_list.back().stamp).seconds() - rclcpp::Time(vx_list.front().stamp).seconds()) /
-    dt;
-  coef_vx_.first += d_coef_vx * time_factor;
+  coef_vx_.first += d_coef_vx;
   coef_vx_.second += 1;
   coef_vx_list_.push_back(d_coef_vx);
 }

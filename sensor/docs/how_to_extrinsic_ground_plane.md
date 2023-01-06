@@ -52,7 +52,7 @@ ros2 bag play <rosbag_path> --clock -l -r 0.2 \
   --remap /tf:=/null/tf /tf_static:=/null/tf_static
 ```
 
-The previous commands are nedded when performing the calibration on `rosbag` data. However, the calibration can also be performed on the actual vehicles, on which case the commands needs to be modified, since the `logging_simulator` and related functionalities are not needed. To to this, add the `logging_simulator:=false`
+The previous commands are needed when performing the calibration on `rosbag` data. However, the calibration can also be performed on the actual vehicles, on which case the commands needs to be modified, since the `logging_simulator` and related functionalities are not needed. To to this, add the `logging_simulator:=false`
 
 For example,
 
