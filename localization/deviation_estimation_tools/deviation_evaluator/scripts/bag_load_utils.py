@@ -235,13 +235,27 @@ class BagFileEvaluator:
             bag_parser.get_messages(params["twist_topic"]),
         )
 
-    def calc_roc_curve_lateral(self, threshold):
-        recall_list = calc_roc_curve(threshold, self.results.lateral)
-        return recall_list
+    # def calc_roc_curve_lateral(self, threshold):
+    #     recall_list = calc_roc_curve(threshold, self.results.lateral)
+    #     return recall_list
 
-    def calc_roc_curve_long_radius(self, threshold):
-        recall_list = calc_roc_curve(threshold, self.results.long_radius)
-        return recall_list
+    # def calc_roc_curve_long_radius(self, threshold):
+    #     recall_list = calc_roc_curve(threshold, self.results.long_radius)
+    #     return recall_list
+
+    def calc_recall_lateral(self, threshold):
+        positives = self.results.lateral.error > threshold
+        if np.sum(positives) == 0:
+            return np.inf
+        true_positives = positives & (self.results.lateral.expected_error > threshold)
+        return np.sum(true_positives) / np.sum(positives)
+
+    def calc_recall_long_radius(self, threshold):
+        positives = self.results.long_radius.error > threshold
+        if np.sum(positives) == 0:
+            return np.inf
+        true_positives = positives & (self.results.long_radius.expected_error > threshold)
+        return np.sum(true_positives) / np.sum(positives)
 
 
 def calc_interpolate(poses, timestamps, timestamps_target):
