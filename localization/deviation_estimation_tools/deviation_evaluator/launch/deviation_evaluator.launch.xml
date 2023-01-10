@@ -8,7 +8,7 @@
   <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.param.yaml"/>
 
   <!-- TODO before merge (koji minoda) any other way to get appropriate param? -->
-  <arg name="error_monitor_param_path" default="$(find-pkg-share tier4_localization_launch)/config/localization_error_monitor.param.yaml"/>
+  <arg name="error_monitor_param_path" default="$(find-pkg-share autoware_launch)/config/localization/localization_error_monitor.param.yaml"/>
 
   <arg name="in_imu" default="/sensing/imu/imu_data"/>
   <arg name="in_wheel_odometry" default="/sensing/vehicle_velocity_converter/twist_with_covariance"/>

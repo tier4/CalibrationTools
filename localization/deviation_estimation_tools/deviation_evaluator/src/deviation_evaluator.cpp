@@ -160,7 +160,7 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   if (
     (current_errors_.lateral > errors_threshold_.lateral) &
     (current_errors_.long_radius > errors_threshold_.long_radius)) {
-    RCLCPP_INFO(this->get_logger(), "Error got large enough! Initialize EKF");
+    RCLCPP_INFO(this->get_logger(), "Errors are large enough. Publish EKF initialization poses.");
     start_time_ = msg_time;
     has_published_initial_pose_ = false;
     current_errors_ = Errors();
