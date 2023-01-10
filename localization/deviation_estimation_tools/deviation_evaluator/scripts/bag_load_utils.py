@@ -367,19 +367,14 @@ if __name__ == "__main__":
     cov2 = np.linalg.inv(np.array([[2, -1], [-1, 2]]))
     covs = [cov0, cov1, cov2]
     angles_answer = [90, 0, 45]
-    np.testing.assert_array_almost_equal(get_long_axis_angles_from_covs(covs),
-                                         np.deg2rad(angles_answer)
+    np.testing.assert_array_almost_equal(
+        get_long_axis_angles_from_covs(covs), np.deg2rad(angles_answer)
     )
 
     # transform_errors
     error = np.array([2, 0])
     errors = np.array([error, error, error, error])
     angles = np.deg2rad([0, 45, 90, 180])
-    errors_transformed_answer = np.array([
-        [2, 0],
-        [np.sqrt(2), -np.sqrt(2)],
-        [0, -2],
-        [-2, 0]
-    ])
+    errors_transformed_answer = np.array([[2, 0], [np.sqrt(2), -np.sqrt(2)], [0, -2], [-2, 0]])
     errors_transformed_calculated = transform_errors(errors, angles)
     np.testing.assert_array_almost_equal(errors_transformed_calculated, errors_transformed_answer)

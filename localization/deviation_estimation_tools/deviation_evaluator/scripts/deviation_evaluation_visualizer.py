@@ -36,11 +36,16 @@ PARAMS = {
     "ndt_freq": 10,
 }
 
-def validate_threshold(recall: float, threshold: float, lowerbound: float, recall_threshold: float = 0.99):
+
+def validate_threshold(
+    recall: float, threshold: float, lowerbound: float, recall_threshold: float = 0.99
+):
     if threshold < lowerbound:
         print(f"Threshold is too small for this vehicle.")
     elif recall == np.inf:
-        print(f"No error larger than {threshold:.3f} [m] observed. Provide more data on deviation_evaluator.")
+        print(
+            f"No error larger than {threshold:.3f} [m] observed. Provide more data on deviation_evaluator."
+        )
     elif recall > recall_threshold:
         print("Valid threshold!")
     else:
