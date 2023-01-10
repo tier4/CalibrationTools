@@ -190,12 +190,11 @@ class BagFileEvaluator:
             ekf_gt_pose_list[:, 0].tolist(),
             ekf_dr_pose_list[:, 0].tolist(),
         )
-        error_vec_xy, error_vec, error_vec_body_frame = calc_errors(
-            ekf_dr_pose_list[:, 1:3],
-            ekf_dr_pose_list[:, 4],
-            ekf_dr_pose_cov_list[:, :2, :2],
-            ekf_gt_pose_list_interpolated[:, 1:3],
-        )
+
+        long_axis_angles = get_long_axis_angles_from_covs(ekf_dr_pose_cov_list[:, :2, :2])
+        errors = ekf_gt_pose_list_interpolated[:, 1:3] - ekf_dr_pose_list[:, 1:3]
+        errors_along_elliptical_axis = transform_errors(errors, long_axis_angles)
+        errors_along_body_frame = transform_errors(errors, ekf_dr_pose_list[:, 4])
 
         stddev_longitudinal_2d, stddev_lateral_2d = calc_body_frame_length(
             ekf_dr_pose_cov_list,
@@ -211,19 +210,19 @@ class BagFileEvaluator:
 
         long_radius_results = ErrorResults(
             "long_radius",
-            np.linalg.norm(error_vec, axis=1)[valid_idxs],
+            np.linalg.norm(errors_along_elliptical_axis, axis=1)[valid_idxs],
             stddev_long_2d[valid_idxs] * params["scale"],
             np.max(stddev_long_2d_gt[50:]) * params["scale"],
         )
         lateral_results = ErrorResults(
             "lateral",
-            error_vec_body_frame[valid_idxs, 1],
+            np.abs(errors_along_body_frame[valid_idxs, 1]),
             stddev_lateral_2d[valid_idxs] * params["scale"],
             np.max(stddev_lateral_2d_gt[50:]) * params["scale"],
         )
         longitudinal_results = ErrorResults(
             "longitudinal",
-            error_vec_body_frame[valid_idxs, 0],
+            np.abs(errors_along_body_frame[valid_idxs, 0]),
             stddev_longitudinal_2d[valid_idxs] * params["scale"],
         )
 
@@ -271,19 +270,29 @@ def calc_interpolate(poses, timestamps, timestamps_target):
     return poses_interpolated, valid_idxs
 
 
-def calc_errors(poses_xy, yaws, covs_xy, poses_target_xy):
-    error_vec_xy = poses_target_xy - poses_xy
-    error_scalar = np.linalg.norm(poses_target_xy - poses_xy, axis=1)
+def get_long_axis_angles_from_covs(covs):
+    angles = []
+    for cov in covs:
+        eigen_values, eigen_vectors = np.linalg.eig(np.linalg.inv(cov))
 
-    # calculate error along long & short axis of confidence ellipse
-    long_axis_direction = np.linalg.eig(covs_xy)[1][:, :, 1]
-    error_vec = np.abs((error_scalar * long_axis_direction.T).T)
+        idx = eigen_values.argsort()[::-1]
+        eigen_values = eigen_values[idx]
+        eigen_vectors = eigen_vectors[:, idx]
+        angle = np.arctan2(eigen_vectors[0, 0], eigen_vectors[0, 1])
+        angles.append(angle)
+    return angles
 
-    # calculate body_frame error
-    cos_val = (error_vec_xy[:, 0] * np.cos(yaws) + error_vec_xy[:, 1] * np.sin(yaws)) / error_scalar
-    sin_val = np.sqrt(1 - cos_val * cos_val)
-    error_vec_body_frame = np.abs((error_scalar * np.array([cos_val, sin_val])).T)
-    return error_vec_xy, error_vec, error_vec_body_frame
+
+def transform_errors(errors, angles):
+    assert len(errors) == len(angles), "Length of errors and angles should be the same"
+    assert errors.shape[1] == 2, "Dimension of errors should be 2 (x&y)"
+    errors_transformed = []
+    for error, angle in zip(errors, angles):
+        mat = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+        error_transformed = (mat @ error.reshape(-1, 1)).reshape(-1)
+        errors_transformed.append(error_transformed)
+    errors_transformed = np.array(errors_transformed)
+    return errors_transformed
 
 
 def calc_body_frame_length(cov_list, pose_list):
@@ -332,3 +341,26 @@ def get_duration_to_error(timestamps, ndt_timestamps, error_lateral, ndt_freq=10
             if duration > 5.0 / ndt_freq:  # Only count if NDT hasn't come for 5 steps.
                 duration_to_error.append([duration, error])
     return np.array(duration_to_error)
+
+
+if __name__ == "__main__":
+    # Apply some test here as a temporary measure.
+    # Ideally this test should be implemented as a rostest.
+
+    # get_long_axis_angles_from_covs
+    cov0 = np.array([[1, 0], [0, 2]])
+    cov1 = np.array([[2, 0], [0, 1]])
+    cov2 = np.linalg.inv(np.array([[2, -1], [-1, 2]]))
+    covs = [cov0, cov1, cov2]
+    angles_answer = [90, 0, 45]
+    np.testing.assert_array_almost_equal(
+        get_long_axis_angles_from_covs(covs), np.deg2rad(angles_answer)
+    )
+
+    # transform_errors
+    error = np.array([2, 0])
+    errors = np.array([error, error, error, error])
+    angles = np.deg2rad([0, 45, 90, 180])
+    errors_transformed_answer = np.array([[2, 0], [np.sqrt(2), -np.sqrt(2)], [0, -2], [-2, 0]])
+    errors_transformed_calculated = transform_errors(errors, angles)
+    np.testing.assert_array_almost_equal(errors_transformed_calculated, errors_transformed_answer)
