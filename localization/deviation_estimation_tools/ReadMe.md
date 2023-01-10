@@ -211,30 +211,16 @@ Confidence interval[%], Actual distribution[%]
 ```
 Make sure that `c>95`. -->
 
-#### B. Materials for determining the threshold
+#### B. Check the compatibility with a threshold in `localization_error_monitor`
 
-The `deviation_evaluator` also supports you determining the threshold in `localization_error_monitor`.
+The `deviation_evaluator` also checks the compatiblity of the estimated parameters and the threshold in `localization_error_monitor`. 
+Concretely, it checks if the two following statement holds:
+1. `localization_error_monitor` would NOT diagnose the system as `WARN` nor `ERROR` as long as the NDT is available.
+2. `localization_error_monitor` detects the anomaly with a recall over 0.99.
 
-In order to do so, run `deviation_evaluation_visualizer.py` to visualize the results of `deviation_evaluator` with the following command.
+Given the result of this validation, the users can verify that the estimated parameters in `deviation_estimator` can be safely applied to Autoware.
 
-```sh
-pip3 install -r requirements.txt
-ros2 launch deviation_evaluator deviation_evaluation_visualizer.launch.xml
-```
-
-In case of determining a threshold along the long radius (`warn_ellipse_size` or `error_ellipse_size`), see `deviation_evaluator_sample/long_radius`.  
-In case of determining a threshold along the lateral direction of the body frame ( `warn_ellipse_size_lateral_direction` or `error_ellipse_size_lateral_direction`), see `deviation_evaluator_sample/body_frame`.
-
-In the directory, you can find a threshold-recall plot for each error threshold (see the below example figure).
-The blue line in the plot shows the relationship between recall and threshold. If the recall is 1, it indicates that you have 0.0 [%] of false negative.
-You can also find the lower bound of the threshold in the plot. Choose a proper threshold so that
-
-1. **it is above the lower bound** (in the sample, it is 0.038 [m])
-2. **recall is high enough** (in the sample, recall will be 1.0 if you choose 0.05[m])
-
-<p align="left">
-    <img src="./deviation_evaluator/media/thres2recall_sample.png" width="400">
-</p>
+Here, note that the `localization_error_monitor` treat the system as an anomaly if either of error along long-axis of confidence ellipse or error along lateral direction is over threshold. Please refer to the package in autoware.universe for detail.
 
 ### Architecture of `deviation_evaluator`
 
