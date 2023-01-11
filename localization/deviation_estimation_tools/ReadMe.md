@@ -213,7 +213,8 @@ Make sure that `c>95`. -->
 
 #### B. Check the compatibility with a threshold in `localization_error_monitor`
 
-The `deviation_evaluator` also checks the compatiblity of the estimated parameters and the threshold in `localization_error_monitor`.
+The `deviation_evaluator` also checks the compatibility of the estimated parameters and the threshold in `localization_error_monitor`.
+
 Concretely, it checks if the two following statement holds:
 
 1. `localization_error_monitor` would NOT diagnose the system as `WARN` nor `ERROR` as long as the NDT is available.
