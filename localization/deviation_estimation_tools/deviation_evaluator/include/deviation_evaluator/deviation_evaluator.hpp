@@ -71,9 +71,13 @@ private:
   std::string save_dir_;
   double start_time_;
   double stddev_vx_;
-  double stddev_wz_;
   double coef_vx_;
-  double bias_wz_;
+  double angular_velocity_stddev_xx_;
+  double angular_velocity_stddev_yy_;
+  double angular_velocity_stddev_zz_;
+  double angular_velocity_offset_x_;
+  double angular_velocity_offset_y_;
+  double angular_velocity_offset_z_;
 
   double wait_duration_;
   Errors errors_threshold_;

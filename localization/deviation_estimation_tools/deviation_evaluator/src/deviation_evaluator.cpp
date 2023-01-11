@@ -56,9 +56,14 @@ DeviationEvaluator::DeviationEvaluator(
 {
   show_debug_info_ = declare_parameter<bool>("show_debug_info", false);
   stddev_vx_ = declare_parameter<double>("stddev_vx");
-  stddev_wz_ = declare_parameter<double>("stddev_wz");
   coef_vx_ = declare_parameter<double>("coef_vx");
-  bias_wz_ = declare_parameter<double>("bias_wz");
+  angular_velocity_stddev_xx_ = declare_parameter<double>("angular_velocity_stddev_xx");
+  angular_velocity_stddev_yy_ = declare_parameter<double>("angular_velocity_stddev_yy");
+  angular_velocity_stddev_zz_ = declare_parameter<double>("angular_velocity_stddev_zz");
+  angular_velocity_offset_x_ = declare_parameter<double>("angular_velocity_offset_x");
+  angular_velocity_offset_y_ = declare_parameter<double>("angular_velocity_offset_y");
+  angular_velocity_offset_z_ = declare_parameter<double>("angular_velocity_offset_z");
+
   save_dir_ = declare_parameter<std::string>("save_dir");
   wait_duration_ = declare_parameter<double>("wait_duration");
   double wait_scale = declare_parameter<double>("wait_scale");
@@ -120,8 +125,12 @@ DeviationEvaluator::DeviationEvaluator(
 
 void DeviationEvaluator::callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg)
 {
-  msg->angular_velocity.z -= bias_wz_;
-  msg->angular_velocity_covariance[2 * 3 + 2] = stddev_wz_ * stddev_wz_;
+  msg->angular_velocity.x -= angular_velocity_offset_x_;
+  msg->angular_velocity.x -= angular_velocity_offset_y_;
+  msg->angular_velocity.x -= angular_velocity_offset_z_;
+  msg->angular_velocity_covariance[0 * 3 + 0] = angular_velocity_stddev_xx_ * angular_velocity_stddev_xx_;
+  msg->angular_velocity_covariance[1 * 3 + 1] = angular_velocity_stddev_yy_ * angular_velocity_stddev_yy_;
+  msg->angular_velocity_covariance[2 * 3 + 2] = angular_velocity_stddev_zz_ * angular_velocity_stddev_zz_;
   pub_calibrated_imu_->publish(*msg);
 }
 
@@ -139,12 +148,14 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   if (!has_published_initial_pose_) {
     geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov;
     pose_with_cov = *msg;
-    pose_with_cov.pose.covariance[0 * 6 + 0] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[1 * 6 + 1] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[2 * 6 + 2] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[3 * 6 + 3] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[4 * 6 + 4] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[5 * 6 + 5] = 0.03 * 0.03;
+    const double initial_position_stddev = 0.05;
+    const double initial_angle_stddev = 0.01;
+    pose_with_cov.pose.covariance[0 * 6 + 0] = initial_position_stddev * initial_position_stddev;
+    pose_with_cov.pose.covariance[1 * 6 + 1] = initial_position_stddev * initial_position_stddev;
+    pose_with_cov.pose.covariance[2 * 6 + 2] = initial_position_stddev * initial_position_stddev;
+    pose_with_cov.pose.covariance[3 * 6 + 3] = initial_angle_stddev * initial_angle_stddev;
+    pose_with_cov.pose.covariance[4 * 6 + 4] = initial_angle_stddev * initial_angle_stddev;
+    pose_with_cov.pose.covariance[5 * 6 + 5] = initial_angle_stddev * initial_angle_stddev;
     pub_init_pose_with_cov_->publish(pose_with_cov);
     has_published_initial_pose_ = true;
     return;
@@ -236,8 +247,12 @@ void DeviationEvaluator::save2YamlFile()
   std::ofstream file(save_dir_ + "/config.yaml");
   file << "parameters:" << std::endl;
   file << "  stddev_vx: " << double_round(stddev_vx_, 5) << std::endl;
-  file << "  stddev_wz: " << double_round(stddev_wz_, 5) << std::endl;
-  file << "  bias_rho: " << double_round(coef_vx_, 5) << std::endl;
-  file << "  bias_gyro: " << double_round(bias_wz_, 5) << std::endl;
+  file << "  coef_vx: " << double_round(coef_vx_, 5) << std::endl;
+  file << "  angular_velocity_stddev_xx: " << double_round(angular_velocity_stddev_xx_, 5) << std::endl;
+  file << "  angular_velocity_stddev_yy: " << double_round(angular_velocity_stddev_yy_, 5) << std::endl;
+  file << "  angular_velocity_stddev_zz: " << double_round(angular_velocity_stddev_zz_, 5) << std::endl;
+  file << "  angular_velocity_offset_x: " << double_round(angular_velocity_offset_x_, 5) << std::endl;
+  file << "  angular_velocity_offset_y: " << double_round(angular_velocity_offset_y_, 5) << std::endl;
+  file << "  angular_velocity_offset_z: " << double_round(angular_velocity_offset_z_, 5) << std::endl;
   file.close();
 }
