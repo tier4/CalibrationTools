@@ -23,7 +23,7 @@ Logger::Logger(const std::string output_path) : output_path_(output_path)
 }
 
 void Logger::log_estimated_result_section(
-  const double stddev_vx, const double stddev_wz, const double coef_vx, const double bias_wz,
+  const double stddev_vx, const double coef_vx,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset) const
 {
@@ -31,9 +31,19 @@ void Logger::log_estimated_result_section(
   file << "# Results expressed in base_link\n";
   file << "# Copy the following to deviation_evaluator.param.yaml\n";
   file << fmt::format("stddev_vx: {}\n", double_round(stddev_vx, 5));
-  file << fmt::format("stddev_wz: {}\n", double_round(stddev_wz, 5));
   file << fmt::format("coef_vx: {}\n", double_round(coef_vx, 5));
-  file << fmt::format("bias_wz: {}\n", double_round(bias_wz, 5));
+  file << fmt::format(
+    "angular_velocity_stddev_xx: {}\n", double_round(angular_velocity_stddev.x, 5));
+  file << fmt::format(
+    "angular_velocity_stddev_yy: {}\n", double_round(angular_velocity_stddev.y, 5));
+  file << fmt::format(
+    "angular_velocity_stddev_zz: {}\n", double_round(angular_velocity_stddev.z, 5));
+  file << fmt::format(
+    "angular_velocity_offset_x: {}\n", double_round(angular_velocity_offset.x, 5));
+  file << fmt::format(
+    "angular_velocity_offset_y: {}\n", double_round(angular_velocity_offset.y, 5));
+  file << fmt::format(
+    "angular_velocity_offset_z: {}\n", double_round(angular_velocity_offset.z, 5));
   file << "\n";
   file << "# Results expressed in imu_link\n";
   file << "# Copy the following to imu_corrector.param.yaml\n";

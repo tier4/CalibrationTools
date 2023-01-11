@@ -30,7 +30,7 @@ class Logger
 public:
   Logger(const std::string output_path);
   void log_estimated_result_section(
-    const double stddev_vx, const double stddev_wz, const double coef_vx, const double bias_wz,
+    const double stddev_vx, const double coef_vx,
     const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
     const geometry_msgs::msg::Vector3 & angular_velocity_offset) const;
   void log_validation_result_section(const ValidationModule & validation_module) const;

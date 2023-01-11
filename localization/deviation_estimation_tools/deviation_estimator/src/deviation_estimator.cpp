@@ -168,7 +168,7 @@ DeviationEstimator::DeviationEstimator(
 
   const Logger logger(results_path_);
   logger.log_estimated_result_section(
-    0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
+    0.2, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
@@ -299,8 +299,7 @@ void DeviationEstimator::timer_callback()
 
   const Logger logger(results_path_);
   logger.log_estimated_result_section(
-    stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
-    gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
+    stddev_vx, vel_coef_module_->get_coef(), stddev_angvel_imu_msg, bias_angvel_imu);
   logger.log_validation_result_section(*validation_module_);
 }
 
