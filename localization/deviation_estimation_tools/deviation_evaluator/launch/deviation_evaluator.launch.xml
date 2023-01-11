@@ -7,6 +7,9 @@
   <arg name="save_dir" default="$(env HOME)/deviation_evaluator_sample"/>
   <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.param.yaml"/>
 
+  <!-- TODO before merge (koji minoda) any other way to get appropriate param? -->
+  <arg name="error_monitor_param_path" default="$(find-pkg-share autoware_launch)/config/localization/localization_error_monitor.param.yaml"/>
+
   <arg name="in_imu" default="/sensing/imu/imu_data"/>
   <arg name="in_wheel_odometry" default="/sensing/vehicle_velocity_converter/twist_with_covariance"/>
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>
@@ -28,6 +31,8 @@
       <remap from="in_imu" to="$(var in_imu)"/>
       <remap from="in_wheel_odometry" to="$(var in_wheel_odometry)"/>
       <remap from="in_ndt_pose_with_covariance" to="$(var in_ndt_pose_with_covariance)"/>
+      <remap from="in_ekf_dr_odom" to="$(var out_ekf_odom_dr)"/>
+      <remap from="in_ekf_gt_odom" to="$(var out_ekf_odom_gt)"/>
 
       <remap from="out_imu" to="$(var out_imu)"/>
       <remap from="out_wheel_odometry" to="$(var out_wheel_odometry)"/>
@@ -40,6 +45,7 @@
 
       <param name="save_dir" value="$(var save_dir)"/>
       <param from="$(var param_path)"/>
+      <param from="$(var error_monitor_param_path)"/>
     </node>
   </group>
 
