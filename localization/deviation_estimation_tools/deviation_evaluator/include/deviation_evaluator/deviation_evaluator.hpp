@@ -74,8 +74,7 @@ private:
   double stddev_wz_;
   double coef_vx_;
   double bias_wz_;
-  // double period_;
-  // double cut_;
+
   double wait_duration_;
   Errors errors_threshold_;
   Errors current_errors_;
