@@ -16,10 +16,18 @@
 
 #include <cmath>
 
-Logger::Logger(const std::string output_path) : output_path_(output_path)
+Logger::Logger(
+  const std::string & output_dir,
+  const std::string & imu_topic)
+: output_log_path_(output_dir + "/output.txt"),
+  output_imu_param_path_(output_dir + "/imu_corrector.param.yaml"),
+  imu_topic_(imu_topic)
 {
-  std::ofstream file(output_path_);
-  file.close();
+  std::ofstream file_log(output_log_path_);
+  file_log.close();
+
+  std::ofstream file_imu_param(output_imu_param_path_);
+  file_imu_param.close();
 }
 
 void Logger::log_estimated_result_section(
@@ -27,44 +35,35 @@ void Logger::log_estimated_result_section(
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset) const
 {
-  std::ofstream file(output_path_, std::ios::app);
-  file << "# Results expressed in base_link\n";
-  file << "# Copy the following to deviation_evaluator.param.yaml\n";
-  file << fmt::format("stddev_vx: {}\n", double_round(stddev_vx, 5));
-  file << fmt::format("coef_vx: {}\n", double_round(coef_vx, 5));
-  file << fmt::format(
-    "angular_velocity_stddev_xx: {}\n", double_round(angular_velocity_stddev.x, 5));
-  file << fmt::format(
-    "angular_velocity_stddev_yy: {}\n", double_round(angular_velocity_stddev.y, 5));
-  file << fmt::format(
-    "angular_velocity_stddev_zz: {}\n", double_round(angular_velocity_stddev.z, 5));
-  file << fmt::format(
-    "angular_velocity_offset_x: {}\n", double_round(angular_velocity_offset.x, 5));
-  file << fmt::format(
-    "angular_velocity_offset_y: {}\n", double_round(angular_velocity_offset.y, 5));
-  file << fmt::format(
-    "angular_velocity_offset_z: {}\n", double_round(angular_velocity_offset.z, 5));
-  file << "\n";
-  file << "# Results expressed in imu_link\n";
-  file << "# Copy the following to imu_corrector.param.yaml\n";
-  file << fmt::format(
-    "angular_velocity_stddev_xx: {}\n", double_round(angular_velocity_stddev.x, 5));
-  file << fmt::format(
-    "angular_velocity_stddev_yy: {}\n", double_round(angular_velocity_stddev.y, 5));
-  file << fmt::format(
-    "angular_velocity_stddev_zz: {}\n", double_round(angular_velocity_stddev.z, 5));
-  file << fmt::format(
-    "angular_velocity_offset_x: {}\n", double_round(angular_velocity_offset.x, 5));
-  file << fmt::format(
-    "angular_velocity_offset_y: {}\n", double_round(angular_velocity_offset.y, 5));
-  file << fmt::format(
-    "angular_velocity_offset_z: {}\n", double_round(angular_velocity_offset.z, 5));
-  file.close();
+  std::ofstream file_log(output_log_path_, std::ios::app);
+  file_log << "# Results expressed in base_link\n";
+  file_log << "# Copy the following to deviation_evaluator.param.yaml\n";
+  file_log << fmt::format("stddev_vx: {:.5f}\n", stddev_vx);
+  file_log << fmt::format("coef_vx: {:.5f}\n", coef_vx);
+  file_log << fmt::format("imu_topic: {}\n", imu_topic_);
+  file_log.close();
+
+  std::ofstream file_imu_param(output_imu_param_path_, std::ios::app);
+  file_imu_param << "# Estimated by deviation_estimator\n";
+  file_imu_param << "/**:\n";
+  file_imu_param << "  ros__parameters:\n";
+  file_imu_param << fmt::format(
+    "    angular_velocity_offset_x: {:.5f}\n", angular_velocity_offset.x);
+  file_imu_param << fmt::format(
+    "    angular_velocity_offset_y: {:.5f}\n", angular_velocity_offset.y);
+  file_imu_param << fmt::format(
+    "    angular_velocity_offset_z: {:.5f}\n", angular_velocity_offset.z);
+  file_imu_param << fmt::format(
+    "    angular_velocity_stddev_xx: {:.5f}\n", angular_velocity_stddev.x);
+  file_imu_param << fmt::format(
+    "    angular_velocity_stddev_yy: {:.5f}\n", angular_velocity_stddev.y);
+  file_imu_param << fmt::format(
+    "    angular_velocity_stddev_zz: {:.5f}\n", angular_velocity_stddev.z);
 }
 
 void Logger::log_validation_result_section(const ValidationModule & validation_module) const
 {
-  std::ofstream file(output_path_, std::ios::app);
+  std::ofstream file(output_log_path_, std::ios::app);
   file << "\n# Validation results\n";
   file << "# value: [min, max]\n";
 

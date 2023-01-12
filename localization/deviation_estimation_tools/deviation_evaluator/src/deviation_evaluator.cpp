@@ -55,15 +55,6 @@ DeviationEvaluator::DeviationEvaluator(
 : rclcpp::Node(node_name, node_options)
 {
   show_debug_info_ = declare_parameter<bool>("show_debug_info", false);
-  stddev_vx_ = declare_parameter<double>("stddev_vx");
-  coef_vx_ = declare_parameter<double>("coef_vx");
-  angular_velocity_stddev_xx_ = declare_parameter<double>("angular_velocity_stddev_xx");
-  angular_velocity_stddev_yy_ = declare_parameter<double>("angular_velocity_stddev_yy");
-  angular_velocity_stddev_zz_ = declare_parameter<double>("angular_velocity_stddev_zz");
-  angular_velocity_offset_x_ = declare_parameter<double>("angular_velocity_offset_x");
-  angular_velocity_offset_y_ = declare_parameter<double>("angular_velocity_offset_y");
-  angular_velocity_offset_z_ = declare_parameter<double>("angular_velocity_offset_z");
-
   save_dir_ = declare_parameter<std::string>("save_dir");
   wait_duration_ = declare_parameter<double>("wait_duration");
   double wait_scale = declare_parameter<double>("wait_scale");
@@ -95,10 +86,8 @@ DeviationEvaluator::DeviationEvaluator(
     RCLCPP_INFO(this->get_logger(), "EKF initialization finished");
   }
 
-  save2YamlFile();
-
-  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
-    "in_imu", 1, std::bind(&DeviationEvaluator::callbackImu, this, _1));
+  // sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
+  //   "in_imu", 1, std::bind(&DeviationEvaluator::callbackImu, this, _1));
   sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
     "in_wheel_odometry", 1, std::bind(&DeviationEvaluator::callbackWheelOdometry, this, _1));
   sub_ndt_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -109,7 +98,7 @@ DeviationEvaluator::DeviationEvaluator(
   sub_gt_odom_ = create_subscription<Odometry>(
     "in_ekf_gt_odom", 1, std::bind(&DeviationEvaluator::callbackEKFGTOdom, this, _1));
 
-  pub_calibrated_imu_ = create_publisher<sensor_msgs::msg::Imu>("out_imu", 1);
+  // pub_calibrated_imu_ = create_publisher<sensor_msgs::msg::Imu>("out_imu", 1);
   pub_calibrated_wheel_odometry_ =
     create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>("out_wheel_odometry", 1);
   pub_pose_with_cov_dr_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -119,20 +108,39 @@ DeviationEvaluator::DeviationEvaluator(
   pub_init_pose_with_cov_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_initial_pose_with_covariance", 1);
 
+  transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
+
   current_ndt_pose_ptr_ = nullptr;
   has_published_initial_pose_ = false;
+
+  stddev_vx_ = declare_parameter<double>("stddev_vx");
+  coef_vx_ = declare_parameter<double>("coef_vx");
+  // angular_velocity_stddev_.x = declare_parameter<double>("angular_velocity_stddev_xx");
+  // angular_velocity_stddev_.y = declare_parameter<double>("angular_velocity_stddev_yy");
+  // angular_velocity_stddev_.z = declare_parameter<double>("angular_velocity_stddev_zz");
+  // angular_velocity_offset_.x = declare_parameter<double>("angular_velocity_offset_x");
+  // angular_velocity_offset_.y = declare_parameter<double>("angular_velocity_offset_y");
+  // angular_velocity_offset_.z = declare_parameter<double>("angular_velocity_offset_z");
 }
 
-void DeviationEvaluator::callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg)
-{
-  msg->angular_velocity.x -= angular_velocity_offset_x_;
-  msg->angular_velocity.x -= angular_velocity_offset_y_;
-  msg->angular_velocity.x -= angular_velocity_offset_z_;
-  msg->angular_velocity_covariance[0 * 3 + 0] = angular_velocity_stddev_xx_ * angular_velocity_stddev_xx_;
-  msg->angular_velocity_covariance[1 * 3 + 1] = angular_velocity_stddev_yy_ * angular_velocity_stddev_yy_;
-  msg->angular_velocity_covariance[2 * 3 + 2] = angular_velocity_stddev_zz_ * angular_velocity_stddev_zz_;
-  pub_calibrated_imu_->publish(*msg);
-}
+// void DeviationEvaluator::callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg)
+// {
+//   geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_base2imu_ptr =
+//     transform_listener_->getLatestTransform(output_frame_, imu_frame_);
+//   if (!tf_base2imu_ptr) {
+//     RCLCPP_ERROR(
+//       this->get_logger(), "Please publish TF %s to %s", imu_frame_.c_str(), output_frame_.c_str());
+//     return;
+//   }
+
+//   msg->angular_velocity.x -= angular_velocity_offset_x_;
+//   msg->angular_velocity.y -= angular_velocity_offset_y_;
+//   msg->angular_velocity.z -= angular_velocity_offset_z_;
+//   msg->angular_velocity_covariance[0 * 3 + 0] = angular_velocity_stddev_xx_ * angular_velocity_stddev_xx_;
+//   msg->angular_velocity_covariance[1 * 3 + 1] = angular_velocity_stddev_yy_ * angular_velocity_stddev_yy_;
+//   msg->angular_velocity_covariance[2 * 3 + 2] = angular_velocity_stddev_zz_ * angular_velocity_stddev_zz_;
+//   pub_calibrated_imu_->publish(*msg);
+// }
 
 void DeviationEvaluator::callbackWheelOdometry(
   const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg)
@@ -240,19 +248,4 @@ geometry_msgs::msg::Pose DeviationEvaluator::interpolatePose(const double time)
   const double ratio = (time - time_start) / (time_end - time_start);
   return tier4_autoware_utils::calcInterpolatedPose(
     (*(iter_next - 1))->pose, (*iter_next)->pose, ratio);
-}
-
-void DeviationEvaluator::save2YamlFile()
-{
-  std::ofstream file(save_dir_ + "/config.yaml");
-  file << "parameters:" << std::endl;
-  file << "  stddev_vx: " << double_round(stddev_vx_, 5) << std::endl;
-  file << "  coef_vx: " << double_round(coef_vx_, 5) << std::endl;
-  file << "  angular_velocity_stddev_xx: " << double_round(angular_velocity_stddev_xx_, 5) << std::endl;
-  file << "  angular_velocity_stddev_yy: " << double_round(angular_velocity_stddev_yy_, 5) << std::endl;
-  file << "  angular_velocity_stddev_zz: " << double_round(angular_velocity_stddev_zz_, 5) << std::endl;
-  file << "  angular_velocity_offset_x: " << double_round(angular_velocity_offset_x_, 5) << std::endl;
-  file << "  angular_velocity_offset_y: " << double_round(angular_velocity_offset_y_, 5) << std::endl;
-  file << "  angular_velocity_offset_z: " << double_round(angular_velocity_offset_z_, 5) << std::endl;
-  file.close();
 }

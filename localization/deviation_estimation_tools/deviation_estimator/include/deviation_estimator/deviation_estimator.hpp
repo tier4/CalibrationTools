@@ -19,6 +19,7 @@
 #include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/validation_module.hpp"
 #include "deviation_estimator/velocity_coef_module.hpp"
+#include "deviation_estimator/logger.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/utils.h"
 #include "tier4_autoware_utils/ros/transform_listener.hpp"
@@ -72,7 +73,6 @@ private:
   bool show_debug_info_;
   bool use_predefined_coef_vx_;
   double predefined_coef_vx_;
-  std::string results_path_;
   std::string imu_link_frame_;
 
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
@@ -90,8 +90,11 @@ private:
   double time_window_;
   bool add_bias_uncertainty_;
 
-  std::string output_frame_;
   std::string imu_frame_;
+  const std::string output_frame_;
+  const std::string imu_topic_;
+  const std::string results_dir_;
+  const Logger results_logger_;
 
   std::unique_ptr<GyroBiasModule> gyro_bias_module_;
   std::unique_ptr<VelocityCoefModule> vel_coef_module_;

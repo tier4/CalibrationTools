@@ -27,6 +27,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
+#include "tier4_autoware_utils/ros/transform_listener.hpp"
 
 #include <deque>
 #include <fstream>
@@ -53,12 +54,12 @@ public:
   DeviationEvaluator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
+  // rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
   rclcpp::Subscription<TwistWithCovarianceStamped>::SharedPtr sub_wheel_odometry_;
   rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr sub_ndt_pose_with_cov_;
   rclcpp::Subscription<Odometry>::SharedPtr sub_dr_odom_;
   rclcpp::Subscription<Odometry>::SharedPtr sub_gt_odom_;
-  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_calibrated_imu_;
+  // rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_calibrated_imu_;
   rclcpp::Publisher<TwistWithCovarianceStamped>::SharedPtr pub_calibrated_wheel_odometry_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
@@ -72,12 +73,9 @@ private:
   double start_time_;
   double stddev_vx_;
   double coef_vx_;
-  double angular_velocity_stddev_xx_;
-  double angular_velocity_stddev_yy_;
-  double angular_velocity_stddev_zz_;
-  double angular_velocity_offset_x_;
-  double angular_velocity_offset_y_;
-  double angular_velocity_offset_z_;
+  geometry_msgs::msg::Vector3 angular_velocity_stddev_;
+  geometry_msgs::msg::Vector3 angular_velocity_offset_;
+  geometry_msgs::msg::Vector3 angular_velocity_offset_imu_link_;
 
   double wait_duration_;
   Errors errors_threshold_;
@@ -90,9 +88,11 @@ private:
   PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
   PoseStamped::SharedPtr current_ndt_pose_ptr_;
 
+  std::shared_ptr<tier4_autoware_utils::TransformListener> transform_listener_;
+
   bool has_published_initial_pose_;
 
-  void callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg);
+  // void callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg);
 
   void callbackWheelOdometry(const TwistWithCovarianceStamped::SharedPtr msg);
 
@@ -103,8 +103,6 @@ private:
   void callbackEKFGTOdom(const Odometry::SharedPtr msg);
 
   geometry_msgs::msg::Pose interpolatePose(const double timestamp_seconds);
-
-  void save2YamlFile();
 };
 
 #endif  // DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_

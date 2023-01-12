@@ -1,4 +1,4 @@
 /**:
   ros__parameters:
     time_window: 4.0
-    imu_frame: "tamagawa/imu_link"
+    imu_topic: "/sensing/imu/tamagawa/imu_raw"

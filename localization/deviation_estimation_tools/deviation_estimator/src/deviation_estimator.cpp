@@ -129,8 +129,10 @@ DeviationEstimator::DeviationEstimator(
 : rclcpp::Node(node_name, node_options),
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
-  output_frame_(declare_parameter("base_link", "base_link")),
-  imu_frame_(declare_parameter<std::string>("imu_frame"))
+  output_frame_(declare_parameter<std::string>("base_link", "base_link")),
+  imu_topic_(declare_parameter<std::string>("imu_topic")),
+  results_dir_(declare_parameter<std::string>("results_dir")),
+  results_logger_(results_dir_, imu_topic_)
 {
   show_debug_info_ = declare_parameter("show_debug_info", false);
   dt_design_ = declare_parameter("dt_design", 10.0);
@@ -140,7 +142,6 @@ DeviationEstimator::DeviationEstimator(
   accel_threshold_ = declare_parameter("accel_threshold", 0.3);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
-  results_path_ = declare_parameter<std::string>("results_path");
   time_window_ = declare_parameter("time_window", 4.0);
   add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
 
@@ -157,8 +158,6 @@ DeviationEstimator::DeviationEstimator(
     std::bind(&DeviationEstimator::callback_pose_with_covariance, this, _1));
   sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
     "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
-  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
-    "in_imu", 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
   pub_coef_vx_ = create_publisher<std_msgs::msg::Float64>("estimated_coef_vx", 1);
   pub_bias_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_bias_angular_velocity", 1);
@@ -166,8 +165,9 @@ DeviationEstimator::DeviationEstimator(
   pub_stddev_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
-  const Logger logger(results_path_);
-  logger.log_estimated_result_section(
+  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
+    imu_topic_, 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
+  results_logger_.log_estimated_result_section(
     0.2, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
@@ -208,12 +208,13 @@ void DeviationEstimator::callback_wheel_odometry(
 
 void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr)
 {
+  imu_frame_ = imu_msg_ptr->header.frame_id;
   geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_imu2base_ptr =
-    transform_listener_->getLatestTransform(imu_msg_ptr->header.frame_id, output_frame_);
+    transform_listener_->getLatestTransform(imu_frame_, output_frame_);
   if (!tf_imu2base_ptr) {
     RCLCPP_ERROR(
       this->get_logger(), "Please publish TF %s to %s", output_frame_.c_str(),
-      (imu_msg_ptr->header.frame_id).c_str());
+      (imu_frame_).c_str());
     return;
   }
 
@@ -297,10 +298,9 @@ void DeviationEstimator::timer_callback()
   validation_module_->set_velocity_data(vel_coef_module_->get_coef(), stddev_vx);
   validation_module_->set_gyro_data(bias_angvel_imu, stddev_angvel_imu_msg);
 
-  const Logger logger(results_path_);
-  logger.log_estimated_result_section(
+  results_logger_.log_estimated_result_section(
     stddev_vx, vel_coef_module_->get_coef(), stddev_angvel_imu_msg, bias_angvel_imu);
-  logger.log_validation_result_section(*validation_module_);
+  results_logger_.log_validation_result_section(*validation_module_);
 }
 
 double DeviationEstimator::add_bias_uncertainty_on_velocity(
