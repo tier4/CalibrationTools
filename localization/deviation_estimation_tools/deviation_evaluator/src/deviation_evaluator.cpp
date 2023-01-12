@@ -129,16 +129,18 @@ DeviationEvaluator::DeviationEvaluator(
 //     transform_listener_->getLatestTransform(output_frame_, imu_frame_);
 //   if (!tf_base2imu_ptr) {
 //     RCLCPP_ERROR(
-//       this->get_logger(), "Please publish TF %s to %s", imu_frame_.c_str(), output_frame_.c_str());
+//       this->get_logger(), "Please publish TF %s to %s", imu_frame_.c_str(),
+//       output_frame_.c_str());
 //     return;
 //   }
 
 //   msg->angular_velocity.x -= angular_velocity_offset_x_;
 //   msg->angular_velocity.y -= angular_velocity_offset_y_;
 //   msg->angular_velocity.z -= angular_velocity_offset_z_;
-//   msg->angular_velocity_covariance[0 * 3 + 0] = angular_velocity_stddev_xx_ * angular_velocity_stddev_xx_;
-//   msg->angular_velocity_covariance[1 * 3 + 1] = angular_velocity_stddev_yy_ * angular_velocity_stddev_yy_;
-//   msg->angular_velocity_covariance[2 * 3 + 2] = angular_velocity_stddev_zz_ * angular_velocity_stddev_zz_;
+//   msg->angular_velocity_covariance[0 * 3 + 0] = angular_velocity_stddev_xx_ *
+//   angular_velocity_stddev_xx_; msg->angular_velocity_covariance[1 * 3 + 1] =
+//   angular_velocity_stddev_yy_ * angular_velocity_stddev_yy_; msg->angular_velocity_covariance[2 *
+//   3 + 2] = angular_velocity_stddev_zz_ * angular_velocity_stddev_zz_;
 //   pub_calibrated_imu_->publish(*msg);
 // }
 

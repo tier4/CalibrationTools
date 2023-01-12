@@ -16,10 +16,10 @@
 #define DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 
 #include "deviation_estimator/gyro_bias_module.hpp"
+#include "deviation_estimator/logger.hpp"
 #include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/validation_module.hpp"
 #include "deviation_estimator/velocity_coef_module.hpp"
-#include "deviation_estimator/logger.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/utils.h"
 #include "tier4_autoware_utils/ros/transform_listener.hpp"

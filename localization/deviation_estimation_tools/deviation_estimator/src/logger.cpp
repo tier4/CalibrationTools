@@ -16,9 +16,7 @@
 
 #include <cmath>
 
-Logger::Logger(
-  const std::string & output_dir,
-  const std::string & imu_topic)
+Logger::Logger(const std::string & output_dir, const std::string & imu_topic)
 : output_log_path_(output_dir + "/output.txt"),
   output_imu_param_path_(output_dir + "/imu_corrector.param.yaml"),
   imu_topic_(imu_topic)
