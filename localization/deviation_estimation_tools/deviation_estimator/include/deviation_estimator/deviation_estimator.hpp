@@ -92,7 +92,6 @@ private:
 
   std::string imu_frame_;
   const std::string output_frame_;
-  const std::string imu_topic_;
   const std::string results_dir_;
   const Logger results_logger_;
 

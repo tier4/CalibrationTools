@@ -38,6 +38,7 @@ public:
 private:
   const std::string output_log_path_;
   const std::string output_imu_param_path_;
+  const std::string output_velocity_param_path_;
   const std::string imu_topic_;
 };
 #endif  // DEVIATION_ESTIMATOR__LOGGER_HPP_

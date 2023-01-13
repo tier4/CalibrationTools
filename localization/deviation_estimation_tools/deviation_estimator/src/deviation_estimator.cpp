@@ -130,7 +130,6 @@ DeviationEstimator::DeviationEstimator(
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
   output_frame_(declare_parameter<std::string>("base_link", "base_link")),
-  imu_topic_(declare_parameter<std::string>("imu_topic")),
   results_dir_(declare_parameter<std::string>("results_dir")),
   results_logger_(results_dir_, imu_topic_)
 {
@@ -156,8 +155,6 @@ DeviationEstimator::DeviationEstimator(
   sub_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_pose_with_covariance", 1,
     std::bind(&DeviationEstimator::callback_pose_with_covariance, this, _1));
-  sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
   pub_coef_vx_ = create_publisher<std_msgs::msg::Float64>("estimated_coef_vx", 1);
   pub_bias_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_bias_angular_velocity", 1);
@@ -166,7 +163,9 @@ DeviationEstimator::DeviationEstimator(
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
   sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
-    imu_topic_, 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
+    "in_imu", 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
+  sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
+    "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
   results_logger_.log_estimated_result_section(
     0.2, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
 

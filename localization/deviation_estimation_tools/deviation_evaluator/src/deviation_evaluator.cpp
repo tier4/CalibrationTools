@@ -86,10 +86,6 @@ DeviationEvaluator::DeviationEvaluator(
     RCLCPP_INFO(this->get_logger(), "EKF initialization finished");
   }
 
-  // sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
-  //   "in_imu", 1, std::bind(&DeviationEvaluator::callbackImu, this, _1));
-  sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_wheel_odometry", 1, std::bind(&DeviationEvaluator::callbackWheelOdometry, this, _1));
   sub_ndt_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_ndt_pose_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackNDTPoseWithCovariance, this, _1));
@@ -98,9 +94,6 @@ DeviationEvaluator::DeviationEvaluator(
   sub_gt_odom_ = create_subscription<Odometry>(
     "in_ekf_gt_odom", 1, std::bind(&DeviationEvaluator::callbackEKFGTOdom, this, _1));
 
-  // pub_calibrated_imu_ = create_publisher<sensor_msgs::msg::Imu>("out_imu", 1);
-  pub_calibrated_wheel_odometry_ =
-    create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>("out_wheel_odometry", 1);
   pub_pose_with_cov_dr_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_pose_with_covariance_dr", 1);
   pub_pose_with_cov_gt_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -112,44 +105,6 @@ DeviationEvaluator::DeviationEvaluator(
 
   current_ndt_pose_ptr_ = nullptr;
   has_published_initial_pose_ = false;
-
-  stddev_vx_ = declare_parameter<double>("stddev_vx");
-  coef_vx_ = declare_parameter<double>("coef_vx");
-  // angular_velocity_stddev_.x = declare_parameter<double>("angular_velocity_stddev_xx");
-  // angular_velocity_stddev_.y = declare_parameter<double>("angular_velocity_stddev_yy");
-  // angular_velocity_stddev_.z = declare_parameter<double>("angular_velocity_stddev_zz");
-  // angular_velocity_offset_.x = declare_parameter<double>("angular_velocity_offset_x");
-  // angular_velocity_offset_.y = declare_parameter<double>("angular_velocity_offset_y");
-  // angular_velocity_offset_.z = declare_parameter<double>("angular_velocity_offset_z");
-}
-
-// void DeviationEvaluator::callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg)
-// {
-//   geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_base2imu_ptr =
-//     transform_listener_->getLatestTransform(output_frame_, imu_frame_);
-//   if (!tf_base2imu_ptr) {
-//     RCLCPP_ERROR(
-//       this->get_logger(), "Please publish TF %s to %s", imu_frame_.c_str(),
-//       output_frame_.c_str());
-//     return;
-//   }
-
-//   msg->angular_velocity.x -= angular_velocity_offset_x_;
-//   msg->angular_velocity.y -= angular_velocity_offset_y_;
-//   msg->angular_velocity.z -= angular_velocity_offset_z_;
-//   msg->angular_velocity_covariance[0 * 3 + 0] = angular_velocity_stddev_xx_ *
-//   angular_velocity_stddev_xx_; msg->angular_velocity_covariance[1 * 3 + 1] =
-//   angular_velocity_stddev_yy_ * angular_velocity_stddev_yy_; msg->angular_velocity_covariance[2 *
-//   3 + 2] = angular_velocity_stddev_zz_ * angular_velocity_stddev_zz_;
-//   pub_calibrated_imu_->publish(*msg);
-// }
-
-void DeviationEvaluator::callbackWheelOdometry(
-  const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg)
-{
-  msg->twist.twist.linear.x *= coef_vx_;
-  msg->twist.covariance[0] = stddev_vx_ * stddev_vx_;
-  pub_calibrated_wheel_odometry_->publish(*msg);
 }
 
 void DeviationEvaluator::callbackNDTPoseWithCovariance(

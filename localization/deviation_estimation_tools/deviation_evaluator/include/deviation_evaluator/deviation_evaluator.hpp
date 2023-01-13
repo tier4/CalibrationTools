@@ -54,13 +54,9 @@ public:
   DeviationEvaluator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
-  // rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
-  rclcpp::Subscription<TwistWithCovarianceStamped>::SharedPtr sub_wheel_odometry_;
   rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr sub_ndt_pose_with_cov_;
   rclcpp::Subscription<Odometry>::SharedPtr sub_dr_odom_;
   rclcpp::Subscription<Odometry>::SharedPtr sub_gt_odom_;
-  // rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_calibrated_imu_;
-  rclcpp::Publisher<TwistWithCovarianceStamped>::SharedPtr pub_calibrated_wheel_odometry_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_init_pose_with_cov_;
@@ -71,11 +67,6 @@ private:
   bool show_debug_info_;
   std::string save_dir_;
   double start_time_;
-  double stddev_vx_;
-  double coef_vx_;
-  geometry_msgs::msg::Vector3 angular_velocity_stddev_;
-  geometry_msgs::msg::Vector3 angular_velocity_offset_;
-  geometry_msgs::msg::Vector3 angular_velocity_offset_imu_link_;
 
   double wait_duration_;
   Errors errors_threshold_;
@@ -92,9 +83,7 @@ private:
 
   bool has_published_initial_pose_;
 
-  // void callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg);
-
-  void callbackWheelOdometry(const TwistWithCovarianceStamped::SharedPtr msg);
+  // void callbackWheelOdometry(const TwistWithCovarianceStamped::SharedPtr msg);
 
   void callbackNDTPoseWithCovariance(const PoseWithCovarianceStamped::SharedPtr msg);
 

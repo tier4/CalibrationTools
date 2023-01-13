@@ -19,6 +19,7 @@
 Logger::Logger(const std::string & output_dir, const std::string & imu_topic)
 : output_log_path_(output_dir + "/output.txt"),
   output_imu_param_path_(output_dir + "/imu_corrector.param.yaml"),
+  output_velocity_param_path_(output_dir + "/vehicle_velocity_converter.param.yaml"),
   imu_topic_(imu_topic)
 {
   std::ofstream file_log(output_log_path_);
@@ -26,6 +27,9 @@ Logger::Logger(const std::string & output_dir, const std::string & imu_topic)
 
   std::ofstream file_imu_param(output_imu_param_path_);
   file_imu_param.close();
+
+  std::ofstream file_velocity_param(output_velocity_param_path_);
+  file_velocity_param.close();
 }
 
 void Logger::log_estimated_result_section(
@@ -33,15 +37,17 @@ void Logger::log_estimated_result_section(
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
   const geometry_msgs::msg::Vector3 & angular_velocity_offset) const
 {
-  std::ofstream file_log(output_log_path_, std::ios::app);
-  file_log << "# Results expressed in base_link\n";
-  file_log << "# Copy the following to deviation_evaluator.param.yaml\n";
-  file_log << fmt::format("stddev_vx: {:.5f}\n", stddev_vx);
-  file_log << fmt::format("coef_vx: {:.5f}\n", coef_vx);
-  file_log << fmt::format("imu_topic: {}\n", imu_topic_);
-  file_log.close();
+  std::ofstream file_velocity_param(output_velocity_param_path_);
+  file_velocity_param << "# Estimated by deviation_estimator\n";
+  file_velocity_param << "/**:\n";
+  file_velocity_param << "  ros__parameters:\n";
+  file_velocity_param << fmt::format("    speed_scale_factor: {:.5f}\n", coef_vx);
+  file_velocity_param << fmt::format("    velocity_stddev_xx: {:.5f}\n", stddev_vx);
+  file_velocity_param << "    velocity_stddev_xx: 0.1 # Default value\n";
+  file_velocity_param << "    frame_id: base_link # Default value\n";
+  file_velocity_param.close();
 
-  std::ofstream file_imu_param(output_imu_param_path_, std::ios::app);
+  std::ofstream file_imu_param(output_imu_param_path_);
   file_imu_param << "# Estimated by deviation_estimator\n";
   file_imu_param << "/**:\n";
   file_imu_param << "  ros__parameters:\n";
@@ -61,8 +67,8 @@ void Logger::log_estimated_result_section(
 
 void Logger::log_validation_result_section(const ValidationModule & validation_module) const
 {
-  std::ofstream file(output_log_path_, std::ios::app);
-  file << "\n# Validation results\n";
+  std::ofstream file(output_log_path_);
+  file << "# Validation results\n";
   file << "# value: [min, max]\n";
 
   std::vector<std::string> keys{
