@@ -48,7 +48,6 @@ from intrinsic_camera_calibrator.board_detections.board_detection import BoardDe
 from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDetector
 from intrinsic_camera_calibrator.board_detectors.board_detector_factory import make_detector
 from intrinsic_camera_calibrator.boards import BoardEnum
-from intrinsic_camera_calibrator.boards import BoardParameters
 from intrinsic_camera_calibrator.calibrators.calibrator import Calibrator
 from intrinsic_camera_calibrator.calibrators.calibrator import CalibratorEnum
 from intrinsic_camera_calibrator.calibrators.calibrator_factory import make_calibrator
@@ -56,6 +55,7 @@ from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_collector import CollectionStatus
 from intrinsic_camera_calibrator.data_collector import DataCollector
 from intrinsic_camera_calibrator.data_sources.data_source import DataSource
+from intrinsic_camera_calibrator.parameter import ParameteredClass
 from intrinsic_camera_calibrator.types import ImageViewMode
 from intrinsic_camera_calibrator.types import OperationMode
 from intrinsic_camera_calibrator.views.data_collector_view import DataCollectorView
@@ -109,7 +109,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         # General Configuration
         self.operation_mode = OperationMode.IDLE
         self.board_type = BoardEnum.CHESSBOARD
-        self.board_parameters = BoardParameters(lock=self.lock, cfg=self.cfg["board_parameters"])
+        self.board_parameters: ParameteredClass = None
         self.detector: BoardDetector = None
         self.data_collector = DataCollector()
         self.calibrator_dict: Dict[CalibratorEnum, Calibrator] = {}
@@ -394,7 +394,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             print("detector_parameters_button_callback")
             self.detector_parameters_view = ParameterView(self.detector)
             self.detector_parameters_view.parameter_changed.connect(self.on_parameter_changed)
-            self.board_type_combobox.setEnabled(False)
 
         self.detector_options_group = QGroupBox("Detection options")
         self.detector_options_group.setFlat(True)
@@ -585,10 +584,17 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         visualization_options_layout.addWidget(self.undistortion_alpha_spinbox)
         self.visualization_options_group.setLayout(visualization_options_layout)
 
-    def start(self, mode: OperationMode, data_source: DataSource, board_type: BoardEnum):
+    def start(
+        self,
+        mode: OperationMode,
+        data_source: DataSource,
+        board_type: BoardEnum,
+        board_parameters: ParameteredClass,
+    ):
         self.operation_mode = mode
         self.data_source = data_source
         self.board_type = board_type
+        self.board_parameters = board_parameters
         self.setEnabled(True)
 
         print("Init")
@@ -738,7 +744,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.single_shot_reproj_error_avg_label.setText("Reproj error (avg):")
             self.single_shot_reproj_error_rms_label.setText("Reproj error (rms):")
 
-        elif self.board_type == BoardEnum.CHESSBOARD or self.board_type == BoardEnum.DOTBOARD:
+        else:
 
             if self.image_view_type_combobox.currentData() == ImageViewMode.SOURCE_UNRECTIFIED:
                 filter_result = self.data_collector.process_detection(
@@ -763,8 +769,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             )
 
             # object_points = detection.get_object_points()
-            odered_image_points = detection.get_ordered_image_points()
-            self.image_view.set_detection_ordered_points(odered_image_points)
+            ordered_image_points = detection.get_ordered_image_points()
+            self.image_view.set_detection_ordered_points(ordered_image_points)
             self.image_view.set_grid_size_pixels(detection.get_flattened_cell_sizes().mean())
 
             reprojection_errors = detection.get_reprojection_errors()

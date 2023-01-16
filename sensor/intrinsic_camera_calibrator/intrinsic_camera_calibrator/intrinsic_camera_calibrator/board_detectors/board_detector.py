@@ -22,7 +22,7 @@ from typing import Tuple
 
 from PySide2.QtCore import QObject
 from PySide2.QtCore import Signal
-from intrinsic_camera_calibrator.boards import BoardParameters
+from intrinsic_camera_calibrator.board_parameters.board_parameters import BoardParameters
 from intrinsic_camera_calibrator.parameter import ParameteredClass
 
 

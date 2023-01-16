@@ -22,6 +22,9 @@ from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QRadioButton
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
+from intrinsic_camera_calibrator.board_parameters.board_parameters_factory import (
+    make_board_parameters,
+)
 from intrinsic_camera_calibrator.boards import BoardEnum
 from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 from intrinsic_camera_calibrator.data_sources.data_source import DataSourceEnum
@@ -49,6 +52,10 @@ class InitializationView(QWidget):
         self.cfg = cfg
         self.data_source_view: QWidget = None
         self.data_source: DataSource = None
+        self.board_parameters_dict = {
+            board_type: make_board_parameters(board_type, cfg=self.cfg["board_parameters"])
+            for board_type in BoardEnum
+        }
 
         self.layout = QVBoxLayout(self)
 
@@ -86,7 +93,9 @@ class InitializationView(QWidget):
             self.setEnabled(True)
 
         def board_parameters_button_callback():
-            board_parameters_view = ParameterView(self.calibrator.board_parameters)
+            board_parameters_view = ParameterView(
+                self.board_parameters_dict[self.board_type_combobox.currentData()]
+            )
             board_parameters_view.closed.connect(board_parameters_on_closed)
             self.setEnabled(False)
 
@@ -131,7 +140,9 @@ class InitializationView(QWidget):
                 else OperationMode.EVALUATION
             )
             board_type = self.board_type_combobox.currentData()
-            self.calibrator.start(mode, self.data_source, board_type)
+            self.calibrator.start(
+                mode, self.data_source, board_type, self.board_parameters_dict[board_type]
+            )
             self.close()
 
         def on_failed():

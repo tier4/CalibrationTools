@@ -90,14 +90,14 @@ class BoardDetection:
         raise NotImplementedError
 
     def get_flattened_object_points(self) -> np.array:
-        """Return the object points of the board as a (N, 2) array."""
+        """Return the object points of the board as a (N, 3) array."""
         raise NotImplementedError
 
     def get_flattened_image_points(self) -> np.array:
         """Return the image points of the board as a (N, 2) array."""
         raise NotImplementedError
 
-    def get_linear_error_rms(self, camera_model: Optional[CameraModel] = None) -> float:
+    def get_linear_error_rms(self) -> float:
         """Return RMS error product of the projection of the lines of each row of the detection into the line produced by the first and line point of each row."""
         raise NotImplementedError
 
@@ -134,7 +134,7 @@ class BoardDetection:
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
 
-        v = rotmat @ np.array([0.0, 0.0, 1.0])
+        v = rotmat @ np.array([0.0, 0.0, np.sign(rotmat[2, 2])])
 
         self._cached_camera_model = model
         self._cached_tilt = (180.0 / np.pi) * np.arccos(v[2])
@@ -153,7 +153,7 @@ class BoardDetection:
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
 
-        v = rotmat @ np.array([0.0, 0.0, 1.0])
+        v = rotmat @ np.array([0.0, 0.0, np.sign(rotmat[2, 2])])
 
         self._cached_camera_model = model
         self._cached_rotation_angles = (180.0 / np.pi) * np.arctan2(v[0], v[2]), (
@@ -195,13 +195,50 @@ class BoardDetection:
 
         return self._cached_flattened_3d_points
 
-    def get_normalized_skew(self):
-        """Return the skew of the detection as seen from the camera. Subclasses must implement this method."""
+    def _get_border_image_points() -> Tuple[np.array, np.array, np.array, np.array]:
+        """Return the external borders of the tag in the image."""
         raise NotImplementedError
 
-    def get_normalized_size(self):
-        """Return the size of the detection with respect to the image. Subclasses must implement this method."""
-        raise NotImplementedError
+    def get_normalized_skew(self) -> float:
+        def angle(a, b, c):
+            """Return angle between lines ab, bc."""
+            ab = a - b
+            cb = c - b
+            return np.arccos(np.dot(ab, cb) / (np.linalg.norm(ab) * np.linalg.norm(cb)))
+
+        if self._cached_normalized_skew is not None:
+            return self._cached_normalized_skew
+
+        up_left, up_right, down_right, down_left = self._get_border_image_points()
+
+        a012 = angle(up_left, up_right, down_right)
+        a123 = angle(up_right, down_right, down_left)
+        a230 = angle(down_right, down_left, up_left)
+        a301 = angle(down_left, up_left, up_right)
+
+        self._cached_normalized_skew = (
+            sum([min(1.0, 2.0 * abs((np.pi / 2.0) - angle)) for angle in [a012, a123, a230, a301]])
+            / 4
+        )
+        return self._cached_normalized_skew
+
+    def get_normalized_size(self) -> float:
+
+        if self._cached_normalized_size is not None:
+            return self._cached_normalized_size
+
+        (up_left, up_right, down_right, down_left) = self._get_border_image_points()
+        a = up_right - up_left
+        b = down_right - up_right
+        c = down_left - down_right
+        p = b + c
+        q = a + b
+
+        # The sqrt is to assign more "resolution" to close distances
+        self._cached_normalized_size = np.sqrt(
+            np.abs(p[0] * q[1] - p[1] * q[0]) / (2.0 * self.height * self.width)
+        )
+        return self._cached_normalized_size
 
     def get_speed(self, last: "BoardDetection") -> float:
         """Return the change of the center of the detection with respect to another detection."""

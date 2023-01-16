@@ -81,47 +81,6 @@ class ArrayBoardDetection(BoardDetection):
         self._cached_linear_error_rms = np.sqrt(error / (self.rows * (self.cols - 2)))
         return self._cached_linear_error_rms
 
-    def get_normalized_skew(self) -> float:
-        def angle(a, b, c):
-            """Return angle between lines ab, bc."""
-            ab = a - b
-            cb = c - b
-            return np.arccos(np.dot(ab, cb) / (np.linalg.norm(ab) * np.linalg.norm(cb)))
-
-        if self._cached_normalized_skew is not None:
-            return self._cached_normalized_skew
-
-        up_left, up_right, down_right, down_left = self._get_border_image_points()
-
-        a012 = angle(up_left, up_right, down_right)
-        a123 = angle(up_right, down_right, down_left)
-        a230 = angle(down_right, down_left, up_left)
-        a301 = angle(down_left, up_left, up_right)
-
-        self._cached_normalized_skew = (
-            sum([min(1.0, 2.0 * abs((np.pi / 2.0) - angle)) for angle in [a012, a123, a230, a301]])
-            / 4
-        )
-        return self._cached_normalized_skew
-
-    def get_normalized_size(self) -> float:
-
-        if self._cached_normalized_size is not None:
-            return self._cached_normalized_size
-
-        (up_left, up_right, down_right, down_left) = self._get_border_image_points()
-        a = up_right - up_left
-        b = down_right - up_right
-        c = down_left - down_right
-        p = b + c
-        q = a + b
-
-        # The sqrt is to assign more "resolution" to close distances
-        self._cached_normalized_size = np.sqrt(
-            np.abs(p[0] * q[1] - p[1] * q[0]) / (2.0 * self.height * self.width)
-        )
-        return self._cached_normalized_size
-
     def get_flattened_cell_sizes(self):
 
         if self._cached_flattened_cell_sizes is not None:
