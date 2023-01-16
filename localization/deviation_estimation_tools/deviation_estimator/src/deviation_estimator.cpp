@@ -74,7 +74,7 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
     delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
   }
 
-  geometry_msgs::msg::Vector3 stddev_angvel_base = tier4_autoware_utils::createVector3(
+  geometry_msgs::msg::Vector3 stddev_angvel_base = createVector3(
     calculate_std(delta_wx_list) / std::sqrt(t_window),
     calculate_std(delta_wy_list) / std::sqrt(t_window),
     calculate_std(delta_wz_list) / std::sqrt(t_window));
@@ -291,7 +291,7 @@ void DeviationEstimator::timer_callback()
   stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.y);
   stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.z);
   geometry_msgs::msg::Vector3 stddev_angvel_imu_msg =
-    tier4_autoware_utils::createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
+    createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
   pub_stddev_angvel_->publish(stddev_angvel_imu_msg);
 
   validation_module_->set_velocity_data(vel_coef_module_->get_coef(), stddev_vx);
@@ -314,7 +314,7 @@ geometry_msgs::msg::Vector3 DeviationEstimator::add_bias_uncertainty_on_angular_
   const geometry_msgs::msg::Vector3 stddev_angvel_base,
   const geometry_msgs::msg::Vector3 stddev_angvel_bias_base) const
 {
-  geometry_msgs::msg::Vector3 stddev_angvel_prime_base = tier4_autoware_utils::createVector3(
+  geometry_msgs::msg::Vector3 stddev_angvel_prime_base = createVector3(
     std::sqrt(pow(stddev_angvel_base.x, 2) + dt_design_ * pow(stddev_angvel_bias_base.x, 2)),
     std::sqrt(pow(stddev_angvel_base.y, 2) + dt_design_ * pow(stddev_angvel_bias_base.y, 2)),
     std::sqrt(pow(stddev_angvel_base.z, 2) + dt_design_ * pow(stddev_angvel_bias_base.z, 2)));
