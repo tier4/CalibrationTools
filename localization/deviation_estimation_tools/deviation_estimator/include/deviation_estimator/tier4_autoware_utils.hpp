@@ -19,6 +19,8 @@
 #include "tier4_autoware_utils/math/constants.hpp"
 #include "tier4_autoware_utils/math/normalization.hpp"
 
+#include <tf2/utils.h>
+
 // ToDo (kminoda): Replace these functions with the one from tier4_autoware_utils.
 // Currently these functions are declared here since this tool has to be compatible with older
 // version of Autoware.
