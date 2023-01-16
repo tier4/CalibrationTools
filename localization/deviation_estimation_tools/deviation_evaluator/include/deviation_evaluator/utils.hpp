@@ -94,7 +94,8 @@ geometry_msgs::msg::Pose calcInterpolatedPose(
     clamped_ratio);
 
   if (set_orientation_from_position_direction) {
-    const double input_poses_dist = tier4_autoware_utils::calcDistance2d(tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose));
+    const double input_poses_dist = tier4_autoware_utils::calcDistance2d(
+      tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose));
     const bool is_driving_forward = isDrivingForward(src_pose, dst_pose);
 
     // Get orientation from interpolated point and src_pose
