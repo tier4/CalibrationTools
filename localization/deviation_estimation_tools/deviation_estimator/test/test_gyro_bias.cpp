@@ -21,8 +21,7 @@
 
 TEST(DeviationEstimatorGyroBias, SmokeTestDefault)
 {
-  const geometry_msgs::msg::Vector3 gyro_bias =
-    createVector3(0.01, -0.005, -0.015);
+  const geometry_msgs::msg::Vector3 gyro_bias = createVector3(0.01, -0.005, -0.015);
 
   const double ERROR_RATE = 0.1;
   const int num_data = 1000;
