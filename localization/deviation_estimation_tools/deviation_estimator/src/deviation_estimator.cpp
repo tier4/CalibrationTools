@@ -131,7 +131,7 @@ DeviationEstimator::DeviationEstimator(
   tf_listener_(tf_buffer_),
   output_frame_(declare_parameter<std::string>("base_link", "base_link")),
   results_dir_(declare_parameter<std::string>("results_dir")),
-  results_logger_(results_dir_, imu_topic_)
+  results_logger_(results_dir_)
 {
   show_debug_info_ = declare_parameter("show_debug_info", false);
   dt_design_ = declare_parameter("dt_design", 10.0);
@@ -164,7 +164,7 @@ DeviationEstimator::DeviationEstimator(
 
   sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
     "in_imu", 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
-  sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
+  sub_wheel_odometry_ = create_subscription<autoware_auto_vehicle_msgs::msg::VelocityReport>(
     "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
   results_logger_.log_estimated_result_section(
     0.2, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
@@ -192,11 +192,11 @@ void DeviationEstimator::callback_pose_with_covariance(
 }
 
 void DeviationEstimator::callback_wheel_odometry(
-  const geometry_msgs::msg::TwistWithCovarianceStamped::ConstSharedPtr wheel_odometry_msg_ptr)
+  const autoware_auto_vehicle_msgs::msg::VelocityReport::ConstSharedPtr wheel_odometry_msg_ptr)
 {
   tier4_debug_msgs::msg::Float64Stamped vx;
   vx.stamp = wheel_odometry_msg_ptr->header.stamp;
-  vx.data = wheel_odometry_msg_ptr->twist.twist.linear.x;
+  vx.data = wheel_odometry_msg_ptr->longitudinal_velocity;
 
   if (use_predefined_coef_vx_) {
     vx.data *= predefined_coef_vx_;

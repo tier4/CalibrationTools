@@ -30,6 +30,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
+#include "autoware_auto_vehicle_msgs/msg/velocity_report.hpp"
 
 #include <iostream>
 #include <memory>
@@ -58,7 +59,7 @@ public:
 
 private:
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_with_cov_;
-  rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
+  rclcpp::Subscription<autoware_auto_vehicle_msgs::msg::VelocityReport>::SharedPtr
     sub_wheel_odometry_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_coef_vx_;
@@ -104,7 +105,7 @@ private:
   void callback_pose_with_covariance(geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
   void callback_wheel_odometry(
-    const geometry_msgs::msg::TwistWithCovarianceStamped::ConstSharedPtr wheel_odometry_msg_ptr);
+    const autoware_auto_vehicle_msgs::msg::VelocityReport::ConstSharedPtr wheel_odometry_msg_ptr);
 
   void callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr);
 

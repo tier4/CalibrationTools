@@ -28,7 +28,7 @@
 class Logger
 {
 public:
-  Logger(const std::string & output_dir, const std::string & imu_topic);
+  Logger(const std::string & output_dir);
   void log_estimated_result_section(
     const double stddev_vx, const double coef_vx,
     const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
@@ -39,6 +39,5 @@ private:
   const std::string output_log_path_;
   const std::string output_imu_param_path_;
   const std::string output_velocity_param_path_;
-  const std::string imu_topic_;
 };
 #endif  // DEVIATION_ESTIMATOR__LOGGER_HPP_

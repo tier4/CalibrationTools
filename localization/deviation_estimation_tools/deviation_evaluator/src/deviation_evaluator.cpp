@@ -203,6 +203,6 @@ geometry_msgs::msg::Pose DeviationEvaluator::interpolatePose(const double time)
   const double time_start = rclcpp::Time((*(iter_next - 1))->header.stamp).seconds();
   const double time_end = rclcpp::Time((*iter_next)->header.stamp).seconds();
   const double ratio = (time - time_start) / (time_end - time_start);
-  return tier4_autoware_utils::calcInterpolatedPose(
+  return calcInterpolatedPose(
     (*(iter_next - 1))->pose, (*iter_next)->pose, ratio);
 }

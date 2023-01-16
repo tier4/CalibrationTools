@@ -16,11 +16,10 @@
 
 #include <cmath>
 
-Logger::Logger(const std::string & output_dir, const std::string & imu_topic)
+Logger::Logger(const std::string & output_dir)
 : output_log_path_(output_dir + "/output.txt"),
   output_imu_param_path_(output_dir + "/imu_corrector.param.yaml"),
-  output_velocity_param_path_(output_dir + "/vehicle_velocity_converter.param.yaml"),
-  imu_topic_(imu_topic)
+  output_velocity_param_path_(output_dir + "/vehicle_velocity_converter.param.yaml")
 {
   std::ofstream file_log(output_log_path_);
   file_log.close();
@@ -43,7 +42,7 @@ void Logger::log_estimated_result_section(
   file_velocity_param << "  ros__parameters:\n";
   file_velocity_param << fmt::format("    speed_scale_factor: {:.5f}\n", coef_vx);
   file_velocity_param << fmt::format("    velocity_stddev_xx: {:.5f}\n", stddev_vx);
-  file_velocity_param << "    velocity_stddev_xx: 0.1 # Default value\n";
+  file_velocity_param << "    angular_velocity_stddev_zz: 0.1 # Default value\n";
   file_velocity_param << "    frame_id: base_link # Default value\n";
   file_velocity_param.close();
 

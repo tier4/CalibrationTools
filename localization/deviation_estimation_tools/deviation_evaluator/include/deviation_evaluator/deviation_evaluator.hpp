@@ -29,6 +29,8 @@
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
+#include "deviation_evaluator/utils.hpp"
+
 #include <deque>
 #include <fstream>
 #include <iostream>
