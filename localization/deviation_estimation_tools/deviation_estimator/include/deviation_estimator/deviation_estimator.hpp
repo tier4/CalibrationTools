@@ -24,13 +24,13 @@
 #include "tf2/utils.h"
 #include "tier4_autoware_utils/ros/transform_listener.hpp"
 
+#include "autoware_auto_vehicle_msgs/msg/velocity_report.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
-#include "autoware_auto_vehicle_msgs/msg/velocity_report.hpp"
 
 #include <iostream>
 #include <memory>

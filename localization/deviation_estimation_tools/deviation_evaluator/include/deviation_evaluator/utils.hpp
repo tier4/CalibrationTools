@@ -12,24 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef DEVIATION_EVALUATOR__UTILS_HPP_
 #define DEVIATION_EVALUATOR__UTILS_HPP_
 
 #include "tier4_autoware_utils/geometry/geometry.hpp"
-#include "tier4_autoware_utils/math/normalization.hpp"
 #include "tier4_autoware_utils/math/constants.hpp"
+#include "tier4_autoware_utils/math/normalization.hpp"
 
 // ToDo (kminoda): Replace these functions with the one from tier4_autoware_utils.
-// Currently these functions are declared here since this tool has to be compatible with older version of Autoware.
+// Currently these functions are declared here since this tool has to be compatible with older
+// version of Autoware.
 
 template <class Pose1, class Pose2>
 bool isDrivingForward(const Pose1 & src_pose, const Pose2 & dst_pose)
 {
   // check the first point direction
   const double src_yaw = tf2::getYaw(tier4_autoware_utils::getPose(src_pose).orientation);
-  const double pose_direction_yaw = tier4_autoware_utils::calcAzimuthAngle(tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose));
-  return std::fabs(tier4_autoware_utils::normalizeRadian(src_yaw - pose_direction_yaw)) < tier4_autoware_utils::pi / 2.0;
+  const double pose_direction_yaw = tier4_autoware_utils::calcAzimuthAngle(
+    tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose));
+  return std::fabs(tier4_autoware_utils::normalizeRadian(src_yaw - pose_direction_yaw)) <
+         tier4_autoware_utils::pi / 2.0;
 }
 
 /**
@@ -87,11 +89,13 @@ geometry_msgs::msg::Pose calcInterpolatedPose(
   const double clamped_ratio = std::clamp(ratio, 0.0, 1.0);
 
   geometry_msgs::msg::Pose output_pose;
-  output_pose.position =
-    calcInterpolatedPoint(tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose), clamped_ratio);
+  output_pose.position = calcInterpolatedPoint(
+    tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose),
+    clamped_ratio);
 
   if (set_orientation_from_position_direction) {
-    const double input_poses_dist = tier4_autoware_utils::calcDistance2d(tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose));
+    const double input_poses_dist = tier4_autoware_utils::calcDistance2d(
+      tier4_autoware_utils::getPoint(src_pose), tier4_autoware_utils::getPoint(dst_pose));
     const bool is_driving_forward = tier4_autoware_utils::isDrivingForward(src_pose, dst_pose);
 
     // Get orientation from interpolated point and src_pose
@@ -101,8 +105,10 @@ geometry_msgs::msg::Pose calcInterpolatedPose(
       output_pose.orientation = tier4_autoware_utils::getPose(src_pose).orientation;
     } else {
       const auto & base_pose = is_driving_forward ? dst_pose : src_pose;
-      const double pitch = tier4_autoware_utils::calcElevationAngle(tier4_autoware_utils::getPoint(output_pose), tier4_autoware_utils::getPoint(base_pose));
-      const double yaw = tier4_autoware_utils::calcAzimuthAngle(tier4_autoware_utils::getPoint(output_pose), tier4_autoware_utils::getPoint(base_pose));
+      const double pitch = tier4_autoware_utils::calcElevationAngle(
+        tier4_autoware_utils::getPoint(output_pose), tier4_autoware_utils::getPoint(base_pose));
+      const double yaw = tier4_autoware_utils::calcAzimuthAngle(
+        tier4_autoware_utils::getPoint(output_pose), tier4_autoware_utils::getPoint(base_pose));
       output_pose.orientation = tier4_autoware_utils::createQuaternionFromRPY(0.0, pitch, yaw);
     }
   } else {
@@ -117,7 +123,5 @@ geometry_msgs::msg::Pose calcInterpolatedPose(
 
   return output_pose;
 }
-
-
 
 #endif  // DEVIATION_EVALUATOR__UTILS_HPP_
