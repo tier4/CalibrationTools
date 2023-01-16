@@ -27,8 +27,11 @@
 
 inline geometry_msgs::msg::Vector3 createVector3(const double x, double y, double z)
 {
-  geometry_msgs::msg::Vector3 res = geometry_msgs::build<geometry_msgs::msg::Vector3>().x(x).y(y).z(z);
-  return res;
+  geometry_msgs::msg::Vector3 vec;
+  vec.x = x;
+  vec.y = y;
+  vec.z = z;
+  return vec;
 }
 
 template <class Pose1, class Pose2>
