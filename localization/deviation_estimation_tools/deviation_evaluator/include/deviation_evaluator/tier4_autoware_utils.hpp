@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DEVIATION_EVALUATOR__UTILS_HPP_
-#define DEVIATION_EVALUATOR__UTILS_HPP_
+#ifndef DEVIATION_EVALUATOR__TIER4_AUTOWARE_UTILS_HPP_
+#define DEVIATION_EVALUATOR__TIER4_AUTOWARE_UTILS_HPP_
 
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 #include "tier4_autoware_utils/math/constants.hpp"
@@ -124,4 +124,4 @@ geometry_msgs::msg::Pose calcInterpolatedPose(
   return output_pose;
 }
 
-#endif  // DEVIATION_EVALUATOR__UTILS_HPP_
+#endif  // DEVIATION_EVALUATOR__TIER4_AUTOWARE_UTILS_HPP_

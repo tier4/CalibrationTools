@@ -15,6 +15,8 @@
 #ifndef DEVIATION_ESTIMATOR__UTILS_HPP_
 #define DEVIATION_ESTIMATOR__UTILS_HPP_
 
+#include "deviation_estimator/tier4_autoware_utils.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
