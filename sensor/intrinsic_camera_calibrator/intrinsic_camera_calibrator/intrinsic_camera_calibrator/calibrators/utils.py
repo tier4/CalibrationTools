@@ -47,8 +47,8 @@ def add_detection(
     if np.abs(tilt_x) > 1.0 or np.abs(tilt_y) > 1.0:
         return
 
-    tilt_i = np.clip((0.5 * tilt_cells) * (tilt_x + 1), 0, tilt_cells - 1).astype(np.int)
-    tilt_j = np.clip((0.5 * tilt_cells) * (tilt_y + 1), 0, tilt_cells - 1).astype(np.int)
+    tilt_i = int(np.clip((0.5 * tilt_cells) * (tilt_x + 1), 0, tilt_cells - 1))
+    tilt_j = int(np.clip((0.5 * tilt_cells) * (tilt_y + 1), 0, tilt_cells - 1))
     tilt_occupancy[tilt_j, tilt_i] += 1.0
 
     for point in detection.get_flattened_image_points():
@@ -74,8 +74,8 @@ def add_detection_errors(
     if np.abs(tilt_x) > 1.0 or np.abs(tilt_y) > 1.0:
         return
 
-    tilt_i = np.clip((0.5 * tilt_cells) * (tilt_x + 1), 0, tilt_cells - 1).astype(np.int)
-    tilt_j = np.clip((0.5 * tilt_cells) * (tilt_y + 1), 0, tilt_cells - 1).astype(np.int)
+    tilt_i = int(np.clip((0.5 * tilt_cells) * (tilt_x + 1), 0, tilt_cells - 1))
+    tilt_j = int(np.clip((0.5 * tilt_cells) * (tilt_y + 1), 0, tilt_cells - 1))
 
     errors = detection.get_reprojection_errors()
 
@@ -99,7 +99,7 @@ def plot_calibration_data_statistics(
     max_tilt_deg: float,
     z_cells: int,
 ):
-    tilt_cells: int = 2 * np.ceil(max_tilt_deg / tilt_resolution).astype(np.int)
+    tilt_cells: int = int(2 * np.ceil(max_tilt_deg / tilt_resolution))
 
     fig, axes = plt.subplots(3, 5, figsize=(20, 12))
     fig.canvas.set_window_title("Calibration data statistics")
@@ -188,7 +188,7 @@ def plot_calibration_results_statistics(
     max_tilt_deg: float,
     z_cells: int,
 ):
-    tilt_cells: int = 2 * np.ceil(max_tilt_deg / tilt_resolution).astype(np.int)
+    tilt_cells: int = int(2 * np.ceil(max_tilt_deg / tilt_resolution))
 
     fig1, axes1 = plt.subplots(3, 4, figsize=(20, 12))
     fig2, axes2 = plt.subplots(3, 1, figsize=(20, 12))

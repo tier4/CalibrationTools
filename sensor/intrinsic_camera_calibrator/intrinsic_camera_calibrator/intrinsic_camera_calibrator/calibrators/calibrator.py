@@ -190,15 +190,15 @@ class Calibrator(ParameteredClass, QObject):
         ]
 
         training_rms_error = np.sqrt(
-            np.power(np.concatenate(training_reprojection_errors, axis=-1), 2).mean()
+            np.power(np.concatenate(training_reprojection_errors, axis=0), 2).mean()
         )
         inlier_rms_error = (
-            np.sqrt(np.power(np.concatenate(inlier_reprojection_errors, axis=-1), 2).mean())
+            np.sqrt(np.power(np.concatenate(inlier_reprojection_errors, axis=0), 2).mean())
             if len(inlier_reprojection_errors) > 0
             else np.inf
         )
         evaluation_rms_error = (
-            np.sqrt(np.power(np.concatenate(evaluation_reprojection_errors, axis=-1), 2).mean())
+            np.sqrt(np.power(np.concatenate(evaluation_reprojection_errors, axis=0), 2).mean())
             if len(evaluation_reprojection_errors) > 0
             else np.inf
         )
@@ -309,7 +309,7 @@ class Calibrator(ParameteredClass, QObject):
 
         pixel_cells: int = subsampling_pixel_cells
         max_tilt_deg: float = subsampling_max_tilt_deg
-        tilt_cells: int = 2 * np.ceil(max_tilt_deg / subsampling_tilt_resolution).astype(np.int)
+        tilt_cells: int = int(2 * np.ceil(max_tilt_deg / subsampling_tilt_resolution))
 
         num_detections = len(detections)
         accepted_array = np.zeros((num_detections,), dtype=np.bool)
