@@ -64,11 +64,10 @@ geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
   } else {
     const int prev_idx = next_idx - 1;
     const double ratio = (time - time_list[prev_idx]) / (time_list[next_idx] - time_list[prev_idx]);
-    geometry_msgs::msg::Point interpolated_vec = calcInterpolatedPoint(
-      vec_list[prev_idx].vector, vec_list[next_idx].vector, ratio);
+    geometry_msgs::msg::Point interpolated_vec =
+      calcInterpolatedPoint(vec_list[prev_idx].vector, vec_list[next_idx].vector, ratio);
 
-    return createVector3(
-      interpolated_vec.x, interpolated_vec.y, interpolated_vec.z);
+    return createVector3(interpolated_vec.x, interpolated_vec.y, interpolated_vec.z);
   }
 }
 
@@ -105,7 +104,7 @@ geometry_msgs::msg::Vector3 calculate_error_rpy(
     tier4_autoware_utils::getRPY(pose_list.back().pose.orientation);
   const geometry_msgs::msg::Vector3 d_rpy = integrate_orientation(gyro_list, gyro_bias);
 
-  geometry_msgs::msg::Vector3 error_rpy =createVector3(
+  geometry_msgs::msg::Vector3 error_rpy = createVector3(
     clip_radian(-rpy_1.x + rpy_0.x + d_rpy.x), clip_radian(-rpy_1.y + rpy_0.y + d_rpy.y),
     clip_radian(-rpy_1.z + rpy_0.z + d_rpy.z));
   return error_rpy;
