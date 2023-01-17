@@ -74,6 +74,9 @@ class Calibrator(ParameteredClass, QObject):
     evaluation_request = Signal(object, object)
     evaluation_results_signal = Signal(float, int, int, float, float, int, int, float, float)
 
+    partial_calibration_request = Signal(object, object)
+    partial_calibration_results_signal = Signal(object)
+
     def __init__(self, lock: threading.RLock, cfg: Optional[Dict] = {}):
         ParameteredClass.__init__(self, lock)
         QObject.__init__(self, None)
@@ -86,6 +89,7 @@ class Calibrator(ParameteredClass, QObject):
         )
 
         self.max_calibration_samples = Parameter(int, value=80, min_value=10, max_value=1000)
+        self.max_fast_calibration_samples = Parameter(int, value=20, min_value=1, max_value=100)
 
         self.use_entropy_maximization_subsampling = Parameter(
             bool, value=True, min_value=False, max_value=True
@@ -115,6 +119,7 @@ class Calibrator(ParameteredClass, QObject):
 
         self.calibration_request.connect(self._calibrate)
         self.evaluation_request.connect(self._evaluate)
+        self.partial_calibration_request.connect(self._calibrate_fast)
 
     def _calibrate(self, data_collector: DataCollector):
         """General calibration routine.
@@ -158,7 +163,7 @@ class Calibrator(ParameteredClass, QObject):
                 )
             else:
                 calibration_training_detections = self._random_subsampling_impl(
-                    pre_rejection_inliers
+                    pre_rejection_inliers, max_calibration_samples
                 )
         else:
             calibration_training_detections = pre_rejection_inliers
@@ -366,6 +371,56 @@ class Calibrator(ParameteredClass, QObject):
             evaluation_inlier_rms_error,
         )
 
+    def _calibrate_fast(self, data_collector: DataCollector, camera_model: CameraModel):
+        """Fast calibration routine."""
+        with self.lock:
+            max_samples = self.max_fast_calibration_samples.value
+
+        raw_training_detections = data_collector.get_training_detections()
+
+        if len(raw_training_detections) > max_samples:
+            calibration_training_detections = self._random_subsampling_impl(
+                raw_training_detections, max_samples
+            )
+        else:
+            calibration_training_detections = raw_training_detections
+
+        new_camera_model = self._calibration_impl(calibration_training_detections)
+
+        initial_reprojection_errors = (
+            [
+                camera_model.get_reprojection_errors(detection)
+                for detection in raw_training_detections
+            ]
+            if camera_model is not None
+            else [np.array([np.inf, np.inf]).reshape(1, 2) for _ in raw_training_detections]
+        )
+
+        new_reprojection_errors = (
+            [
+                new_camera_model.get_reprojection_errors(detection)
+                for detection in raw_training_detections
+            ]
+            if new_camera_model is not None
+            else [np.inf for _ in raw_training_detections]
+        )
+
+        initial_rms_error = (
+            np.sqrt(np.power(np.concatenate(initial_reprojection_errors, axis=0), 2).mean())
+            if len(initial_reprojection_errors) > 0
+            else np.inf
+        )
+
+        new_rms_error = (
+            np.sqrt(np.power(np.concatenate(new_reprojection_errors, axis=0), 2).mean())
+            if len(new_reprojection_errors) > 0
+            else np.inf
+        )
+
+        final_camera_model = new_camera_model if new_rms_error < initial_rms_error else camera_model
+
+        self.partial_calibration_results_signal.emit(final_camera_model)
+
     def _pre_rejection_filter_impl(
         self, detections: List[BoardDetection]
     ) -> Tuple[CameraModel, List[BoardDetection]]:
@@ -514,12 +569,11 @@ class Calibrator(ParameteredClass, QObject):
 
         return [detections[i] for i in accepted_array.nonzero()[0]]
 
-    def _random_subsampling_impl(self, detections: List[BoardDetection]) -> List[BoardDetection]:
+    def _random_subsampling_impl(
+        self, detections: List[BoardDetection], max_samples
+    ) -> List[BoardDetection]:
         """Subsample the detections uniforminly."""
-        with self.lock:
-            max_calibration_samples = self.max_calibration_samples.value
-
-        indexes = np.random.choice(len(detections), max_calibration_samples, replace=False)
+        indexes = np.random.choice(len(detections), max_samples, replace=False)
         return [detections[i] for i in indexes]
 
     def _post_rejection_impl(

@@ -473,7 +473,7 @@ class DataCollector(ParameteredClass):
             accepted &= speed < self.max_allowed_speed
 
         if self.filter_by_reprojection_error:
-            reprojection_errors = detection.get_reprojection_errors(camera_model)
+            reprojection_errors = detection.get_reprojection_errors()
             reprojection_errors_norm = np.linalg.norm(reprojection_errors, axis=-1)
 
             reprojection_error_max = reprojection_errors_norm.max()
@@ -487,12 +487,16 @@ class DataCollector(ParameteredClass):
         if not accepted:
             return CollectionStatus.REJECTED
 
-        training_detections_distances = self.training_data.get_distances(detection)
+        training_detections_distances = self.training_data.get_distances(
+            detection, camera_model=camera_model
+        )
 
         last_n_training_detections_distances = self.training_data.get_distances(
-            detection, last_n_samples=self.decorrelate_eval_samples.value
+            detection, camera_model=camera_model, last_n_samples=self.decorrelate_eval_samples.value
         )
-        evaluation_detections_distances = self.evaluation_data.get_distances(detection)
+        evaluation_detections_distances = self.evaluation_data.get_distances(
+            detection, camera_model=camera_model
+        )
 
         status_training = mode == OperationMode.CALIBRATION and self.evaluate_redundancy(
             *training_detections_distances
@@ -505,7 +509,9 @@ class DataCollector(ParameteredClass):
             self.recompute_heatmaps()
 
         if status_training and len(self.training_data) < self.max_samples.value:
-            self.training_data.add_sample(image=image, detection=detection)
+            self.training_data.add_sample(
+                image=image, detection=detection, camera_model=camera_model
+            )
             self.training_occupancy_rate = self.update_collection_heatmap(
                 self.training_heatmap, detection
             )
@@ -515,7 +521,9 @@ class DataCollector(ParameteredClass):
             and not status_training
             and len(self.evaluation_data) < self.max_samples.value
         ):
-            self.evaluation_data.add_sample(image=image, detection=detection)
+            self.evaluation_data.add_sample(
+                image=image, detection=detection, camera_model=camera_model
+            )
             self.evaluation_occupancy_rate = self.update_collection_heatmap(
                 self.evaluation_heatmap, detection
             )

@@ -98,6 +98,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         # Camera models to use normally
         self.current_camera_model: CameraModel = None
+        self.pending_partial_calibration = False
 
         # Camera model produced via a full calibration
         self.calibrated_camera_model: CameraModel = None
@@ -132,6 +133,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             calibrator.moveToThread(self.calibration_thread)
             calibrator.calibration_results_signal.connect(self.process_calibration_results)
             calibrator.evaluation_results_signal.connect(self.process_evaluation_results)
+            calibrator.partial_calibration_results_signal.connect(
+                self.process_partial_calibration_result
+            )
 
         # Qt logic
         self.should_process_image.connect(self.process_data)
@@ -363,8 +367,14 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         def on_evaluation_clicked():
             calibrator_type = self.calibrator_type_combobox.currentData()
+
+            camera_model = (
+                self.current_camera_model
+                if self.calibrated_camera_model is None
+                else self.calibrated_camera_model
+            )
             self.calibrator_dict[calibrator_type].evaluation_request.emit(
-                self.data_collector.clone_without_images(), self.current_camera_model
+                self.data_collector.clone_without_images(), camera_model
             )
 
             self.calibrator_type_combobox.setEnabled(False)
@@ -445,7 +455,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.single_shot_detection_results_group.setFlat(True)
 
         self.raw_detection_label = QLabel("Detected:")
-        self.raw_linear_error_rms_label = QLabel("Linear error (rms): ###")
+        self.raw_linear_error_rms_label = QLabel("Linear error (rms):")
         self.rough_tilt_label = QLabel("Rough tilt:")
         self.rough_angles_label = QLabel("Rough angles:")
         self.rough_position_label = QLabel("Rough position:")
@@ -489,9 +499,15 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         def view_data_collection_statistics_callback():
 
+            camera_model = (
+                self.current_camera_model
+                if self.calibrated_camera_model is None
+                else self.calibrated_camera_model
+            )
+
             print("view_data_collection_statistics_callback")
             data_collection_statistics_view = DataCollectorView(
-                self.data_collector.clone_without_images(), self.current_camera_model
+                self.data_collector.clone_without_images(), camera_model
             )
             data_collection_statistics_view.plot()
 
@@ -824,15 +840,28 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         else:
 
+            camera_model = (
+                self.current_camera_model
+                if self.calibrated_camera_model is None
+                else self.calibrated_camera_model
+            )
+
             if self.image_view_type_combobox.currentData() == ImageViewMode.SOURCE_UNRECTIFIED:
                 filter_result = self.data_collector.process_detection(
                     image=img,
                     detection=detection,
-                    camera_model=self.current_camera_model,
+                    camera_model=camera_model,
                     mode=self.operation_mode,
                 )
             else:
                 filter_result = CollectionStatus.NOT_EVALUATED
+
+            # For each new sample that is accepted we try to update the current (partial) calibration
+            if (
+                filter_result == CollectionStatus.ACCEPTED
+                and self.operation_mode == OperationMode.CALIBRATION
+            ):
+                self.update_current_camera_model()
 
             filter_result_color_dict = {
                 CollectionStatus.NOT_EVALUATED: QColor(255, 255, 255),
@@ -867,11 +896,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 np.power(reprojection_errors / cell_sizes.reshape(-1, 1), 2).mean()
             )
 
-            pose_rotation, pose_translation = detection.get_pose(self.current_camera_model)
-            rough_angles = detection.get_rotation_angles(self.current_camera_model)
-
-            if self.current_camera_model is not None and pose_translation[2] > 10.0:
-                self.paused = True
+            pose_rotation, pose_translation = detection.get_pose(camera_model)
+            rough_angles = detection.get_rotation_angles(camera_model)
 
             self.raw_detection_label.setText("Detected: True")
             self.raw_linear_error_rms_label.setText(
@@ -947,6 +973,22 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         if self.pending_detection_request:
             self.should_process_image.emit()
 
+    def update_current_camera_model(self):
+        """Send a request to update the current camera model."""
+        if self.pending_partial_calibration:
+            return
+
+        calibrator_type = self.calibrator_type_combobox.currentData()
+        self.calibrator_dict[calibrator_type].partial_calibration_request.emit(
+            self.data_collector.clone_without_images(), self.current_camera_model
+        )
+
+        self.pending_partial_calibration = True
+
+    def process_partial_calibration_result(self, camera_model):
+        self.current_camera_model = camera_model
+        self.pending_partial_calibration = False
+
     def process_data(self):
         """Request the detector to process the image (the detector itself runs in another thread). Depending on the ImageViewMode selected, the image is also rectified."""
         if self.image_view_type_combobox.currentData() in {
@@ -956,8 +998,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         }:
             img = copy.deepcopy(self.unprocessed_image)
         elif self.image_view_type_combobox.currentData() == ImageViewMode.SOURCE_RECTIFIED:
-            assert self.current_camera_model is not None
-            img = self.current_camera_model.rectify(
+            assert self.calibrated_camera_model is not None
+            img = self.calibrated_camera_model.rectify(
                 self.unprocessed_image, self.undistortion_alpha_spinbox.value()
             )
         else:
