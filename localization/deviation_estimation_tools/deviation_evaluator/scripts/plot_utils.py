@@ -44,12 +44,13 @@ def plot_thresholds(recall_list, lower_bound, threshold, scale, save_path=None):
 
 def plot_bag_compare(save_path, results):
     # Ignore the first 20 steps (=1 sec in 20 Hz) as this part may be noisy
+    ignore_index = 50
     error_maximum = np.max(
         np.hstack(
             [
-                results.long_radius.expected_error[20:],
-                results.lateral.expected_error[20:],
-                results.longitudinal.expected_error[20:],
+                results.long_radius.expected_error[ignore_index:],
+                results.lateral.expected_error[ignore_index:],
+                results.longitudinal.expected_error[ignore_index:],
             ]
         )
     )

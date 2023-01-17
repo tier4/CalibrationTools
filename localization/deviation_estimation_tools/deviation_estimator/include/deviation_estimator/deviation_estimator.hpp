@@ -16,6 +16,7 @@
 #define DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 
 #include "deviation_estimator/gyro_bias_module.hpp"
+#include "deviation_estimator/logger.hpp"
 #include "deviation_estimator/utils.hpp"
 #include "deviation_estimator/validation_module.hpp"
 #include "deviation_estimator/velocity_coef_module.hpp"
@@ -23,6 +24,7 @@
 #include "tf2/utils.h"
 #include "tier4_autoware_utils/ros/transform_listener.hpp"
 
+#include "autoware_auto_vehicle_msgs/msg/velocity_report.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
@@ -57,7 +59,7 @@ public:
 
 private:
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_with_cov_;
-  rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
+  rclcpp::Subscription<autoware_auto_vehicle_msgs::msg::VelocityReport>::SharedPtr
     sub_wheel_odometry_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_coef_vx_;
@@ -72,7 +74,6 @@ private:
   bool show_debug_info_;
   bool use_predefined_coef_vx_;
   double predefined_coef_vx_;
-  std::string results_path_;
   std::string imu_link_frame_;
 
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
@@ -90,8 +91,10 @@ private:
   double time_window_;
   bool add_bias_uncertainty_;
 
-  std::string output_frame_;
   std::string imu_frame_;
+  const std::string output_frame_;
+  const std::string results_dir_;
+  const Logger results_logger_;
 
   std::unique_ptr<GyroBiasModule> gyro_bias_module_;
   std::unique_ptr<VelocityCoefModule> vel_coef_module_;
@@ -102,7 +105,7 @@ private:
   void callback_pose_with_covariance(geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
   void callback_wheel_odometry(
-    const geometry_msgs::msg::TwistWithCovarianceStamped::ConstSharedPtr wheel_odometry_msg_ptr);
+    const autoware_auto_vehicle_msgs::msg::VelocityReport::ConstSharedPtr wheel_odometry_msg_ptr);
 
   void callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr);
 

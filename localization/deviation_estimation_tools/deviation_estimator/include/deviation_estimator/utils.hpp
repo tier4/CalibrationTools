@@ -15,6 +15,7 @@
 #ifndef DEVIATION_ESTIMATOR__UTILS_HPP_
 #define DEVIATION_ESTIMATOR__UTILS_HPP_
 
+#include "deviation_estimator/tier4_autoware_utils.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -33,7 +34,7 @@
 #else
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
-#include "tf2/utils.h"
+#include <tf2/utils.h>
 
 struct TrajectoryData
 {

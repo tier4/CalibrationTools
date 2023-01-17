@@ -55,10 +55,6 @@ DeviationEvaluator::DeviationEvaluator(
 : rclcpp::Node(node_name, node_options)
 {
   show_debug_info_ = declare_parameter<bool>("show_debug_info", false);
-  stddev_vx_ = declare_parameter<double>("stddev_vx");
-  stddev_wz_ = declare_parameter<double>("stddev_wz");
-  coef_vx_ = declare_parameter<double>("coef_vx");
-  bias_wz_ = declare_parameter<double>("bias_wz");
   save_dir_ = declare_parameter<std::string>("save_dir");
   wait_duration_ = declare_parameter<double>("wait_duration");
   double wait_scale = declare_parameter<double>("wait_scale");
@@ -90,12 +86,6 @@ DeviationEvaluator::DeviationEvaluator(
     RCLCPP_INFO(this->get_logger(), "EKF initialization finished");
   }
 
-  save2YamlFile();
-
-  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
-    "in_imu", 1, std::bind(&DeviationEvaluator::callbackImu, this, _1));
-  sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_wheel_odometry", 1, std::bind(&DeviationEvaluator::callbackWheelOdometry, this, _1));
   sub_ndt_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_ndt_pose_with_covariance", 1,
     std::bind(&DeviationEvaluator::callbackNDTPoseWithCovariance, this, _1));
@@ -104,9 +94,6 @@ DeviationEvaluator::DeviationEvaluator(
   sub_gt_odom_ = create_subscription<Odometry>(
     "in_ekf_gt_odom", 1, std::bind(&DeviationEvaluator::callbackEKFGTOdom, this, _1));
 
-  pub_calibrated_imu_ = create_publisher<sensor_msgs::msg::Imu>("out_imu", 1);
-  pub_calibrated_wheel_odometry_ =
-    create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>("out_wheel_odometry", 1);
   pub_pose_with_cov_dr_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_pose_with_covariance_dr", 1);
   pub_pose_with_cov_gt_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -114,23 +101,10 @@ DeviationEvaluator::DeviationEvaluator(
   pub_init_pose_with_cov_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "out_initial_pose_with_covariance", 1);
 
+  transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
+
   current_ndt_pose_ptr_ = nullptr;
   has_published_initial_pose_ = false;
-}
-
-void DeviationEvaluator::callbackImu(const sensor_msgs::msg::Imu::SharedPtr msg)
-{
-  msg->angular_velocity.z -= bias_wz_;
-  msg->angular_velocity_covariance[2 * 3 + 2] = stddev_wz_ * stddev_wz_;
-  pub_calibrated_imu_->publish(*msg);
-}
-
-void DeviationEvaluator::callbackWheelOdometry(
-  const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg)
-{
-  msg->twist.twist.linear.x *= coef_vx_;
-  msg->twist.covariance[0] = stddev_vx_ * stddev_vx_;
-  pub_calibrated_wheel_odometry_->publish(*msg);
 }
 
 void DeviationEvaluator::callbackNDTPoseWithCovariance(
@@ -139,12 +113,14 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
   if (!has_published_initial_pose_) {
     geometry_msgs::msg::PoseWithCovarianceStamped pose_with_cov;
     pose_with_cov = *msg;
-    pose_with_cov.pose.covariance[0 * 6 + 0] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[1 * 6 + 1] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[2 * 6 + 2] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[3 * 6 + 3] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[4 * 6 + 4] = 0.03 * 0.03;
-    pose_with_cov.pose.covariance[5 * 6 + 5] = 0.03 * 0.03;
+    const double initial_position_stddev = 0.05;
+    const double initial_angle_stddev = 0.01;
+    pose_with_cov.pose.covariance[0 * 6 + 0] = initial_position_stddev * initial_position_stddev;
+    pose_with_cov.pose.covariance[1 * 6 + 1] = initial_position_stddev * initial_position_stddev;
+    pose_with_cov.pose.covariance[2 * 6 + 2] = initial_position_stddev * initial_position_stddev;
+    pose_with_cov.pose.covariance[3 * 6 + 3] = initial_angle_stddev * initial_angle_stddev;
+    pose_with_cov.pose.covariance[4 * 6 + 4] = initial_angle_stddev * initial_angle_stddev;
+    pose_with_cov.pose.covariance[5 * 6 + 5] = initial_angle_stddev * initial_angle_stddev;
     pub_init_pose_with_cov_->publish(pose_with_cov);
     has_published_initial_pose_ = true;
     return;
@@ -227,17 +203,5 @@ geometry_msgs::msg::Pose DeviationEvaluator::interpolatePose(const double time)
   const double time_start = rclcpp::Time((*(iter_next - 1))->header.stamp).seconds();
   const double time_end = rclcpp::Time((*iter_next)->header.stamp).seconds();
   const double ratio = (time - time_start) / (time_end - time_start);
-  return tier4_autoware_utils::calcInterpolatedPose(
-    (*(iter_next - 1))->pose, (*iter_next)->pose, ratio);
-}
-
-void DeviationEvaluator::save2YamlFile()
-{
-  std::ofstream file(save_dir_ + "/config.yaml");
-  file << "parameters:" << std::endl;
-  file << "  stddev_vx: " << double_round(stddev_vx_, 5) << std::endl;
-  file << "  stddev_wz: " << double_round(stddev_wz_, 5) << std::endl;
-  file << "  bias_rho: " << double_round(coef_vx_, 5) << std::endl;
-  file << "  bias_gyro: " << double_round(bias_wz_, 5) << std::endl;
-  file.close();
+  return calcInterpolatedPose((*(iter_next - 1))->pose, (*iter_next)->pose, ratio);
 }

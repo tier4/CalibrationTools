@@ -74,7 +74,7 @@ geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
     delta_wz_list.push_back(std::sqrt(n_twist / t_window) * error_rpy.z);
   }
 
-  geometry_msgs::msg::Vector3 stddev_angvel_base = tier4_autoware_utils::createVector3(
+  geometry_msgs::msg::Vector3 stddev_angvel_base = createVector3(
     calculate_std(delta_wx_list) / std::sqrt(t_window),
     calculate_std(delta_wy_list) / std::sqrt(t_window),
     calculate_std(delta_wz_list) / std::sqrt(t_window));
@@ -129,8 +129,9 @@ DeviationEstimator::DeviationEstimator(
 : rclcpp::Node(node_name, node_options),
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
-  output_frame_(declare_parameter("base_link", "base_link")),
-  imu_frame_(declare_parameter<std::string>("imu_frame"))
+  output_frame_(declare_parameter<std::string>("base_link", "base_link")),
+  results_dir_(declare_parameter<std::string>("results_dir")),
+  results_logger_(results_dir_)
 {
   show_debug_info_ = declare_parameter("show_debug_info", false);
   dt_design_ = declare_parameter("dt_design", 10.0);
@@ -140,7 +141,6 @@ DeviationEstimator::DeviationEstimator(
   accel_threshold_ = declare_parameter("accel_threshold", 0.3);
   use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
   predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
-  results_path_ = declare_parameter<std::string>("results_path");
   time_window_ = declare_parameter("time_window", 4.0);
   add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
 
@@ -155,10 +155,6 @@ DeviationEstimator::DeviationEstimator(
   sub_pose_with_cov_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "in_pose_with_covariance", 1,
     std::bind(&DeviationEstimator::callback_pose_with_covariance, this, _1));
-  sub_wheel_odometry_ = create_subscription<geometry_msgs::msg::TwistWithCovarianceStamped>(
-    "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
-  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
-    "in_imu", 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
   pub_coef_vx_ = create_publisher<std_msgs::msg::Float64>("estimated_coef_vx", 1);
   pub_bias_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_bias_angular_velocity", 1);
@@ -166,9 +162,12 @@ DeviationEstimator::DeviationEstimator(
   pub_stddev_angvel_ =
     create_publisher<geometry_msgs::msg::Vector3>("estimated_stddev_angular_velocity", 1);
 
-  const Logger logger(results_path_);
-  logger.log_estimated_result_section(
-    0.2, 0.03, 0.0, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
+  sub_imu_ = create_subscription<sensor_msgs::msg::Imu>(
+    "in_imu", 1, std::bind(&DeviationEstimator::callback_imu, this, _1));
+  sub_wheel_odometry_ = create_subscription<autoware_auto_vehicle_msgs::msg::VelocityReport>(
+    "in_wheel_odometry", 1, std::bind(&DeviationEstimator::callback_wheel_odometry, this, _1));
+  results_logger_.log_estimated_result_section(
+    0.2, 0.0, geometry_msgs::msg::Vector3{}, geometry_msgs::msg::Vector3{});
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
@@ -193,11 +192,11 @@ void DeviationEstimator::callback_pose_with_covariance(
 }
 
 void DeviationEstimator::callback_wheel_odometry(
-  const geometry_msgs::msg::TwistWithCovarianceStamped::ConstSharedPtr wheel_odometry_msg_ptr)
+  const autoware_auto_vehicle_msgs::msg::VelocityReport::ConstSharedPtr wheel_odometry_msg_ptr)
 {
   tier4_debug_msgs::msg::Float64Stamped vx;
   vx.stamp = wheel_odometry_msg_ptr->header.stamp;
-  vx.data = wheel_odometry_msg_ptr->twist.twist.linear.x;
+  vx.data = wheel_odometry_msg_ptr->longitudinal_velocity;
 
   if (use_predefined_coef_vx_) {
     vx.data *= predefined_coef_vx_;
@@ -208,12 +207,13 @@ void DeviationEstimator::callback_wheel_odometry(
 
 void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr)
 {
+  imu_frame_ = imu_msg_ptr->header.frame_id;
   geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_imu2base_ptr =
-    transform_listener_->getLatestTransform(imu_msg_ptr->header.frame_id, output_frame_);
+    transform_listener_->getLatestTransform(imu_frame_, output_frame_);
   if (!tf_imu2base_ptr) {
     RCLCPP_ERROR(
       this->get_logger(), "Please publish TF %s to %s", output_frame_.c_str(),
-      (imu_msg_ptr->header.frame_id).c_str());
+      (imu_frame_).c_str());
     return;
   }
 
@@ -291,17 +291,15 @@ void DeviationEstimator::timer_callback()
   stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.y);
   stddev_angvel_imu = std::max(stddev_angvel_imu, stddev_angvel_base.z);
   geometry_msgs::msg::Vector3 stddev_angvel_imu_msg =
-    tier4_autoware_utils::createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
+    createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
   pub_stddev_angvel_->publish(stddev_angvel_imu_msg);
 
   validation_module_->set_velocity_data(vel_coef_module_->get_coef(), stddev_vx);
   validation_module_->set_gyro_data(bias_angvel_imu, stddev_angvel_imu_msg);
 
-  const Logger logger(results_path_);
-  logger.log_estimated_result_section(
-    stddev_vx, stddev_angvel_base.z, vel_coef_module_->get_coef(),
-    gyro_bias_module_->get_bias_base_link().z, stddev_angvel_imu_msg, bias_angvel_imu);
-  logger.log_validation_result_section(*validation_module_);
+  results_logger_.log_estimated_result_section(
+    stddev_vx, vel_coef_module_->get_coef(), stddev_angvel_imu_msg, bias_angvel_imu);
+  results_logger_.log_validation_result_section(*validation_module_);
 }
 
 double DeviationEstimator::add_bias_uncertainty_on_velocity(
@@ -316,7 +314,7 @@ geometry_msgs::msg::Vector3 DeviationEstimator::add_bias_uncertainty_on_angular_
   const geometry_msgs::msg::Vector3 stddev_angvel_base,
   const geometry_msgs::msg::Vector3 stddev_angvel_bias_base) const
 {
-  geometry_msgs::msg::Vector3 stddev_angvel_prime_base = tier4_autoware_utils::createVector3(
+  geometry_msgs::msg::Vector3 stddev_angvel_prime_base = createVector3(
     std::sqrt(pow(stddev_angvel_base.x, 2) + dt_design_ * pow(stddev_angvel_bias_base.x, 2)),
     std::sqrt(pow(stddev_angvel_base.y, 2) + dt_design_ * pow(stddev_angvel_bias_base.y, 2)),
     std::sqrt(pow(stddev_angvel_base.z, 2) + dt_design_ * pow(stddev_angvel_bias_base.z, 2)));
