@@ -17,6 +17,7 @@
 
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
+from PySide2.QtWidgets import QFileDialog
 from PySide2.QtWidgets import QGroupBox
 from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QRadioButton
@@ -26,10 +27,12 @@ from intrinsic_camera_calibrator.board_parameters.board_parameters_factory impor
     make_board_parameters,
 )
 from intrinsic_camera_calibrator.boards import BoardEnum
+from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 from intrinsic_camera_calibrator.data_sources.data_source import DataSourceEnum
 from intrinsic_camera_calibrator.data_sources.data_source_factory import make_data_source
 from intrinsic_camera_calibrator.types import OperationMode
+from intrinsic_camera_calibrator.utils import load_intrinsics
 from intrinsic_camera_calibrator.views.image_files_view import ImageFilesView
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 from intrinsic_camera_calibrator.views.ros_bag_view import RosBagView
@@ -106,12 +109,13 @@ class InitializationView(QWidget):
         board_layout.addWidget(self.board_parameters_button)
         self.board_group.setLayout(board_layout)
 
+        # Mode
         self.mode_group = QGroupBox("Mode options")
         self.mode_group.setFlat(True)
 
         self.training_radio_button = QRadioButton("Calibration mode")
         self.evaluation_radio_button = QRadioButton("Evaluation mode")
-        self.evaluation_radio_button.setEnabled(False)  # TODO(knzo25) missing implementation
+        self.evaluation_radio_button.setEnabled(False)
         self.training_radio_button.setChecked(True)
 
         mode_layout = QVBoxLayout()
@@ -119,12 +123,33 @@ class InitializationView(QWidget):
         mode_layout.addWidget(self.evaluation_radio_button)
         self.mode_group.setLayout(mode_layout)
 
+        # Initial intrinsics
+        self.initial_intrinsics_group = QGroupBox("Initial intrinsics")
+        self.initial_intrinsics_group.setFlat(True)
+
+        self.load_intrinsics_button = QPushButton("Load intrinsics")
+        self.initial_intrinsics: CameraModel = None
+
+        def load_intrinsics_button_callback():
+            intrinsics_path, _ = QFileDialog.getOpenFileName(
+                self, "Open initial intrinsics", "", "Image files (*.yaml)"
+            )
+            self.initial_intrinsics = load_intrinsics(intrinsics_path)
+            self.evaluation_radio_button.setEnabled(True)
+
+        self.load_intrinsics_button.clicked.connect(load_intrinsics_button_callback)
+
+        initial_intrinsics_layout = QVBoxLayout()
+        initial_intrinsics_layout.addWidget(self.load_intrinsics_button)
+        self.initial_intrinsics_group.setLayout(initial_intrinsics_layout)
+
         self.start_button = QPushButton("Start")
         self.start_button.clicked.connect(self.on_start)
 
         self.layout.addWidget(self.source_group)
         self.layout.addWidget(self.board_group)
         self.layout.addWidget(self.mode_group)
+        self.layout.addWidget(self.initial_intrinsics_group)
         self.layout.addWidget(self.start_button)
 
         self.show()
@@ -141,7 +166,11 @@ class InitializationView(QWidget):
             )
             board_type = self.board_type_combobox.currentData()
             self.calibrator.start(
-                mode, self.data_source, board_type, self.board_parameters_dict[board_type]
+                mode,
+                self.data_source,
+                board_type,
+                self.board_parameters_dict[board_type],
+                self.initial_intrinsics,
             )
             self.close()
 

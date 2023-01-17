@@ -67,7 +67,12 @@ class Calibrator(ParameteredClass, QObject):
     """Base clase of camera intrinsic calibrator. Most of the logic should be implemented here abd the subclasses only implement the core method."""
 
     calibration_request = Signal(object)
-    calibration_results_signal = Signal(object, float, int, int, int, int, float, float, float)
+    calibration_results_signal = Signal(
+        object, float, int, int, int, float, float, int, int, float, float
+    )
+
+    evaluation_request = Signal(object, object)
+    evaluation_results_signal = Signal(float, int, int, float, float, int, int, float, float)
 
     def __init__(self, lock: threading.RLock, cfg: Optional[Dict] = {}):
         ParameteredClass.__init__(self, lock)
@@ -80,7 +85,7 @@ class Calibrator(ParameteredClass, QObject):
             float, value=0.3, min_value=0.001, max_value=10.0
         )
 
-        self.max_calibration_samples = Parameter(int, value=100, min_value=10, max_value=1000)
+        self.max_calibration_samples = Parameter(int, value=80, min_value=10, max_value=1000)
 
         self.use_entropy_maximization_subsampling = Parameter(
             bool, value=True, min_value=False, max_value=True
@@ -109,8 +114,9 @@ class Calibrator(ParameteredClass, QObject):
         self.set_parameters(**cfg)
 
         self.calibration_request.connect(self._calibrate)
+        self.evaluation_request.connect(self._evaluate)
 
-    def _calibrate(self, data_collector: DataCollector) -> CameraModel:
+    def _calibrate(self, data_collector: DataCollector):
         """General calibration routine.
 
         1) rejects outlier via ransac
@@ -143,9 +149,9 @@ class Calibrator(ParameteredClass, QObject):
         else:
             pre_rejection_inliers = raw_training_detections
 
-        num_pre_rejection_inliers = len(pre_rejection_inliers)
+        num_training_pre_rejection_inliers = len(pre_rejection_inliers)
 
-        if num_pre_rejection_inliers > max_calibration_samples:
+        if num_training_pre_rejection_inliers > max_calibration_samples:
             if use_entropy_maximization_subsampling:
                 calibration_training_detections = self._entropy_maximization_subsampling_impl(
                     pre_rejection_inliers, calibrated_model
@@ -160,18 +166,25 @@ class Calibrator(ParameteredClass, QObject):
         calibrated_model = self._calibration_impl(calibration_training_detections)
 
         if use_post_rejection:
-            post_rejection_inliers = self._post_rejection_impl(
+            training_post_rejection_inliers = self._post_rejection_impl(
                 calibration_training_detections, calibrated_model
             )
+
+            evaluation_post_rejection_inliers = self._post_rejection_impl(
+                raw_evaluation_detections, calibrated_model
+            )
+
             calibrated_model = (
-                self._calibration_impl(post_rejection_inliers)
-                if len(post_rejection_inliers)
+                self._calibration_impl(training_post_rejection_inliers)
+                if len(training_post_rejection_inliers)
                 else calibrated_model
             )
         else:
-            post_rejection_inliers = calibration_training_detections
+            training_post_rejection_inliers = calibration_training_detections
+            evaluation_post_rejection_inliers = raw_evaluation_detections
 
-        num_post_rejection_inliers = len(post_rejection_inliers)
+        num_training_post_rejection_inliers = len(training_post_rejection_inliers)
+        num_evaluation_post_rejection_inliers = len(evaluation_post_rejection_inliers)
 
         tf = time.time()
         dt = tf - t0
@@ -180,26 +193,39 @@ class Calibrator(ParameteredClass, QObject):
             calibrated_model.get_reprojection_errors(detection)
             for detection in raw_training_detections
         ]
-        inlier_reprojection_errors = [
+        training_inlier_reprojection_errors = [
             calibrated_model.get_reprojection_errors(detection)
-            for detection in post_rejection_inliers
+            for detection in training_post_rejection_inliers
         ]
+
         evaluation_reprojection_errors = [
             calibrated_model.get_reprojection_errors(detection)
             for detection in raw_evaluation_detections
+        ]
+        evaluation_inlier_reprojection_errors = [
+            calibrated_model.get_reprojection_errors(detection)
+            for detection in evaluation_post_rejection_inliers
         ]
 
         training_rms_error = np.sqrt(
             np.power(np.concatenate(training_reprojection_errors, axis=0), 2).mean()
         )
-        inlier_rms_error = (
-            np.sqrt(np.power(np.concatenate(inlier_reprojection_errors, axis=0), 2).mean())
-            if len(inlier_reprojection_errors) > 0
+        training_inlier_rms_error = (
+            np.sqrt(np.power(np.concatenate(training_inlier_reprojection_errors, axis=0), 2).mean())
+            if len(training_inlier_reprojection_errors) > 0
             else np.inf
         )
+
         evaluation_rms_error = (
             np.sqrt(np.power(np.concatenate(evaluation_reprojection_errors, axis=0), 2).mean())
             if len(evaluation_reprojection_errors) > 0
+            else np.inf
+        )
+        evaluation_inlier_rms_error = (
+            np.sqrt(
+                np.power(np.concatenate(evaluation_inlier_reprojection_errors, axis=0), 2).mean()
+            )
+            if len(evaluation_inlier_reprojection_errors) > 0
             else np.inf
         )
 
@@ -209,7 +235,7 @@ class Calibrator(ParameteredClass, QObject):
                 raw_training_detections,
                 pre_rejection_inliers,
                 calibration_training_detections,
-                post_rejection_inliers,
+                training_post_rejection_inliers,
                 raw_evaluation_detections,
             )
 
@@ -217,7 +243,7 @@ class Calibrator(ParameteredClass, QObject):
             self._plot_calibration_results_statistics(
                 calibrated_model,
                 raw_training_detections,
-                post_rejection_inliers,
+                training_post_rejection_inliers,
                 raw_evaluation_detections,
             )
 
@@ -225,12 +251,119 @@ class Calibrator(ParameteredClass, QObject):
             calibrated_model,
             dt,
             num_training_detections,
-            num_pre_rejection_inliers,
-            num_post_rejection_inliers,
-            num_evaluation_detections,
+            num_training_pre_rejection_inliers,
+            num_training_post_rejection_inliers,
             training_rms_error,
-            inlier_rms_error,
+            training_inlier_rms_error,
+            num_evaluation_detections,
+            num_evaluation_post_rejection_inliers,
             evaluation_rms_error,
+            evaluation_inlier_rms_error,
+        )
+
+    def _evaluate(self, data_collector: DataCollector, evaluation_model: CameraModel):
+        """General evaluation routine."""
+        with self.lock:
+            use_post_rejection = self.use_post_rejection.value
+            plot_calibration_data_statistics = self.plot_calibration_data_statistics.value
+            plot_calibration_results_statistics = self.plot_calibration_results_statistics.value
+
+        t0 = time.time()
+
+        raw_training_detections = data_collector.get_training_detections()
+        raw_evaluation_detections = data_collector.get_evaluation_detections()
+
+        num_training_detections = len(raw_training_detections)
+        num_evaluation_detections = len(raw_evaluation_detections)
+
+        if use_post_rejection:
+            training_post_rejection_inliers = self._post_rejection_impl(
+                raw_training_detections, evaluation_model
+            )
+            evaluation_post_rejection_inliers = self._post_rejection_impl(
+                raw_evaluation_detections, evaluation_model
+            )
+
+        else:
+            training_post_rejection_inliers = raw_training_detections
+            evaluation_post_rejection_inliers = raw_evaluation_detections
+
+        training_num_post_rejection_inliers = len(training_post_rejection_inliers)
+        evaluation_num_post_rejection_inliers = len(evaluation_post_rejection_inliers)
+
+        tf = time.time()
+        dt = tf - t0
+
+        training_reprojection_errors = [
+            evaluation_model.get_reprojection_errors(detection)
+            for detection in raw_training_detections
+        ]
+        training_inlier_reprojection_errors = [
+            evaluation_model.get_reprojection_errors(detection)
+            for detection in training_post_rejection_inliers
+        ]
+
+        evaluation_reprojection_errors = [
+            evaluation_model.get_reprojection_errors(detection)
+            for detection in raw_evaluation_detections
+        ]
+        evaluation_inlier_reprojection_errors = [
+            evaluation_model.get_reprojection_errors(detection)
+            for detection in evaluation_post_rejection_inliers
+        ]
+
+        training_rms_error = (
+            np.sqrt(np.power(np.concatenate(training_reprojection_errors, axis=0), 2).mean())
+            if len(training_reprojection_errors) > 0
+            else np.inf
+        )
+        training_inlier_rms_error = (
+            np.sqrt(np.power(np.concatenate(training_inlier_reprojection_errors, axis=0), 2).mean())
+            if len(training_inlier_reprojection_errors) > 0
+            else np.inf
+        )
+
+        evaluation_rms_error = (
+            np.sqrt(np.power(np.concatenate(evaluation_reprojection_errors, axis=0), 2).mean())
+            if len(evaluation_reprojection_errors) > 0
+            else np.inf
+        )
+        evaluation_inlier_rms_error = (
+            np.sqrt(
+                np.power(np.concatenate(evaluation_inlier_reprojection_errors, axis=0), 2).mean()
+            )
+            if len(evaluation_inlier_reprojection_errors) > 0
+            else np.inf
+        )
+
+        if plot_calibration_data_statistics:
+            self._plot_calibration_data_statistics_impl(
+                evaluation_model,
+                raw_training_detections,
+                raw_training_detections,
+                raw_training_detections,
+                training_post_rejection_inliers,
+                raw_evaluation_detections,
+            )
+
+        if plot_calibration_results_statistics:
+            self._plot_calibration_results_statistics(
+                evaluation_model,
+                raw_training_detections,
+                training_post_rejection_inliers,
+                raw_evaluation_detections,
+            )
+
+        self.evaluation_results_signal.emit(
+            dt,
+            num_training_detections,
+            training_num_post_rejection_inliers,
+            training_rms_error,
+            training_inlier_rms_error,
+            num_evaluation_detections,
+            evaluation_num_post_rejection_inliers,
+            evaluation_rms_error,
+            evaluation_inlier_rms_error,
         )
 
     def _pre_rejection_filter_impl(
@@ -312,7 +445,7 @@ class Calibrator(ParameteredClass, QObject):
         tilt_cells: int = int(2 * np.ceil(max_tilt_deg / subsampling_tilt_resolution))
 
         num_detections = len(detections)
-        accepted_array = np.zeros((num_detections,), dtype=np.bool)
+        accepted_array = np.zeros((num_detections,), dtype=np.bool_)
 
         accepted_pixel_occupancy = np.zeros((pixel_cells, pixel_cells))
         accepted_tilt_occupancy = np.zeros((2 * tilt_cells, 2 * tilt_cells))

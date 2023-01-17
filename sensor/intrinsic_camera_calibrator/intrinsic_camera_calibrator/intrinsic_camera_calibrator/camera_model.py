@@ -215,6 +215,16 @@ class CameraModel:
 
         return d
 
+    def from_dict(self, d):
+        self.width = d["image_width"]
+        self.height = d["image_height"]
+        self.k = np.array(d["camera_matrix"]["data"]).reshape(
+            d["camera_matrix"]["rows"], d["camera_matrix"]["cols"]
+        )
+        self.d = np.array(d["distortion_model"]["data"]).reshape(
+            d["distortion_model"]["rows"], d["distortion_model"]["cols"]
+        )
+
 
 class CameraModelWithBoardDistortion(CameraModel):
     """An slighlty improves model that also incorporates the distortion/bending of the calibration board.."""

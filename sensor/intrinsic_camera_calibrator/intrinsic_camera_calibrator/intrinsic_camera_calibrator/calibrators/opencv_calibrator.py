@@ -46,7 +46,7 @@ class OpenCVCalibrator(Calibrator):
         flags = 0
         flags |= cv2.CALIB_FIX_PRINCIPAL_POINT if self.fix_principal_point.value else 0
         flags |= cv2.CALIB_FIX_ASPECT_RATIO if self.fix_principal_point.value else 0
-        flags |= cv2.CALIB_ZERO_TANGENT_DIST if self.use_tangential_distortion.value else 0
+        flags |= cv2.CALIB_ZERO_TANGENT_DIST if not self.use_tangential_distortion.value else 0
         flags |= cv2.CALIB_RATIONAL_MODEL if self.radial_distortion_coefficients.value > 3 else 0
         flags |= cv2.CALIB_FIX_K6 if self.radial_distortion_coefficients.value < 6 else 0
         flags |= cv2.CALIB_FIX_K5 if self.radial_distortion_coefficients.value < 5 else 0

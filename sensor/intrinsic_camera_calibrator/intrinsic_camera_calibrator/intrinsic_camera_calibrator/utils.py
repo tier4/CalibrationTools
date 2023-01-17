@@ -15,7 +15,10 @@
 # limitations under the License.
 
 import cv2
+from intrinsic_camera_calibrator.camera_model import CameraModel
 import numpy as np
+import ruamel.yaml
+import yaml
 
 
 def to_grayscale(img: np.array) -> np.array:
@@ -24,3 +27,35 @@ def to_grayscale(img: np.array) -> np.array:
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     else:
         return img
+
+
+def save_intrinsics(camera_model: CameraModel, alpha, camera_name, file_path: str):
+
+    data = camera_model.as_dict(alpha)
+    data["camera_name"] = camera_name
+
+    def flist(data):
+        if isinstance(data, list):
+            retval = ruamel.yaml.comments.CommentedSeq(data)
+            retval.fa.set_flow_style()
+            return retval
+        elif isinstance(data, dict):
+            return {k: flist(v) for k, v in data.items()}
+        else:
+            return data
+
+    data = flist(data)
+
+    with open(file_path, "w") as f:
+        yaml = ruamel.yaml.YAML()
+        yaml.dump(data, f)
+
+
+def load_intrinsics(file_path: str):
+    with open(file_path, "r") as stream:
+        data = yaml.safe_load(stream)
+
+    camera_model = CameraModel()
+    camera_model.from_dict(data)
+
+    return camera_model

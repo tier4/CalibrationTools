@@ -58,6 +58,7 @@ from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 from intrinsic_camera_calibrator.parameter import ParameteredClass
 from intrinsic_camera_calibrator.types import ImageViewMode
 from intrinsic_camera_calibrator.types import OperationMode
+from intrinsic_camera_calibrator.utils import save_intrinsics
 from intrinsic_camera_calibrator.views.data_collector_view import DataCollectorView
 from intrinsic_camera_calibrator.views.image_view import CustomQGraphicsView
 from intrinsic_camera_calibrator.views.image_view import ImageView
@@ -65,7 +66,6 @@ from intrinsic_camera_calibrator.views.initialization_view import Initialization
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 import numpy as np
 import rclpy
-import ruamel.yaml
 import yaml
 
 
@@ -131,6 +131,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
             calibrator.moveToThread(self.calibration_thread)
             calibrator.calibration_results_signal.connect(self.process_calibration_results)
+            calibrator.evaluation_results_signal.connect(self.process_evaluation_results)
 
         # Qt logic
         self.should_process_image.connect(self.process_data)
@@ -316,16 +317,23 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         self.calibration_parameters_button = QPushButton("Calibration parameters")
         self.calibration_button = QPushButton("Calibrate")
+        self.evaluation_button = QPushButton("Evaluate")
         self.save_button = QPushButton("Save")
         self.calibration_status_label = QLabel("Calibration status: idle")
         self.calibration_time_label = QLabel("Calibration time:")
         self.calibration_training_samples_label = QLabel("Training samples:")
-        self.calibration_pre_rejection_inliers_label = QLabel("Pre rejection inliers:")
-        self.calibration_post_rejection_inliers_label = QLabel("Post rejection inliers:")
-        self.calibration_evaluation_samples_label = QLabel("Evaluation samples:")
+        self.calibration_training_pre_rejection_inliers_label = QLabel("\tPre rejection inliers:")
+        self.calibration_training_post_rejection_inliers_label = QLabel("\tPost rejection inliers:")
+        self.calibration_training_rms_label = QLabel("\trms error (all):")
+        self.calibration_training_inlier_rms_label = QLabel("\trms error (inlier):")
 
-        self.calibration_training_rms_label = QLabel("Training (all) rms error:")
-        self.calibration_inlier_rms_label = QLabel("Training (inlier) rms error:")
+        self.calibration_evaluation_samples_label = QLabel("Evaluation samples:")
+        self.calibration_evaluation_post_rejection_inliers_label = QLabel(
+            "\tPost rejection inliers:"
+        )
+        self.calibration_evaluation_rms_label = QLabel("\trms error (all):")
+        self.calibration_evaluation_inlier_rms_label = QLabel("\trms error (inlier):")
+
         self.calibration_evaluation_rms_label = QLabel("Evaluation (all) rms error:")
 
         def on_parameters_view_closed():
@@ -349,11 +357,26 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.calibrator_type_combobox.setEnabled(False)
             self.calibration_parameters_button.setEnabled(False)
             self.calibration_button.setEnabled(False)
+            self.evaluation_button.setEnabled(False)
 
             self.calibration_status_label.setText("Calibration status: calibrating")
 
+        def on_evaluation_clicked():
+            calibrator_type = self.calibrator_type_combobox.currentData()
+            self.calibrator_dict[calibrator_type].evaluation_request.emit(
+                self.data_collector.clone_without_images(), self.current_camera_model
+            )
+
+            self.calibrator_type_combobox.setEnabled(False)
+            self.calibration_parameters_button.setEnabled(False)
+            self.calibration_button.setEnabled(False)
+            self.evaluation_button.setEnabled(False)
+
+            self.calibration_status_label.setText("Calibration status: evaluating")
+
         self.calibration_parameters_button.clicked.connect(on_parameters_button_clicked)
         self.calibration_button.clicked.connect(on_calibration_clicked)
+        self.evaluation_button.clicked.connect(on_evaluation_clicked)
 
         self.save_button.clicked.connect(self.on_save_clicked)
         self.save_button.setEnabled(False)
@@ -376,16 +399,20 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         calibration_layout.addWidget(self.calibrator_type_combobox)
         calibration_layout.addWidget(self.calibration_parameters_button)
         calibration_layout.addWidget(self.calibration_button)
+        calibration_layout.addWidget(self.evaluation_button)
         calibration_layout.addWidget(self.save_button)
         calibration_layout.addWidget(self.calibration_status_label)
         calibration_layout.addWidget(self.calibration_time_label)
         calibration_layout.addWidget(self.calibration_training_samples_label)
-        calibration_layout.addWidget(self.calibration_pre_rejection_inliers_label)
-        calibration_layout.addWidget(self.calibration_post_rejection_inliers_label)
-        calibration_layout.addWidget(self.calibration_evaluation_samples_label)
+        calibration_layout.addWidget(self.calibration_training_pre_rejection_inliers_label)
+        calibration_layout.addWidget(self.calibration_training_post_rejection_inliers_label)
         calibration_layout.addWidget(self.calibration_training_rms_label)
-        calibration_layout.addWidget(self.calibration_inlier_rms_label)
+        calibration_layout.addWidget(self.calibration_training_inlier_rms_label)
+
+        calibration_layout.addWidget(self.calibration_evaluation_samples_label)
+        calibration_layout.addWidget(self.calibration_evaluation_post_rejection_inliers_label)
         calibration_layout.addWidget(self.calibration_evaluation_rms_label)
+        calibration_layout.addWidget(self.calibration_evaluation_inlier_rms_label)
 
         self.calibration_group.setLayout(calibration_layout)
 
@@ -590,11 +617,13 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         data_source: DataSource,
         board_type: BoardEnum,
         board_parameters: ParameteredClass,
+        initial_intrinsics: CameraModel,
     ):
         self.operation_mode = mode
         self.data_source = data_source
         self.board_type = board_type
         self.board_parameters = board_parameters
+        self.current_camera_model = initial_intrinsics
         self.setEnabled(True)
 
         print("Init")
@@ -611,6 +640,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             cfg=detector_cfg,
         )
 
+        if self.operation_mode == OperationMode.EVALUATION:
+            self.calibration_button.setEnabled(False)
+
         self.detector.moveToThread(self.detector_thread)
         self.detector.detection_results_signal.connect(self.process_detection_results)
         self.request_image_detection.connect(self.detector.detect)
@@ -620,12 +652,14 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         calibrated_model: CameraModel,
         dt: float,
         num_training_detections: int,
-        num_pre_rejection_inliers: int,
-        num_post_rejection_inliers: int,
-        num_evaluation_detections: int,
+        num_training_pre_rejection_inliers: int,
+        num_training_post_rejection_inliers: int,
         training_rms_error: float,
-        inlier_rms_error: float,
+        training_inlier_rms_error: float,
+        num_evaluation_detections: int,
+        num_evaluation_post_rejection_inliers: int,
         evaluation_rms_error: float,
+        evaluation_inlier_rms_error: float,
     ):
         self.image_view_type_combobox.setEnabled(True)
         self.undistortion_alpha_spinbox.setEnabled(True)
@@ -637,29 +671,86 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_training_samples_label.setText(
             f"Training samples: {num_training_detections}"
         )
-        self.calibration_pre_rejection_inliers_label.setText(
-            f"Pre rejection inliers: {num_pre_rejection_inliers}"
+        self.calibration_training_pre_rejection_inliers_label.setText(
+            f"\tPre rejection inliers: {num_training_pre_rejection_inliers}"
         )
-        self.calibration_post_rejection_inliers_label.setText(
-            f"Post rejection inliers: {num_post_rejection_inliers}"
+        self.calibration_training_post_rejection_inliers_label.setText(
+            f"\tPost rejection inliers: {num_training_post_rejection_inliers}"
         )
+
+        self.calibration_training_rms_label.setText(f"\trms error (all): {training_rms_error:.3f}")
+        self.calibration_training_inlier_rms_label.setText(
+            f"\trms error (inliers): {training_inlier_rms_error:.3f}"
+        )
+
         self.calibration_evaluation_samples_label.setText(
             f"Evaluation samples: {num_evaluation_detections}"
         )
+        self.calibration_evaluation_post_rejection_inliers_label.setText(
+            f"\tPost rejection inliers: {num_evaluation_post_rejection_inliers}"
+        )
 
-        self.calibration_training_rms_label.setText(
-            f"Training (all) rms error: {training_rms_error:.2f}"
-        )
-        self.calibration_inlier_rms_label.setText(
-            f"Training (inlier) rms error: {inlier_rms_error:.2f}"
-        )
         self.calibration_evaluation_rms_label.setText(
-            f"Evaluation (all) rms error: {evaluation_rms_error:.2f}"
+            f"\trms error (all): {evaluation_rms_error:.3f}"
+        )
+        self.calibration_evaluation_inlier_rms_label.setText(
+            f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"
         )
 
         # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(True)
+        self.evaluation_button.setEnabled(True)
+        self.save_button.setEnabled(True)
+
+    def process_evaluation_results(
+        self,
+        dt: float,
+        num_training_detections: int,
+        num_training_post_rejection_inliers: int,
+        training_rms_error: float,
+        training_inlier_rms_error: float,
+        num_evaluation_detections: int,
+        num_evaluation_post_rejection_inliers: int,
+        evaluation_rms_error: float,
+        evaluation_inlier_rms_error: float,
+    ):
+        self.image_view_type_combobox.setEnabled(True)
+        self.undistortion_alpha_spinbox.setEnabled(True)
+
+        self.calibration_status_label.setText("Calibration status: idle")
+        self.calibration_time_label.setText(f"Calibration time: {dt:.2f}s")
+        self.calibration_training_samples_label.setText(
+            f"Training samples: {num_training_detections}"
+        )
+        self.calibration_training_pre_rejection_inliers_label.setText("\tPre rejection inliers:")
+        self.calibration_training_post_rejection_inliers_label.setText(
+            f"\tPost rejection inliers: {num_training_post_rejection_inliers}"
+        )
+
+        self.calibration_training_rms_label.setText(f"\trms error (all): {training_rms_error:.3f}")
+        self.calibration_training_inlier_rms_label.setText(
+            f"\trms error (inliers): {training_inlier_rms_error:.3f}"
+        )
+
+        self.calibration_evaluation_samples_label.setText(
+            f"Evaluation samples: {num_evaluation_detections}"
+        )
+        self.calibration_evaluation_post_rejection_inliers_label.setText(
+            f"\tPost rejection inliers: {num_evaluation_post_rejection_inliers}"
+        )
+
+        self.calibration_evaluation_rms_label.setText(
+            f"\trms error (all): {evaluation_rms_error:.3f}"
+        )
+        self.calibration_evaluation_inlier_rms_label.setText(
+            f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"
+        )
+
+        # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
+        self.calibration_parameters_button.setEnabled(True)
+        self.calibration_button.setEnabled(self.operation_mode == OperationMode.CALIBRATION)
+        self.evaluation_button.setEnabled(True)
         self.save_button.setEnabled(True)
 
     def on_consumed(self):
@@ -678,25 +769,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         print(f"Saving calibration results to {output_folder}")
 
-        data = self.calibrated_camera_model.as_dict(self.undistortion_alpha_spinbox.value())
-        camera_name = self.data_source.get_camera_name()
-        data["camera_name"] = camera_name
-
-        def flist(data):
-            if isinstance(data, list):
-                retval = ruamel.yaml.comments.CommentedSeq(data)
-                retval.fa.set_flow_style()
-                return retval
-            elif isinstance(data, dict):
-                return {k: flist(v) for k, v in data.items()}
-            else:
-                return data
-
-        data = flist(data)
-
-        with open(os.path.join(output_folder, f"{camera_name}_info.yaml"), "w") as f:
-            yaml = ruamel.yaml.YAML()
-            yaml.dump(data, f)
+        save_intrinsics(
+            self.calibrated_camera_model,
+            self.undistortion_alpha_spinbox.value(),
+            self.data_source.get_camera_name(),
+            os.path.join(output_folder, f"{self.data_source.get_camera_name()}_info.yaml"),
+        )
 
         training_folder = os.path.join(output_folder, "training_images")
         evaluation_folder = os.path.join(output_folder, "evaluation_images")
@@ -748,7 +826,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
             if self.image_view_type_combobox.currentData() == ImageViewMode.SOURCE_UNRECTIFIED:
                 filter_result = self.data_collector.process_detection(
-                    image=img, detection=detection
+                    image=img,
+                    detection=detection,
+                    camera_model=self.current_camera_model,
+                    mode=self.operation_mode,
                 )
             else:
                 filter_result = CollectionStatus.NOT_EVALUATED

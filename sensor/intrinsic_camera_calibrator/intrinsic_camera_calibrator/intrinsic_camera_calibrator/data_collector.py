@@ -25,6 +25,7 @@ from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.parameter import Parameter
 from intrinsic_camera_calibrator.parameter import ParameteredClass
 from intrinsic_camera_calibrator.types import CollectionStatus
+from intrinsic_camera_calibrator.types import OperationMode
 import numpy as np
 
 
@@ -456,7 +457,11 @@ class DataCollector(ParameteredClass):
         return status
 
     def process_detection(
-        self, image: np.array, detection: BoardDetection, camera_model: Optional[CameraModel] = None
+        self,
+        image: np.array,
+        detection: BoardDetection,
+        camera_model: Optional[CameraModel] = None,
+        mode: OperationMode = OperationMode.CALIBRATION,
     ) -> CollectionStatus:
         """Evaluate if a detection should be added to either the training or evaluation dataset."""
         accepted = True
@@ -489,7 +494,9 @@ class DataCollector(ParameteredClass):
         )
         evaluation_detections_distances = self.evaluation_data.get_distances(detection)
 
-        status_training = self.evaluate_redundancy(*training_detections_distances)
+        status_training = mode == OperationMode.CALIBRATION and self.evaluate_redundancy(
+            *training_detections_distances
+        )
         status_evaluation = self.evaluate_redundancy(
             *last_n_training_detections_distances
         ) and self.evaluate_redundancy(*evaluation_detections_distances)

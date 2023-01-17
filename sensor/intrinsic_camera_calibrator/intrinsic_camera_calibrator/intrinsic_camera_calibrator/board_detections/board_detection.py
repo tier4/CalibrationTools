@@ -114,7 +114,11 @@ class BoardDetection:
         if model is None:
             model = self._get_cached_model()
 
-        if model == self._cached_camera_model and self._cached_reprojection_errors is not None:
+        if (
+            self._cached_camera_model is not None
+            and model == self._cached_camera_model
+            and self._cached_reprojection_errors is not None
+        ):
             return self._cached_reprojection_errors
 
         self._cached_camera_model = model
