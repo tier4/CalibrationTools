@@ -202,7 +202,7 @@ class DataCollector(ParameteredClass):
         super().__init__(cfg=cfg, **kwargs)
 
         # Option to limit the amount of collection samples in case there are resource constraints
-        self.max_samples = Parameter(int, value=500, min_value=6, max_value=500)
+        self.max_samples = Parameter(int, value=500, min_value=6, max_value=5000)
 
         # In addition to the training dataset we also
         self.decorrelate_eval_samples = Parameter(int, value=5, min_value=1, max_value=100)
@@ -412,7 +412,7 @@ class DataCollector(ParameteredClass):
         center_distance: float,
     ) -> bool:
         """Evaluate if the distances from a detection to the dataset merits adding it."""
-        status = False
+        status = not self.filter_by_2d_redundancy.value and not self.filter_by_3d_redundancy.value
 
         if self.filter_by_2d_redundancy.value:
 
@@ -442,7 +442,7 @@ class DataCollector(ParameteredClass):
             status_2d = joint_test.min() > 0
             status |= status_2d
 
-        if self.filter_by_3d_redundancy:
+        if self.filter_by_3d_redundancy.value:
 
             center_distance_test = center_distance > self.min_3d_center_difference.value
             tilt_x_distance_test = tilt_x_distance > self.min_tilt_difference.value

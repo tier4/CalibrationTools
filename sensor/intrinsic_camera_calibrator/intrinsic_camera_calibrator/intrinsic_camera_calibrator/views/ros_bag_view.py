@@ -31,7 +31,7 @@ class RosBagView(QWidget):
     success = Signal()
 
     set_rosbag_request = Signal(str)
-    rosbag_start_request = Signal(str)
+    rosbag_start_request = Signal()
 
     def __init__(self, data_source: RosBagDataSource):
         self.data_source = data_source
@@ -60,6 +60,14 @@ class RosBagView(QWidget):
 
         self.topic_combo_box = QComboBox()
         self.topic_combo_box.setEnabled(False)
+
+        def on_text_changed(image_topic):
+            image_topic = self.topic_combo_box.currentText()
+            self.data_source.set_topic(image_topic)
+            self.topic_selected = True
+
+        self.topic_combo_box.currentTextChanged.connect(on_text_changed)
+
         self.layout.addWidget(self.topic_combo_box)
 
         self.accept_button = QPushButton("Ok")
@@ -95,11 +103,8 @@ class RosBagView(QWidget):
         if self.topic_combo_box.count() == 0:
             return
 
-        image_topic = self.topic_combo_box.currentText()
-        self.topic_selected = True
-
         self.success.emit()
-        self.rosbag_start_request.emit(image_topic)
+        self.rosbag_start_request.emit()
         self.close()
 
     def closeEvent(self, event):

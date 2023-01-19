@@ -125,7 +125,8 @@ class ApriltagGridDetection(BoardDetection):
                 error += squared_error(p, p1, p2)
                 n += 1
 
-        return np.sqrt(error / n)
+        # There are cases where the linear error can not be computed due to having only 2 points per scanline
+        return np.sqrt(error / n) if n > 0 else np.inf
 
     def _get_border_image_points(self) -> Tuple[np.array, np.array, np.array, np.array]:
         return (

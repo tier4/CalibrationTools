@@ -85,7 +85,7 @@ class Calibrator(ParameteredClass, QObject):
         self.pre_rejection_iterations = Parameter(int, value=100, min_value=1, max_value=100)
         self.pre_rejection_min_hipotheses = Parameter(int, value=6, min_value=1, max_value=20)
         self.pre_rejection_max_rms_error = Parameter(
-            float, value=0.3, min_value=0.001, max_value=10.0
+            float, value=0.35, min_value=0.001, max_value=10.0
         )
 
         self.max_calibration_samples = Parameter(int, value=80, min_value=10, max_value=1000)
@@ -100,7 +100,7 @@ class Calibrator(ParameteredClass, QObject):
 
         self.use_post_rejection = Parameter(bool, value=True, min_value=False, max_value=True)
         self.post_rejection_max_rms_error = Parameter(
-            float, value=0.2, min_value=0.001, max_value=10.0
+            float, value=0.25, min_value=0.001, max_value=10.0
         )
 
         self.plot_calibration_data_statistics = Parameter(

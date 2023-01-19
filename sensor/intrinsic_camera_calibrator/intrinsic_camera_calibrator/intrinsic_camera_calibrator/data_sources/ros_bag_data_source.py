@@ -86,14 +86,15 @@ class RosBagDataSource(DataSource, QObject):
         self.thread.start()
         self.moveToThread(self.thread)
 
-    def start(self, topic_name):
-
+    def set_topic(self, topic_name):
         # Parse camera name
         topic_namespaces = topic_name.split("/")
         topic_namespaces.reverse()
         image_index = [i for i, s in enumerate(topic_namespaces) if "image" in s][0]
         self.camera_name = topic_namespaces[image_index + 1]
+        self.topic_name = topic_name
 
+    def start(self):
         input_storage_options, input_converter_options = get_rosbag_options(self.rosbag_path)
 
         self.reader = rosbag2_py.SequentialReader()
@@ -103,7 +104,7 @@ class RosBagDataSource(DataSource, QObject):
 
         self.type_map = {topic_types[i].name: topic_types[i].type for i in range(len(topic_types))}
 
-        storage_filter = rosbag2_py.StorageFilter(topics=[topic_name])
+        storage_filter = rosbag2_py.StorageFilter(topics=[self.topic_name])
         self.reader.set_filter(storage_filter)
 
         if self.reader.has_next():

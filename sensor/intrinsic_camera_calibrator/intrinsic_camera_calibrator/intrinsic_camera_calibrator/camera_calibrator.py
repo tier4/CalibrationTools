@@ -112,7 +112,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.board_type = BoardEnum.CHESSBOARD
         self.board_parameters: ParameteredClass = None
         self.detector: BoardDetector = None
-        self.data_collector = DataCollector()
+        self.data_collector = DataCollector(self.cfg["data_collector"])
         self.calibrator_dict: Dict[CalibratorEnum, Calibrator] = {}
 
         self.image_view_mode = ImageViewMode.SOURCE_UNRECTIFIED
@@ -337,8 +337,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         )
         self.calibration_evaluation_rms_label = QLabel("\trms error (all):")
         self.calibration_evaluation_inlier_rms_label = QLabel("\trms error (inlier):")
-
-        self.calibration_evaluation_rms_label = QLabel("Evaluation (all) rms error:")
 
         def on_parameters_view_closed():
             # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
@@ -642,6 +640,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.current_camera_model = initial_intrinsics
         self.setEnabled(True)
 
+        self.setWindowTitle(f"Camera intrinsics calibrator ({self.data_source.get_camera_name()})")
+
         print("Init")
         print(f"\tmode : {mode}")
         print(f"\tdata_source : {data_source}")
@@ -897,18 +897,19 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             )
 
             pose_rotation, pose_translation = detection.get_pose(camera_model)
+            pose_translation = pose_translation.flatten()
             rough_angles = detection.get_rotation_angles(camera_model)
 
             self.raw_detection_label.setText("Detected: True")
             self.raw_linear_error_rms_label.setText(
-                f"Linear error rms: {detection.get_linear_error_rms().item():.2f} px"
+                f"Linear error rms: {detection.get_linear_error_rms():.2f} px"
             )
-            self.rough_tilt_label.setText(f"Rough tilt: {detection.get_tilt().item():.2f} degrees")
+            self.rough_tilt_label.setText(f"Rough tilt: {detection.get_tilt():.2f} degrees")
             self.rough_angles_label.setText(
-                f"Rough angles: x={rough_angles[0].item():.2f} y={rough_angles[1].item():.2f} degrees"
+                f"Rough angles: x={rough_angles[0]:.2f} y={rough_angles[1]:.2f} degrees"
             )
             self.rough_position_label.setText(
-                f"Rough position: x={pose_translation[0].item():.2f} y={pose_translation[1].item():.2f} z={pose_translation[2].item():.2f}"
+                f"Rough position: x={pose_translation[0]:.2f} y={pose_translation[1]:.2f} z={pose_translation[2]:.2f}"
             )
             self.skew_label.setText(f"Skew: {detection.get_normalized_skew():.2f}")
             self.relative_area_label.setText(
