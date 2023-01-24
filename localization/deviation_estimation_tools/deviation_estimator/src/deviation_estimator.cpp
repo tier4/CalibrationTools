@@ -137,7 +137,8 @@ DeviationEstimator::DeviationEstimator(
   dx_design_ = declare_parameter<double>("dx_design");
   time_window_ = declare_parameter<double>("time_window");
   add_bias_uncertainty_velocity_ = declare_parameter<bool>("add_bias_uncertainty_velocity");
-  add_bias_uncertainty_angular_velocity_ = declare_parameter<bool>("add_bias_uncertainty_angular_velocity");
+  add_bias_uncertainty_angular_velocity_ =
+    declare_parameter<bool>("add_bias_uncertainty_angular_velocity");
 
   show_debug_info_ = declare_parameter<bool>("show_debug_info", false);
   vx_threshold_ = declare_parameter<double>("vx_threshold", 1.5);
