@@ -1,3 +1,7 @@
 /**:
   ros__parameters:
     time_window: 4.0
+    add_bias_uncertainty_velocity: true
+    add_bias_uncertainty_angular_velocity: false
+    dt_design: 10.0
+    dx_design: 100.0

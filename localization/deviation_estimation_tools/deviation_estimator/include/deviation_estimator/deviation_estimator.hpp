@@ -89,7 +89,8 @@ private:
   double accel_threshold_;
   double estimation_freq_;
   double time_window_;
-  bool add_bias_uncertainty_;
+  bool add_bias_uncertainty_angular_velocity_;
+  bool add_bias_uncertainty_velocity_;
 
   std::string imu_frame_;
   const std::string output_frame_;
@@ -98,6 +99,7 @@ private:
 
   std::unique_ptr<GyroBiasModule> gyro_bias_module_;
   std::unique_ptr<VelocityCoefModule> vel_coef_module_;
+  std::unique_ptr<VelocityCoefModule> vel_coef_module_all_;
   std::unique_ptr<ValidationModule> validation_module_;
 
   std::shared_ptr<tier4_autoware_utils::TransformListener> transform_listener_;

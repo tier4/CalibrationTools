@@ -133,16 +133,18 @@ DeviationEstimator::DeviationEstimator(
   results_dir_(declare_parameter<std::string>("results_dir")),
   results_logger_(results_dir_)
 {
-  show_debug_info_ = declare_parameter("show_debug_info", false);
-  dt_design_ = declare_parameter("dt_design", 10.0);
-  dx_design_ = declare_parameter("dx_design", 30.0);
-  vx_threshold_ = declare_parameter("vx_threshold", 1.5);
-  wz_threshold_ = declare_parameter("wz_threshold", 0.01);
-  accel_threshold_ = declare_parameter("accel_threshold", 0.3);
-  use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
-  predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
-  time_window_ = declare_parameter("time_window", 4.0);
-  add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
+  dt_design_ = declare_parameter<double>("dt_design");
+  dx_design_ = declare_parameter<double>("dx_design");
+  time_window_ = declare_parameter<double>("time_window");
+  add_bias_uncertainty_velocity_ = declare_parameter<bool>("add_bias_uncertainty_velocity");
+  add_bias_uncertainty_angular_velocity_ = declare_parameter<bool>("add_bias_uncertainty_angular_velocity");
+
+  show_debug_info_ = declare_parameter<bool>("show_debug_info", false);
+  vx_threshold_ = declare_parameter<double>("vx_threshold", 1.5);
+  wz_threshold_ = declare_parameter<double>("wz_threshold", 0.01);
+  accel_threshold_ = declare_parameter<double>("accel_threshold", 0.3);
+  use_predefined_coef_vx_ = declare_parameter<bool>("use_predefined_coef_vx", false);
+  predefined_coef_vx_ = declare_parameter<double>("predefined_coef_vx", 1.0);
 
   auto timer_callback = std::bind(&DeviationEstimator::timer_callback, this);
   auto period_control = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -171,6 +173,7 @@ DeviationEstimator::DeviationEstimator(
 
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
+  vel_coef_module_all_ = std::make_unique<VelocityCoefModule>();
   validation_module_ = std::make_unique<ValidationModule>(
     declare_parameter<double>("thres_coef_vx", 0.01),
     declare_parameter<double>("thres_stddev_vx", 0.05),
@@ -251,6 +254,10 @@ void DeviationEstimator::timer_callback()
     vel_coef_module_->update_coef(traj_data);
     traj_data_list_for_velocity_.push_back(traj_data);
   }
+  if (is_straight & !is_stopped) {
+    vel_coef_module_all_->update_coef(traj_data);
+  }
+
   gyro_bias_module_->update_bias(traj_data);
   traj_data_list_for_gyro_.push_back(traj_data);
 
@@ -260,8 +267,10 @@ void DeviationEstimator::timer_callback()
     estimate_stddev_velocity(traj_data_list_for_velocity_, vel_coef_module_->get_coef());
   auto stddev_angvel_base = estimate_stddev_angular_velocity(
     traj_data_list_for_gyro_, gyro_bias_module_->get_bias_base_link());
-  if (add_bias_uncertainty_) {
-    stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
+  if (add_bias_uncertainty_velocity_) {
+    stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_all_->get_coef_std());
+  }
+  if (add_bias_uncertainty_angular_velocity_) {
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(
       stddev_angvel_base, gyro_bias_module_->get_bias_std());
   }
