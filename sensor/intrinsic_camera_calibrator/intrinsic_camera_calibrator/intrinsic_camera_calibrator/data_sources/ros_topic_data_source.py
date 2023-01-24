@@ -118,7 +118,7 @@ class RosTopicDataSource(DataSource, Node):
     def image_callback(self, msg: Image):
         """Process a raw image."""
         with self.lock:
-            image_data = self.bridge.imgmsg_to_cv2(msg)
+            image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.data_callback(image_data)
 
     def spin(self):

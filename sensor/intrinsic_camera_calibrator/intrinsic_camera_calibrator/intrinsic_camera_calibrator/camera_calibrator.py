@@ -17,6 +17,7 @@
 
 from collections import defaultdict
 import copy
+from optparse import OptionParser
 import os
 import signal
 import sys
@@ -1065,16 +1066,22 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
 
 def main(args=None):
-    app = QApplication(sys.argv)
 
-    # rclpy.init(args=args)
+    parser = OptionParser()
+    parser.add_option("-c", "--config_file", type="string", help="calibration file path")
+
+    (options, args) = parser.parse_args(rclpy.utilities.remove_ros_args())
+    if len(args) != 1:
+        parser.error(f"incorrect number of arguments: {len(args)}")
+
+    app = QApplication(sys.argv)
 
     cfg = {}
     try:
-        with open(sys.argv[1], "r") as stream:
+        with open(options.config_file, "r") as stream:
             cfg = yaml.safe_load(stream)
     except Exception as e:
-        print(f"Could not load the parameters from teh YAML file ({e})")
+        print(f"Could not load the parameters from the YAML file ({e})")
 
     try:
         signal.signal(signal.SIGINT, sigint_handler)

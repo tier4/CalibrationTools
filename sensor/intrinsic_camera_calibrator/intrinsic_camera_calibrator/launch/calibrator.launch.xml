@@ -2,5 +2,5 @@
   <arg name="config_file" default="intrinsics_calibrator.yaml"/>
   <arg name="config_path" default="$(find-pkg-share intrinsic_camera_calibrator)/config/$(var config_file)"/>
 
-  <node pkg="intrinsic_camera_calibrator" exec="camera_calibrator" name="camera_calibrator" output="screen" args="$(var config_path)"/>
+  <node pkg="intrinsic_camera_calibrator" exec="camera_calibrator" name="camera_calibrator" output="screen" args="--config_file $(var config_path)"/>
 </launch>
