@@ -225,5 +225,5 @@ Figure 17 presents the statistics of the training set along the different steps 
 
 <p align="center">
    <img src="images/camera-intrinsics/calibration_result.png" width="200">
-   <figcaption align="center">Fig 20. Detection results</figcaption>
+   <figcaption text-align="center">Fig 20. Detection results</figcaption>
 </p>
