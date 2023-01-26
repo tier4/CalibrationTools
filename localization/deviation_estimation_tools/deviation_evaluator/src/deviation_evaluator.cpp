@@ -123,6 +123,7 @@ void DeviationEvaluator::callbackNDTPoseWithCovariance(
     pose_with_cov.pose.covariance[5 * 6 + 5] = initial_angle_stddev * initial_angle_stddev;
     pub_init_pose_with_cov_->publish(pose_with_cov);
     has_published_initial_pose_ = true;
+    start_time_ = rclcpp::Time(msg->header.stamp).seconds();
     return;
   }
 
