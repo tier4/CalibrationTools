@@ -64,7 +64,7 @@ class ChessBoardDetector(BoardDetector):
             )
             np.fill_diagonal(dist_matrix, np.inf)
             min_distance = dist_matrix.min()
-            radius = np.ceil(min_distance * 0.5).astype(np.int32)
+            radius = int(np.ceil(min_distance * 0.5))
 
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             corners = cv2.cornerSubPix(grayscale, corners, (radius, radius), (-1, -1), criteria)

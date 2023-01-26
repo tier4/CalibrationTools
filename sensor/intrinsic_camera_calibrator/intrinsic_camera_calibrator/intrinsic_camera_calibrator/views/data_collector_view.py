@@ -34,13 +34,13 @@ def _create_rotation_heatmap(
         detection.get_rotation_angles(camera_model) for detection in collected_data.get_detections()
     ]
 
-    cells = 2 * np.ceil(max_angle / angle_resolution).astype(np.int)
+    cells = int(2 * np.ceil(max_angle / angle_resolution))
 
-    heatmap = np.zeros((cells, cells), dtype=np.int)
+    heatmap = np.zeros((cells, cells), dtype=np.int32)
 
     for rotation in rotations:
-        i = np.clip((0.5 * cells) * (rotation[0] / max_angle + 1), 0, cells - 1).astype(np.int)
-        j = np.clip((0.5 * cells) * (rotation[1] / max_angle + 1), 0, cells - 1).astype(np.int)
+        i = np.clip((0.5 * cells) * (rotation[0] / max_angle + 1), 0, cells - 1).astype(np.int32)
+        j = np.clip((0.5 * cells) * (rotation[1] / max_angle + 1), 0, cells - 1).astype(np.int32)
         heatmap[j, i] += 1.0
 
     return heatmap
@@ -171,7 +171,7 @@ def _plot_data_collection(data_collector: DataCollector, camera_model: CameraMod
             linewidth=0.5,
         )
 
-        axes[1, 3].set_title("Evaluation points 2d(z) histogram")
+        axes[1, 3].set_title("Evaluation points 3d(z) histogram")
         axes[1, 3].hist(
             evaluation_points_3d[:, 2],
             data_collector.point_3d_hist_bins.value,

@@ -28,9 +28,6 @@ class DotBoardDetector(BoardDetector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.dotboard_int_param = Parameter(int, value=1, min_value=1, max_value=4)
-        self.dotboard_float_param = Parameter(float, value=0.0, min_value=0.0, max_value=1.0)
-        self.dotboard_bool_param = Parameter(bool, value=False, min_value=False, max_value=True)
 
         self.symmmetric_grid = Parameter(bool, value=True, min_value=False, max_value=True)
         self.clustering = Parameter(bool, value=True, min_value=False, max_value=True)
