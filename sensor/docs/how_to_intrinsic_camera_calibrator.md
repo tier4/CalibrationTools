@@ -223,7 +223,9 @@ Figure 17 presents the statistics of the training set along the different steps 
    <figcaption align="center">Fig 19. Reprojection error among among different sets</figcaption>
 </figure>
 
+<p align="center">
 <figure align="center">
-   <center><img src="images/camera-intrinsics/calibration_result.png" width="200" class="center"></center>
+   <img src="images/camera-intrinsics/calibration_result.png" width="200">
    <figcaption align="center">Fig 20. Detection results</figcaption>
 </figure>
+</p>
