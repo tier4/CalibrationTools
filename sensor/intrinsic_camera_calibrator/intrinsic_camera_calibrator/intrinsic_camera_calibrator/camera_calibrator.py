@@ -1068,7 +1068,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 def main(args=None):
 
     parser = OptionParser()
-    parser.add_option("-c", "--config_file", type="string", help="calibration file path")
+    parser.add_option("-c", "--config-file", type="string", help="calibration file path")
 
     (options, args) = parser.parse_args(rclpy.utilities.remove_ros_args())
     if len(args) != 1:
