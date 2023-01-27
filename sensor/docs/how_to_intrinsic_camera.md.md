@@ -1,6 +1,6 @@
 # Intrinsic camera calibration
 
-This page details the use of the `intrinsic_camera_calibration` package, as well as its functionalities
+This page details the use of the `intrinsic_camera_calibrator` package, as well as its functionalities
 
 ## 1 Basic usage
 
