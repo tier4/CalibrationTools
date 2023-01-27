@@ -384,8 +384,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.calibration_status_label.setText("Calibration status: evaluating")
 
         self.calibration_parameters_button.clicked.connect(on_parameters_button_clicked)
+
         self.calibration_button.clicked.connect(on_calibration_clicked)
+        self.calibration_button.setEnabled(False)
+
         self.evaluation_button.clicked.connect(on_evaluation_clicked)
+        self.evaluation_button.setEnabled(False)
 
         self.save_button.clicked.connect(self.on_save_clicked)
         self.save_button.setEnabled(False)
@@ -961,6 +965,18 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.image_view.set_evaluation_heatmap(
                 self.data_collector.get_evaluation_occupancy_heatmap()
             )
+
+        if (
+            self.data_collector.get_num_training_samples() > 0
+            and not self.calibration_button.isEnabled()
+        ):
+            self.calibration_button.setEnabled(True)
+
+        if (
+            self.data_collector.get_num_evaluation_samples() > 0
+            and not self.evaluation_button.isEnabled()
+        ):
+            self.evaluation_button.setEnabled(True)
 
         # Set drawing image
         self.image_view.set_image(img)

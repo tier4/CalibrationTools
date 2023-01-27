@@ -44,7 +44,7 @@ A brief overview of the calibration results can always be observed in the main w
    <p align="center">Fig 3. Calibration results</figcaption>
 </p>
 
-After the calibration has finished, is possible to save the results by clicking the `Save` button and selecting and appropriate folder. The saved files correspond to the calibration itself (in the format used by ROS) and the calibration images, in case they are needed for further processing.
+After the calibration has finished, is possible to save the results by clicking the `Save` button and selecting and appropriate folder. The saved files correspond to the calibration itself (in the format used by ROS, as explained in [Section 2.5.1](#251-camera-intrinsics-model-and-output-format)) and the calibration images, in case they are needed for further processing.
 
 ### 1.2 Evaluation
 
@@ -227,3 +227,7 @@ Figure 17 presents the statistics of the training set along the different steps 
    <img src="images/camera-intrinsics/calibration_result.png" width="200">
    <p align="center">Fig 20. Detection results</p>
 </p>
+
+#### 2.5.1 Camera intrinsics model and output format
+
+The model used to represent the camera intrinsics correspond to the one used in [OpenCV](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html), which is adopted by ROS in its `image_pipeline` to perform [rectification](http://wiki.ros.org/image_pipeline/CameraInfo). The output format used by tool corresponds to the same one used in [ROS](http://wiki.ros.org/camera_calibration_parsers), so it can be used directly by most ROS camera drivers.
