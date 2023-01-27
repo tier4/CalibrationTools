@@ -16,6 +16,9 @@
 
 #include <cmath>
 
+/**
+ * @brief constructor for Logger class
+ */
 Logger::Logger(const std::string & output_dir)
 : output_log_path_(output_dir + "/output.txt"),
   output_imu_param_path_(output_dir + "/imu_corrector.param.yaml"),
@@ -31,6 +34,9 @@ Logger::Logger(const std::string & output_dir)
   file_velocity_param.close();
 }
 
+/**
+ * @brief log estimated results (IMU and velocity parameters)
+ */
 void Logger::log_estimated_result_section(
   const double stddev_vx, const double coef_vx,
   const geometry_msgs::msg::Vector3 & angular_velocity_stddev,
@@ -64,6 +70,9 @@ void Logger::log_estimated_result_section(
     "    angular_velocity_stddev_zz: {:.5f}\n", angular_velocity_stddev.z);
 }
 
+/**
+ * @brief log validation results
+ */
 void Logger::log_validation_result_section(const ValidationModule & validation_module) const
 {
   std::ofstream file(output_log_path_);

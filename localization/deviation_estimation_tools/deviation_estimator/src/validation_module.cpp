@@ -14,6 +14,10 @@
 
 #include "deviation_estimator/validation_module.hpp"
 
+
+/**
+ * @brief ValidationModule validates if estimated parameters are properly converged, given a predefined threshold in this constructor arguments
+ */
 ValidationModule::ValidationModule(
   const double threshold_coef_vx, const double threshold_stddev_vx,
   const double threshold_bias_gyro, const double threshold_stddev_gyro, const size_t num_history)
@@ -29,6 +33,9 @@ ValidationModule::ValidationModule(
   threshold_dict_["angular_velocity_stddev_zz"] = threshold_stddev_gyro;
 }
 
+/**
+ * @brief get a min and max of a given vector
+ */
 std::pair<double, double> get_min_max_from_vector(const std::vector<double> & vec, const int num)
 {
   double min_val = std::numeric_limits<double>::max();
@@ -40,6 +47,9 @@ std::pair<double, double> get_min_max_from_vector(const std::vector<double> & ve
   return std::pair<double, double>(min_val, max_val);
 }
 
+/**
+ * @brief add a newly-estimated velocity related parameters
+ */
 void ValidationModule::set_velocity_data(const double coef_vx, const double stddev_vx)
 {
   if (data_list_dict_.count("coef_vx")) {
@@ -52,6 +62,9 @@ void ValidationModule::set_velocity_data(const double coef_vx, const double stdd
   data_list_dict_["stddev_vx"].push_back(stddev_vx);
 }
 
+/**
+ * @brief add a newly-estimated gyroscope related parameters
+ */
 void ValidationModule::set_gyro_data(
   const geometry_msgs::msg::Vector3 & bias_gyro, const geometry_msgs::msg::Vector3 & stddev_gyro)
 {
@@ -69,6 +82,9 @@ void ValidationModule::set_gyro_data(
   data_list_dict_["angular_velocity_stddev_zz"].push_back(stddev_gyro.z);
 }
 
+/**
+ * @brief get a min and max of a certain vector (designated by a key)
+ */
 std::pair<double, double> ValidationModule::get_min_max(const std::string key) const
 {
   if (data_list_dict_.count(key)) {
@@ -81,6 +97,9 @@ std::pair<double, double> ValidationModule::get_min_max(const std::string key) c
   }
 }
 
+/**
+ * @brief check if the given item (="key") is valid
+ */
 bool ValidationModule::is_valid(const std::string key) const
 {
   const auto min_max = this->get_min_max(key);

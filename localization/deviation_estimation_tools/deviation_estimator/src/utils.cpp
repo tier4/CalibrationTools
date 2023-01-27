@@ -39,6 +39,10 @@ double clip_radian(const double rad)
   }
 }
 
+
+/**
+ * @brief calculate the vector3 value at the given "time", based on the interpolation on "vec_list"
+ */
 geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
   const std::vector<geometry_msgs::msg::Vector3Stamped> & vec_list, const double time,
   const double tolerance_sec = 0.1)
@@ -71,6 +75,9 @@ geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
   }
 }
 
+/**
+ * @brief perform a simple dead reckoning and return a relative position of end point from start point
+ */
 geometry_msgs::msg::Point integrate_position(
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list, const double coef_vx,
@@ -93,6 +100,9 @@ geometry_msgs::msg::Point integrate_position(
   return d_pos;
 }
 
+/**
+ * @brief calculate RPY error on dead-reckoning (calculated from "gyro_list") compared to the ground-truth pose from "pose_list".
+ */
 geometry_msgs::msg::Vector3 calculate_error_rpy(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
@@ -110,6 +120,9 @@ geometry_msgs::msg::Vector3 calculate_error_rpy(
   return error_rpy;
 }
 
+/**
+ * @brief perform dead reckoning based on "gyro_list" and return a relative pose (in RPY)
+ */
 geometry_msgs::msg::Vector3 integrate_orientation(
   const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list,
   const geometry_msgs::msg::Vector3 & gyro_bias)
@@ -128,6 +141,9 @@ geometry_msgs::msg::Vector3 integrate_orientation(
   return d_rpy;
 }
 
+/**
+ * @brief calculate mean of |vx|
+ */
 double get_mean_abs_vx(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list)
 {
   double mean_abs_vx = 0;
@@ -138,6 +154,9 @@ double get_mean_abs_vx(const std::vector<tier4_debug_msgs::msg::Float64Stamped> 
   return mean_abs_vx;
 }
 
+/**
+ * @brief calculate mean of |wz|
+ */
 double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & gyro_list)
 {
   double mean_abs_wz = 0;
@@ -148,6 +167,9 @@ double get_mean_abs_wz(const std::vector<geometry_msgs::msg::Vector3Stamped> & g
   return mean_abs_wz;
 }
 
+/**
+ * @brief calculate mean of acceleration
+ */
 double get_mean_accel(const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list)
 {
   const double dt =
@@ -155,6 +177,9 @@ double get_mean_accel(const std::vector<tier4_debug_msgs::msg::Float64Stamped> &
   return (vx_list.back().data - vx_list.front().data) / dt;
 }
 
+/**
+ * @brief transform a vector by "transform"
+ */
 geometry_msgs::msg::Vector3 transform_vector3(
   const geometry_msgs::msg::Vector3 & vec, const geometry_msgs::msg::TransformStamped & transform)
 {
@@ -176,6 +201,9 @@ inline void myFromMsg(const geometry_msgs::msg::Transform & in, tf2::Transform &
   out.setRotation(tf2::Quaternion(in.rotation.x, in.rotation.y, in.rotation.z, in.rotation.w));
 }
 
+/**
+ * @brief inverse a transform
+ */
 geometry_msgs::msg::TransformStamped inverse_transform(
   const geometry_msgs::msg::TransformStamped & transform)
 {

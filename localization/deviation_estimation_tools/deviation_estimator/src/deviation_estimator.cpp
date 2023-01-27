@@ -181,6 +181,9 @@ DeviationEstimator::DeviationEstimator(
   DEBUG_INFO(this->get_logger(), "[Deviation Estimator] launch success");
 }
 
+/**
+ * @brief receive ground-truth pose (e.g. NDT pose) data
+ */
 void DeviationEstimator::callback_pose_with_covariance(
   const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
 {
@@ -191,6 +194,9 @@ void DeviationEstimator::callback_pose_with_covariance(
   pose_buf_.push_back(pose);
 }
 
+/**
+ * @brief receive velocity data and store it in a buffer
+ */
 void DeviationEstimator::callback_wheel_odometry(
   const autoware_auto_vehicle_msgs::msg::VelocityReport::ConstSharedPtr wheel_odometry_msg_ptr)
 {
@@ -205,6 +211,9 @@ void DeviationEstimator::callback_wheel_odometry(
   vx_all_.push_back(vx);
 }
 
+/**
+ * @brief receive IMU data, transform it into a required frame, and store it in a buffer
+ */
 void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr)
 {
   imu_frame_ = imu_msg_ptr->header.frame_id;
@@ -224,6 +233,9 @@ void DeviationEstimator::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPt
   gyro_all_.push_back(gyro);
 }
 
+/**
+ * @brief process the stored IMU, velocity, and pose data to estimate bias and standard deviation
+ */
 void DeviationEstimator::timer_callback()
 {
   if (gyro_all_.empty()) {
@@ -302,6 +314,9 @@ void DeviationEstimator::timer_callback()
   results_logger_.log_validation_result_section(*validation_module_);
 }
 
+/**
+ * @brief add uncertainty due to the deviation of speed scale factor on velocity standard deviation
+ */
 double DeviationEstimator::add_bias_uncertainty_on_velocity(
   const double stddev_vx, const double stddev_coef_vx) const
 {
@@ -310,6 +325,9 @@ double DeviationEstimator::add_bias_uncertainty_on_velocity(
   return stddev_vx_prime;
 }
 
+/**
+ * @brief add uncertainty due to the deviation of gyroscope bias on angular velocity standard deviation
+ */
 geometry_msgs::msg::Vector3 DeviationEstimator::add_bias_uncertainty_on_angular_velocity(
   const geometry_msgs::msg::Vector3 stddev_angvel_base,
   const geometry_msgs::msg::Vector3 stddev_angvel_bias_base) const
