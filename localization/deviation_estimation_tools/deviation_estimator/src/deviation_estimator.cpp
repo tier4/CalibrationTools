@@ -326,7 +326,8 @@ double DeviationEstimator::add_bias_uncertainty_on_velocity(
 }
 
 /**
- * @brief add uncertainty due to the deviation of gyroscope bias on angular velocity standard deviation
+ * @brief add uncertainty due to the deviation of gyroscope bias on angular velocity standard
+ * deviation
  */
 geometry_msgs::msg::Vector3 DeviationEstimator::add_bias_uncertainty_on_angular_velocity(
   const geometry_msgs::msg::Vector3 stddev_angvel_base,

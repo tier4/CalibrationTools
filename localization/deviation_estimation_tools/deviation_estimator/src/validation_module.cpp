@@ -14,9 +14,9 @@
 
 #include "deviation_estimator/validation_module.hpp"
 
-
 /**
- * @brief ValidationModule validates if estimated parameters are properly converged, given a predefined threshold in this constructor arguments
+ * @brief ValidationModule validates if estimated parameters are properly converged, given a
+ * predefined threshold in this constructor arguments
  */
 ValidationModule::ValidationModule(
   const double threshold_coef_vx, const double threshold_stddev_vx,

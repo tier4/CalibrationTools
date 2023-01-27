@@ -39,7 +39,6 @@ double clip_radian(const double rad)
   }
 }
 
-
 /**
  * @brief calculate the vector3 value at the given "time", based on the interpolation on "vec_list"
  */
@@ -76,7 +75,8 @@ geometry_msgs::msg::Vector3 interpolate_vector3_stamped(
 }
 
 /**
- * @brief perform a simple dead reckoning and return a relative position of end point from start point
+ * @brief perform a simple dead reckoning and return a relative position of end point from start
+ * point
  */
 geometry_msgs::msg::Point integrate_position(
   const std::vector<tier4_debug_msgs::msg::Float64Stamped> & vx_list,
@@ -101,7 +101,8 @@ geometry_msgs::msg::Point integrate_position(
 }
 
 /**
- * @brief calculate RPY error on dead-reckoning (calculated from "gyro_list") compared to the ground-truth pose from "pose_list".
+ * @brief calculate RPY error on dead-reckoning (calculated from "gyro_list") compared to the
+ * ground-truth pose from "pose_list".
  */
 geometry_msgs::msg::Vector3 calculate_error_rpy(
   const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
