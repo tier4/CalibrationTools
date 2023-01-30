@@ -17,6 +17,9 @@
 #include "deviation_estimator/utils.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
+/**
+ * @brief update gyroscope bias based on a given trajectory data
+ */
 void GyroBiasModule::update_bias(const TrajectoryData & traj_data)
 {
   const rclcpp::Time t0_rclcpp_time = rclcpp::Time(traj_data.pose_list.front().header.stamp);
@@ -49,6 +52,9 @@ void GyroBiasModule::update_bias(const TrajectoryData & traj_data)
   gyro_bias_list_.push_back(gyro_bias);
 }
 
+/**
+ * @brief getter function for current estimated bias
+ */
 geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_base_link() const
 {
   geometry_msgs::msg::Vector3 gyro_bias_base;
@@ -58,6 +64,9 @@ geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_base_link() const
   return gyro_bias_base;
 }
 
+/**
+ * @brief getter function for current standard deviation of estimated bias
+ */
 geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_std() const
 {
   std::vector<double> stddev_bias_list_x, stddev_bias_list_y, stddev_bias_list_z;

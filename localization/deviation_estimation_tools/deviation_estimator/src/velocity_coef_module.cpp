@@ -17,6 +17,9 @@
 #include "deviation_estimator/utils.hpp"
 #include "tier4_autoware_utils/geometry/geometry.hpp"
 
+/**
+ * @brief update speed scale factor (or velocity coefficient) based on a given trajectory data
+ */
 void VelocityCoefModule::update_coef(const TrajectoryData & traj_data)
 {
   const rclcpp::Time t0_rclcpp_time = rclcpp::Time(traj_data.pose_list.front().header.stamp);
@@ -47,12 +50,18 @@ void VelocityCoefModule::update_coef(const TrajectoryData & traj_data)
   coef_vx_list_.push_back(d_coef_vx);
 }
 
+/**
+ * @brief getter function for current estimated coefficient
+ */
 double VelocityCoefModule::get_coef() const
 {
   if (coef_vx_.second == 0) return 1.0;
   return coef_vx_.first / coef_vx_.second;
 }
 
+/**
+ * @brief getter function for current estimated standard deviation of coefficient
+ */
 double VelocityCoefModule::get_coef_std() const { return calculate_std(coef_vx_list_); }
 
 bool VelocityCoefModule::empty() const { return coef_vx_.second == 0; }
