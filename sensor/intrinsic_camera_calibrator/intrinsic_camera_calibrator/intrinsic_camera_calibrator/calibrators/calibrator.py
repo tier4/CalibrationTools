@@ -122,7 +122,8 @@ class Calibrator(ParameterizedClass, QObject):
         self.partial_calibration_request.connect(self._calibrate_fast)
 
     def _calibrate(self, data_collector: DataCollector):
-        """General calibration routine.
+        """
+        General calibration routine.
 
         1) rejects outlier via ransac
         2) subsample the outliers if necessary

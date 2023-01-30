@@ -189,7 +189,8 @@ class CollectedData:
 
 
 class DataCollector(ParameterizedClass):
-    """Class that manages training and evaluation datasets.
+    """
+    Class that manages training and evaluation datasets.
 
     It also provides statistics about the datasets and implements logic to add new samples with redundancy concerns.
     """

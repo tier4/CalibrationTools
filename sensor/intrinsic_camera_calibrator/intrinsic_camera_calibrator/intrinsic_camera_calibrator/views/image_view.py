@@ -227,7 +227,8 @@ class ImageView(QGraphicsItem, QObject):
         return QSize(1000, 1000)
 
     def draw_detection_points(self, painter: QPainter):
-        """Draw the detection's corners in the view.
+        """
+        Draw the detection's corners in the view.
 
         Each corner is drawn as a detection, and each row is connected through a line of the same color.
         """
