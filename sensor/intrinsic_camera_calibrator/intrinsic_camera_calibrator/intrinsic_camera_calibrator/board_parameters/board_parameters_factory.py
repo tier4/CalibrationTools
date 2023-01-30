@@ -19,11 +19,11 @@ from intrinsic_camera_calibrator.board_parameters.apriltag_grid_parameters impor
 )
 from intrinsic_camera_calibrator.board_parameters.board_parameters import BoardParameters
 from intrinsic_camera_calibrator.boards import BoardEnum
-from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.parameter import ParameterizedClass
 
 
-def make_board_parameters(board_type: BoardEnum, **kwargs) -> ParameteredClass:
-    """Create a boarad detector using a factory design pattern. Currently we accept a single detector per type of board."""
+def make_board_parameters(board_type: BoardEnum, **kwargs) -> ParameterizedClass:
+    """Create a board detector using a factory design pattern. Currently we accept a single detector per type of board."""
     classes_dic = {
         BoardEnum.CHESSBOARD: BoardParameters,
         BoardEnum.DOTBOARD: BoardParameters,

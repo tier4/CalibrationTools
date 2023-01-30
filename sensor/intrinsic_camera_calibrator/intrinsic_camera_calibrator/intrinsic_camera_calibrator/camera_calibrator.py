@@ -56,7 +56,7 @@ from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_collector import CollectionStatus
 from intrinsic_camera_calibrator.data_collector import DataCollector
 from intrinsic_camera_calibrator.data_sources.data_source import DataSource
-from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.parameter import ParameterizedClass
 from intrinsic_camera_calibrator.types import ImageViewMode
 from intrinsic_camera_calibrator.types import OperationMode
 from intrinsic_camera_calibrator.utils import save_intrinsics
@@ -111,7 +111,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         # General Configuration
         self.operation_mode = OperationMode.IDLE
         self.board_type = BoardEnum.CHESSBOARD
-        self.board_parameters: ParameteredClass = None
+        self.board_parameters: ParameterizedClass = None
         self.detector: BoardDetector = None
         self.data_collector = DataCollector(self.cfg["data_collector"])
         self.calibrator_dict: Dict[CalibratorEnum, Calibrator] = {}
@@ -637,7 +637,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         mode: OperationMode,
         data_source: DataSource,
         board_type: BoardEnum,
-        board_parameters: ParameteredClass,
+        board_parameters: ParameterizedClass,
         initial_intrinsics: CameraModel,
     ):
         self.operation_mode = mode
@@ -1045,7 +1045,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.should_process_image.emit()
 
     def process_new_data(self):
-        """Attempt to request the detector to process an image. However, if it there is an image being processed, does not enqueue them indefinitely. Istead, only leave the last one."""
+        """Attempt to request the detector to process an image. However, if it there is an image being processed, does not enqueue them indefinitely. Instead, only leave the last one."""
         if self.paused:
             return
 
@@ -1070,11 +1070,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         """
         Consumer side of the producer/consumer pattern.
 
-        The producer generally has its own thread so synchronization it is neeeded
+        The producer generally has its own thread so synchronization it is needed
         Args:
             img (np.array): the produced image coming from any data source.
         """
-        # We depcouple the the data coming from the source with the processing slot to avoid dropping frames in case we cann not process them all
+        # We decouple the the data coming from the source with the processing slot to avoid dropping frames in case we can not process them all
         with self.lock:
             self.produced_image = img
             self.produced_data_signal.emit()  # Using a signal from another thread results in the slot being executed in the class Qt thread

@@ -29,7 +29,7 @@ class DotBoardDetector(BoardDetector):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.symmmetric_grid = Parameter(bool, value=True, min_value=False, max_value=True)
+        self.symmetric_grid = Parameter(bool, value=True, min_value=False, max_value=True)
         self.clustering = Parameter(bool, value=True, min_value=False, max_value=True)
 
         self.filter_by_area = Parameter(bool, value=True, min_value=False, max_value=True)
@@ -66,7 +66,7 @@ class DotBoardDetector(BoardDetector):
             flags |= cv2.CALIB_CB_CLUSTERING if self.clustering.value else 0
             flags |= (
                 cv2.CALIB_CB_SYMMETRIC_GRID
-                if self.symmmetric_grid.value
+                if self.symmetric_grid.value
                 else cv2.CALIB_CB_ASYMMETRIC_GRID
             )
 

@@ -22,7 +22,7 @@ from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 
 
 class ImageFilesDataSource(DataSource, QObject):
-    """Class that imlements the DataSource to produce samples from a rosbag."""
+    """Class that implements the DataSource to produce samples from a rosbag."""
 
     rosbag_topics_signal = Signal(object)
     consumed_signal = Signal()

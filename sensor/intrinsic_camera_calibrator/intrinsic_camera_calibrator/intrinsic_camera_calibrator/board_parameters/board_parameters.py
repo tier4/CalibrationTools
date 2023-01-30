@@ -15,10 +15,10 @@
 # limitations under the License.
 
 from intrinsic_camera_calibrator.parameter import Parameter
-from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.parameter import ParameterizedClass
 
 
-class BoardParameters(ParameteredClass):
+class BoardParameters(ParameterizedClass):
     def __init__(self, cfg):
 
         self.rows = Parameter(int, value=1, min_value=1, max_value=20)

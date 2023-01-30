@@ -23,7 +23,7 @@ from PySide2.QtCore import Signal
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
 from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.parameter import Parameter
-from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.parameter import ParameterizedClass
 from intrinsic_camera_calibrator.types import CollectionStatus
 from intrinsic_camera_calibrator.types import OperationMode
 import numpy as np
@@ -73,7 +73,7 @@ class CollectedData:
         camera_model: Optional[CameraModel] = None,
         last_n_samples: Optional[int] = 0,
     ) -> Tuple[float, float, float]:
-        """Comute the 'distance' from a single detection to the ones in the dataset."""
+        """Compute the 'distance' from a single detection to the ones in the dataset."""
         if len(self.detections) == 0:
             return np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf
 
@@ -188,7 +188,7 @@ class CollectedData:
         return len(self.detections)
 
 
-class DataCollector(ParameteredClass):
+class DataCollector(ParameterizedClass):
     """Class that manages training and evaluation datasets.
 
     It also provides statistics about the datasets and implements logic to add new samples with redundancy concerns.
@@ -207,17 +207,17 @@ class DataCollector(ParameteredClass):
         # In addition to the training dataset we also
         self.decorrelate_eval_samples = Parameter(int, value=5, min_value=1, max_value=100)
 
-        # Whille strong out-of-plane rotatins are needed for good calibrations, they also make detection innacurate so a trade-off is requried
+        # While strong out-of-plane rotations are needed for good calibrations, they also make detections inaccurate so a trade-off is required
         self.max_allowed_tilt = Parameter(float, value=45.0, min_value=0.0, max_value=90.0)
 
         # Option to filter out moving targets.
-        # This is speciall important when using slower shutter speeds
+        # This is specially important when using slower shutter speeds
         self.filter_by_speed = Parameter(bool, value=False, min_value=False, max_value=True)
         self.max_allowed_pixel_speed = Parameter(float, value=10, min_value=0.0, max_value=100)
         self.max_allowed_speed = Parameter(float, value=0.1, min_value=0.0, max_value=1.0)
 
         # One way to filter out bad detections is too perform camera-calibration with one single sample.
-        # If the model can not fit the sample, it should be consideres an outlier
+        # If the model can not fit the sample, it should be considered an outlier
         self.filter_by_reprojection_error = Parameter(
             bool, value=True, min_value=False, max_value=True
         )
@@ -229,7 +229,7 @@ class DataCollector(ParameteredClass):
         )
 
         # New samples are required to be "different" from the ones already in the dataset
-        # Some criterias include the center of the detection, the area of the detection (related to the distance from the camera) and the estimated out-of-plane rotation in the form of skew
+        # Some criteria include the center of the detection, the area of the detection (related to the distance from the camera) and the estimated out-of-plane rotation in the form of skew
         self.filter_by_2d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)
         self.min_normalized_2d_center_difference = Parameter(
             float, value=0.05, min_value=0.0, max_value=1.0
@@ -242,7 +242,7 @@ class DataCollector(ParameteredClass):
         )
 
         # Other criteria for new samples is using 3d statistics
-        # They have the advantage of considering the different out-of-plane rotations instead of a single scalar (e.g., differentiatiation of left and right rotations)
+        # They have the advantage of considering the different out-of-plane rotations instead of a single scalar (e.g., differentiation of left and right rotations)
         self.filter_by_3d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)
         self.min_3d_center_difference = Parameter(float, value=1.0, min_value=0.1, max_value=100.0)
         self.min_tilt_difference = Parameter(float, value=15.0, min_value=0.0, max_value=90)
@@ -389,7 +389,7 @@ class DataCollector(ParameteredClass):
         ) / np.prod(self.evaluation_heatmap.shape)
 
     def update_collection_heatmap(self, heatmap: np.array, detection: BoardDetection) -> float:
-        """Update a heatmap with a single detecton's image points."""
+        """Update a heatmap with a single detection's image points."""
         if self.heatmap_cells.value != heatmap.shape[0]:
             self.recompute_heatmaps()
 

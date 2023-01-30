@@ -23,7 +23,7 @@ from intrinsic_camera_calibrator.boards import BoardEnum
 
 
 def make_detector(board_type: BoardEnum, **kwargs) -> BoardDetector:
-    """Create a boarad detector using a factory design pattern. Currently we accept a single detector per type of board."""
+    """Create a board detector using a factory design pattern. Currently we accept a single detector per type of board."""
     classes_dic = {
         BoardEnum.CHESSBOARD: ChessBoardDetector,
         BoardEnum.DOTBOARD: DotBoardDetector,

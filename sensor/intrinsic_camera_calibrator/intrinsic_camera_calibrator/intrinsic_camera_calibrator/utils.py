@@ -34,17 +34,17 @@ def save_intrinsics(camera_model: CameraModel, alpha, camera_name, file_path: st
     data = camera_model.as_dict(alpha)
     data["camera_name"] = camera_name
 
-    def flist(data):
+    def format_list(data):
         if isinstance(data, list):
             retval = ruamel.yaml.comments.CommentedSeq(data)
             retval.fa.set_flow_style()
             return retval
         elif isinstance(data, dict):
-            return {k: flist(v) for k, v in data.items()}
+            return {k: format_list(v) for k, v in data.items()}
         else:
             return data
 
-    data = flist(data)
+    data = format_list(data)
 
     with open(file_path, "w") as f:
         yaml = ruamel.yaml.YAML()

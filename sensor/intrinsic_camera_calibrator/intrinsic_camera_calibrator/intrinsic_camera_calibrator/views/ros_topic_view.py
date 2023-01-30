@@ -48,7 +48,7 @@ class RosTopicView(QWidget):
         self.topics_combo_box = QComboBox()
         self.layout.addWidget(self.topics_combo_box)
 
-        self.qos_reliability_label = QLabel("qos realiability:")
+        self.qos_reliability_label = QLabel("qos reliability:")
         self.layout.addWidget(self.qos_reliability_label)
 
         self.qos_reliability_combo_box = QComboBox()

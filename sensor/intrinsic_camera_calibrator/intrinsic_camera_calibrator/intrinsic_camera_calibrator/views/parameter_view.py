@@ -24,16 +24,16 @@ from PySide2.QtWidgets import QGridLayout
 from PySide2.QtWidgets import QLabel
 from PySide2.QtWidgets import QSpinBox
 from PySide2.QtWidgets import QWidget
-from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.parameter import ParameterizedClass
 
 
 class ParameterView(QWidget):
-    """A simple widget to visualize and edit a ParameteredClass's parameters."""
+    """A simple widget to visualize and edit a ParameterizedClass's parameters."""
 
     parameter_changed = Signal()
     closed = Signal()
 
-    def __init__(self, parametered_class: ParameteredClass):
+    def __init__(self, parametered_class: ParameterizedClass):
         super().__init__()
 
         self.setWindowTitle("Edit parameters")
@@ -82,7 +82,7 @@ class ParameterView(QWidget):
         self.show()
 
     def closeEvent(self, event):
-        """When the widget is closed it should be marked for delection and notify the event."""
+        """When the widget is closed it should be marked for deletion and notify the event."""
         self.closed.emit()
         event.accept()
         self.deleteLater()
