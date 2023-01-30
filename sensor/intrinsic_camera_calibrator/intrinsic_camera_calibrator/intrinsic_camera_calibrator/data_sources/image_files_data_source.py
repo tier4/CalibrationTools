@@ -34,6 +34,7 @@ class ImageFilesDataSource(DataSource, QObject):
         self.loop_images = False
         self.image_files_path = []
         self.image_index = 0
+        self.paused = False
 
         self.consumed_signal.connect(self.on_consumed)
 
@@ -62,6 +63,10 @@ class ImageFilesDataSource(DataSource, QObject):
         if self.image_index == len(self.image_files_path) and not self.loop_images:
             print("Produced all images!")
             return
+
+        if self.paused:
+            return
+
         self.image_index = self.image_index % len(self.image_files_path)
         self.send_data(self.image_files_path[self.image_index])
         self.image_index += 1

@@ -54,6 +54,7 @@ class RosBagDataSource(DataSource, QObject):
         self.bridge = CvBridge()
 
         self.rosbag_path = None
+        self.paused = False
         self.consumed_signal.connect(self.on_consumed)
 
     def set_rosbag_file(self, rosbag_path):
@@ -117,6 +118,9 @@ class RosBagDataSource(DataSource, QObject):
 
     def on_consumed(self):
         """Acts on the consumer having consumed an image. This method is executed in he source thread as it is connected to a local signal."""
+        if self.paused:
+            return
+
         if self.reader.has_next():
             (topic, data, t) = self.reader.read_next()
             self.send_data(topic, data)

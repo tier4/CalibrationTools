@@ -110,6 +110,9 @@ class RosTopicDataSource(DataSource, Node):
 
     def compressed_image_callback(self, msg: CompressedImage):
         """Process a compressed image."""
+        if self.paused:
+            return
+
         with self.lock:
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
@@ -117,6 +120,9 @@ class RosTopicDataSource(DataSource, Node):
 
     def image_callback(self, msg: Image):
         """Process a raw image."""
+        if self.paused:
+            return
+
         with self.lock:
             image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.data_callback(image_data)
@@ -130,3 +136,7 @@ class RosTopicDataSource(DataSource, Node):
     def stop(self):
         with self.lock:
             rclpy.shutdown(context=self.ros_context)
+
+    def on_consumed(self):
+        """Acts on the consumer having consumed an image. This method is executed in he source thread as it is connected to a local signal."""
+        pass

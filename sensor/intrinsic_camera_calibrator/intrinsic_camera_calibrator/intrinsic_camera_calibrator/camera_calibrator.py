@@ -243,10 +243,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             if self.paused:
                 self.pause_button.setText("Pause")
                 self.paused = False
+                self.data_source.resume()
             else:
                 self.pause_button.setText("Resume")
                 self.paused = True
                 self.should_process_image.emit()
+                self.data_source.pause()
 
         def on_image_view_type_change(index):
             image_view_type = self.image_view_type_combobox.itemData(index)
@@ -314,7 +316,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
     def make_calibration_group(self):
 
-        self.calibration_group = QGroupBox("Calibration options")
+        self.calibration_group = QGroupBox("Calibration control")
         self.calibration_group.setFlat(True)
 
         self.calibrator_type_combobox = QComboBox()

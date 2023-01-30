@@ -35,6 +35,7 @@ class DataSource:
         self.data_callback = None
         self.pending_data_not_consumed = False
         self.camera_name = "camera"
+        self.paused = False
         pass
 
     def set_data_callback(self, callback):
@@ -49,3 +50,17 @@ class DataSource:
 
     def get_camera_name(self) -> str:
         return self.camera_name
+
+    def pause(self):
+        """Pause data production."""
+        self.paused = True
+
+    def resume(self):
+        """Resume data production."""
+        if self.paused:
+            self.paused = False
+            self.on_consumed()
+
+    def on_consumed(self):
+        """Acts on the consumer having consumed an image. This method is executed in he source thread as it is connected to a local signal."""
+        raise NotImplementedError
