@@ -36,7 +36,7 @@ class ImageViewMode(Enum):
 
 
 class CollectionStatus(Enum):
-    """Decision on whether or not to add a sample to the databse."""
+    """Decision on whether or not to add a sample to the database."""
 
     NOT_EVALUATED = 1
     REJECTED = 2

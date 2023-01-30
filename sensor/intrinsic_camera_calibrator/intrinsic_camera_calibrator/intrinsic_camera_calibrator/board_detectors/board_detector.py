@@ -23,10 +23,10 @@ from typing import Tuple
 from PySide2.QtCore import QObject
 from PySide2.QtCore import Signal
 from intrinsic_camera_calibrator.board_parameters.board_parameters import BoardParameters
-from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.parameter import ParameterizedClass
 
 
-class BoardDetector(ParameteredClass, QObject):
+class BoardDetector(ParameterizedClass, QObject):
     """Base class of board detectors."""
 
     detection_results_signal = Signal(object, object)
@@ -34,7 +34,7 @@ class BoardDetector(ParameteredClass, QObject):
     def __init__(
         self, lock: threading.RLock, board_parameters: BoardParameters, cfg: Optional[Dict] = {}
     ):
-        ParameteredClass.__init__(self, lock)
+        ParameterizedClass.__init__(self, lock)
         QObject.__init__(self, None)
         self.board_parameters = board_parameters
 

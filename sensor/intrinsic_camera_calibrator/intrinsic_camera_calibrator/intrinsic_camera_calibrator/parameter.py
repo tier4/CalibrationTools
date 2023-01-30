@@ -55,7 +55,7 @@ class Parameter:
         return self._parameter_type
 
 
-class ParameteredClass:
+class ParameterizedClass:
     """A general class with Parameters and helpful methods to use them."""
 
     def __init__(self, lock: threading.RLock = threading.RLock(), cfg: dict = dict()):  # noqa C408
@@ -74,7 +74,7 @@ class ParameteredClass:
         return obj
 
     def set_parameters(self, **kwargs):
-        """Set the Parameter objects in the class with the contents from a dictoinary."""
+        """Set the Parameter objects in the class with the contents from a dictionary."""
         with self.lock:
             for k, v in kwargs.items():
                 if k in vars(self) and isinstance(vars(self)[k], Parameter):

@@ -40,7 +40,7 @@ from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
 
 
 class InitializationView(QWidget):
-    """Initial widget to let the user connfigure the calibrator."""
+    """Initial widget to let the user configure the calibrator."""
 
     parameter_changed = Signal()
     closed = Signal()
@@ -212,7 +212,7 @@ class InitializationView(QWidget):
             raise NotImplementedError
 
     def closeEvent(self, event):
-        """When the window is closet, the widget is marked for delection."""
+        """When the window is closed, the widget is marked for deletion."""
         self.closed.emit()
         event.accept()
         self.deleteLater()

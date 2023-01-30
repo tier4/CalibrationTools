@@ -162,7 +162,7 @@ class CameraModel:
         )
 
     def rectify(self, img: np.array, alpha=0.0) -> np.array:
-        """Rectifies an image using the current camera model. Alpha is avalue in the [0,1] range to regulate how the rectified image is cropped. 0 means that all the pixels in the rectified image are valid whereas 1 keeps all the original pixels from the unrectifies image into the rectifies one, filling with zeroes the invalid pixels."""
+        """Rectifies an image using the current camera model. Alpha is a value in the [0,1] range to regulate how the rectified image is cropped. 0 means that all the pixels in the rectified image are valid whereas 1 keeps all the original pixels from the unrectified image into the rectifies one, filling with zeroes the invalid pixels."""
         if np.abs(self.d).sum() == 0:
             return img
 
@@ -225,7 +225,7 @@ class CameraModel:
 
 
 class CameraModelWithBoardDistortion(CameraModel):
-    """An slighlty improves model that also incorporates the distortion/bending of the calibration board.."""
+    """An slightly improves model that also incorporates the distortion/bending of the calibration board.."""
 
     def __init__(
         self,

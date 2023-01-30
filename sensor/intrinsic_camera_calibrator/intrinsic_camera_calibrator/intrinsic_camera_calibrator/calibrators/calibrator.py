@@ -37,7 +37,7 @@ from intrinsic_camera_calibrator.calibrators.utils import get_entropy
 from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_collector import DataCollector
 from intrinsic_camera_calibrator.parameter import Parameter
-from intrinsic_camera_calibrator.parameter import ParameteredClass
+from intrinsic_camera_calibrator.parameter import ParameterizedClass
 import numpy as np
 
 
@@ -63,8 +63,8 @@ class CalibratorEnum(Enum):
         raise ValueError
 
 
-class Calibrator(ParameteredClass, QObject):
-    """Base clase of camera intrinsic calibrator. Most of the logic should be implemented here abd the subclasses only implement the core method."""
+class Calibrator(ParameterizedClass, QObject):
+    """Base class of camera intrinsic calibrator. Most of the logic should be implemented here abd the subclasses only implement the core method."""
 
     calibration_request = Signal(object)
     calibration_results_signal = Signal(
@@ -78,12 +78,12 @@ class Calibrator(ParameteredClass, QObject):
     partial_calibration_results_signal = Signal(object)
 
     def __init__(self, lock: threading.RLock, cfg: Optional[Dict] = {}):
-        ParameteredClass.__init__(self, lock)
+        ParameterizedClass.__init__(self, lock)
         QObject.__init__(self, None)
 
         self.use_ransac_pre_rejection = Parameter(bool, value=True, min_value=False, max_value=True)
         self.pre_rejection_iterations = Parameter(int, value=100, min_value=1, max_value=100)
-        self.pre_rejection_min_hipotheses = Parameter(int, value=6, min_value=1, max_value=20)
+        self.pre_rejection_min_hypotheses = Parameter(int, value=6, min_value=1, max_value=20)
         self.pre_rejection_max_rms_error = Parameter(
             float, value=0.35, min_value=0.001, max_value=10.0
         )
@@ -424,9 +424,9 @@ class Calibrator(ParameteredClass, QObject):
     def _pre_rejection_filter_impl(
         self, detections: List[BoardDetection]
     ) -> Tuple[CameraModel, List[BoardDetection]]:
-        """Implement a rejection filter via ransc."""
+        """Implement a rejection filter via ransac."""
         with self.lock:
-            pre_rejection_min_hipotheses = self.pre_rejection_min_hipotheses.value
+            pre_rejection_min_hypotheses = self.pre_rejection_min_hypotheses.value
             pre_rejection_iterations = self.pre_rejection_iterations.value
             pre_rejection_max_rms_error = self.pre_rejection_max_rms_error.value
 
@@ -435,7 +435,7 @@ class Calibrator(ParameteredClass, QObject):
         best_inlier_mask = None
 
         num_detections = len(detections)
-        min_samples = pre_rejection_min_hipotheses
+        min_samples = pre_rejection_min_hypotheses
 
         if num_detections < min_samples:
             return None, detections
@@ -572,7 +572,7 @@ class Calibrator(ParameteredClass, QObject):
     def _random_subsampling_impl(
         self, detections: List[BoardDetection], max_samples
     ) -> List[BoardDetection]:
-        """Subsample the detections uniforminly."""
+        """Subsample the detections uniformly."""
         indexes = np.random.choice(len(detections), max_samples, replace=False)
         return [detections[i] for i in indexes]
 
@@ -658,5 +658,5 @@ class Calibrator(ParameteredClass, QObject):
         plot_process.start()
 
     def _calibration_impl(self, detections: List[BoardDetection]) -> CameraModel:
-        """Actual implementation of the calibration. Since this is an abstact class it remains unimplemented."""
+        """Actual implementation of the calibration. Since this is an abstract class it remains unimplemented."""
         raise NotImplementedError

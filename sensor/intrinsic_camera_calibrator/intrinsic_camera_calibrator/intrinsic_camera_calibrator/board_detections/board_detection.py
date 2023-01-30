@@ -146,7 +146,7 @@ class BoardDetection:
         return self._cached_tilt
 
     def get_rotation_angles(self, model: Optional[CameraModel] = None) -> Tuple[float, float]:
-        """Return the angle differente between the detection and the camera with respect to the x and y axes of the camera."""
+        """Return the angle difference between the detection and the camera with respect to the x and y axes of the camera."""
         if model is None:
             model = self._get_cached_model()
 

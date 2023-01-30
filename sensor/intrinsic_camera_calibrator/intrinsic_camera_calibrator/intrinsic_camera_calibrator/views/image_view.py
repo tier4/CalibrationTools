@@ -152,11 +152,11 @@ class ImageView(QGraphicsItem, QObject):
         self.draw_detection_color = QColor()
 
     def set_draw_detection_color(self, color: QColor):
-        """Set the color in which to draw the center of the detectins on."""
+        """Set the color in which to draw the center of the detections on."""
         self.draw_detection_color = color
 
     def set_draw_detection_points(self, value: bool):
-        """Set the flag of wether to draw the detectin points or not."""
+        """Set the flag of wether to draw the detection points or not."""
         self.is_draw_detection_points = value
 
     def set_draw_training_points(self, value: bool):
@@ -172,7 +172,7 @@ class ImageView(QGraphicsItem, QObject):
         self.is_draw_training_heatmap = value
 
     def set_draw_evaluation_heatmap(self, value: bool):
-        """Set the flag of wether or not to draw the occupancy heatmap of the evaluaton dataset."""
+        """Set the flag of wether or not to draw the occupancy heatmap of the evaluation dataset."""
         self.is_draw_evaluation_heatmap = value
 
     def set_detection_ordered_points(self, points_list: List[np.array]):
@@ -237,7 +237,7 @@ class ImageView(QGraphicsItem, QObject):
         self.draw_detection_color.setAlphaF(np.sin(0.5 * np.pi * self.rendering_alpha))
 
         estimated_size = self.cell_size_pixels * self.image_to_view_factor.mean() / 8
-        invsqrt2 = 1.0 / np.sqrt(2)
+        inv_sqrt2 = 1.0 / np.sqrt(2)
 
         alpha = int(255 * self.rendering_alpha)
         colors = [
@@ -263,12 +263,12 @@ class ImageView(QGraphicsItem, QObject):
                 painter.setPen(pen)
                 painter.drawEllipse(p, estimated_size, estimated_size)
                 painter.drawLine(
-                    p + QPointF(-estimated_size * invsqrt2, -estimated_size * invsqrt2),
-                    p + QPointF(estimated_size * invsqrt2, estimated_size * invsqrt2),
+                    p + QPointF(-estimated_size * inv_sqrt2, -estimated_size * inv_sqrt2),
+                    p + QPointF(estimated_size * inv_sqrt2, estimated_size * inv_sqrt2),
                 )
                 painter.drawLine(
-                    p + QPointF(estimated_size * invsqrt2, -estimated_size * invsqrt2),
-                    p + QPointF(-estimated_size * invsqrt2, estimated_size * invsqrt2),
+                    p + QPointF(estimated_size * inv_sqrt2, -estimated_size * inv_sqrt2),
+                    p + QPointF(-estimated_size * inv_sqrt2, estimated_size * inv_sqrt2),
                 )
 
             pen = QPen(colors[i % len(colors)])
@@ -320,7 +320,7 @@ class ImageView(QGraphicsItem, QObject):
                 painter.drawRect(QRectF(i * xscale, j * yscale, xscale, yscale))
 
     def paint(self, painter: QPainter, option, widget):
-        """Reimlemented method to perform all of the image related rendering operations."""
+        """Reimplemented method to perform all of the image related rendering operations."""
         self.widget_size = widget.size()
 
         if self.raw_pixmap.isNull():
@@ -340,7 +340,7 @@ class ImageView(QGraphicsItem, QObject):
         )
         display_size = self.display_pixmap.size()
 
-        # This offset is needed to that the coordinate (0,0) is in the midle of the pixel rather than one of the corners
+        # This offset is needed to that the coordinate (0,0) is in the middle of the pixel rather than one of the corners
         offset = -0.5
         painter.drawPixmap(QPointF(offset, offset), self.display_pixmap)
         painter.setRenderHint(QPainter.Antialiasing)

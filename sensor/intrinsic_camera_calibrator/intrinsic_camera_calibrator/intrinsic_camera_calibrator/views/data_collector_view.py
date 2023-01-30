@@ -47,14 +47,14 @@ def _create_rotation_heatmap(
 
 
 def _get_2d_points(collected_data: CollectedData) -> np.array:
-    """Auxiliar method to group all the dataset image points into an (N, 2) array."""
+    """Auxiliary method to group all the dataset image points into an (N, 2) array."""
     return np.array(
         [detection.get_flattened_image_points() for detection in collected_data.get_detections()]
     ).reshape(-1, 2)
 
 
 def _get_3d_points(collected_data: CollectedData, camera_model: CameraModel) -> np.array:
-    """Auxiliar method to group all the dataset object points into an (N, 3) array."""
+    """Auxiliary method to group all the dataset object points into an (N, 3) array."""
     return np.array(
         [
             detection.get_flattened_3d_points(camera_model)

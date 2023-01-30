@@ -42,7 +42,7 @@ def get_rosbag_options(path, serialization_format="cdr"):
 
 
 class RosBagDataSource(DataSource, QObject):
-    """Class that imlements the DataSource to produce samples from a rosbag."""
+    """Class that implements the DataSource to produce samples from a rosbag."""
 
     rosbag_topics_signal = Signal(object)
     consumed_signal = Signal()
@@ -58,7 +58,7 @@ class RosBagDataSource(DataSource, QObject):
         self.consumed_signal.connect(self.on_consumed)
 
     def set_rosbag_file(self, rosbag_path):
-        """Set the rosbag file and sendss a signal with all the image topic names if possible. If the file is metadata.yaml it instead reads the folder."""
+        """Set the rosbag file and sends a signal with all the image topic names if possible. If the file is metadata.yaml it instead reads the folder."""
         if Path(rosbag_path).name == "metadata.yaml":
             self.rosbag_path = str(Path(rosbag_path).parent)
         else:
