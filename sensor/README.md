@@ -85,9 +85,9 @@ Intrinsic calibration is the process of obtaining the parameters that allow us t
 
 ### Intrinsic camera calibration
 
-- [Camera calibration](docs/how_to_camera.md)
+- [Camera calibration](docs/how_to_intrinsic_camera.md.md)
 
-Based on the traditional ROS camera calibration procedure, we add extra visualizations to aid the calibration process and support for apriltag boards.
+We implement an original intrinsic camera calibrator based on the [ROS implementation](https://github.com/ros-perception/image_pipeline/tree/noetic/camera_calibration), adding support for new boards, an improved data collection process, new visualizations, and statistics used to evaluate the obtained parameters.
 
 - [Camera calibration via camera-lidar calibration](docs/how_to_extrinsic_interactive.md)
 
