@@ -1,0 +1,5 @@
+board_type: dot_board
+board_parameters:
+  cols: 8
+  rows: 6
+  cell_size: 0.1
