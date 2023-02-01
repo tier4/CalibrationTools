@@ -7,10 +7,11 @@
   <maintainer email="kenzo.lobos@tier4.jp">Kenzo Lobos Tsunekawa</maintainer>
   <license>TODO: License declaration</license>
 
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
   <exec_depend>python-dt-apriltags-pip</exec_depend>
   <exec_depend>python3-matplotlib</exec_depend>
   <exec_depend>python3-pyside2.qtquick</exec_depend>
-  <exec_depend>python3-rosdep</exec_depend>
   <exec_depend>python3-ruamel.yaml</exec_depend>
   <exec_depend>python3-transforms3d</exec_depend>
   <exec_depend>ros2_numpy</exec_depend>
