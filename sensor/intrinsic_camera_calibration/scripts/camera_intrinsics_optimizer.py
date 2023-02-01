@@ -41,42 +41,32 @@ class CameraIntrinsicsOptimizer(Node):
         self.declare_parameter("fix_principal_point", False)
         self.declare_parameter("fix_aspect_ratio", False)
         self.declare_parameter("zero_tangent_dist", False)
+        self.declare_parameter("no_distortion_model", False)
 
         self.method = self.get_parameter("opt_method").get_parameter_value().string_value
         self.opt_allowed_percentage = self.get_parameter("opt_scale")
         self.opt_allowed_percentage = self.opt_allowed_percentage.get_parameter_value().double_value
 
-        num_ks = self.get_parameter("k_coefficients").get_parameter_value().integer_value
-        fix_principal_point = self.get_parameter("fix_principal_point")
-        fix_principal_point = fix_principal_point.get_parameter_value().bool_value
-        fix_aspect_ratio = self.get_parameter("fix_aspect_ratio")
-        fix_aspect_ratio = fix_aspect_ratio.get_parameter_value().bool_value
-        zero_tangent_dist = self.get_parameter("zero_tangent_dist")
-        zero_tangent_dist = zero_tangent_dist.get_parameter_value().bool_value
+        self.num_ks = self.get_parameter("k_coefficients").get_parameter_value().integer_value
+        self.fix_principal_point = self.get_parameter("fix_principal_point")
+        self.fix_principal_point = self.fix_principal_point.get_parameter_value().bool_value
+        self.fix_aspect_ratio = self.get_parameter("fix_aspect_ratio")
+        self.fix_aspect_ratio = self.fix_aspect_ratio.get_parameter_value().bool_value
+        self.zero_tangent_dist = self.get_parameter("zero_tangent_dist")
+        self.zero_tangent_dist = self.zero_tangent_dist.get_parameter_value().bool_value
 
-        self.calib_flags = 0
+        # This options superseeds other configurations and sets a non-distorted intrinsics model
+        self.no_distortion_model = (
+            self.get_parameter("no_distortion_model").get_parameter_value().bool_value
+        )
 
-        if fix_principal_point:
-            self.calib_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        if fix_aspect_ratio:
-            self.calib_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        if zero_tangent_dist:
-            self.calib_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        if num_ks > 3:
-            self.calib_flags |= cv2.CALIB_RATIONAL_MODEL
-        if num_ks < 6:
-            self.calib_flags |= cv2.CALIB_FIX_K6
-        if num_ks < 5:
-            self.calib_flags |= cv2.CALIB_FIX_K5
-        if num_ks < 4:
-            self.calib_flags |= cv2.CALIB_FIX_K4
-        if num_ks < 3:
-            self.calib_flags |= cv2.CALIB_FIX_K3
-        if num_ks < 2:
-            self.calib_flags |= cv2.CALIB_FIX_K2
-        if num_ks < 1:
-            self.calib_flags |= cv2.CALIB_FIX_K1
-        self.calib_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+        if self.no_distortion_model:
+            self.zero_tangent_dist = True
+            self.num_ks = 0
+
+        self.calib_flags = self.get_calibration_flags(
+            self.fix_principal_point, self.fix_aspect_ratio, self.zero_tangent_dist, self.num_ks
+        )
 
         if self.method == "CV":
             pass
@@ -93,6 +83,36 @@ class CameraIntrinsicsOptimizer(Node):
         self.opt_service = self.create_service(
             IntrinsicsOptimizer, "optimize_intrinsics", self.service_callback
         )
+
+    def get_calibration_flags(
+        self, fix_principal_point, fix_aspect_ratio, zero_tangent_dist, num_ks
+    ):
+
+        calib_flags = 0
+
+        if fix_principal_point:
+            calib_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+        if fix_aspect_ratio:
+            calib_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+        if zero_tangent_dist:
+            calib_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+        if num_ks > 3:
+            calib_flags |= cv2.CALIB_RATIONAL_MODEL
+        if num_ks < 6:
+            calib_flags |= cv2.CALIB_FIX_K6
+        if num_ks < 5:
+            calib_flags |= cv2.CALIB_FIX_K5
+        if num_ks < 4:
+            calib_flags |= cv2.CALIB_FIX_K4
+        if num_ks < 3:
+            calib_flags |= cv2.CALIB_FIX_K3
+        if num_ks < 2:
+            calib_flags |= cv2.CALIB_FIX_K2
+        if num_ks < 1:
+            calib_flags |= cv2.CALIB_FIX_K1
+        calib_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+
+        return calib_flags
 
     def reproj_error(self, object_points, image_points, k):
 
@@ -186,6 +206,9 @@ class CameraIntrinsicsOptimizer(Node):
 
         initial_k = np.array(initial_camera_info.k).reshape(3, 3)
         initial_d = np.array(initial_camera_info.d).flatten()
+
+        if self.no_distortion_model:
+            initial_d = np.zeros_like(initial_d)
 
         _, new_k, new_d, _, _ = cv2.calibrateCamera(
             [object_points.reshape(-1, 3)],

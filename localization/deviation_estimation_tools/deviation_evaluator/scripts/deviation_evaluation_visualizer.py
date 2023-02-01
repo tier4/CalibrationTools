@@ -37,43 +37,78 @@ PARAMS = {
 }
 
 
+def validate_threshold(
+    recall: float, threshold: float, lowerbound: float, recall_threshold: float = 0.99
+):
+    if threshold < lowerbound:
+        print(f"Threshold is too small for this vehicle.")
+    elif recall == np.inf:
+        print(
+            f"No error larger than {threshold:.3f} [m] observed. Provide more data on deviation_evaluator."
+        )
+    elif recall > recall_threshold:
+        print("Valid threshold!")
+    else:
+        print(f"Covariance seems to be too optimistic.")
+        print("Consider increasing the covariances of the dead reckoning sensors.")
+
+    if threshold > lowerbound:
+        print(f"  [OK] lowerbound = {lowerbound:.3f} < {threshold:.3f} = threshold [m]")
+    else:
+        print(f"  [NG] lowerbound = {lowerbound:.3f} > {threshold:.3f} = threshold [m]")
+
+    if recall == np.inf:
+        print(f"  [NG] recall = INF")
+    elif recall > recall_threshold:
+        print(f"  [OK] recall = {recall:.3f} > {recall_threshold:.3f}")
+    else:
+        print(f"  [NG] recall = {recall:.3f} < {recall_threshold:.3f}")
+
+
 class DeviationEvaluationVisualizer(Node):
     def __init__(self):
         super().__init__("deviation_evaluation_visualizer")
         self.declare_parameter("save_dir", "")
+        self.declare_parameter("warn_ellipse_size", 0.0)
+        self.declare_parameter("warn_ellipse_size_lateral_direction", 0.0)
 
         save_dir = self.get_parameter("save_dir").get_parameter_value().string_value
+        threshold_long_radius = (
+            self.get_parameter("warn_ellipse_size").get_parameter_value().double_value
+        )
+        threshold_lateral = (
+            self.get_parameter("warn_ellipse_size_lateral_direction")
+            .get_parameter_value()
+            .double_value
+        )
 
         bagfile = Path(save_dir) / "ros2bag/ros2bag_0.db3"
         output_dir = Path(save_dir)
 
         bag_file_evaluator = BagFileEvaluator(str(bagfile), PARAMS)
 
-        os.makedirs(output_dir / "body_frame", exist_ok=True)
-        for thres in np.arange(0.1, 0.4, 0.05):
-            plot_thresholds(
-                bag_file_evaluator.calc_roc_curve_lateral(thres),
-                bag_file_evaluator.results.lateral.lower_bound,
-                thres,
-                PARAMS["scale"],
-                save_path=output_dir / "body_frame/thres2recall_{:.2f}.png".format(thres),
-            )
+        recall_lateral = bag_file_evaluator.calc_recall_lateral(threshold_lateral)
+        print("============================================================")
+        print("Results for lateral error monitoring:")
+        validate_threshold(
+            recall_lateral, threshold_lateral, bag_file_evaluator.results.lateral.lower_bound
+        )
 
-        os.makedirs(output_dir / "long_radius", exist_ok=True)
-        for thres in np.arange(0.1, 1.0, 0.05):
-            plot_thresholds(
-                bag_file_evaluator.calc_roc_curve_long_radius(thres),
-                bag_file_evaluator.results.long_radius.lower_bound,
-                thres,
-                PARAMS["scale"],
-                save_path=output_dir / "long_radius/thres2recall_{:.2f}.png".format(thres),
-            )
+        print("============================================================")
+        print("Results for long radius error monitoring:")
+        recall_long_radius = bag_file_evaluator.calc_recall_long_radius(threshold_long_radius)
+        validate_threshold(
+            recall_long_radius,
+            threshold_long_radius,
+            bag_file_evaluator.results.long_radius.lower_bound,
+        )
+        print("============================================================")
 
         _ = plot_bag_compare(
             output_dir / "deviation_evaluator.png",
             bag_file_evaluator.results,
         )
-        plt.show()
+        # plt.show()
         print("Visualization completed! Press ctrl-C to exit.")
 
 
