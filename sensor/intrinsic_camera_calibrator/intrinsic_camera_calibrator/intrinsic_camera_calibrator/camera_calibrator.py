@@ -467,9 +467,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.skew_label = QLabel("Skew:")
         self.relative_area_label = QLabel("Relative area:")
 
-        self.single_shot_reproj_error_max_label = QLabel("Reproj error (max):")
-        self.single_shot_reproj_error_avg_label = QLabel("Reproj error (avg):")
-        self.single_shot_reproj_error_rms_label = QLabel("Reproj error (rms):")
+        self.single_shot_reprojection_error_max_label = QLabel("Reprojection error (max):")
+        self.single_shot_reprojection_error_avg_label = QLabel("Reprojection error (avg):")
+        self.single_shot_reprojection_error_rms_label = QLabel("Reprojection error (rms):")
 
         raw_detection_results_layout = QVBoxLayout()
         raw_detection_results_layout.setAlignment(Qt.AlignTop)
@@ -485,9 +485,15 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         raw_detection_results_layout.addWidget(self.relative_area_label)
         raw_detection_results_layout.addWidget(self.raw_linear_error_rms_label)
 
-        single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_max_label)
-        single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_avg_label)
-        single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_rms_label)
+        single_shot_detection_results_layout.addWidget(
+            self.single_shot_reprojection_error_max_label
+        )
+        single_shot_detection_results_layout.addWidget(
+            self.single_shot_reprojection_error_avg_label
+        )
+        single_shot_detection_results_layout.addWidget(
+            self.single_shot_reprojection_error_rms_label
+        )
 
         self.raw_detection_results_group.setLayout(raw_detection_results_layout)
         self.single_shot_detection_results_group.setLayout(single_shot_detection_results_layout)
@@ -841,9 +847,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.skew_label.setText("Skew:")
             self.relative_area_label.setText("Relative area:")
 
-            self.single_shot_reproj_error_max_label.setText("Reproj error (max):")
-            self.single_shot_reproj_error_avg_label.setText("Reproj error (avg):")
-            self.single_shot_reproj_error_rms_label.setText("Reproj error (rms):")
+            self.single_shot_reprojection_error_max_label.setText("Reprojection error (max):")
+            self.single_shot_reprojection_error_avg_label.setText("Reprojection error (avg):")
+            self.single_shot_reprojection_error_rms_label.setText("Reprojection error (rms):")
 
         else:
 
@@ -923,14 +929,14 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 f"Relative area: {100.0*detection.get_normalized_size():.2f}"
             )
 
-            self.single_shot_reproj_error_max_label.setText(
-                f"Reproj error (max): {reprojection_error_max:.3f} px ({100.0 * reprojection_error_max_relative:.2f}%)"
+            self.single_shot_reprojection_error_max_label.setText(
+                f"Reprojection error (max): {reprojection_error_max:.3f} px ({100.0 * reprojection_error_max_relative:.2f}%)"
             )
-            self.single_shot_reproj_error_avg_label.setText(
-                f"Reproj error (avg): {reprojection_error_mean:.3f} px ({100.0 * reprojection_error_mean_relative:.2f}%)"
+            self.single_shot_reprojection_error_avg_label.setText(
+                f"Reprojection error (avg): {reprojection_error_mean:.3f} px ({100.0 * reprojection_error_mean_relative:.2f}%)"
             )
-            self.single_shot_reproj_error_rms_label.setText(
-                f"Reproj error (rms): {reprojection_error_rms:.3f} px ({100.0 * reprojection_error_rms_relative:.2f}%)"
+            self.single_shot_reprojection_error_rms_label.setText(
+                f"Reprojection error (rms): {reprojection_error_rms:.3f} px ({100.0 * reprojection_error_rms_relative:.2f}%)"
             )
 
             self.training_occupancy_rate_label.setText(
@@ -1107,7 +1113,7 @@ def main(args=None):
         ui = CameraIntrinsicsCalibratorUI(cfg)  # noqa: F841
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quiting...")
+        print("Received sigint. Quitting...")
         rclpy.shutdown()
 
 

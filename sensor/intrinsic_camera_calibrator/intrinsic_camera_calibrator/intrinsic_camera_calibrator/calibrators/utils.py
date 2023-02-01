@@ -121,6 +121,8 @@ def plot_calibration_data_statistics(
                 tilt_cells,
                 max_tilt_deg,
             )
+
+            # cSpell:ignore rvec, tvec
             rvec, tvec = detection.get_pose(calibrated_model)
             z_list.append(tvec.flatten()[2])
 
@@ -161,11 +163,11 @@ def plot_calibration_data_statistics(
         )
         plt.colorbar(rotation_heatmap_ax, ax=axes[1, i])
 
+        # cSpell:enableCompoundWords
         axes[2, i].set_title(f"{name} z histogram")
         axes[2, i].hist(
             z_array,
             z_cells,
-            # range=[0, w],
             edgecolor="black",
             linewidth=0.5,
         )
@@ -313,6 +315,7 @@ def plot_calibration_results_statistics(
             label="Single-shot intrinsics (lower bound)",
         )
 
+        # cSpell:ignore xticks
         axes2[j].set_xticks(x_axis, label, rotation="vertical")
         axes2[j].legend()
 

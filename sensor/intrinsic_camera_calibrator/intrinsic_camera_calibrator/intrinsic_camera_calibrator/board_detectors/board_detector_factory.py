@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+# cSpell:enableCompoundWords
 from intrinsic_camera_calibrator.board_detectors.apriltag_grid_detector import ApriltagGridDetector
 from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDetector
 from intrinsic_camera_calibrator.board_detectors.chessboard_detector import ChessBoardDetector

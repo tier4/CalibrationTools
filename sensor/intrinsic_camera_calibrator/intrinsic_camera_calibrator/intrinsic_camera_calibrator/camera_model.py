@@ -71,6 +71,7 @@ class CameraModel:
             image_points.astype(np.float32).reshape(-1, 1, 2) for image_points in image_points_list
         ]
 
+        # cSpell:ignore rvecs, tvecs
         _, self.k, self.d, rvecs, tvecs = cv2.calibrateCamera(
             object_points_list,
             image_points_list,
@@ -94,6 +95,7 @@ class CameraModel:
         d = np.zeros((5,)) if self.d is None else self.d
         k = self.k
 
+        # cSpell:ignore rvec, tvec
         _, rvec, tvec = cv2.solvePnP(object_points, image_points, k, d)
 
         return rvec, tvec
@@ -170,14 +172,14 @@ class CameraModel:
             self._cached_undistortion_alpha = alpha
             self._cached_undistorted_model = self.get_undistorted_camera_model(alpha=alpha)
             (
-                self._cached_undistortion_mapx,
-                self._cached_undistortion_mapy,
+                self._cached_undistortion_map_x,
+                self._cached_undistortion_map_y,
             ) = cv2.initUndistortRectifyMap(
                 self.k, self.d, None, self._cached_undistorted_model.k, (self.width, self.height), 5
             )
 
         return cv2.remap(
-            img, self._cached_undistortion_mapx, self._cached_undistortion_mapy, cv2.INTER_LINEAR
+            img, self._cached_undistortion_map_x, self._cached_undistortion_map_y, cv2.INTER_LINEAR
         )
 
     def as_dict(self, alpha: float = 0.0) -> Dict:

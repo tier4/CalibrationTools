@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+# cSpell:enableCompoundWords
 import cv2
 from intrinsic_camera_calibrator.board_detections.dotboard_detection import DotBoardDetection
 from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDetector
@@ -96,9 +96,9 @@ class DotBoardDetector(BoardDetector):
             corners = np.flip(corners, axis=0)
 
         image_points = corners.reshape((rows, cols, 2))
-        xarray = cell_size * (np.array(range(cols)) - 0.5 * cols)
-        yarray = cell_size * (np.array(range(rows)) - 0.5 * rows)
-        object_points = np.stack([*np.meshgrid(xarray, yarray), np.zeros((rows, cols))], axis=-1)
+        x_array = cell_size * (np.array(range(cols)) - 0.5 * cols)
+        y_array = cell_size * (np.array(range(rows)) - 0.5 * rows)
+        object_points = np.stack([*np.meshgrid(x_array, y_array), np.zeros((rows, cols))], axis=-1)
 
         detection = DotBoardDetection(
             height=h,

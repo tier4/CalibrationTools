@@ -40,6 +40,7 @@ class BoardDetection:
         self.rows = rows
         self.cols = cols
 
+        # cSpell:enableCompoundWords
         self._precomputed_single_shot_model = None
 
         self._cached_normalized_skew = None
@@ -134,6 +135,7 @@ class BoardDetection:
         if model == self._cached_camera_model and self._cached_tilt is not None:
             return self._cached_tilt
 
+        # cSpell:ignore rvec, tvec
         rvec, _ = self.get_pose()
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
@@ -181,6 +183,7 @@ class BoardDetection:
 
     def get_flattened_3d_points(self, model: Optional[CameraModel] = None) -> np.array:
         """Get the image points reprojected into camera coordinates in the 3d space as a (M, 3) array."""
+        # cSpell:ignore reprojected
         if model is None:
             model = self._get_cached_model()
 

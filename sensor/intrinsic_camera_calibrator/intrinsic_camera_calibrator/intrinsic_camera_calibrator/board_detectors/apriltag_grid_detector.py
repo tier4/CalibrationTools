@@ -66,6 +66,7 @@ class ApriltagGridDetector(BoardDetector):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # cSpell:ignore nthreads
         self.nthreads = Parameter(int, value=8, min_value=1, max_value=16)
         self.quad_decimate = Parameter(int, value=1, min_value=0, max_value=8)
         self.quad_sigma = Parameter(float, value=1.5, min_value=0.0, max_value=10.0)

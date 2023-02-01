@@ -123,6 +123,8 @@ class RosTopicDataSource(DataSource, Node):
         if self.paused:
             return
 
+        # cSpell:enableCompoundWords
+        # cSpell:ignore imgmsg
         with self.lock:
             image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.data_callback(image_data)

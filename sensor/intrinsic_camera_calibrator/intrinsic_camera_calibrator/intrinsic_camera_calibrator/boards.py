@@ -19,9 +19,9 @@ from enum import Enum
 
 
 class BoardEnum(Enum):
-    CHESSBOARD = {"name": "chess_board", "display": "Chess board"}
-    DOTBOARD = {"name": "dot_board", "display": "Dot board"}
-    APRILTAGGRID = {"name": "apriltag_grid", "display": "Apriltag grid"}
+    CHESS_BOARD = {"name": "chess_board", "display": "Chess board"}
+    DOT_BOARD = {"name": "dot_board", "display": "Dot board"}
+    APRILTAG_GRID = {"name": "apriltag_grid", "display": "Apriltag grid"}
 
     def from_name(name: str) -> "BoardEnum":
         for board in BoardEnum:
