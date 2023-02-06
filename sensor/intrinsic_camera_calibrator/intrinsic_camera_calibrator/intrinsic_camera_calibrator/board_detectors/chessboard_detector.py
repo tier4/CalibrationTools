@@ -58,7 +58,6 @@ class ChessBoardDetector(BoardDetector):
             return
 
         if ok and refine:
-
             dist_matrix = np.linalg.norm(
                 corners.reshape(-1, 1, 2) - corners.reshape(1, -1, 2), axis=-1
             )

@@ -33,7 +33,6 @@ class CameraModel:
         height: Optional[int] = None,
         width: Optional[int] = None,
     ):
-
         self.k = k
         self.d = d
         self.height = height
@@ -181,7 +180,6 @@ class CameraModel:
         )
 
     def as_dict(self, alpha: float = 0.0) -> Dict:
-
         undistorted = self.get_undistorted_camera_model(alpha)
         p = np.zeros((3, 4))
         p[0:3, 0:3] = undistorted.k

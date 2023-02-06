@@ -183,7 +183,6 @@ class InitializationView(QWidget):
         source_type = self.data_source_combobox.currentData()
 
         if source_type == DataSourceEnum.TOPIC:
-
             self.data_source = make_data_source(self.data_source_combobox.currentData())
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 

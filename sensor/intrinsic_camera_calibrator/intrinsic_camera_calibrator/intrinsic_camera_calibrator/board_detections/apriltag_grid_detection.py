@@ -35,7 +35,6 @@ class ApriltagGridDetection(BoardDetection):
         tag_spacing: float,
         tags,
     ):
-
         super().__init__(height=height, width=width, rows=rows, cols=cols)
 
         # Compute the object points
@@ -116,7 +115,6 @@ class ApriltagGridDetection(BoardDetection):
             return np.inf
 
         for scanline in self.scanlines:
-
             p1 = scanline[0]
             p2 = scanline[-1]
 
@@ -137,7 +135,6 @@ class ApriltagGridDetection(BoardDetection):
         )
 
     def get_flattened_cell_sizes(self):
-
         if self._cached_flattened_cell_sizes is not None:
             return self._cached_flattened_cell_sizes
 
