@@ -71,7 +71,6 @@ class Calibrator(ParameterizedClass, QObject):
         object, float, int, int, int, float, float, int, int, float, float
     )
 
-    # cSpell:enableCompoundWords
     evaluation_request = Signal(object, object)
     evaluation_results_signal = Signal(float, int, int, float, float, int, int, float, float)
 
