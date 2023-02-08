@@ -116,7 +116,6 @@ class ApriltagGridDetection(BoardDetection):
             return np.inf
 
         for scan_line in self.scan_lines:
-
             p1 = scan_line[0]
             p2 = scan_line[-1]
 
