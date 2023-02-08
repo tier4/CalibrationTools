@@ -15,7 +15,6 @@ cfg_16h5 = {
 
 
 def generate_launch_description():
-
     launch_arguments = []
 
     def add_launch_arg(name: str, default_value=None):

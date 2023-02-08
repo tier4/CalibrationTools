@@ -29,7 +29,6 @@ from intrinsic_camera_calibrator.utils import to_grayscale
 class Detector(_Detector):
     def __del__(self):
         if self.tag_detector_ptr is not None:
-
             # destroy the detector
             self.libc.apriltag_detector_destroy.restype = None
             self.libc.apriltag_detector_destroy(self.tag_detector_ptr)
@@ -94,7 +93,6 @@ class ApriltagGridDetector(BoardDetector):
             return
 
         with self.lock:
-
             min_margin = self.min_margin.value
             max_hamming = self.max_hamming_error.value
             min_detection_ratio = self.min_detection_ratio.value

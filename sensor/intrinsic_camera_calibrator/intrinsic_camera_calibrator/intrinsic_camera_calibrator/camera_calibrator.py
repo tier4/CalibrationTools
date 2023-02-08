@@ -71,7 +71,6 @@ import yaml
 
 
 class CameraIntrinsicsCalibratorUI(QMainWindow):
-
     produced_data_signal = Signal()
     consumed_data_signal = Signal()
     should_process_image = Signal()
@@ -200,7 +199,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.initialization_view = InitializationView(self, cfg)
 
     def make_image_view(self):
-
         self.image_view = ImageView()
 
         # We need the view to control the zoom
@@ -254,7 +252,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             image_view_type = self.image_view_type_combobox.itemData(index)
 
             def delayed_change():
-
                 if self.pending_detection_result:
                     QTimer.singleShot(1000, delayed_change)
                     return
@@ -315,7 +312,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.mode_options_group.setLayout(mode_options_layout)
 
     def make_calibration_group(self):
-
         self.calibration_group = QGroupBox("Calibration control")
         self.calibration_group.setFlat(True)
 
@@ -450,7 +446,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.detector_options_group.setLayout(detector_options_layout)
 
     def make_detection_group(self):
-
         self.raw_detection_results_group = QGroupBox("Detection results")
         self.raw_detection_results_group.setFlat(True)
 
@@ -499,7 +494,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.single_shot_detection_results_group.setLayout(single_shot_detection_results_layout)
 
     def make_data_collection_group(self):
-
         self.data_collection_group = QGroupBox("Data collection")
         self.data_collection_group.setFlat(True)
 
@@ -509,7 +503,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.evaluation_occupancy_rate_label = QLabel("Evaluation occupancy:")
 
         def view_data_collection_statistics_callback():
-
             camera_model = (
                 self.current_camera_model
                 if self.calibrated_camera_model is None
@@ -556,7 +549,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.data_collection_group.setLayout(data_collection_layout)
 
     def make_visualization_group(self):
-
         self.visualization_options_group = QGroupBox("Visualization options")
         self.visualization_options_group.setFlat(True)
 
@@ -852,7 +844,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.single_shot_reprojection_error_rms_label.setText("Reprojection error (rms):")
 
         else:
-
             camera_model = (
                 self.current_camera_model
                 if self.calibrated_camera_model is None
@@ -1037,7 +1028,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.request_image_detection.emit(img)
 
     def process_db_data(self, img):
-
         assert self.image_view_type_combobox.currentData() in set(
             {ImageViewMode.TRAINING_DB_UNRECTIFIED, ImageViewMode.EVALUATION_DB_UNRECTIFIED}
         )
@@ -1090,7 +1080,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
 
 def main(args=None):
-
     parser = OptionParser()
     parser.add_option("-c", "--config-file", type="string", help="calibration file path")
 

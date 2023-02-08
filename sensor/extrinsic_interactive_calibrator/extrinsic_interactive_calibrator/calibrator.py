@@ -23,7 +23,6 @@ import numpy as np
 
 class Calibrator:
     def __init__(self):
-
         # Calibration parameters
         self.min_points = None
         self.inlier_error = None
@@ -49,7 +48,6 @@ class Calibrator:
         )
 
     def set_method(self, method):
-
         if method == "sqpnp":
             self.flags = cv2.SOLVEPNP_SQPNP
         else:
@@ -59,7 +57,6 @@ class Calibrator:
         self.use_ransac = use_ransac
 
     def calibrate(self, object_points, image_points):
-
         if len(object_points) == 0 or len(image_points) == 0:
             return None
 
@@ -91,7 +88,6 @@ class Calibrator:
         return camera_to_lidar_transform
 
     def calibrate_ransac(self, object_points, image_points):
-
         num_points, _ = object_points.shape
 
         best_tvec = np.zeros((3,))
@@ -100,7 +96,6 @@ class Calibrator:
         best_error = np.inf
 
         for _ in range(self.ransac_iters):
-
             indexes = np.random.choice(num_points, min(num_points, self.min_points))
             object_points_iter = object_points[indexes, :]
             image_points_iter = image_points[indexes, :]
@@ -132,7 +127,6 @@ class Calibrator:
     def calculate_reproj_error(
         self, object_points, image_points, tvec=None, rvec=None, tf_msg=None, transform_matrix=None
     ):
-
         if isinstance(object_points, list) and isinstance(image_points, list):
             if len(object_points) == 0:
                 return 0.0, 0
