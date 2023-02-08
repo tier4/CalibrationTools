@@ -27,7 +27,6 @@ from tier4_calibration_msgs.srv import IntrinsicsOptimizer
 
 class CameraIntrinsicsOptimizer(Node):
     def __init__(self):
-
         super().__init__("camera_intrinsics_optimizer")
 
         self.object_points = None
@@ -87,7 +86,6 @@ class CameraIntrinsicsOptimizer(Node):
     def get_calibration_flags(
         self, fix_principal_point, fix_aspect_ratio, zero_tangent_dist, num_ks
     ):
-
         calib_flags = 0
 
         if fix_principal_point:
@@ -115,7 +113,6 @@ class CameraIntrinsicsOptimizer(Node):
         return calib_flags
 
     def reproj_error(self, object_points, image_points, k):
-
         d = np.zeros((5,))
         k = np.reshape(k, (3, 3))
 
@@ -129,7 +126,6 @@ class CameraIntrinsicsOptimizer(Node):
         return reproj_error
 
     def param_to_k(self, params):
-
         k_opt = np.eye(3)
         k_opt[0, 0] = self.fx0 + self.opt_allowed_percentage * self.fx0 * params[0]
         k_opt[1, 1] = self.fy0 + self.opt_allowed_percentage * self.fy0 * params[1]
@@ -139,7 +135,6 @@ class CameraIntrinsicsOptimizer(Node):
         return k_opt
 
     def opt_f(self, args):
-
         k_opt = self.param_to_k(args)
 
         error = self.reproj_error(self.object_points, self.image_points, k_opt)
@@ -152,7 +147,6 @@ class CameraIntrinsicsOptimizer(Node):
         return error
 
     def optimize_nlopt(self, object_points, image_points, initial_camera_info):
-
         self.object_points = object_points
         self.image_points = image_points
 
@@ -203,7 +197,6 @@ class CameraIntrinsicsOptimizer(Node):
         return optimized_camera_info
 
     def optimize_cv(self, object_points, image_points, initial_camera_info):
-
         initial_k = np.array(initial_camera_info.k).reshape(3, 3)
         initial_d = np.array(initial_camera_info.d).flatten()
 
@@ -228,7 +221,6 @@ class CameraIntrinsicsOptimizer(Node):
     def service_callback(
         self, request: IntrinsicsOptimizer.Request, response: IntrinsicsOptimizer.Response
     ):
-
         points = request.calibration_points
         initial_camera_info = request.initial_camera_info
 

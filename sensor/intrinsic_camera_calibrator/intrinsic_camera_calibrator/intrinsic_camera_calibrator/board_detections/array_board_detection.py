@@ -70,7 +70,6 @@ class ArrayBoardDetection(BoardDetection):
         error = 0
 
         for j in range(self.rows):
-
             p1 = self.image_points[j, 0]
             p2 = self.image_points[j, -1]
 
@@ -82,7 +81,6 @@ class ArrayBoardDetection(BoardDetection):
         return self._cached_linear_error_rms
 
     def get_flattened_cell_sizes(self):
-
         if self._cached_flattened_cell_sizes is not None:
             return self._cached_flattened_cell_sizes
 

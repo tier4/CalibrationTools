@@ -43,7 +43,6 @@ class ImageFilesDataSource(DataSource, QObject):
         self.image_files_path = image_paths
 
     def start(self, loop: bool):
-
         self.loop_images = loop
 
         if len(self.image_files_path):

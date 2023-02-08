@@ -105,7 +105,6 @@ def plot_calibration_data_statistics(
     fig.canvas.set_window_title("Calibration data statistics")
 
     def process_detections(detections: List[BoardDetection]):
-
         pixel_occupancy = np.zeros((pixel_cells, pixel_cells))
         tilt_occupancy = np.zeros((tilt_cells, tilt_cells))
 
@@ -127,7 +126,6 @@ def plot_calibration_data_statistics(
         return pixel_occupancy, tilt_occupancy, np.array(z_list)
 
     def plot_detection_set(i: int, name: str, detections: List[BoardDetection]):
-
         if len(detections) == 0:
             return
 
@@ -197,7 +195,6 @@ def plot_calibration_results_statistics(
     fig2.canvas.set_window_title("Calibration result statistics vs single shot calibration")
 
     def process_detections(detections: List[BoardDetection]):
-
         pixel_errors = [[[] for i in range(pixel_cells)] for j in range(pixel_cells)]
         tilt_errors = [[[] for i in range(tilt_cells)] for j in range(tilt_cells)]
 
@@ -232,7 +229,6 @@ def plot_calibration_results_statistics(
         return pixel_errors_mean, pixel_errors_std, tilt_errors_mean, tilt_errors_std
 
     def plot_detection_set(j: int, name: str, detections: List[BoardDetection]):
-
         if len(detections) == 0:
             return
 
@@ -284,7 +280,6 @@ def plot_calibration_results_statistics(
         plt.colorbar(tilt_rms_std_ax, ax=axes1[j, 3])
 
     def plot_calibration_vs_single_shot_calibration(j, name, detections: List[BoardDetection]):
-
         label = np.array([str(i) for i in range(len(detections))])
 
         calibrated_errors = np.array(

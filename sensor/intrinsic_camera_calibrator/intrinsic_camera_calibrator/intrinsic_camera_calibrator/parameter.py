@@ -34,7 +34,6 @@ class Parameter:
 
     @value.setter
     def value(self, value):
-
         new_value = self._parameter_type(value)
 
         if new_value < self.min_value or new_value > self.max_value:
@@ -59,7 +58,6 @@ class ParameterizedClass:
     """A general class with Parameters and helpful methods to use them."""
 
     def __init__(self, lock: threading.RLock = threading.RLock(), cfg: dict = dict()):  # noqa C408
-
         self.lock = lock
         self.set_parameters(**cfg)
 

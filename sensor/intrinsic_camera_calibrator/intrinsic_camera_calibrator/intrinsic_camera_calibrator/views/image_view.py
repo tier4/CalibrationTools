@@ -88,7 +88,6 @@ class CustomQGraphicsView(QGraphicsView):
         event.ignore()
 
     def wheelEvent(self, event):
-
         zoom_in_factor = 1.25
         zoom_out_factor = 1 / zoom_in_factor
 
