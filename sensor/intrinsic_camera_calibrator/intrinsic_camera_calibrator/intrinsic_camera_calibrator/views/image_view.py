@@ -251,11 +251,11 @@ class ImageView(QGraphicsItem, QObject):
         ]
 
         for i, points in enumerate(self.points_list):
-            qpoint_list = []
+            point_list = []
             for p in points:
                 p = self.image_to_view_factor * p
                 p = QPointF(p[0], p[1])
-                qpoint_list.append(p)
+                point_list.append(p)
 
                 pen = QPen(self.draw_detection_color)
                 pen.setWidth(0.1)
@@ -275,7 +275,7 @@ class ImageView(QGraphicsItem, QObject):
             pen.setWidth(0.1)
 
             painter.setPen(pen)
-            painter.drawPolyline(qpoint_list)
+            painter.drawPolyline(point_list)
 
         for i in range(len(self.points_list) - 1):
             p1 = self.image_to_view_factor * self.points_list[i][-1]
@@ -293,18 +293,19 @@ class ImageView(QGraphicsItem, QObject):
         painter.setPen(pen)
 
         points = points * self.image_to_view_factor
-        rsize = 3
-        qrects_list = [
-            QRectF(point[0] - 0.5 * rsize, point[1] - 0.5 * rsize, rsize, rsize) for point in points
+        size = 3
+        rect_list = [
+            QRectF(point[0] - 0.5 * size, point[1] - 0.5 * size, size, size) for point in points
         ]
 
-        painter.drawRects(qrects_list)
+        # cSpell:ignore rects
+        painter.drawRects(rect_list)
 
     def draw_heatmap(self, painter: QPainter, heatmap: np.array, display_size: QSize):
         """Draws a heatmap as rectangles."""
         w, h = heatmap.shape
-        xscale = display_size.width() / float(w)
-        yscale = display_size.height() / float(h)
+        x_scale = display_size.width() / float(w)
+        y_scale = display_size.height() / float(h)
 
         for j in range(h):
             for i in range(w):
@@ -317,7 +318,7 @@ class ImageView(QGraphicsItem, QObject):
 
                 painter.setPen(QPen(color))
                 painter.setBrush(QBrush(color))
-                painter.drawRect(QRectF(i * xscale, j * yscale, xscale, yscale))
+                painter.drawRect(QRectF(i * x_scale, j * y_scale, x_scale, y_scale))
 
     def paint(self, painter: QPainter, option, widget):
         """Reimplemented method to perform all of the image related rendering operations."""

@@ -85,7 +85,7 @@ Intrinsic calibration is the process of obtaining the parameters that allow us t
 
 ### Intrinsic camera calibration
 
-- [Camera calibration](docs/how_to_intrinsic_camera.md.md)
+- [Camera calibration](docs/how_to_intrinsic_camera.md)
 
 We implement an original intrinsic camera calibrator based on the [ROS implementation](https://github.com/ros-perception/image_pipeline/tree/noetic/camera_calibration), adding support for new boards, an improved data collection process, new visualizations, and statistics used to evaluate the obtained parameters.
 

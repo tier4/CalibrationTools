@@ -101,6 +101,7 @@ def _plot_data_collection(data_collector: DataCollector, camera_model: CameraMod
         h = data_collector.get_training_data().get_detections()[0].get_image_height()
         w = data_collector.get_training_data().get_detections()[0].get_image_width()
 
+        # cSpell:enableCompoundWords
         axes[0, 1].set_title("Training points 2d(x) histogram")
         axes[0, 1].hist(
             training_points_2d[:, 0],

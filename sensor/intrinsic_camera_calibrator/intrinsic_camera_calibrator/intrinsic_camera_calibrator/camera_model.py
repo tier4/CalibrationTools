@@ -169,14 +169,14 @@ class CameraModel:
             self._cached_undistortion_alpha = alpha
             self._cached_undistorted_model = self.get_undistorted_camera_model(alpha=alpha)
             (
-                self._cached_undistortion_mapx,
-                self._cached_undistortion_mapy,
+                self._cached_undistortion_map_x,
+                self._cached_undistortion_map_y,
             ) = cv2.initUndistortRectifyMap(
                 self.k, self.d, None, self._cached_undistorted_model.k, (self.width, self.height), 5
             )
 
         return cv2.remap(
-            img, self._cached_undistortion_mapx, self._cached_undistortion_mapy, cv2.INTER_LINEAR
+            img, self._cached_undistortion_map_x, self._cached_undistortion_map_y, cv2.INTER_LINEAR
         )
 
     def as_dict(self, alpha: float = 0.0) -> Dict:

@@ -121,7 +121,7 @@ If the detector is property configured, once a board is detected, the pattern's 
    <p align="center">Fig 9. Board detection</figcaption>
 </p>
 
-Additionally, if the user sctrolls in the image, sub-pixel level visualization is also available (see Figure 10).
+Additionally, if the user scrolls in the image, sub-pixel level visualization is also available (see Figure 10).
 
 <p align="center">
    <img src="images/camera-intrinsics/sub_pixel_visualization.png" width="40%" class="center">

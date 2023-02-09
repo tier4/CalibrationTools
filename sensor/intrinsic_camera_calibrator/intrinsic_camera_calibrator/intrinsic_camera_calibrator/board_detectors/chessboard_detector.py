@@ -69,9 +69,9 @@ class ChessBoardDetector(BoardDetector):
             corners = cv2.cornerSubPix(grayscale, corners, (radius, radius), (-1, -1), criteria)
 
         image_points = corners.reshape((rows, cols, 2))
-        xarray = cell_size * (np.array(range(cols)) - 0.5 * cols)
-        yarray = cell_size * (np.array(range(rows)) - 0.5 * rows)
-        object_points = np.stack([*np.meshgrid(xarray, yarray), np.zeros((rows, cols))], axis=-1)
+        x_array = cell_size * (np.array(range(cols)) - 0.5 * cols)
+        y_array = cell_size * (np.array(range(rows)) - 0.5 * rows)
+        object_points = np.stack([*np.meshgrid(x_array, y_array), np.zeros((rows, cols))], axis=-1)
 
         detection = ChessBoardDetection(
             height=h,

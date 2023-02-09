@@ -489,6 +489,7 @@ class DataCollector(ParameterizedClass):
             detection, camera_model=camera_model
         )
 
+        # cSpell:enableCompoundWords
         last_n_training_detections_distances = self.training_data.get_distances(
             detection, camera_model=camera_model, last_n_samples=self.decorrelate_eval_samples.value
         )
