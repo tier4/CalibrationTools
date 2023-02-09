@@ -122,7 +122,6 @@ def plot_calibration_data_statistics(
                 max_tilt_deg,
             )
 
-            # cSpell:ignore rvec, tvec
             rvec, tvec = detection.get_pose(calibrated_model)
             z_list.append(tvec.flatten()[2])
 

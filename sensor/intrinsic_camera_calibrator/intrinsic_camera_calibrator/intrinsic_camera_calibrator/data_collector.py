@@ -98,7 +98,6 @@ class CollectedData:
         normalized_skews_distances = np.abs(self.normalized_skews - detection.get_normalized_skew())
         normalized_size_distances = np.abs(self.normalized_sizes - detection.get_normalized_size())
 
-        # cSpell:ignore rvec, tvec
         _, pose_tvec = detection.get_pose(camera_model)
         tilt_x, tilt_y = detection.get_rotation_angles(camera_model)
 

@@ -134,7 +134,6 @@ class BoardDetection:
         if model == self._cached_camera_model and self._cached_tilt is not None:
             return self._cached_tilt
 
-        # cSpell:ignore rvec, tvec
         # cSpell:enableCompoundWords
         rvec, _ = self.get_pose()
         rotmat, _ = cv2.Rodrigues(rvec)

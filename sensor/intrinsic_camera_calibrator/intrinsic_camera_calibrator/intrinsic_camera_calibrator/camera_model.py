@@ -95,7 +95,6 @@ class CameraModel:
         d = np.zeros((5,)) if self.d is None else self.d
         k = self.k
 
-        # cSpell:ignore rvec, tvec
         _, rvec, tvec = cv2.solvePnP(object_points, image_points, k, d)
 
         return rvec, tvec
