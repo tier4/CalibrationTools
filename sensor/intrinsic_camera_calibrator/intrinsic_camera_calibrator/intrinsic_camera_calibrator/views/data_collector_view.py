@@ -77,7 +77,6 @@ def _plot_data_collection(data_collector: DataCollector, camera_model: CameraMod
     fig, axes = plt.subplots(2, 4, figsize=(16, 8))
 
     if len(data_collector.get_training_data().get_detections()) > 0:
-
         training_rotation_heatmap = _create_rotation_heatmap(
             data_collector.get_training_data(),
             camera_model,
@@ -184,7 +183,6 @@ def _plot_data_collection(data_collector: DataCollector, camera_model: CameraMod
 
 
 class DataCollectorView(QObject):
-
     failed = Signal()
     closed = Signal()
     plot_request = Signal()

@@ -20,7 +20,6 @@ from intrinsic_camera_calibrator.parameter import ParameterizedClass
 
 class ApriltagGridParameters(ParameterizedClass):
     def __init__(self, cfg):
-
         self.rows = Parameter(int, value=1, min_value=1, max_value=20)
         self.cols = Parameter(int, value=1, min_value=1, max_value=20)
         self.tag_size = Parameter(float, value=0.2, min_value=0.01, max_value=1.0)

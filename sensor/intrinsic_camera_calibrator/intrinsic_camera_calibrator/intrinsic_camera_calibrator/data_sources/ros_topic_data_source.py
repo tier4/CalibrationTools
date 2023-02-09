@@ -73,7 +73,6 @@ class RosTopicDataSource(DataSource, Node):
     ):
         """Set the data source topic and subscribes to it."""
         with self.lock:
-
             topics = self.get_filtered_image_topics_and_types()
             topics_dict = dict(topics)
 
@@ -93,7 +92,6 @@ class RosTopicDataSource(DataSource, Node):
             )
 
             for image_type in topics_dict[image_topic]:
-
                 if image_type == "sensor_msgs/msg/CompressedImage":
                     self.compressed_image_sub = self.create_subscription(
                         CompressedImage,

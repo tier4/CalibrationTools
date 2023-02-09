@@ -525,7 +525,6 @@ class Calibrator(ParameterizedClass, QObject):
 
         # add detections greedily
         for it in range(0, max_calibration_samples - 1):
-
             current_entropy = (get_entropy(accepted_pixel_occupancy) / max_pixel_bits) + (
                 get_entropy(accepted_tilt_occupancy) / max_tilt_bits
             )
@@ -534,7 +533,6 @@ class Calibrator(ParameterizedClass, QObject):
             max_delta_entropy_idx = -1
 
             for idx in np.logical_not(accepted_array).nonzero()[0]:
-
                 pixel_occupancy = np.copy(accepted_pixel_occupancy)
                 tilt_occupancy = np.copy(accepted_tilt_occupancy)
 

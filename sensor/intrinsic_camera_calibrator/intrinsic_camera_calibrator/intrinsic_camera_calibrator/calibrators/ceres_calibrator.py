@@ -33,5 +33,4 @@ class CeresCalibrator(Calibrator):
         self.set_parameters(**cfg)
 
     def _calibration_impl(self, detections: List[BoardDetection]) -> CameraModel:
-
         raise NotImplementedError

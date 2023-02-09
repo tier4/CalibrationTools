@@ -33,7 +33,6 @@ class CollectedData:
     """A class that contains a database of images and detections. Additionally, it contains a tensorized version of the statistics of the database to accelerate data comparison."""
 
     def __init__(self):
-
         self.detections: List[BoardDetection] = []
         self.distorted_images: List[np.array] = []
 
@@ -416,7 +415,6 @@ class DataCollector(ParameterizedClass):
         status = not self.filter_by_2d_redundancy.value and not self.filter_by_3d_redundancy.value
 
         if self.filter_by_2d_redundancy.value:
-
             normalized_2d_center_x_distance_test = (
                 normalized_2d_center_x_distance > self.min_normalized_2d_center_difference.value
             )
@@ -444,7 +442,6 @@ class DataCollector(ParameterizedClass):
             status |= status_2d
 
         if self.filter_by_3d_redundancy.value:
-
             center_distance_test = center_distance > self.min_3d_center_difference.value
             tilt_x_distance_test = tilt_x_distance > self.min_tilt_difference.value
             tilt_y_distance_test = tilt_y_distance > self.min_tilt_difference.value
