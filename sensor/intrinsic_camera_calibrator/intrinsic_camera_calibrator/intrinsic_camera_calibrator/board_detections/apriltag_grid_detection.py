@@ -40,7 +40,6 @@ class ApriltagGridDetection(BoardDetection):
         # Compute the object points
         self.tags = tags
 
-        # cSpell:ignore hsize
         hsize = 0.5 * tag_size
         single_object_points = np.array(
             [[-hsize, -hsize, 0.0], [hsize, -hsize, 0.0], [hsize, hsize, 0.0], [-hsize, hsize, 0.0]]

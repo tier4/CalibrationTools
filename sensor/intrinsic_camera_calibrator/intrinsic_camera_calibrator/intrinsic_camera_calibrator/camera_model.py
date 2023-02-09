@@ -70,7 +70,6 @@ class CameraModel:
             image_points.astype(np.float32).reshape(-1, 1, 2) for image_points in image_points_list
         ]
 
-        # cSpell:ignore rvecs, tvecs
         _, self.k, self.d, rvecs, tvecs = cv2.calibrateCamera(
             object_points_list,
             image_points_list,

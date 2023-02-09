@@ -132,7 +132,6 @@ class RosBagDataSource(DataSource, QObject):
         msg_type = get_message(self.type_map[topic])
         msg = deserialize_message(data, msg_type)
 
-        # cSpell:enableCompoundWords
         # cSpell:ignore imgmsg
         if isinstance(msg, Image):
             image_data = self.bridge.imgmsg_to_cv2(msg)
