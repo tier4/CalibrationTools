@@ -111,6 +111,7 @@ class RosTopicDataSource(DataSource, Node):
         if self.paused:
             return
 
+        # cSpell:enableCompoundWords
         with self.lock:
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
@@ -120,7 +121,6 @@ class RosTopicDataSource(DataSource, Node):
         """Process a raw image."""
         if self.paused:
             return
-
         # cSpell:ignore imgmsg
         with self.lock:
             image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8")

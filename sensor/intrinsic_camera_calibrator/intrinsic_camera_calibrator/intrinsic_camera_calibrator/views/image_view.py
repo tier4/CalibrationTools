@@ -298,6 +298,7 @@ class ImageView(QGraphicsItem, QObject):
             QRectF(point[0] - 0.5 * size, point[1] - 0.5 * size, size, size) for point in points
         ]
 
+        # cSpell:ignore rects
         painter.drawRects(rect_list)
 
     def draw_heatmap(self, painter: QPainter, heatmap: np.array, display_size: QSize):
