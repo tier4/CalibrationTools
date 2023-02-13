@@ -154,32 +154,31 @@ class InitializationView(QWidget):
 
         self.show()
 
+    def on_success(self):
+        """Handle the successful initialization of the data source."""
+        mode = (
+            OperationMode.CALIBRATION
+            if self.training_radio_button.isChecked()
+            else OperationMode.EVALUATION
+        )
+        board_type = self.board_type_combobox.currentData()
+        self.calibrator.start(
+            mode,
+            self.data_source,
+            board_type,
+            self.board_parameters_dict[board_type],
+            self.initial_intrinsics,
+        )
+        self.close()
+
+    def on_failed(self):
+        """Handle the unsuccessful initialization of the data source."""
+        self.setEnabled(True)
+        self.data_source = None
+        self.data_source_view = None
+
     def on_start(self):
         """Start the calibration process after receiving the user settings."""
-
-        def on_success():
-            """Handle the successful initialization of the data source."""
-            mode = (
-                OperationMode.CALIBRATION
-                if self.training_radio_button.isChecked()
-                else OperationMode.EVALUATION
-            )
-            board_type = self.board_type_combobox.currentData()
-            self.calibrator.start(
-                mode,
-                self.data_source,
-                board_type,
-                self.board_parameters_dict[board_type],
-                self.initial_intrinsics,
-            )
-            self.close()
-
-        def on_failed():
-            """Handle the unsuccessful initialization of the data source."""
-            self.setEnabled(True)
-            self.data_source = None
-            self.data_source_view = None
-
         source_type = self.data_source_combobox.currentData()
 
         if source_type == DataSourceEnum.TOPIC:
@@ -188,8 +187,8 @@ class InitializationView(QWidget):
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
             self.data_source_view = RosTopicView(self.data_source)
-            self.data_source_view.failed.connect(on_failed)
-            self.data_source_view.success.connect(on_success)
+            self.data_source_view.failed.connect(self.on_failed)
+            self.data_source_view.success.connect(self.on_success)
             self.setEnabled(False)
 
         elif source_type == DataSourceEnum.BAG2:
@@ -197,16 +196,16 @@ class InitializationView(QWidget):
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
             self.data_source_view = RosBagView(self.data_source)
-            self.data_source_view.failed.connect(on_failed)
-            self.data_source_view.success.connect(on_success)
+            self.data_source_view.failed.connect(self.on_failed)
+            self.data_source_view.success.connect(self.on_success)
             self.setEnabled(False)
         elif source_type == DataSourceEnum.FILES:
             self.data_source = make_data_source(self.data_source_combobox.currentData())
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
             self.data_source_view = ImageFilesView(self.data_source)
-            self.data_source_view.failed.connect(on_failed)
-            self.data_source_view.success.connect(on_success)
+            self.data_source_view.failed.connect(self.on_failed)
+            self.data_source_view.success.connect(self.on_success)
             self.setEnabled(False)
         else:
             raise NotImplementedError
