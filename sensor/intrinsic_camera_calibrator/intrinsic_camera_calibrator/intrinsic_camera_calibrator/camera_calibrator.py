@@ -109,7 +109,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         # General Configuration
         self.operation_mode = OperationMode.IDLE
-        self.board_type = BoardEnum.CHESSBOARD
+        self.board_type = BoardEnum.CHESS_BOARD
         self.board_parameters: ParameterizedClass = None
         self.detector: BoardDetector = None
         self.data_collector = DataCollector(self.cfg["data_collector"])
