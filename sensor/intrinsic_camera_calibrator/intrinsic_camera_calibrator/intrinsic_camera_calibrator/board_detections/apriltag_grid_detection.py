@@ -33,6 +33,7 @@ class ApriltagGridDetection(BoardDetection):
         cols: int,
         tag_size: float,
         tag_spacing: float,
+        min_index: int,
         tags,
     ):
 
@@ -53,8 +54,8 @@ class ApriltagGridDetection(BoardDetection):
         factor = tag_size * (1.0 + tag_spacing)
 
         for tag in self.tags:
-            row = tag.tag_id // cols
-            col = tag.tag_id % cols
+            row = (tag.tag_id - min_index) // cols
+            col = (tag.tag_id - min_index) % cols
             x = (col - 0.5 * (cols - 1)) * factor
             y = (row - 0.5 * (rows - 1)) * factor
             object_points = single_object_points + np.array([[x, y, 0.0]])
