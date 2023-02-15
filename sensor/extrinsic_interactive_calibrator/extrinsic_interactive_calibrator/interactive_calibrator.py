@@ -51,7 +51,6 @@ from rosidl_runtime_py.convert import message_to_ordereddict
 
 
 class InteractiveCalibratorUI(QMainWindow):
-
     sensor_data_signal = Signal()
     transform_signal = Signal()
     object_point_signal = Signal(float, float, float)
@@ -169,7 +168,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.show()
 
     def make_image_view(self):
-
         self.image_view = ImageView()
         # self.image_view.set_pixmap(pixmap)
         self.image_view.clicked_signal.connect(self.image_click_callback)
@@ -286,7 +284,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.pnp_method_combobox.addItem("SQPNP")
 
         def use_ransac_callback(value):
-
             if self.camera_info is None:
                 return
 
@@ -369,7 +366,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.data_collection_options_group.setFlat(True)
 
         def pause_start_callback():
-
             if self.ros_interface.is_paused():
                 self.pause_start_button.setText("Pause")
                 self.ros_interface.set_paused(False)
@@ -382,7 +378,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.pause_start_button.clicked.connect(pause_start_callback)
 
         def screenshot_callback():
-
             pixmap_roi = QPixmap(self.graphics_view.size())
             self.graphics_view.render(pixmap_roi)
 
@@ -600,7 +595,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.visualization_options_group.setLayout(visualization_options_layout)
 
     def save_calibration_callback(self):
-
         output_folder = QFileDialog.getExistingDirectory(
             None,
             "Select directory to save the calibration result",
@@ -630,7 +624,6 @@ class InteractiveCalibratorUI(QMainWindow):
         np.savetxt(os.path.join(output_folder, "image_points.txt"), image_points)
 
         if self.optimized_camera_info is not None:
-
             d = message_to_ordereddict(self.optimized_camera_info)
 
             with open(os.path.join(output_folder, "optimized_camera_info.json"), "w") as fout:
@@ -640,7 +633,6 @@ class InteractiveCalibratorUI(QMainWindow):
         pass
 
     def load_calibration_callback(self):
-
         input_dir = QFileDialog.getExistingDirectory(
             None,
             "Select directory to load calibration points from",
@@ -684,7 +676,6 @@ class InteractiveCalibratorUI(QMainWindow):
         pass
 
     def calibration_callback(self):
-
         if self.camera_info is None:
             return
 
@@ -723,7 +714,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.ros_interface.set_camera_lidar_transform(transform)
 
     def update_calibration_status(self):
-
         object_calibration_points = (
             self.object_calibration_points + self.external_object_calibration_points
         )
@@ -765,7 +755,6 @@ class InteractiveCalibratorUI(QMainWindow):
         )
 
     def tf_source_callback(self, string):
-
         string = string.lower()
 
         if "current" in string:
@@ -785,7 +774,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.image_view.update()
 
     def sensor_data_ros_callback(self, img, camera_info, pointcloud):
-
         # This method is executed in the ROS spin thread
         with self.lock:
             height, width, channel = img.shape
@@ -801,7 +789,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.sensor_data_signal.emit()
 
     def transform_ros_callback(self, transform):
-
         # This method is executed in the ROS spin thread
         with self.lock:
             self.transform_tmp = transform
@@ -810,7 +797,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.transform_signal.emit()
 
     def object_point_ros_callback(self, point):
-
         assert np.prod(point.shape) == 3
         point = point.reshape(
             3,
@@ -818,7 +804,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.object_point_signal.emit(point[0], point[1], point[2])
 
     def external_calibration_points_ros_callback(self, object_points, image_points):
-
         # This method is executed in the ROS spin thread
         with self.lock:
             self.external_object_calibration_points_tmp = object_points
@@ -836,7 +821,6 @@ class InteractiveCalibratorUI(QMainWindow):
             )
 
     def optimize_camera_intrinsics_result_callback(self, optimized_camera_info):
-
         with self.lock:
             self.calibration2_button.setEnabled(
                 self.calibration_possible and self.optimize_camera_intrinsics_status
@@ -851,7 +835,6 @@ class InteractiveCalibratorUI(QMainWindow):
             self.optimized_intrinsics_signal.emit()
 
     def calibration_api_request_received_callback(self):
-
         self.calibration_api_label.setStyleSheet(
             "QLabel { background-color : yellow; color : black; }"
         )
@@ -864,7 +847,6 @@ class InteractiveCalibratorUI(QMainWindow):
         )
 
     def calibration_api_request_sent_callback(self):
-
         self.calibration_api_label.setStyleSheet(
             "QLabel { background-color : green; color : black; }"
         )
@@ -874,10 +856,8 @@ class InteractiveCalibratorUI(QMainWindow):
         self.calibration_api_button.setEnabled(False)
 
     def sensor_data_callback(self):
-
         # This method is executed in the UI thread
         with self.lock:
-
             self.image_view.set_pixmap(self.pixmap_tmp)
             self.image_view.set_pointcloud(self.pointcloud_tmp)
 
@@ -895,10 +875,8 @@ class InteractiveCalibratorUI(QMainWindow):
             pass
 
     def transform_callback(self):
-
         # This method is executed in the UI thread
         with self.lock:
-
             if self.initial_transform is None:
                 self.initial_transform = np.copy(self.transform_tmp)
                 self.current_transform = self.initial_transform
@@ -915,7 +893,6 @@ class InteractiveCalibratorUI(QMainWindow):
                 self.tf_source_callback(self.tf_source_combobox.currentText())
 
     def image_click_callback(self, x, y):
-
         p = np.array([x, y]).reshape((2,))
 
         if self.current_object_point is None:
@@ -953,7 +930,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.image_view.update()
 
     def delete_calibration_points(self, p):
-
         if len(self.object_calibration_points) == 0:
             return
 
@@ -979,7 +955,6 @@ class InteractiveCalibratorUI(QMainWindow):
         )
 
     def object_point_callback(self, x, y, z):
-
         point_array = np.array([x, y, z], np.float64).reshape(1, 3)
 
         self.image_view.set_current_point(point_array)
@@ -988,7 +963,6 @@ class InteractiveCalibratorUI(QMainWindow):
         self.current_object_point = point_array
 
     def external_calibration_points_callback(self):
-
         with self.lock:
             self.external_object_calibration_points = copy.deepcopy(
                 self.external_object_calibration_points_tmp
@@ -1014,7 +988,6 @@ class InteractiveCalibratorUI(QMainWindow):
         )
 
     def optimized_camera_info_callback(self):
-
         with self.lock:
             self.optimized_camera_info = copy.deepcopy(self.optimized_camera_info_tmp)
 

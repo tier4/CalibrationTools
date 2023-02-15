@@ -4,8 +4,8 @@ Calibration tools used for autonomous driving
 
 ## Requirement
 
-- Ubuntu 20.04
-- ROS 2 Galactic
+- Ubuntu22.04
+- Ros Humble
 
 ## Installation procedures
 

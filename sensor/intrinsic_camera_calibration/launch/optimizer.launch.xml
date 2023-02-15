@@ -4,11 +4,13 @@
   <arg name="opt_scale" default="0.15"/>
   <arg name="k_coefficients" default="2"/>
   <arg name="zero_tangent_dist" default="false"/>
+  <arg name="no_distortion_model" default="true"/>
 
   <node pkg="intrinsic_camera_calibration" exec="camera_intrinsics_optimizer.py" name="camera_intrinsics_optimizer" output="screen" args="">
     <param name="opt_method" value="$(var opt_method)"/>
     <param name="opt_scale" value="$(var opt_scale)"/>
     <param name="k_coefficients" value="$(var k_coefficients)"/>
     <param name="zero_tangent_dist" value="$(var zero_tangent_dist)"/>
+    <param name="no_distortion_model" value="$(var no_distortion_model)"/>
   </node>
 </launch>

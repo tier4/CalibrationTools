@@ -84,7 +84,7 @@ void TagCalibratorVisualizer::drawCalibrationStatus(
 {
   visualization_msgs::msg::MarkerArray marker_array;
   circle_diameter_ = estimator.getNewHypothesisDistance();
-  // In the lidarframe
+  // In the lidar frame
   // Draw all current lidartags. Corners, ids
   // Draw all converged lidartags
 
@@ -284,7 +284,7 @@ void TagCalibratorVisualizer::drawCalibrationZone(
   }
 
   double min_calib_dist = 0.0;
-  double max_calib_dist = 12.0;  // this is inly for visualization pourposes
+  double max_calib_dist = 12.0;  // this is inly for visualization purposes
   double min_angle = std::atan2(v_l(0), v_l(2));
   double max_angle = std::atan2(v_r(0), v_r(2));
 
@@ -525,7 +525,7 @@ void TagCalibratorVisualizer::drawAprilTagDetections(
 
     for (int i = 0; i < v_size; ++i) {
       geometry_msgs::msg::Point p_ics;
-      p_ics.x = (v[i].x - cx) / fx;  // Assumess no distortion -> use image_rect to viz
+      p_ics.x = (v[i].x - cx) / fx;  // Assumes no distortion -> use image_rect to viz
       p_ics.y = (v[i].y - cy) / fy;
       p_ics.z = 1.f;
 

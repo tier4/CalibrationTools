@@ -39,7 +39,6 @@ import numpy as np
 
 
 def intensity_to_rainbow_qcolor(value, alpha=1.0):
-
     h = value * 5.0 + 1.0
     i = h // 1  # floor(h)
     f = h - i
@@ -109,7 +108,6 @@ class CustomQGraphicsView(QGraphicsView):
             item.update()
 
     def wheelEvent(self, event):
-
         zoom_in_factor = 1.25
         zoom_out_factor = 1 / zoom_in_factor
 
@@ -147,7 +145,6 @@ class Renderer(QObject):
 
 
 class ImageView(QGraphicsItem, QObject):
-
     clicked_signal = Signal(float, float)
     render_request_signal = Signal()
     rendered_signal = Signal()
@@ -222,7 +219,6 @@ class ImageView(QGraphicsItem, QObject):
         self.rendered_image = None
 
     def update(self):
-
         with self.lock:
             self.update_count += 1
             self.unprocessed_rendered_requests += 1
@@ -323,7 +319,6 @@ class ImageView(QGraphicsItem, QObject):
 
     def set_pixmap(self, pixmap):
         with self.lock:
-
             if self.pix is None or self.pix.size() != pixmap.size():
                 self.prepareGeometryChange()
 
@@ -338,7 +333,6 @@ class ImageView(QGraphicsItem, QObject):
         self.update()
 
     def set_pointcloud(self, pointcloud):
-
         with self.lock:
             self.data_ui.pointcloud_xyz = pointcloud[:, 0:3]
             self.data_ui.pointcloud_intensity = pointcloud[:, 3]
@@ -372,12 +366,10 @@ class ImageView(QGraphicsItem, QObject):
         return QSize(1000, 1000)
 
     def take_screenshot(self):
-
         with self.lock:
             return self.rendered_image.copy()
 
     def paint(self, painter, option, widget):
-
         with self.lock:
             self.data_ui.widget_size = widget.size()
             painter.setRenderHint(QPainter.Antialiasing)
@@ -393,9 +385,7 @@ class ImageView(QGraphicsItem, QObject):
             )
 
     def paintEventThread(self):
-
         with self.lock:
-
             self.render_count += 1
             self.unprocessed_rendered_requests -= 1
 
@@ -457,7 +447,6 @@ class ImageView(QGraphicsItem, QObject):
             self.rendered_signal.emit()
 
     def draw_pointcloud(self, painter):
-
         if (
             self.data_renderer.image_to_lidar_translation is None
             or self.data_renderer.image_to_lidar_rotation is None
@@ -553,7 +542,6 @@ class ImageView(QGraphicsItem, QObject):
         # print(f"Drawing pointcloud size: {scale_px.shape[0]}")
 
         for point, radius, color_channel in zip(pointcloud_wcs, scale_px, color_scalars):
-
             if self.data_renderer.color_channel == "intensity":
                 color = intensity_to_rainbow_qcolor(
                     color_channel, self.data_renderer.rendering_alpha
@@ -579,7 +567,6 @@ class ImageView(QGraphicsItem, QObject):
             draw_marker_f(point[0] - 0.5 * radius, point[1] - 0.5 * radius, radius, radius)
 
     def draw_calibration_points(self, painter):
-
         if (
             self.data_renderer.image_points is None
             or self.data_renderer.object_points is None
@@ -622,7 +609,6 @@ class ImageView(QGraphicsItem, QObject):
         for object_point_wcs, image_point, d in zip(
             object_points_wcs, self.data_renderer.image_points, repr_err
         ):
-
             image_point_wcs = image_point * self.image_to_widget_factor
 
             if self.data_renderer.draw_inliers_flag:
@@ -656,7 +642,6 @@ class ImageView(QGraphicsItem, QObject):
             )
 
     def draw_external_calibration_points(self, painter):
-
         if (
             self.data_renderer.external_image_points is None
             or self.data_renderer.external_object_points is None
@@ -698,7 +683,6 @@ class ImageView(QGraphicsItem, QObject):
         image_points = self.data_renderer.external_image_points
 
         for i1 in range(len(image_points)):
-
             tag_index = i1 // 4
             i2 = 4 * tag_index + ((i1 + 1) % 4)
 
@@ -728,7 +712,6 @@ class ImageView(QGraphicsItem, QObject):
         for object_point_wcs, image_point in zip(
             object_points_wcs, self.data_renderer.external_image_points
         ):
-
             image_point_wcs = image_point * self.image_to_widget_factor
 
             painter.setPen(line_pen)
@@ -752,7 +735,6 @@ class ImageView(QGraphicsItem, QObject):
             )
 
     def draw_current_point(self, painter):
-
         if self.data_renderer.current_object_point is None:
             return
 
@@ -800,7 +782,6 @@ class ImageView(QGraphicsItem, QObject):
         )
 
     def mousePressEvent(self, e):
-
         with self.lock:
             if self.pix is None or self.data_renderer.widget_size is None:
                 return

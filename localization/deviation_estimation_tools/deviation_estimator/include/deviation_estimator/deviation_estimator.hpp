@@ -15,32 +15,25 @@
 #ifndef DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 #define DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
 
+#include "deviation_estimator/gyro_bias_module.hpp"
+#include "deviation_estimator/logger.hpp"
+#include "deviation_estimator/utils.hpp"
+#include "deviation_estimator/validation_module.hpp"
+#include "deviation_estimator/velocity_coef_module.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
+#include "tier4_autoware_utils/ros/transform_listener.hpp"
 
-#include "geometry_msgs/msg/pose_array.hpp"
-#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "autoware_auto_vehicle_msgs/msg/velocity_report.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
-#include "geometry_msgs/msg/vector3.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
-#include "std_msgs/msg/header.hpp"
-#include "tier4_debug_msgs/msg/float64_multi_array_stamped.hpp"
 #include "tier4_debug_msgs/msg/float64_stamped.hpp"
 
-#include <tf2/transform_datatypes.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_listener.h>
-
-#include <chrono>
-#include <fstream>
 #include <iostream>
 #include <memory>
-#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
@@ -51,138 +44,78 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 
+geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
+  const std::vector<TrajectoryData> & traj_data_list,
+  const geometry_msgs::msg::Vector3 & gyro_bias);
+
+double estimate_stddev_velocity(
+  const std::vector<TrajectoryData> & traj_data_list, const double coef_vx,
+  const double vx_threshold, const double wz_threshold);
+
 class DeviationEstimator : public rclcpp::Node
 {
 public:
   DeviationEstimator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
-    sub_pose_;  //!< @brief measurement pose subscriber
-  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr
-    sub_twist_raw_;  //!< @brief measurement twist subscriber
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    sub_pose_with_cov_;  //!< @brief measurement pose with covariance subscriber
-  rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
-    sub_twist_with_cov_raw_;  //!< @brief measurement twist with covariance subscriber
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_with_cov_;
+  rclcpp::Subscription<autoware_auto_vehicle_msgs::msg::VelocityReport>::SharedPtr
+    sub_wheel_odometry_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_coef_vx_;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_bias_angvel_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_stddev_vx_;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_stddev_angvel_;
-  rclcpp::TimerBase::SharedPtr timer_control_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
 
   bool show_debug_info_;
-  bool use_pose_with_covariance_;   //!< @brief  use covariance in pose_with_covariance message
-  bool use_twist_with_covariance_;  //!< @brief  use covariance in twist_with_covariance message
   bool use_predefined_coef_vx_;
   double predefined_coef_vx_;
-  std::string results_path_;
   std::string imu_link_frame_;
 
-  std::vector<geometry_msgs::msg::PoseStamped> pose_all_;
-  std::vector<geometry_msgs::msg::TwistStamped> twist_all_;
+  std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
+  std::vector<geometry_msgs::msg::Vector3Stamped> gyro_all_;
   std::vector<geometry_msgs::msg::PoseStamped> pose_buf_;
-  std::vector<double> coef_vx_list_;
-  std::pair<double, double> coef_vx_;
-  std::vector<std::vector<double>> bias_angvel_list_;
-  std::vector<std::pair<double, double>> bias_angvel_;
-  geometry_msgs::msg::Vector3Stamped bias_angvel_base_;
-  geometry_msgs::msg::Vector3Stamped bias_angvel_imu_;
-
-  double stddev_vx_;
-  double stddev_vx_prime_;
-  std::vector<double> stddev_angvel_base_;
-  std::vector<double> stddev_angvel_prime_base_;
-  std::vector<double> stddev_angvel_prime_imu_;
+  std::vector<TrajectoryData> traj_data_list_for_gyro_;
+  std::vector<TrajectoryData> traj_data_list_for_velocity_;
 
   double dt_design_;
   double dx_design_;
   double wz_threshold_;
   double vx_threshold_;
+  double accel_threshold_;
   double estimation_freq_;
+  double time_window_;
+  bool add_bias_uncertainty_;
 
-  std::string output_frame_;
-  geometry_msgs::msg::TransformStamped::SharedPtr tf_base2imu_ptr_;
+  std::string imu_frame_;
+  const std::string output_frame_;
+  const std::string results_dir_;
+  const Logger results_logger_;
 
-  /**
-   * @brief set poseWithCovariance measurement
-   */
-  void callbackPoseWithCovariance(geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+  std::unique_ptr<GyroBiasModule> gyro_bias_module_;
+  std::unique_ptr<VelocityCoefModule> vel_coef_module_;
+  std::unique_ptr<ValidationModule> validation_module_;
 
-  /**
-   * @brief set twistWithCovariance measurement
-   */
-  void callbackTwistWithCovarianceRaw(
-    geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
+  std::shared_ptr<tier4_autoware_utils::TransformListener> transform_listener_;
 
-  /**
-   * @brief set pose measurement
-   */
-  void callbackPose(geometry_msgs::msg::PoseStamped::SharedPtr msg);
+  void callback_pose_with_covariance(geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
-  /**
-   * @brief set twist measurement
-   */
-  void callbackTwistRaw(geometry_msgs::msg::TwistStamped::SharedPtr msg);
+  void callback_wheel_odometry(
+    const autoware_auto_vehicle_msgs::msg::VelocityReport::ConstSharedPtr wheel_odometry_msg_ptr);
 
-  /**
-   * @brief computes update & prediction of EKF for each ekf_dt_[s] time
-   */
-  void timerCallback();
+  void callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg_ptr);
 
-  /**
-   * @brief stock bias for every small sub-trajectory
-   */
-  void updateBias();
+  void timer_callback();
 
-  /**
-   * @brief clip radian
-   */
-  double clipRadian(double rad);
+  double add_bias_uncertainty_on_velocity(
+    const double stddev_vx, const double stddev_coef_vx) const;
 
-  /**
-   * @brief save the results to a text file
-   */
-  void saveEstimatedParameters();
-
-  /**
-   * @brief get yaw from quaternion
-   */
-  double getYawFromQuat(const geometry_msgs::msg::Quaternion quat_msg);
-
-  /**
-   * @brief get stddev
-   */
-  void estimateStddev();
-
-  /**
-   * @brief get stddev prime
-   */
-  void estimateStddevPrime();
-
-  /**
-   * @brief calculate diff x
-   */
-  std::pair<double, double> calculateErrorPos(
-    const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-    const bool enable_bias = false);
-
-  /**
-   * @brief calculate diff RPY
-   */
-  std::vector<double> calculateErrorRPY(
-    const std::vector<geometry_msgs::msg::PoseStamped> & pose_list,
-    const std::vector<geometry_msgs::msg::TwistStamped> & twist_list,
-    const bool enable_bias = false);
-
-  bool getTransform(
-    const std::string & target_frame, const std::string & source_frame,
-    const geometry_msgs::msg::TransformStamped::SharedPtr transform_stamped_ptr);
-
-  //   friend class DeviationEstimatorTestSuite;  // for test code
+  geometry_msgs::msg::Vector3 add_bias_uncertainty_on_angular_velocity(
+    const geometry_msgs::msg::Vector3 stddev_angvel_base,
+    const geometry_msgs::msg::Vector3 stddev_angvel_bias_base) const;
 };
 #endif  // DEVIATION_ESTIMATOR__DEVIATION_ESTIMATOR_HPP_
