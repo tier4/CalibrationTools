@@ -5,6 +5,7 @@
   <let name="parent_frame" value="sensor_kit_base_link"/>
 
   <arg name="camera_name"/>
+  <arg name="use_concatenated_pointcloud" default="true"/>
 
   <let name="image_topic" value="/sensing/camera/$(var camera_name)/image_raw"/>
   <let name="image_topic" value="/sensing/camera/traffic_light/image_raw" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
@@ -22,6 +23,7 @@
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/concatenated/pointcloud" if="$(eval &quot;'$(var use_concatenated_pointcloud)' == 'true' &quot;)"/>
 
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
