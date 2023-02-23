@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,14 +23,15 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace extrinsic_tag_based_base_calibrator
 {
 
-struct ApriltagParameters
+struct ApriltagDetectorParameters
 {
-  std::string family;
+  // std::vector<std::string> families; moved out TODOKL remove
   int max_hamming;
   double min_margin;
   double max_homography_error;
@@ -39,6 +40,32 @@ struct ApriltagParameters
   int nthreads;
   bool debug;
   bool refine_edges;
+};
+
+enum class TagType {
+  Unknown,
+  IntrinsicCalibrationTag,
+  WaypointTag,
+  WheelTag,
+  GroundTag,
+};
+
+enum class SensorType {
+  Unknown,
+  CalibrationCamera,
+  CalibrationLidar,
+  ExternalCamera,
+};
+
+struct TagParameters
+{
+  TagType tag_type;
+  std::string family;
+  int rows;
+  int cols;
+  double size;
+  double spacing;
+  std::unordered_set<int> ids;
 };
 
 class IntrinsicParameters
@@ -69,7 +96,7 @@ public:
     fs << "undistorted_camera_matrix" << undistorted_camera_matrix;
   }
 
-  bool isValid()
+  bool isValid() const
   {
     return !size.empty() && camera_matrix(0, 0) > 0.0 && camera_matrix(1, 1) > 0.0 &&
            camera_matrix(0, 2) > 0.0 && camera_matrix(1, 2) > 0.0 &&
@@ -83,158 +110,132 @@ public:
   cv::Mat_<double> undistorted_camera_matrix;
 };
 
-struct ApriltagDetection
-{
-  int id;
-  std::vector<cv::Point2d> corners;
-  cv::Point2d center;
-  cv::Affine3d pose;
-  double size;
-};
-
-struct LidartagDetection
-{
-  int id;
-  cv::Affine3d pose;
-  double size;
-};
-
-struct ExternalCameraFrame
-{
-  std::string image_filename;
-  std::vector<ApriltagDetection> detections;
-};
-
-struct CalibrationScene
-{
-  std::vector<LidartagDetection> calibration_lidar_detections;
-  std::vector<ApriltagDetection> calibration_camera_detections;
-  std::vector<ExternalCameraFrame> external_camera_frames;
-};
 struct UID
 {
+  enum UIDType { InvalidUID, SensorUID, TagUID };
+
   UID()
-  : is_camera(false),
-    is_tag(false),
-    is_waypoint_tag(false),
-    is_ground_tag(false),
-    is_wheel_tag(false),
+  : type(InvalidUID),
+    sensor_type(SensorType::Unknown),
+    tag_type(TagType::Unknown),
     scene_id(-1),
+    calibration_sensor_id(-1),
     frame_id(-1),
     tag_id(-1)
   {
   }
 
-  UID(
-    bool is_camera, bool is_waypoint, bool is_ground_tag, bool is_wheel_tag, int scene_id,
-    int frame_id, int tag_id)
-  : is_camera(is_camera),
-    is_waypoint_tag(is_waypoint),
-    is_ground_tag(is_ground_tag),
-    is_wheel_tag(is_wheel_tag),
-    scene_id(scene_id),
-    frame_id(frame_id),
-    tag_id(tag_id)
+  std::string toString() const
   {
-    is_tag = is_waypoint_tag || is_ground_tag || is_wheel_tag;
-  }
-
-  std::string to_string() const
-  {
-    if (is_camera) {
-      return "s" + std::to_string(scene_id) + "_c" + std::to_string(frame_id);
-    } else if (is_waypoint_tag) {
+    if (sensor_type == SensorType::CalibrationCamera) {
+      return "c" + std::to_string(frame_id);
+    } else if (sensor_type == SensorType::CalibrationLidar) {
+      return "l" + std::to_string(frame_id);
+    } else if (sensor_type == SensorType::ExternalCamera) {
+      return "s" + std::to_string(scene_id) + "_e" + std::to_string(frame_id);
+    } else if (tag_type == TagType::WaypointTag) {
       return "s" + std::to_string(scene_id) + "_w" + std::to_string(tag_id);
-    } else if (is_ground_tag) {
+    } else if (tag_type == TagType::GroundTag) {
       return "g" + std::to_string(tag_id);
-    } else if (is_wheel_tag) {
-      return "w" + std::to_string(tag_id);
+    } else if (tag_type == TagType::WheelTag) {
+      return "t" + std::to_string(tag_id);
     } else {
       throw std::invalid_argument("Invalid UID");
     }
   }
 
+  bool isValid() const
+  {
+    if (sensor_type == SensorType::Unknown || tag_type == TagType::Unknown) {
+      return false;
+    } else if (
+      (sensor_type == SensorType::CalibrationCamera ||
+       sensor_type == SensorType::CalibrationLidar) &&
+      ((frame_id >= 0 || scene_id >= 0 || calibration_sensor_id < 0))) {
+      return false;
+    } else if (
+      (sensor_type == SensorType::ExternalCamera) &&
+      (frame_id < 0 || scene_id < 0 || calibration_sensor_id >= 0)) {
+      return false;
+    } else if (
+      (tag_type == TagType::GroundTag || tag_type == TagType::WheelTag) &&
+      (frame_id >= 0 || scene_id >= 0 || calibration_sensor_id >= 0)) {
+      return false;
+    } else if (
+      (tag_type == TagType::WaypointTag) &&
+      (frame_id >= 0 || scene_id < 0 || calibration_sensor_id >= 0)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   bool operator<(const UID & other) const
   {
-    return (this->to_string().compare(other.to_string())) > 0;
+    return (this->toString().compare(other.toString())) > 0;
   }
 
-  static UID makeCameraUID(int scene_id, int frame_id)
+  bool operator==(const UID & other) const { return this->toString() == other.toString(); }
+
+  static UID makeSensorUID(SensorType sensor_type, int scene_id, int frame_id)
   {
-    return UID(true, false, false, false, scene_id, frame_id, -1);
+    assert(sensor_type == SensorType::ExternalCamera);
+
+    UID uid;
+    uid.type = SensorUID;
+    uid.sensor_type = sensor_type;
+    uid.scene_id = scene_id;
+    uid.frame_id = frame_id;
+
+    return uid;
   }
 
-  static UID makeWaypointUID(int scene_id, int waypoint_id)
+  static UID makeSensorUID(SensorType sensor_type, int frame_id)
   {
-    return UID(false, true, false, false, scene_id, -1, waypoint_id);
+    assert(sensor_type != SensorType::ExternalCamera);
+
+    UID uid;
+    uid.type = SensorUID;
+    uid.sensor_type = sensor_type;
+    uid.frame_id = frame_id;
+
+    return uid;
   }
 
-  static UID makeGroundTagUID(int tag_id) { return UID(false, false, true, false, -1, -1, tag_id); }
+  static UID makeTagUID(TagType tag_type, int scene_id, int tag_id)
+  {
+    assert(tag_type == TagType::WaypointTag);
 
-  static UID makeWheelTagUID(int tag_id) { return UID(false, false, false, true, -1, -1, tag_id); }
+    UID uid;
+    uid.type = TagUID;
+    uid.tag_type = tag_type;
+    uid.scene_id = scene_id;
+    uid.tag_id = tag_id;
 
-  bool is_camera;
-  bool is_tag;
-  bool is_waypoint_tag;
-  bool is_ground_tag;
-  bool is_wheel_tag;
+    return uid;
+  }
 
-  int scene_id;
-  int frame_id;
-  int tag_id;
-};
+  static UID makeTagUID(TagType tag_type, int tag_id)
+  {
+    assert(tag_type != TagType::WaypointTag);
 
-struct CalibrationData
-{
-  using Ptr = std::shared_ptr<CalibrationData>;
+    UID uid;
+    uid.type = TagUID;
+    uid.tag_type = tag_type;
+    uid.tag_id = tag_id;
 
-  static constexpr int POSE_OPT_DIM = 7;
-  static constexpr int SHRD_GROUND_TAG_POSE_DIM = 5;
-  static constexpr int INDEP_GROUND_TAG_POSE_DIM = 3;
-  static constexpr int INTRINSICS_DIM = 6;
+    return uid;
+  }
 
-  static constexpr int ROTATION_W_INDEX = 0;
-  static constexpr int ROTATION_X_INDEX = 1;
-  static constexpr int ROTATION_Y_INDEX = 2;
-  static constexpr int ROTATION_Z_INDEX = 3;
-  static constexpr int TRANSLATION_X_INDEX = 4;
-  static constexpr int TRANSLATION_Y_INDEX = 5;
-  static constexpr int TRANSLATION_Z_INDEX = 6;
+  UIDType type;
+  SensorType sensor_type;
+  TagType tag_type;
 
-  static constexpr int INTRINSICS_CX_INDEX = 0;
-  static constexpr int INTRINSICS_CY_INDEX = 1;
-  static constexpr int INTRINSICS_FX_INDEX = 2;
-  static constexpr int INTRINSICS_FY_INDEX = 3;
-  static constexpr int INTRINSICS_K1_INDEX = 4;
-  static constexpr int INTRINSICS_K2_INDEX = 5;
-
-  static constexpr int GROUND_TAG_D_INDEX = 4;
-  static constexpr int GROUND_TAG_YAW_INDEX = 0;
-  static constexpr int GROUND_TAG_X_INDEX = 1;
-  static constexpr int GROUND_TAG_Y_INDEX = 2;
-
-  std::vector<CalibrationScene> scenes;
-
-  std::set<int> detected_tag_ids_set;
-
-  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_external_camera_poses;
-  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
-    initial_external_camera_intrinsics;
-
-  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_tag_poses_map;
-  std::vector<std::shared_ptr<cv::Affine3d>> initial_waypoint_tag_poses;
-  std::vector<std::shared_ptr<cv::Affine3d>> initial_ground_tag_poses;
-  std::shared_ptr<cv::Affine3d> initial_left_wheel_tag_pose;
-  std::shared_ptr<cv::Affine3d> initial_right_wheel_tag_pose;
-
-  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_external_camera_poses;
-  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
-    optimized_external_camera_intrinsics;
-  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_tag_poses_map;
-  std::vector<std::shared_ptr<cv::Affine3d>> optimized_waypoint_tag_poses;
-  std::vector<std::shared_ptr<cv::Affine3d>> optimized_ground_tag_poses;
-  std::shared_ptr<cv::Affine3d> optimized_left_wheel_tag_pose;
-  std::shared_ptr<cv::Affine3d> optimized_right_wheel_tag_pose;
+  int scene_id;               // Scenes are needed when the waypoints required to be moved
+  int calibration_sensor_id;  // Multiple sensors can be calibrated simultaneously
+  int frame_id;               // Each scene can have multiple external camera samples
+  int tag_id;  // Tag ids are unique for each tag type. They can be repeated between different tag
+               // types
 };
 
 }  // namespace extrinsic_tag_based_base_calibrator

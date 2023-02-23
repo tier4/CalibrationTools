@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__VISUALIZATION_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__VISUALIZATION_HPP_
 
+#include <extrinsic_tag_based_base_calibrator/apriltag_detection.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>

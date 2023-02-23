@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATION__APRILTAG_CALIBRATOR_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__INTRINSICS_CALIBRATION__APRILTAG_CALIBRATOR_HPP_
 
+#include <extrinsic_tag_based_base_calibrator/apriltag_detection.hpp>
 #include <extrinsic_tag_based_base_calibrator/apriltag_detector.hpp>
 #include <extrinsic_tag_based_base_calibrator/intrinsics_calibration/intrinsics_calibrator.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
@@ -32,11 +33,10 @@ class ApriltagBasedCalibrator : public IntrinsicsCalibrator
 {
 public:
   ApriltagBasedCalibrator(
-    const ApriltagParameters & parameters, const std::vector<int> tag_ids,
+    const ApriltagDetectorParameters & detector_parameters, const TagParameters & tag_parameters,
     bool use_tangent_distortion, int num_radial_distortion_coeffs, bool debug = false)
   : IntrinsicsCalibrator(use_tangent_distortion, num_radial_distortion_coeffs, debug),
-    detector_(parameters),
-    calibration_tag_ids_(tag_ids)
+    detector_(detector_parameters, {tag_parameters})  //,
   {
   }
 
@@ -45,7 +45,6 @@ protected:
   void writeDebugImages(const IntrinsicParameters & intrinsics) override;
 
   ApriltagDetector detector_;
-  std::vector<int> calibration_tag_ids_;
 
   std::unordered_map<std::string, std::vector<int>> filtered_image_file_name_to_calibration_id_map_;
 };

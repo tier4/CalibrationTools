@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,12 +30,6 @@ void ApriltagBasedCalibrator::extractCalibrationPoints()
   size_.height = -1;
   size_.width = -1;
 
-  std::unordered_set<int> calibration_tag_ids_set;
-
-  for (const auto id : calibration_tag_ids_) {
-    calibration_tag_ids_set.insert(id);
-  }
-
   std::vector<cv::Point3f> single_tag_object_points = {
     {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
 
@@ -55,24 +49,17 @@ void ApriltagBasedCalibrator::extractCalibrationPoints()
     assert(size_.width == -1 || size_.width == grayscale_img.cols);
     size_ = grayscale_img.size();
 
-    auto raw_detections = detector_.detect(grayscale_img);
-
-    // Filter detections
-    std::vector<ApriltagDetection> filtered_detections;
-    std::copy_if(
-      raw_detections.begin(), raw_detections.end(), std::back_inserter(filtered_detections),
-      [&calibration_tag_ids_set](const auto & detection) {
-        return calibration_tag_ids_set.count(detection.id) > 0;
-      });
+    auto detections_map = detector_.detect(grayscale_img);
+    auto detections = detections_map[TagType::IntrinsicCalibrationTag];
 
     // Extract points
-    for (const auto & detection : filtered_detections) {
+    for (const auto & detection : detections) {
       filtered_image_file_name_to_calibration_id_map_[calibration_image_file_names_[i]].push_back(
         image_points_.size());
 
       std::vector<cv::Point2f> corners;
       std::transform(
-        detection.corners.begin(), detection.corners.end(), std::back_inserter(corners),
+        detection.image_corners.begin(), detection.image_corners.end(), std::back_inserter(corners),
         [](const cv::Point2d & corner) { return cv::Point2f(corner.x, corner.y); });
 
       image_points_.push_back(corners);

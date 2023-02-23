@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__CALIBRATION_PROBLEM_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__CALIBRATION_PROBLEM_HPP_
 
+#include <extrinsic_tag_based_base_calibrator/calibration_types.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 
 #include <array>
@@ -57,17 +58,6 @@ public:
   static constexpr int RESIDUAL_DIM = 8;
 
   /*!
-   * Sets the tag ids for each type of tag
-   * @param[in] waypoint_tag_ids vector of ids corresponding to waypoint tags
-   * @param[in] ground_tag_ids vector of ids corresponding to ground tags
-   * @param[in] left_wheel_tag_id tag id of the left wheel tag
-   * @param[in] right_wheel_tag_id tag id of the right wheel tag
-   */
-  void setTagIds(
-    std::vector<int> & waypoint_tag_ids, std::vector<int> & ground_tag_ids, int left_wheel_tag_id,
-    int right_wheel_tag_id);
-
-  /*!
    * Sets whether or not the external camera intrinsics should be optimized during ba
    * @param[in] ba_optimize_intrinsics whether or not the external camera intrinsics should be
    * optimized
@@ -95,10 +85,17 @@ public:
   void setExternalCameraIntrinsics(IntrinsicParameters & intrinsics);
 
   /*!
-   * Sets the calibration camera intrinsics
-   * @param[in] intrinsics the camera intrinsics
+   * Sets the calibration cameras intrinsics
+   * @param[in] calibration_camera_intrinsics_map the camera intrinsics
    */
-  void setCalibrationSensorIntrinsics(IntrinsicParameters & intrinsics);
+  void setCalibrationCameraIntrinsics(
+    std::map<UID, IntrinsicParameters> & calibration_camera_intrinsics_map);
+
+  /*!
+   * Sets the calibration lidars intrinsics
+   * @param[in] calibration_lidar_virtual_f the camera intrinsics
+   */
+  void setCalibrationLidarIntrinsics(double calibration_lidar);
 
   /*!
    * Sets whether the waypoint poses should be fixed during optimization. This is used for base
@@ -181,9 +178,9 @@ protected:
     const std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder,
     std::shared_ptr<cv::Affine3d> & pose);
 
-  std::set<int> waypoint_tag_ids_set_;
-  std::set<int> ground_tag_ids_set_;
-  std::set<int> wheel_tag_ids_set_;
+  // std::set<int> waypoint_tag_ids_set_; on the way to be deprecated
+  // std::set<int> ground_tag_ids_set_;
+  // std::set<int> wheel_tag_ids_set_;
 
   int left_wheel_tag_id_;
   int right_wheel_tag_id_;
@@ -191,9 +188,8 @@ protected:
   bool optimize_intrinsics_;
   bool share_intrinsics_;
   bool force_shared_ground_plane_;
-  bool fix_waypoint_poses_;
 
-  IntrinsicParameters calibration_sensor_intrinsics_;
+  double calibration_lidar_intrinsics_;
   IntrinsicParameters external_camera_intrinsics_;
 
   CalibrationData::Ptr data_;

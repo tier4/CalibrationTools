@@ -22,7 +22,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/TimeDelay.msg"
   "srv/Empty.srv"
   "srv/Files.srv"
-  "srv/FilesWithSceneId.srv"
+  "srv/FilesWithFrameAndSceneId.srv"
   "srv/ExtrinsicCalibrationManager.srv"
   "srv/ExtrinsicCalibrator.srv"
   "srv/IntrinsicsOptimizer.srv"

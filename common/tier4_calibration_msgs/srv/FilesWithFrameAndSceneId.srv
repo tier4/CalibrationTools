@@ -1,4 +1,5 @@
 string[] files
+string frame_id
 int64 scene_id
 ---
 bool success

@@ -17,11 +17,13 @@
 #include <tier4_tag_utils/types.hpp>
 
 #include <image_geometry/pinhole_camera_model.h>
-#include <tf2_eigen/tf2_eigen.h>
 
 #ifdef ROS_DISTRO_GALACTIC
+#include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #else
+#include <tf2_eigen/tf2_eigen.hpp>
+
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 

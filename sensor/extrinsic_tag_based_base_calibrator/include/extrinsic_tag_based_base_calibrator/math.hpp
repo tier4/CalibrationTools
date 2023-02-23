@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__MATH_HPP_
 
 #include <Eigen/Core>
+#include <extrinsic_tag_based_base_calibrator/calibration_types.hpp>
+#include <extrinsic_tag_based_base_calibrator/scene_types.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 
 #include <memory>
@@ -86,6 +88,8 @@ cv::Affine3d computeBaseLink(
  */
 cv::Point2d projectPoint(
   const cv::Vec3d & p, double fx, double fy, double cx, double cy, double k1, double k2);
+
+void estimateInitialPoses(CalibrationData & data, const UID & main_sensor_uid);
 
 }  // namespace extrinsic_tag_based_base_calibrator
 

@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -182,23 +182,23 @@ void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scala
   std::vector<double> edge_sizes;
   cv::Point2d estimated_center(0.0, 0.0);
 
-  for (std::size_t i = 0; i < detection.corners.size(); ++i) {
-    std::size_t j = (i + 1) % detection.corners.size();
-    edge_sizes.push_back(cv::norm(detection.corners[i] - detection.corners[j]));
-    estimated_center += detection.corners[i];
+  for (std::size_t i = 0; i < detection.image_corners.size(); ++i) {
+    std::size_t j = (i + 1) % detection.image_corners.size();
+    edge_sizes.push_back(cv::norm(detection.image_corners[i] - detection.image_corners[j]));
+    estimated_center += detection.image_corners[i];
   }
 
   double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
   estimated_center /= 4;
 
-  for (std::size_t i = 0; i < detection.corners.size(); ++i) {
-    std::size_t j = (i + 1) % detection.corners.size();
+  for (std::size_t i = 0; i < detection.image_corners.size(); ++i) {
+    std::size_t j = (i + 1) % detection.image_corners.size();
     cv::line(
-      img, detection.corners[i], detection.corners[j], color,
+      img, detection.image_corners[i], detection.image_corners[j], color,
       static_cast<int>(std::max(tag_size / 512.0, 1.0)), cv::LINE_AA);
 
     cv::putText(
-      img, std::to_string(i), detection.corners[i], cv::FONT_HERSHEY_SIMPLEX,
+      img, std::to_string(i), detection.image_corners[i], cv::FONT_HERSHEY_SIMPLEX,
       std::max(tag_size / 256.0, 1.0), color, static_cast<int>(std::max(tag_size / 128.0, 1.0)));
   }
 
@@ -213,9 +213,9 @@ void drawAxes(
 {
   std::vector<double> edge_sizes;
 
-  for (std::size_t i = 0; i < detection.corners.size(); ++i) {
-    std::size_t j = (i + 1) % detection.corners.size();
-    edge_sizes.push_back(cv::norm(detection.corners[i] - detection.corners[j]));
+  for (std::size_t i = 0; i < detection.image_corners.size(); ++i) {
+    std::size_t j = (i + 1) % detection.image_corners.size();
+    edge_sizes.push_back(cv::norm(detection.image_corners[i] - detection.image_corners[j]));
   }
 
   double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());

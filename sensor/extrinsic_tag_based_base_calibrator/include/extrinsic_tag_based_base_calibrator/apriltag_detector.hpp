@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__APRILTAG_DETECTOR_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__APRILTAG_DETECTOR_HPP_
 
+#include <extrinsic_tag_based_base_calibrator/apriltag_detection.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 
@@ -33,14 +34,10 @@ public:
   typedef apriltag_family_t * (*create_family_fn_type)();
   typedef void (*destroy_family_fn_type)(apriltag_family_t *);
 
-  explicit ApriltagDetector(const ApriltagParameters & parameters);
+  explicit ApriltagDetector(
+    const ApriltagDetectorParameters & parameters,
+    const std::vector<TagParameters> & tag_parameters);
   ~ApriltagDetector();
-
-  /*!
-   * Sets the id-dependent tag sizes to estimate the 3d poses
-   * @param[in] tag_sizes_map A map containing the size (side-to-side) of the tags
-   */
-  void setTagSizes(const std::unordered_map<int, double> & tag_sizes_map);
 
   /*!
    * Sets the intrinsics of the camera for the detector, which are used to estimate the 3d pose of
@@ -58,14 +55,18 @@ public:
    * @param[in] img The image to obtain detections from
    * @return a vector of ApriltagDetection found in the img
    */
-  std::vector<ApriltagDetection> detect(const cv::Mat & img) const;
+  GroupedApriltagGridDetections detect(const cv::Mat & img) const;
 
 protected:
-  ApriltagParameters parameters_;
-  apriltag_family_t * apriltag_family_;
+  ApriltagDetectorParameters detector_parameters_;
+  std::unordered_map<TagType, TagParameters> tag_parameters_map_;
+  std::unordered_map<std::string, apriltag_family_t *> apriltag_family_map;
   apriltag_detector_t * apriltag_detector_;
 
-  std::unordered_map<int, double> tag_sizes_map_;
+  std::unordered_map<TagType, std::unordered_map<int, int>> tag_id_to_offset_map_;
+
+  std::unordered_map<std::string, TagType> tag_family_and_id_to_type_map_;
+  std::unordered_map<TagType, double> tag_sizes_map_;
   double fx_, fy_, cx_, cy_;
 
   static std::unordered_map<std::string, create_family_fn_type> tag_create_fn_map;

@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__SERIALIZATION_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__SERIALIZATION_HPP_
 
+#include <extrinsic_tag_based_base_calibrator/calibration_types.hpp>
+#include <extrinsic_tag_based_base_calibrator/scene_types.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 
@@ -80,6 +82,16 @@ inline void serialize(Archive & ar, cv::Point_<_Tp> & p, const unsigned int vers
   ar & p.y;
 }
 
+template <class Archive, typename _Tp>
+inline void serialize(Archive & ar, cv::Point3_<_Tp> & p, const unsigned int version)
+{
+  (void)version;
+
+  ar & p.x;
+  ar & p.y;
+  ar & p.z;
+}
+
 template <class Archive, typename _Tp, int _m, int _n>
 inline void serialize(Archive & ar, cv::Matx<_Tp, _m, _n> & m, const unsigned int version)
 {
@@ -100,8 +112,28 @@ void serialize(
   const unsigned int version)
 {
   (void)version;
+  ar & detection.family;
   ar & detection.id;
-  ar & detection.corners;
+  ar & detection.image_corners;
+  ar & detection.object_corners;
+  ar & detection.center;
+  ar & detection.pose;
+  ar & detection.size;
+}
+
+template <class Archive>
+void serialize(
+  Archive & ar, extrinsic_tag_based_base_calibrator::ApriltagGridDetection & detection,
+  const unsigned int version)
+{
+  (void)version;
+  ar & detection.cols;
+  ar & detection.rows;
+  ar & detection.sub_detections;
+  ar & detection.family;
+  ar & detection.id;
+  ar & detection.image_corners;
+  ar & detection.object_corners;
   ar & detection.center;
   ar & detection.pose;
   ar & detection.size;
@@ -114,6 +146,7 @@ void serialize(
 {
   (void)version;
   ar & detection.id;
+  ar & detection.object_corners;
   ar & detection.pose;
   ar & detection.size;
 }
@@ -130,12 +163,36 @@ void serialize(
 
 template <class Archive>
 void serialize(
+  Archive & ar,
+  extrinsic_tag_based_base_calibrator::SingleCalibrationLidarDetections & lidar_detections,
+  const unsigned int version)
+{
+  (void)version;
+  ar & lidar_detections.calibration_frame;
+  ar & lidar_detections.calibration_lidar_id;
+  ar & lidar_detections.detections;
+}
+
+template <class Archive>
+void serialize(
+  Archive & ar,
+  extrinsic_tag_based_base_calibrator::SingleCalibrationCameraDetections & camera_detections,
+  const unsigned int version)
+{
+  (void)version;
+  ar & camera_detections.calibration_frame;
+  ar & camera_detections.calibration_camera_id;
+  ar & camera_detections.grouped_detections;
+}
+
+template <class Archive>
+void serialize(
   Archive & ar, extrinsic_tag_based_base_calibrator::CalibrationScene & scene,
   const unsigned int version)
 {
   (void)version;
-  ar & scene.calibration_camera_detections;
-  ar & scene.calibration_lidar_detections;
+  ar & scene.calibration_cameras_detections;
+  ar & scene.calibration_lidars_detections;
   ar & scene.external_camera_frames;
 }
 
@@ -144,13 +201,12 @@ void serialize(
   Archive & ar, extrinsic_tag_based_base_calibrator::UID & uid, const unsigned int version)
 {
   (void)version;
-  ar & uid.is_camera;
-  ar & uid.is_tag;
-  ar & uid.is_waypoint_tag;
-  ar & uid.is_ground_tag;
-  ar & uid.is_wheel_tag;
+  ar & uid.type;
+  ar & uid.sensor_type;
+  ar & uid.tag_type;
 
   ar & uid.scene_id;
+  ar & uid.calibration_sensor_id;
   ar & uid.frame_id;
   ar & uid.tag_id;
 }
@@ -162,9 +218,9 @@ void serialize(
 {
   (void)version;
   ar & data.scenes;
-  ar & data.detected_tag_ids_set;
+  // ar & data.detected_tag_ids_set; TODOKL : delete ?
   ar & data.initial_external_camera_poses;
-  ar & data.initial_external_camera_intrinsics;
+  ar & data.initial_camera_intrinsics;
   ar & data.initial_tag_poses_map;
   ar & data.initial_waypoint_tag_poses;
   ar & data.initial_ground_tag_poses;
@@ -172,7 +228,7 @@ void serialize(
   ar & data.initial_right_wheel_tag_pose;
 
   ar & data.optimized_external_camera_poses;
-  ar & data.optimized_external_camera_intrinsics;
+  ar & data.optimized_camera_intrinsics;
   ar & data.optimized_tag_poses_map;
   ar & data.optimized_waypoint_tag_poses;
   ar & data.optimized_ground_tag_poses;

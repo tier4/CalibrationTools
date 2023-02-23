@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <extrinsic_tag_based_base_calibrator/apriltag_detector.hpp>
+#include <extrinsic_tag_based_base_calibrator/math.hpp>
+#include <opencv2/core/eigen.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <apriltag/apriltag_pose.h>
@@ -39,34 +43,74 @@ std::unordered_map<std::string, ApriltagDetector::destroy_family_fn_type>
     {"36h11", tag36h11_destroy},
 };
 
-ApriltagDetector::ApriltagDetector(const ApriltagParameters & parameters)
-: parameters_(parameters),
+ApriltagDetector::ApriltagDetector(
+  const ApriltagDetectorParameters & detector_parameters,
+  const std::vector<TagParameters> & tag_parameters)
+: detector_parameters_(detector_parameters),
   apriltag_detector_(apriltag_detector_create()),
   fx_(-1),
   fy_(-1),
   cx_(-1),
   cy_(-1)
 {
-  assert(tag_create_fn_map.count(parameters_.family) == 1);
-  apriltag_family_ = tag_create_fn_map[parameters_.family]();
-  apriltag_detector_add_family(apriltag_detector_, apriltag_family_);
+  for (const auto & tag_parameters : tag_parameters) {
+    const std::string & family_name = tag_parameters.family;
+    assert(tag_create_fn_map.count(family_name) == 1);
 
-  apriltag_detector_->quad_decimate = parameters_.quad_decimate;
-  apriltag_detector_->quad_sigma = parameters_.quad_sigma;
-  apriltag_detector_->nthreads = parameters_.nthreads;
-  apriltag_detector_->debug = parameters_.debug;
-  apriltag_detector_->refine_edges = parameters_.refine_edges;
+    if (apriltag_family_map.count(family_name) != 0 || tag_create_fn_map.count(family_name) != 1) {
+      continue;
+    }
+
+    apriltag_family_t * family_ptr = tag_create_fn_map[family_name]();
+    apriltag_family_map[family_name] = family_ptr;
+
+    apriltag_detector_add_family(apriltag_detector_, family_ptr);
+  }
+
+  apriltag_detector_->quad_decimate = detector_parameters_.quad_decimate;
+  apriltag_detector_->quad_sigma = detector_parameters_.quad_sigma;
+  apriltag_detector_->nthreads = detector_parameters_.nthreads;
+  apriltag_detector_->debug = detector_parameters_.debug;
+  apriltag_detector_->refine_edges = detector_parameters_.refine_edges;
+
+  std::unordered_map<std::string, std::unordered_set<int>> tag_uniqueness_map;
+
+  for (const auto & tag_parameters : tag_parameters) {
+    tag_parameters_map_[tag_parameters.tag_type] = tag_parameters;
+    tag_id_to_offset_map_[tag_parameters.tag_type];
+    tag_uniqueness_map[tag_parameters.family];
+    const std::string tag_family_name = tag_parameters.family;
+
+    tag_sizes_map_[tag_parameters.tag_type] = tag_parameters.size;
+
+    for (const auto & id : tag_parameters.ids) {
+      for (int offset = 0; offset < tag_parameters.rows * tag_parameters.cols; offset++) {
+        tag_id_to_offset_map_[tag_parameters.tag_type][id + offset] = offset;
+        tag_family_and_id_to_type_map_[tag_family_name + std::to_string(id + offset)] =
+          tag_parameters.tag_type;
+
+        if (tag_uniqueness_map[tag_parameters.family].count(id + offset) != 0) {
+          RCLCPP_FATAL(
+            rclcpp::get_logger("apriltag_detector"),
+            "The tag family %s has the tag %d more than once", tag_parameters.family.c_str(),
+            id + offset);
+        } else {
+          tag_uniqueness_map[tag_parameters.family].emplace(id + offset);
+        }
+      }
+    }
+  }
 }
 
 ApriltagDetector::~ApriltagDetector()
 {
   apriltag_detector_destroy(apriltag_detector_);
-  tag_destroy_fn_map.at(parameters_.family)(apriltag_family_);
-}
 
-void ApriltagDetector::setTagSizes(const std::unordered_map<int, double> & tag_sizes_map)
-{
-  tag_sizes_map_ = tag_sizes_map;
+  for (auto it = apriltag_family_map.begin(); it != apriltag_family_map.end(); it++) {
+    tag_destroy_fn_map.at(it->first)(it->second);
+  }
+
+  apriltag_family_map.clear();
 }
 
 void ApriltagDetector::setIntrinsics(double fx, double fy, double cx, double cy)
@@ -77,18 +121,22 @@ void ApriltagDetector::setIntrinsics(double fx, double fy, double cx, double cy)
   cy_ = cy;
 }
 
-std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) const
+GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) const
 {
-  std::vector<ApriltagDetection> results;
-  image_u8_t apriltag_img = {cv_img.cols, cv_img.rows, cv_img.cols, cv_img.data};
+  GroupedApriltagDetections individual_detections_map;
+  GroupedApriltagGridDetections grid_detections_map;
 
+  // Detect individual tags and filter out invalid ones
+  image_u8_t apriltag_img = {cv_img.cols, cv_img.rows, cv_img.cols, cv_img.data};
   zarray_t * detections = apriltag_detector_detect(apriltag_detector_, &apriltag_img);
 
   for (int i = 0; i < zarray_size(detections); i++) {
     apriltag_detection_t * det;
     zarray_get(detections, i, &det);
 
-    if (det->hamming > parameters_.max_hamming || det->decision_margin < parameters_.min_margin) {
+    if (
+      det->hamming > detector_parameters_.max_hamming ||
+      det->decision_margin < detector_parameters_.min_margin) {
       continue;
     }
 
@@ -97,7 +145,7 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
     result.center = cv::Point2d(det->c[0], det->c[1]);
 
     for (int i = 0; i < 4; ++i) {
-      result.corners.emplace_back(det->p[i][0], det->p[i][1]);
+      result.image_corners.emplace_back(det->p[i][0], det->p[i][1]);
     }
 
     // Extra filter since the dectector finds false positives with a high margin for out-of-plane
@@ -107,10 +155,10 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
     cv::Mat_<double> H(3, 3, det->H->data);
     cv::Mat H_inv = H.inv();
 
-    for (std::size_t i = 0; i < result.corners.size(); i++) {
+    for (const auto & image_corner : result.image_corners) {
       cv::Mat_<double> p_corner(3, 1);
-      p_corner(0, 0) = result.corners[i].x;
-      p_corner(1, 0) = result.corners[i].y;
+      p_corner(0, 0) = image_corner.x;
+      p_corner(1, 0) = image_corner.y;
       p_corner(2, 0) = 1.0;
 
       cv::Mat p_corner2 = H_inv * p_corner;
@@ -121,26 +169,38 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
     }
 
     RCLCPP_INFO(
-      rclcpp::get_logger("intrinsics_calibrator"),
-      "Detected apriltag: %d \t margin: %.2f\t hom.error=%.2f", det->id, det->decision_margin,
+      rclcpp::get_logger("apriltag_detector"),
+      "Detected apriltag: %d \t margin: %.2f\t hom.error=%.2f", result.id, det->decision_margin,
       max_homography_error);
 
-    if (max_homography_error > parameters_.max_homography_error) {
+    if (max_homography_error > detector_parameters_.max_homography_error) {
       RCLCPP_INFO(
-        rclcpp::get_logger("intrinsics_calibrator"),
+        rclcpp::get_logger("apriltag_detector"),
         "Detection rejected due to its homography error. This may be due to its having a high "
         "out-of-plane rotation but we prefer to void them");
       continue;
     }
 
-    if (tag_sizes_map_.count(det->id) > 0 && fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0) {
+    std::string tag_family(det->family->name);
+    std::string tag_family_and_id = tag_family + std::to_string(result.id);
+
+    if (tag_family_and_id_to_type_map_.count(tag_family_and_id) == 0) {
+      continue;
+    }
+
+    TagType tag_type = tag_family_and_id_to_type_map_.at(tag_family_and_id);
+    double tag_size = tag_sizes_map_.count(tag_type);
+    result.size = tag_size;
+    result.computeObjectCorners();
+
+    if (fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0) {
       apriltag_detection_info_t detection_info;
       detection_info.det = det;
       detection_info.fx = fx_;
       detection_info.fy = fy_;
       detection_info.cx = cx_;
       detection_info.cy = cy_;
-      detection_info.tagsize = tag_sizes_map_.at(det->id);
+      detection_info.tagsize = tag_size;
 
       apriltag_pose_t pose;
       estimate_tag_pose(&detection_info, &pose);
@@ -149,18 +209,65 @@ std::vector<ApriltagDetection> ApriltagDetector::detect(const cv::Mat & cv_img) 
       cv::Vec3d translation(pose.t->data);
 
       result.pose = cv::Affine3d(rotation, translation);
-      result.size = tag_sizes_map_.at(det->id);
+      result.size = tag_size;
 
       matd_destroy(pose.R);
       matd_destroy(pose.t);
     }
 
-    results.emplace_back(result);
+    individual_detections_map[tag_type].emplace_back(result);
   }
 
   apriltag_detections_destroy(detections);
 
-  return results;
+  // Group tags into grid
+  for (const auto & it : individual_detections_map) {
+    const TagType & tag_type = it.first;
+    const std::vector<ApriltagDetection> & detections = it.second;
+
+    const TagParameters & tag_parameters = tag_parameters_map_.at(tag_type);
+    const int & rows = tag_parameters.rows;
+    const int & cols = tag_parameters.cols;
+    const int & size = tag_parameters.size;
+
+    std::unordered_map<int, std::vector<ApriltagDetection>> grouped_detections;
+
+    // Group the detections into their respective grids
+    for (const ApriltagDetection & detection : detections) {
+      int base_id = detection.id / (rows * cols);
+      grouped_detections[base_id].push_back(detection);
+    }
+
+    // Create the grid detections after checking their status and consistency
+    for (const auto & grouped_detections_it : grouped_detections) {
+      if (grouped_detections_it.second.size() != static_cast<std::size_t>(rows * cols)) {
+        continue;
+      }
+
+      ApriltagGridDetection grid_detection;
+      grid_detection.rows = rows;
+      grid_detection.rows = cols;
+      grid_detection.size = size;
+      grid_detection.id = grouped_detections_it.first;
+      grid_detection.family = tag_parameters.family;
+
+      grid_detection.sub_detections.insert(
+        grid_detection.sub_detections.end(), grouped_detections_it.second.begin(),
+        grouped_detections_it.second.end());
+
+      // Recompute the corners, center, and pose
+      double max_distance = grid_detection.recomputeFromSubDetections(tag_parameters);
+      if (max_distance > tag_parameters.size * (1.0 + tag_parameters.spacing)) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("apriltag_detector"),
+          "There was a misdetection filtered through pose consistency");
+        continue;
+      }
+
+      grid_detections_map[tag_type].push_back(grid_detection);
+    }
+  }
+  return grid_detections_map;
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator
