@@ -22,16 +22,16 @@ ros2 launch deviation_estimator deviation_estimator.launch.xml
 ```
 
 Then, you need to run either ROS bag or `autoware_launch` to provide `pose` and `twist` to `deviation_estimator`.
-You can check the estimated results either by looking at the output of `/estimated_*` ROS topics, or a text file saved in the designated path (default: `/home/$(env USER)/output.txt`).
 
-If your are using rosbag, it should contain the following topics:
+If you are using rosbag, it should contain the following topics:
 
-- /localization/twist_estimator/twist_with_covariance_raw
-- /localization/pose_estimator/pose_with_covariance
-- /clock
-- /tf_static (that contains transform from `base_link` to `imu_link`)
-- (/localization/twist_estimator/twist_with_covariance: required in the next step)
-- (/localization/pose_twist_fusion_filter/kinematic_state: required in the next step)
+- Raw IMU data (default: `/sensing/imu/tamagawa/imu_raw`)
+- Raw velocity data (default: `/vehicle/status/velocity_status`)
+- `/localization/pose_estimator/pose_with_covariance`
+- `/clock`
+- `/tf_static` (that contains transform from `base_link` to `imu_link`)
+
+NOTE that the pose and twist must be estimated with default parameters (see `known issues` section for detail).
 
 Play the rosbag in a different terminal:
 
@@ -39,80 +39,98 @@ Play the rosbag in a different terminal:
 ros2 bag play YOUR_BAG # You can also play in a faster rate, e.g. -r 5
 ```
 
+You can check the results in the following three output files:
+
+1. IMU parameters (default: `$HOME/imu_corrector.param.yaml`)
+2. Velocity parameters (default: `$HOME/vehicle_velocity_converter.param.yaml`)
+3. Logs (default: `$HOME/output.txt`)
+
 <details><summary>sample input (rosbag)</summary>
 <p>
 
 ```sh
-Files:             localized_not_calibrated_0.db3
+Files:             localized_sensors_0.db3
 Bag size:          9.6 MiB
 Storage id:        sqlite3
 Duration:          76.539s
 Start:             Jul  8 2022 11:21:41.220 (1657246901.220)
 End:               Jul  8 2022 11:22:57.759 (1657246977.759)
 Messages:          32855
-Topic information: Topic: /localization/twist_estimator/twist_with_covariance_raw | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 2139 | Serialization Format: cdr
-                   Topic: /localization/kinematic_state | Type: nav_msgs/msg/Odometry | Count: 3792 | Serialization Format: cdr
-                   Topic: /localization/twist_estimator/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 2139 | Serialization Format: cdr
-                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 15308 | Serialization Format: cdr
-                   Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 4950 | Serialization Format: cdr
-                   Topic: /localization/pose_twist_fusion_filter/kinematic_state | Type: nav_msgs/msg/Odometry | Count: 3792 | Serialization Format: cdr
-                   Topic: /localization/pose_estimator/pose_with_covariance | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 731 | Serialization Format: cdr
-                   Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 4 | Serialization Format: cdr
+Topic information: Topic: /localization/pose_estimator/pose_with_covariance | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 2162 | Serialization Format: cdr
+                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 57309 | Serialization Format: cdr
+                   Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 2 | Serialization Format: cdr
+                   Topic: /sensing/imu/tamagawa/imu_raw | Type: sensor_msgs/msg/Imu | Count: 8076 | Serialization Format: cdr
+                   Topic: /sensing/vehicle_velocity_converter/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 8275 | Serialization Format: cdr
 
 ```
 
 </p>
 </details>
 
-<details><summary>sample output (.txt)</summary>
+<details><summary>sample output (output.txt)</summary>
 <p>
 
 ```sh
-# Results expressed in base_link
-# Copy the following to deviation_evaluator.param.yaml
-stddev_vx: 0.1609
-stddev_wz: 0.01034
-coef_vx: 1.0158
-bias_wz: 0.00052
-
-# Results expressed in imu_link
-# Copy the following to imu_corrector.param.yaml
-angular_velocity_stddev_xx: 0.01034
-angular_velocity_stddev_yy: 0.01034
-angular_velocity_stddev_zz: 0.01034
-angular_velocity_offset_x: -0.005781
-angular_velocity_offset_y: -0.006554
-angular_velocity_offset_z: -0.000597
-
+# Validation results
+# value: [min, max]
+[OK] coef_vx: [0.99538, 0.99593]
+[OK] stddev_vx: [0.17192, 0.19161]
+[OK] angular_velocity_offset_x: [-0.00742, -0.00727]
+[OK] angular_velocity_offset_y: [-0.00119, -0.00115]
+[OK] angular_velocity_offset_z: [0.00635, 0.00641]
+[OK] angular_velocity_stddev_xx: [0.04151, 0.04258]
+[OK] angular_velocity_stddev_yy: [0.04151, 0.04258]
+[OK] angular_velocity_stddev_zz: [0.04151, 0.04258]
 ```
 
 </p>
+</details>
+
+<details><summary>sample output (imu_corrector.param.yaml)</summary>
+
+```sh
+# Estimated by deviation_estimator
+/**:
+  ros__parameters:
+    angular_velocity_stddev_xx: 0.01798
+    angular_velocity_stddev_yy: 0.01798
+    angular_velocity_stddev_zz: 0.01798
+    angular_velocity_offset_x: -0.00952
+    angular_velocity_offset_y: -0.00095
+    angular_velocity_offset_z: 0.00607
+```
+
+<p>
+</details>
+
+<details><summary>sample output (vehicle_velocity_converter.param.yaml)</summary>
+
+```sh
+# Estimated by deviation_estimator
+/**:
+  ros__parameters:
+    speed_scale_factor: 0.99507
+    velocity_stddev_xx: 0.16708
+    velocity_stddev_xx: 0.1 # Default value
+    frame_id: base_link # Default value
+```
+
+<p>
 </details>
 
 ### B. Evaluation step
 
 Here, you can evaluate the estimated standard deviation and bias using a package `deviation_evaluator`.
-
-First, fill the estimated results of `deviation_estimator` in `config/deviation_evaluator.yaml`.
-
-```sh
-    # Parameters that you want to evaluate
-    stddev_vx: 0.3 # [m/s]
-    stddev_wz: 0.02 # [rad/s]
-    coef_vx: 1.0 # [m/s]
-    bias_wz: 0.0 # [-]
-```
-
-Then, execute the following command:
+Execute the following command:
 
 ```sh
-ros2 launch deviation_evaluator deviation_evaluator.launch.xml map_path:=MAP_PATH
+ros2 launch deviation_evaluator deviation_evaluator.launch.xml map_path:=MAP_PATH rviz:=true in_imu:=YOUR_IMU_TOPIC_NAME in_wheel_odometry:=YOUR_VELOCITY_TOPIC_NAME
 ros2 bag play YOUR_BAG
 ```
 
 ### C. Visualization step
 
-After the evaluation, run the following command to generate the final results in `/home/$USER/deviation_evaluator_sample`.
+After the evaluation, run the following command to generate the final results in `$HOME/deviation_evaluator_sample`.
 
 ```sh
 pip3 install -r requirements.txt
@@ -143,12 +161,11 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 #### Input
 
-| Name                                                  | Type                                             | Description           |
-| ----------------------------------------------------- | ------------------------------------------------ | --------------------- |
-| `/localization/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose (default)  |
-| `/localization/pose_estimator/pose`                   | `geometry_msgs::msg::PoseStamped`                | Input pose            |
-| `/localization/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist (default) |
-| `/localization/twist_estimator/twist`                 | `geometry_msgs::msg::TwistStamped`               | Input twist           |
+| Name                     | Type                                              | Description          |
+| ------------------------ | ------------------------------------------------- | -------------------- |
+| `in_pose_with_covariance | `geometry_msgs::msg::PoseWithCovarianceStamped`   | Input pose           |
+| `in_imu`                 | `sensor_msgs::msg::Imu`                           | Input IMU data       |
+| `in_wheel_odometry`      | `autoware_auto_vehicle_msgs::msg::VelocityReport` | Input wheel odometry |
 
 #### Output
 
@@ -161,16 +178,13 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 ### Parameters for deviation estimator
 
-| Name                      | Type   | Description                                                                                 | Default value                  |
-| ------------------------- | ------ | ------------------------------------------------------------------------------------------- | ------------------------------ |
-| show_debug_info           | bool   | Flag to display debug info                                                                  | true                           |
-| use_pose_with_covariance  | bool   | Flag to use PoseWithCovarianceStamped rostopic for pose. Use PoseStamped if false.          | true                           |
-| use_twist_with_covariance | bool   | Flag to use TwistWithCovarianceStamped rostopic for pose. Use TwistStamped if false.        | true                           |
-| t_design                  | double | Maximum expected duration of dead-reckoning [s]                                             | 10.0                           |
-| x_design                  | double | Maximum expected trajectory length of dead-reckoning [m]                                    | 30.0                           |
-| estimation_freq           | double | Estimation frequency [Hz]                                                                   | 0.5                            |
-| results_path              | string | Text path where the estimated results will be stored (No output if results_path="" (blank)) | "/home/$(env USER)/output.txt" |
-| imu_link_frame            | string | The name of IMU link frame                                                                  | "tamagawa/imu_link"            |
+| Name            | Type   | Description                                              | Default value |
+| --------------- | ------ | -------------------------------------------------------- | ------------- |
+| show_debug_info | bool   | Flag to display debug info                               | true          |
+| t_design        | double | Maximum expected duration of dead-reckoning [s]          | 10.0          |
+| x_design        | double | Maximum expected trajectory length of dead-reckoning [m] | 30.0          |
+| time_window     | double | Estimation period [s]                                    | 4.0           |
+| results_dir     | string | Text path where the estimated results will be stored     | "$(env HOME)" |
 
 ### Functions
 
@@ -189,11 +203,11 @@ You can use `deviation_evaluator` for evaluating the estimated standard deviatio
 This can be run with the following command:
 
 ```sh
-ros2 launch deviation_evaluator deviation_evaluator.launch.xml map_path:=MAP_PATH
+ros2 launch deviation_evaluator deviation_evaluator.launch.xml map_path:=MAP_PATH rviz:=true in_imu:=YOUR_IMU_TOPIC_NAME in_wheel_odometry:=YOUR_VELOCITY_TOPIC_NAME
 ros2 bag play YOUR_BAG
 ```
 
-All the intermediate ros2bag and config files will be stored in `/home/$USER/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
+All the ros2bag and config files will be stored in `$HOME/deviation_evaluator_sample` (you can change this with `save_dir` parameter in the launch file).
 
 ### Features
 
@@ -205,87 +219,65 @@ All the intermediate ros2bag and config files will be stored in `/home/$USER/dev
     <img src="./deviation_evaluator/media/rviz_sample.png" width="500">
 </p>
 
-<!-- ### B. Analysis on estimated parameters in `deviation_estimator`
-`deviation_evaluator` evaluates the parameters estimated in `deviation_estimator`.
-The tool stores Mahalanobis distance, and calculates how much of the scores were in X% confidence interval. The scores are stored in `log.txt` in the following format:
-```
-Confidence interval[%], Actual distribution[%]
-50.0, a
-75.0, b
-95.0, c
-```
-Make sure that `c>95`. -->
+#### B. Check the compatibility with a threshold in `localization_error_monitor`
 
-#### B. Materials for determining the threshold
+The `deviation_evaluator` also checks the compatibility of the estimated parameters and the threshold in `localization_error_monitor`.
 
-The `deviation_evaluator` also supports you determining the threshold in `localization_error_monitor`.
+Concretely, it checks if the two following statement holds:
 
-In order to do so, run `deviation_evaluation_visualizer.py` to visualize the results of `deviation_evaluator` with the following command.
+1. `localization_error_monitor` would NOT diagnose the system as `WARN` nor `ERROR` as long as the NDT is available.
+2. `localization_error_monitor` detects the anomaly with a recall over 0.99.
 
-```sh
-pip3 install -r requirements.txt
-ros2 launch deviation_evaluator deviation_evaluation_visualizer.launch.xml
-```
+Given the result of this validation, the users can verify that the estimated parameters in `deviation_estimator` can be safely applied to Autoware.
 
-In case of determining a threshold along the long radius (`warn_ellipse_size` or `error_ellipse_size`), see `deviation_evaluator_sample/long_radius`.  
-In case of determining a threshold along the lateral direction of the body frame ( `warn_ellipse_size_lateral_direction` or `error_ellipse_size_lateral_direction`), see `deviation_evaluator_sample/body_frame`.
+Here, note that the `localization_error_monitor` treat the system as an anomaly if either of error along long-axis of confidence ellipse or error along lateral direction is over threshold. Please refer to the package in autoware.universe for detail.
 
-In the directory, you can find a threshold-recall plot for each error threshold (see the below example figure).
-The blue line in the plot shows the relationship between recall and threshold. If the recall is 1, it indicates that you have 0.0 [%] of false negative.
-You can also find the lower bound of the threshold in the plot. Choose a proper threshold so that
+### Architecture of `deviation_evaluator`
 
-1. **it is above the lower bound** (in the sample, it is 0.038 [m])
-2. **recall is high enough** (in the sample, recall will be 1.0 if you choose 0.05[m])
+The architecture of `deviation_evaluator` is shown below. It launches two `ekf_localizer`, one for ground truth estimation and one for (partially) dead reckoning estimation. Outputs of both `ekf_localizer` will be recorded and analyzed with `deviation_evaluation_visualizer`.
 
 <p align="left">
-    <img src="./deviation_evaluator/media/thres2recall_sample.png" width="400">
+    <img src="./deviation_evaluator/media/deviation_evaluator.drawio.svg" width="400">
 </p>
 
 ### Inputs / Outputs
 
 #### Input
 
-| Name                                                     | Type                                             | Description                                                     |
-| -------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
-| `/localization/twist_estimator/twist_with_covariance`    | `geometry_msgs::msg::TwistWithCovarianceStamped` | Input twist                                                     |
-| `/localization/pose_estimator/pose_with_covariance`      | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Input pose                                                      |
-| `/localization/pose_twist_fusion_filter/kinematic_state` | `nav_msgs::msg::Odometry`                        | Input odometry (recorded with `ros2 bag record` in launch file) |
+| Name                          | Type                                            | Description                |
+| ----------------------------- | ----------------------------------------------- | -------------------------- |
+| `in_ndt_pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped` | Input pose                 |
+| `in_ekf_dr_odom`              | `nav_msgs::msg::Odometry`                       | dead-reckoning EKF outputs |
+| `in_ekf_gt_odom`              | `nav_msgs::msg::Odometry`                       | ground-truth EKF outputs   |
 
 #### Output
 
-| Name                                                                      | Type                                             | Description                        |
-| ------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------- |
-| `/localization/deviation_evaluator/twist_estimator/twist_with_covariance` | `geometry_msgs::msg::TwistWithCovarianceStamped` | Output twist (for `ekf_localizer`) |
-| `/localization/deviation_evaluator/pose_estimator/pose_with_covariance`   | `geometry_msgs::msg::PoseWithCovarianceStamped`  | Output pose (for `ekf_localizer`)  |
+| Name                               | Type                                            | Description                                      |
+| ---------------------------------- | ----------------------------------------------- | ------------------------------------------------ |
+| `out_pose_with_covariance_dr`      | `geometry_msgs::msg::PoseWithCovarianceStamped` | Output pose (for dead reckoning `ekf_localizer`) |
+| `out_pose_with_covariance_gt`      | `geometry_msgs::msg::PoseWithCovarianceStamped` | Output pose (for ground truth `ekf_localizer`)   |
+| `out_initial_pose_with_covariance` | `geometry_msgs::msg::PoseWithCovarianceStamped` | Output initial pose (for both `ekf_localizer`)   |
 
 ### Parameters for deviation evaluator
 
-| Name      | Type       | Description                                                                | Default value                                  |
-| --------- | ---------- | -------------------------------------------------------------------------- | ---------------------------------------------- |
-| rviz      | bool       | Show rviz if true                                                          | false                                          |
-| map_path  | string     | Path to the directory where map data (OpenStreetMap or .osm data) is saved | ""                                             |
-| save_dir  | string     | Output directory where figures, parameter files, and scores are saved      | "/home/$(env USER)/deviation_evaluator_sample" |
-| stddev_vx | double     | Standard deviation of vx                                                   | 0.8 (in `config/deviation_evaluator.yaml`)     |
-| stddev_wz | double     | Standard deviation of wz                                                   | 0.01 (in `config/deviation_evaluator.yaml`)    |
-| coef_vx   | double     | Velocity bias                                                              | 1 (in `config/deviation_evaluator.yaml`)       |
-| bias_wz   | double     | Yaw rate bias                                                              | 0 (in `config/deviation_evaluator.yaml`)       |
-| period    | double [s] | Duration of cycle                                                          | 10 (in `config/deviation_evaluator.yaml`)      |
-| cut       | double [s] | Duration of ndt-cut-off                                                    | 9 (in `config/deviation_evaluator.yaml`)       |
+| Name     | Type       | Description                                                                | Default value                             |
+| -------- | ---------- | -------------------------------------------------------------------------- | ----------------------------------------- |
+| rviz     | bool       | Show rviz if true                                                          | false                                     |
+| map_path | string     | Path to the directory where map data (OpenStreetMap or .osm data) is saved | ""                                        |
+| save_dir | string     | Output directory where figures, parameter files, and scores are saved      | "$(env HOME)/deviation_evaluator_sample"  |
+| period   | double [s] | Duration of cycle                                                          | 10 (in `config/deviation_evaluator.yaml`) |
+| cut      | double [s] | Duration of ndt-cut-off                                                    | 9 (in `config/deviation_evaluator.yaml`)  |
 
 ## 4. Reflect the estimated parameters in Autoware
 
-### Results of Deviation Estimator
+The results of `deviation_estimator` is stored in two scripts:
 
-- standard deviation of velocity (stddev_vx): the first value of `twist_covariance` in `vehicle_velocity_converter.param.yaml`
-- standard deviation of yaw rate (stddev_wz): `angular_velocity_stddev_zz` in `imu_corrector.param.yaml`
-- coefficient of velocity (coef_vx): depends on the type of the vehicles
-- bias of yaw rate (bias_wz): `angular_velocity_offset_z` in `imu_corrector.param.yaml`
+- `imu_corrector` param file (default: `$HOME/imu_corrector.param.yaml`)
+- `vehicle_velocity_converter` param file (default: `$HOME/vehicle_velocity_converter.param.yaml`)
 
-### Results of Deviation Evaluator
-
-- threshold along long radius: `*_ellipse_size` in `localization_error_monitor`
-- threshold along lateral direction of the body frame: `*_ellipse_size_lateral_direction` in `localization_error_monitor`
+Please modify your Autoware configuration so that it will launch using the above two parameter files.
 
 ## 5. Known issues
 
 - The plot of `deviation_evaluator.png` generated by `deviation_evaluation_visualizer` may diverge, possibly due to the large covariance caused by a failure in localization.
+- `ekf_localizer` in `deviation_evaluator` may not start properly. As for now, please launch `deviation_evaluator` first and then run `ros2 bag play` to provide pose and twist data.

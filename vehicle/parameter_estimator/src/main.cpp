@@ -14,8 +14,9 @@
 //  limitations under the License.
 //
 
-#include <memory>
 #include "parameter_estimator/parameter_estimator_node.hpp"
+
+#include <memory>
 
 int main(int argc, char ** argv)
 {

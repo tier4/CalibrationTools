@@ -1,53 +1,106 @@
 <launch>
-  <set_parameter name="use_sim_time" value="true" />
+  <set_parameter name="use_sim_time" value="true"/>
+
+  <!-- Please change this param based on your sensor topic names -->
+  <arg name="in_imu" default="/sensing/imu/tamagawa/imu_raw"/>
+  <arg name="in_wheel_odometry" default="/vehicle/status/velocity_status"/>
+  <!-- Please change this param based on your sensor topic names -->
 
   <arg name="show_debug_info" default="false"/>
   <arg name="rviz" default="false" description="launch rviz"/>
   <arg name="map_path" default="" description="point cloud and lanelet2 map directory path"/>
-  <arg name="save_dir" default="/home/$(env USER)/deviation_evaluator_sample"/>
+  <arg name="save_dir" default="$(env HOME)/deviation_evaluator_sample"/>
+  <arg name="save_dir" default="$(env HOME)/deviation_evaluator_sample"/>
   <arg name="param_path" default="$(find-pkg-share deviation_evaluator)/config/deviation_evaluator.param.yaml"/>
+  <!-- TODO before merge (koji minoda) any other way to get appropriate param? -->
+  <arg name="error_monitor_param_path" default="$(find-pkg-share autoware_launch)/config/localization/localization_error_monitor.param.yaml"/>
+  <arg name="imu_corrector_param_path" default="$(env HOME)/imu_corrector.param.yaml"/>
+  <arg name="vehicle_velocity_converter_param_path" default="$(env HOME)/vehicle_velocity_converter_param_path.param.yaml"/>
 
-  <arg name="in_twist_with_covariance" default="/localization/twist_estimator/twist_with_covariance"/>
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>
-  <arg name="in_ekf_gt_odom" default="/localization/pose_twist_fusion_filter/kinematic_state"/>
-  <arg name="out_ekf_odom" default="/localization/deviation_evaluator/ekf_localizer/kinematic_state"/>
-  <arg name="out_twist_with_covariance" default="/localization/deviation_evaluator/twist_estimator/twist_with_covariance"/>
-  <arg name="out_pose_with_covariance" default="/localization/deviation_evaluator/pose_estimator/pose_with_covariance"/>
-  <arg name="lanelet2_map_file" default="$(var map_path)/lanelet2_map.osm" />
 
-  <node pkg="deviation_evaluator" exec="deviation_evaluator" name="deviation_evaluator" output="screen">
-    <remap from="in_twist_with_covariance" to="$(var in_twist_with_covariance)"/>
-    <remap from="in_ndt_pose_with_covariance" to="$(var in_ndt_pose_with_covariance)"/>
-    <remap from="out_twist_with_covariance" to="$(var out_twist_with_covariance)"/>
-    <remap from="out_pose_with_covariance" to="$(var out_pose_with_covariance)"/>
+  <arg name="out_ekf_dr_trigger" default="/deviation_evaluator/ekf_dr_trigger"/>
+  <arg name="out_ekf_gt_trigger" default="/deviation_evaluator/ekf_gt_trigger"/>
+  <arg name="out_imu" default="/deviation_evaluator/imu/imu_data"/>
+  <arg name="out_wheel_odometry" default="/deviation_evaluator/vehicle_velocity_converter/twist_with_covariance"/>
+  <arg name="out_ekf_odom_dr" default="/deviation_evaluator/dead_reckoning/ekf_localizer/kinematic_state"/>
+  <arg name="out_ekf_odom_gt" default="/deviation_evaluator/ground_truth/ekf_localizer/kinematic_state"/>
+  <arg name="out_twist_with_covariance" default="/deviation_evaluator/twist_estimator/twist_with_covariance"/>
+  <arg name="out_pose_with_covariance_dr" default="/deviation_evaluator/dead_reckoning/pose_estimator/pose_with_covariance"/>
+  <arg name="out_pose_with_covariance_gt" default="/deviation_evaluator/ground_truth/pose_estimator/pose_with_covariance"/>
+  <arg name="out_init_pose_with_covariance" default="/deviation_evaluator/initialpose3d"/>
+  <arg name="lanelet2_map_file" default="$(var map_path)/lanelet2_map.osm"/>
 
-    <param name="save_dir" value="$(var save_dir)"/>
-    <param from="$(var param_path)"/>
-  </node>
+  <group>
+    <node pkg="deviation_evaluator" exec="deviation_evaluator" name="deviation_evaluator" output="screen">
+      <remap from="in_ndt_pose_with_covariance" to="$(var in_ndt_pose_with_covariance)"/>
+      <remap from="in_ekf_dr_odom" to="$(var out_ekf_odom_dr)"/>
+      <remap from="in_ekf_gt_odom" to="$(var out_ekf_odom_gt)"/>
 
-  <include file="$(find-pkg-share ekf_localizer)/launch/ekf_localizer.launch.xml">
-    <arg name="extend_state_step" value="50"/>
-    <arg name="enable_yaw_bias_estimation" value="false"/>
-    <arg name="use_pose_with_covariance" value="true"/>
-    <arg name="use_twist_with_covariance" value="true"/>
-    <arg name="tf_rate" value="50.0"/>
-    <arg name="twist_rate" value="25.0"/>
-    <arg name="input_pose_name" value="dummy_pose"/>
-    <arg name="input_pose_with_cov_name" value="$(var out_pose_with_covariance)"/>
-    <arg name="input_twist_name" value="dummy_twist"/>
-    <arg name="input_twist_with_cov_name" value="$(var out_twist_with_covariance)"/>
-    <arg name="output_pose_name" value="pose"/>
-    <arg name="output_odom_name" value="$(var out_ekf_odom)"/>
-    <arg name="output_pose_without_yawbias_name" value="/localization/deviation_evaluator/ekf_localizer/pose_without_yawbias"/>
-    <arg name="output_pose_with_covariance_without_yawbias_name" value="/localization/deviation_evaluator/ekf_localizer/pose_with_covariance_without_yawbias"/>
-    <arg name="output_twist_name" value="twist"/>
-    <arg name="output_twist_with_covariance_name" value="twist_with_covariance"/>
+      <remap from="out_twist_with_covariance" to="$(var out_twist_with_covariance)"/>
+      <remap from="out_pose_with_covariance_dr" to="$(var out_pose_with_covariance_dr)"/>
+      <remap from="out_pose_with_covariance_gt" to="$(var out_pose_with_covariance_gt)"/>
+      <remap from="out_initial_pose_with_covariance" to="$(var out_init_pose_with_covariance)"/>
+      <remap from="out_ekf_dr_trigger" to="$(var out_ekf_dr_trigger)"/>
+      <remap from="out_ekf_gt_trigger" to="$(var out_ekf_gt_trigger)"/>
 
-    <arg name="twist_stddev_wz" value="0.003 "/>
+      <param name="save_dir" value="$(var save_dir)"/>
+      <param from="$(var param_path)"/>
+      <param from="$(var error_monitor_param_path)"/>
+    </node>
+  </group>
 
-    <arg name="proc_stddev_vx_c" value="5.0"/>
-    <arg name="proc_stddev_wz_c" value="1.0"/>
-  </include>
+  <group>
+    <include file="$(find-pkg-share imu_corrector)/launch/imu_corrector.launch.xml">
+      <arg name="input_topic" value="$(var in_imu)"/>
+      <arg name="output_topic" value="$(var out_imu)"/>
+      <arg name="param_file" value="$(var imu_corrector_param_path)"/>
+    </include>
+  </group>
+
+  <group>
+    <include file="$(find-pkg-share vehicle_velocity_converter)/launch/vehicle_velocity_converter.launch.xml">
+      <arg name="input_vehicle_velocity_topic" value="$(var in_wheel_odometry)"/>
+      <arg name="output_twist_with_covariance" value="$(var out_wheel_odometry)"/>
+      <arg name="config_file" value="$(var vehicle_velocity_converter_param_path)"/>
+    </include>
+  </group>
+
+  <group>
+    <include file="$(find-pkg-share gyro_odometer)/launch/gyro_odometer.launch.xml">
+      <arg name="input_imu_topic" value="$(var out_imu)"/>
+      <arg name="input_vehicle_twist_with_covariance_topic" value="$(var out_wheel_odometry)"/>
+      <arg name="output_twist_with_covariance_topic" value="$(var out_twist_with_covariance)"/>
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="dead_reckoning"/>
+    <include file="$(find-pkg-share ekf_localizer)/launch/ekf_localizer.launch.xml">
+      <arg name="input_pose_with_cov_name" value="$(var out_pose_with_covariance_dr)"/>
+      <arg name="input_twist_with_cov_name" value="$(var out_twist_with_covariance)"/>
+      <arg name="input_initial_pose_name" value="$(var out_init_pose_with_covariance)"/>
+      <arg name="output_odom_name" value="$(var out_ekf_odom_dr)"/>
+      <arg name="input_trigger_node_service_name" value="$(var out_ekf_dr_trigger)"/>
+
+      <arg name="proc_stddev_vx_c" value="10.0"/>
+      <arg name="proc_stddev_wz_c" value="5.0"/>
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="ground_truth"/>
+    <include file="$(find-pkg-share ekf_localizer)/launch/ekf_localizer.launch.xml">
+      <arg name="input_pose_with_cov_name" value="$(var out_pose_with_covariance_gt)"/>
+      <arg name="input_twist_with_cov_name" value="$(var out_twist_with_covariance)"/>
+      <arg name="input_initial_pose_name" value="$(var out_init_pose_with_covariance)"/>
+      <arg name="output_odom_name" value="$(var out_ekf_odom_gt)"/>
+      <arg name="input_trigger_node_service_name" value="$(var out_ekf_gt_trigger)"/>
+
+      <arg name="proc_stddev_vx_c" value="10.0"/>
+      <arg name="proc_stddev_wz_c" value="5.0"/>
+    </include>
+  </group>
 
   <!-- Map -->
   <group>
@@ -59,8 +112,17 @@
   </group>
 
   <!-- Rviz -->
-  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(find-pkg-share deviation_evaluator)/rviz/deviation_evaluator.rviz -s $(find-pkg-share autoware_launch)/rviz/image/autoware.png" if="$(var rviz)">
-  </node>
+  <node
+    pkg="rviz2"
+    exec="rviz2"
+    name="rviz2"
+    output="screen"
+    args="-d $(find-pkg-share deviation_evaluator)/rviz/deviation_evaluator.rviz -s $(find-pkg-share autoware_launch)/rviz/image/autoware.png"
+    if="$(var rviz)"
+  />
 
-  <executable cmd="ros2 bag record -o $(var save_dir)/ros2bag $(var in_ndt_pose_with_covariance) $(var in_ekf_gt_odom) $(var out_twist_with_covariance) $(var out_ekf_odom) $(var out_pose_with_covariance)" output="screen" />
+  <executable
+    cmd="ros2 bag record -o $(var save_dir)/ros2bag $(var in_ndt_pose_with_covariance) $(var out_pose_with_covariance_gt) $(var out_pose_with_covariance_dr) $(var out_twist_with_covariance) $(var out_ekf_odom_gt) $(var out_ekf_odom_dr)"
+    output="screen"
+  />
 </launch>

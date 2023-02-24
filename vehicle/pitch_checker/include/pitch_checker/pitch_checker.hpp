@@ -17,18 +17,19 @@
 #ifndef PITCH_CHECKER__PITCH_CHECKER_HPP_
 #define PITCH_CHECKER__PITCH_CHECKER_HPP_
 
+#include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/trigger.hpp"
+#include "tf2/utils.h"
+
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "std_msgs/msg/bool.hpp"
+
 #include <fstream>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
-
-#include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/bool.hpp"
-#include "std_srvs/srv/trigger.hpp"
-#include "geometry_msgs/msg/transform_stamped.hpp"
-#include "tf2/utils.h"
 #ifdef ROS_DISTRO_GALACTIC
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #else

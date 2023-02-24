@@ -1,8 +1,9 @@
 <launch>
-  <arg name="save_dir" default="/home/$(env USER)/deviation_evaluator_sample"/>
+  <arg name="save_dir" default="$(env HOME)/deviation_evaluator_sample"/>
+  <arg name="error_monitor_param_path" default="$(find-pkg-share autoware_launch)/config/localization/localization_error_monitor.param.yaml"/>
 
   <node pkg="deviation_evaluator" exec="deviation_evaluation_visualizer.py" name="deviation_evaluation_visualizer" output="screen">
-    <param name="save_dir" value="$(var save_dir)" />
+    <param name="save_dir" value="$(var save_dir)"/>
+    <param from="$(var error_monitor_param_path)"/>
   </node>
-
 </launch>

@@ -16,10 +16,7 @@
 
 namespace extrinsic_map_base_calibrator
 {
-ExtrinsicMapBasedPreprocessing::ExtrinsicMapBasedPreprocessing()
-{
-
-}
+ExtrinsicMapBasedPreprocessing::ExtrinsicMapBasedPreprocessing() {}
 
 PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
   const PointCloudT::Ptr & map_pointcloud_with_wall_pcl,
@@ -31,19 +28,18 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
   downsamplingOnFloor(sensor_pointcloud_pcl, filtered_sensor_pointcloud);
 
   return removeWallPointcloud(
-    filtered_sensor_pointcloud, map_pointcloud_with_wall_pcl,
-    map_pointcloud_without_wall_pcl);
+    filtered_sensor_pointcloud, map_pointcloud_with_wall_pcl, map_pointcloud_without_wall_pcl);
 }
 
 PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
-  const PointCloudT::Ptr & map_pointcloud_with_wall,
-  const PointCloudT::Ptr & sensor_pointcloud_pcl)
+  const PointCloudT::Ptr & map_pointcloud_with_wall, const PointCloudT::Ptr & sensor_pointcloud_pcl)
 {
   // matching of sensor cloud and map cloud
   matcher_.setParameter(config_.clip_config.matching_config);
   prematched_result_ = matcher_.ICPMatching(map_pointcloud_with_wall, sensor_pointcloud_pcl);
   PointCloudT::Ptr matched_sensor_pointcloud(new PointCloudT);
-  pcl::transformPointCloud( *sensor_pointcloud_pcl, *matched_sensor_pointcloud, prematched_result_.transformation_matrix);
+  pcl::transformPointCloud(
+    *sensor_pointcloud_pcl, *matched_sensor_pointcloud, prematched_result_.transformation_matrix);
 
   PointCloudT::Ptr filtered_sensor_pointcloud(new PointCloudT);
   // downsampling on the floor
@@ -53,8 +49,7 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::preprocessing(
 }
 
 void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
-  const PointCloudT::Ptr & pcl_sensor,
-  PointCloudT::Ptr & pcl_filtered_sensor) const
+  const PointCloudT::Ptr & pcl_sensor, PointCloudT::Ptr & pcl_filtered_sensor) const
 {
   // ransac
   pcl::PointIndices::Ptr output_inliers(new pcl::PointIndices);
@@ -84,24 +79,25 @@ void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
   PointCloudT::Ptr cloud_voxel_filtered(new PointCloudT);
   pcl::VoxelGrid<pcl::PointXYZ> vg;
   vg.setInputCloud(pcl::make_shared<PointCloudT>(*cloud_floor));
-  vg.setLeafSize(config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size);
+  vg.setLeafSize(
+    config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size,
+    config_.ransac_config.voxel_grid_size);
   vg.filter(*cloud_voxel_filtered);
 
   // merge target cloud and downsampled floor cloud
   *pcl_filtered_sensor = *cloud_voxel_filtered + *cloud_target;
-
 }
 
 PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::removeWallPointcloud(
-  const PointCloudT::Ptr & sensor_point_cloud,
-  const PointCloudT::Ptr & map_point_cloud_with_wall,
+  const PointCloudT::Ptr & sensor_point_cloud, const PointCloudT::Ptr & map_point_cloud_with_wall,
   const PointCloudT::Ptr & map_point_cloud_without_wall)
 {
   // matching of sensor cloud and map cloud
   matcher_.setParameter(config_.clip_config.matching_config);
   PointCloudT matched_sensor_point_cloud;
   prematched_result_ = matcher_.ICPMatching(map_point_cloud_with_wall, sensor_point_cloud);
-  pcl::transformPointCloud( *sensor_point_cloud, matched_sensor_point_cloud, prematched_result_.transformation_matrix);
+  pcl::transformPointCloud(
+    *sensor_point_cloud, matched_sensor_point_cloud, prematched_result_.transformation_matrix);
 
   // return matched_sensor_point_cloud.makeShared();
   // clip overlapped cloud
@@ -129,4 +125,4 @@ PointCloudT::Ptr ExtrinsicMapBasedPreprocessing::removeWallPointcloud(
 
   return clipped_sensor_point_cloud.makeShared();
 }
-}  // namespace map_base_calibrator
+}  // namespace extrinsic_map_base_calibrator

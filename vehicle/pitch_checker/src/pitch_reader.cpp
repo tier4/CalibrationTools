@@ -14,10 +14,11 @@
 // limitations under the License.
 //
 
-#include <string>
-#include <limits>
-#include <vector>
 #include "pitch_checker/pitch_reader.hpp"
+
+#include <limits>
+#include <string>
+#include <vector>
 
 PitchReader::PitchReader(const std::string input_file)
 {
@@ -28,7 +29,9 @@ bool PitchReader::getPitch(
   double * pitch, const double x, const double y, const double yaw, const double dist_thresh,
   const double yaw_thresh)
 {
-  if (!read_csv_) {return false;}
+  if (!read_csv_) {
+    return false;
+  }
 
   double min_dist = std::numeric_limits<double>::max();
   bool success_search = false;
@@ -93,7 +96,9 @@ std::vector<std::string> PitchReader::split(const std::string & original, char d
   std::stringstream sstr(original);
   std::string elem;
   while (getline(sstr, elem, delim)) {
-    if (!elem.empty()) {elems.push_back(elem);}
+    if (!elem.empty()) {
+      elems.push_back(elem);
+    }
   }
   return elems;
 }

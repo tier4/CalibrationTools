@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #include "extrinsic_dummy_calibrator/extrinsic_dummy_calibrator.hpp"
-#include <memory>
+
 #include <limits>
+#include <memory>
 
 using namespace std::chrono_literals;
 
@@ -33,10 +34,9 @@ ExtrinsicDummyCalibrator::ExtrinsicDummyCalibrator(const rclcpp::NodeOptions & n
 
   server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration", std::bind(
-      &ExtrinsicDummyCalibrator::requestReceivedCallback, this,
-      std::placeholders::_1, std::placeholders::_2));
+                               &ExtrinsicDummyCalibrator::requestReceivedCallback, this,
+                               std::placeholders::_1, std::placeholders::_2));
 }
-
 
 void ExtrinsicDummyCalibrator::requestReceivedCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
@@ -54,8 +54,7 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions node_options;
   rclcpp::executors::MultiThreadedExecutor executor;
-  auto node = std::make_shared<extrinsic_dummy_calibrator::ExtrinsicDummyCalibrator>(
-    node_options);
+  auto node = std::make_shared<extrinsic_dummy_calibrator::ExtrinsicDummyCalibrator>(node_options);
   executor.add_node(node);
   executor.spin();
   rclcpp::shutdown();

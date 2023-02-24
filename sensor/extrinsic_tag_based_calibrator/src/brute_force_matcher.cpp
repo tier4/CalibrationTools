@@ -76,7 +76,7 @@ bool bruteForceMatcher(
     return false;
   }
 
-  // Find RANSAC-aligned correspondances using nearest neighbor
+  // Find RANSAC-aligned correspondences using nearest neighbor
   pcl::CorrespondencesPtr ransac_correspondences(new pcl::Correspondences);
   pcl::registration::CorrespondenceEstimation<PointNT, PointNT> ransac_corr_est;
   ransac_corr_est.setInputSource(source_ransac_aligned);
@@ -113,7 +113,7 @@ bool bruteForceMatcher(
     return false;
   }
 
-  // Find ICP-aligned correspondances using nearest neighbor
+  // Find ICP-aligned correspondences using nearest neighbor
   pcl::CorrespondencesPtr icp_correspondences(new pcl::Correspondences);
   pcl::registration::CorrespondenceEstimation<PointNT, PointNT> icp_corr_est;
   icp_corr_est.setInputSource(source_icp_aligned);
@@ -171,7 +171,7 @@ bool bruteForceMatcher(
     pcl::console::print_info("ICP align fitness: %f\n", icp.getFitnessScore());
   }
 
-  // Check if the correspondances conform a bijection
+  // Check if the correspondences conform a bijection
   std::unordered_map<int, int> map;
   for (auto & correspondence : *icp_correspondences) {
     map[correspondence.index_match] = 1;

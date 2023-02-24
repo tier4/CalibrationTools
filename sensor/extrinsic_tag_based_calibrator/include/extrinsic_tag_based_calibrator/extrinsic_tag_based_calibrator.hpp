@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR_EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR_EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
+#define EXTRINSIC_TAG_BASED_CALIBRATOR__EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
 
 #include <extrinsic_tag_based_calibrator/calibration_estimator.hpp>
 #include <extrinsic_tag_based_calibrator/tag_calibrator_visualizer.hpp>
@@ -33,10 +33,15 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
 
 #include <iostream>
 #include <mutex>
@@ -95,7 +100,7 @@ protected:
   CalibrationEstimator estimator_;
 
   // ROS Interface
-  tf2_ros::StaticTransformBroadcaster tf_broascaster_;
+  tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
@@ -147,4 +152,4 @@ protected:
   double filtered_reproj_error_;
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR_EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__EXTRINSIC_TAG_BASED_CALIBRATOR_HPP_

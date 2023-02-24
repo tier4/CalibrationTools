@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from geometry_msgs.msg import TransformStamped
-
-import numpy as np
 import cv2
+from geometry_msgs.msg import TransformStamped
+import numpy as np
 import transforms3d
 
 
@@ -35,14 +34,15 @@ def tf_message_to_transform_matrix(msg):
 
     return transform_matrix
 
+
 def transform_matrix_to_tf_message(transform_matrix):
 
     q = transforms3d.quaternions.mat2quat(transform_matrix[0:3, 0:3])
 
     msg = TransformStamped()
-    msg.transform.translation.x = transform_matrix[0,3]
-    msg.transform.translation.y = transform_matrix[1,3]
-    msg.transform.translation.z = transform_matrix[2,3]
+    msg.transform.translation.x = transform_matrix[0, 3]
+    msg.transform.translation.y = transform_matrix[1, 3]
+    msg.transform.translation.z = transform_matrix[2, 3]
     msg.transform.rotation.x = q[1]
     msg.transform.rotation.y = q[2]
     msg.transform.rotation.z = q[3]
@@ -50,13 +50,15 @@ def transform_matrix_to_tf_message(transform_matrix):
 
     return msg
 
+
 def transform_matrix_to_cv(transform_matrix):
 
     rotation_matrix = transform_matrix[0:3, 0:3]
     rvec, _ = cv2.Rodrigues(rotation_matrix)
-    tvec = transform_matrix[0:3, 3].reshape(3,1)
+    tvec = transform_matrix[0:3, 3].reshape(3, 1)
 
     return tvec, rvec
+
 
 def cv_to_transformation_matrix(tvec, rvec):
 
@@ -65,19 +67,24 @@ def cv_to_transformation_matrix(tvec, rvec):
     rotation_matrix, _ = cv2.Rodrigues(rvec)
 
     transform_matrix[0:3, 0:3] = rotation_matrix
-    transform_matrix[0:3, 3] = tvec.reshape(3,)
+    transform_matrix[0:3, 3] = tvec.reshape(
+        3,
+    )
 
     return transform_matrix
 
+
 def decompose_transformation_matrix(transformation):
     return transformation[0:3, 3].reshape(3, 1), transformation[0:3, 0:3]
+
 
 def transform_points(translation_vector, rotation_matrix, point_array):
 
     num_points, dim = point_array.shape
     assert dim == 3
 
-    return np.dot(point_array, np.transpose(rotation_matrix)) + translation_vector.reshape(1,3)
+    return np.dot(point_array, np.transpose(rotation_matrix)) + translation_vector.reshape(1, 3)
+
 
 def stamp_to_seconds(time):
     return time.sec + 1e-9 * time.nanosec

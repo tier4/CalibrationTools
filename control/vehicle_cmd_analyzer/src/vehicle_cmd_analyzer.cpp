@@ -13,12 +13,14 @@
 // limitations under the License.
 
 #include "vehicle_cmd_analyzer/vehicle_cmd_analyzer.hpp"
+
 #include <rclcpp/rclcpp.hpp>
+
+#include <algorithm>
+#include <memory>
+#include <string>
 #include <tuple>
 #include <utility>
-#include <string>
-#include <memory>
-#include <algorithm>
 
 VehicleCmdAnalyzer::VehicleCmdAnalyzer(const rclcpp::NodeOptions & options)
 : Node("vehicle_cmd_analyzer", options)
@@ -30,8 +32,8 @@ VehicleCmdAnalyzer::VehicleCmdAnalyzer(const rclcpp::NodeOptions & options)
 
   sub_vehicle_cmd_ =
     this->create_subscription<autoware_auto_control_msgs::msg::AckermannControlCommand>(
-    "/control/command/control_cmd", rclcpp::QoS(10),
-    std::bind(&VehicleCmdAnalyzer::callbackVehicleCommand, this, std::placeholders::_1));
+      "/control/command/control_cmd", rclcpp::QoS(10),
+      std::bind(&VehicleCmdAnalyzer::callbackVehicleCommand, this, std::placeholders::_1));
   pub_debug_ = create_publisher<tier4_debug_msgs::msg::Float32MultiArrayStamped>(
     "~/debug_values", rclcpp::QoS{1});
 

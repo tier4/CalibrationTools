@@ -20,23 +20,21 @@
 #include <chrono>
 #include <fstream>
 #include <map>
-#include <vector>
 #include <memory>
 #include <string>
+#include <vector>
 
 #ifdef ROS_DISTRO_GALACTIC
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #else
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #endif
-#include "tf2_ros/transform_broadcaster.h"
-
 #include "rclcpp/rclcpp.hpp"
+#include "tf2_ros/transform_broadcaster.h"
 #include "tier4_autoware_utils/tier4_autoware_utils.hpp"
 
 #include "tier4_calibration_msgs/srv/extrinsic_calibration_manager.hpp"
 #include "tier4_calibration_msgs/srv/extrinsic_calibrator.hpp"
-
 
 class ExtrinsicCalibrationManagerNode : public rclcpp::Node
 {
@@ -46,8 +44,7 @@ public:
 
 private:
   rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager>::SharedPtr server_;
-  std::vector<rclcpp::Client<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr>
-  clients_;
+  std::vector<rclcpp::Client<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr> clients_;
   rclcpp::CallbackGroup::SharedPtr callback_group_;
 
   struct TargetClient
@@ -73,14 +70,14 @@ private:
 
   void calibrationRequestCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Request>
-    request,
+      request,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Response>
-    response);
+      response);
 
   bool createTargetClient(
-    const YAML::Node & yaml_node, const std::string & parent_frame,
-    const std::string & child_frame, const std::string & client_ns,
-    const rclcpp::CallbackGroup::SharedPtr & callback_group, TargetClient & target_client);
+    const YAML::Node & yaml_node, const std::string & parent_frame, const std::string & child_frame,
+    const std::string & client_ns, const rclcpp::CallbackGroup::SharedPtr & callback_group,
+    TargetClient & target_client);
   geometry_msgs::msg::Pose getPoseFromYaml(
     const YAML::Node & yaml_node, const std::string & parent_frame,
     const std::string & child_frame);

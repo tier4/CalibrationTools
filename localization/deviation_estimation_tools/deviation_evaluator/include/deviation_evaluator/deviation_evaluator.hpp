@@ -15,82 +15,85 @@
 #ifndef DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 #define DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_
 
+#include "deviation_evaluator/tier4_autoware_utils.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/set_bool.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tier4_autoware_utils/ros/transform_listener.hpp"
 
-#include <chrono>
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+#include "sensor_msgs/msg/imu.hpp"
+#include "std_msgs/msg/float64.hpp"
+#include "tier4_debug_msgs/msg/float64_stamped.hpp"
+
+#include <tf2/utils.h>
+
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <mutex>
-#include <queue>
 #include <string>
 #include <vector>
-#include <cmath>
-
-#include "geometry_msgs/msg/pose_array.hpp"
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-#include "geometry_msgs/msg/transform_stamped.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
-#include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
-#include "nav_msgs/msg/odometry.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "tier4_debug_msgs/msg/float64_stamped.hpp"
-#include "tier4_debug_msgs/msg/float64_multi_array_stamped.hpp"
-#include "std_msgs/msg/float64.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
-#include "std_msgs/msg/header.hpp"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/utils.h"
-#include "tf2_ros/transform_broadcaster.h"
-#include "tf2_ros/transform_listener.h"
-
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/LU"
 
 class DeviationEvaluator : public rclcpp::Node
 {
+private:
+  using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
+  using TwistWithCovarianceStamped = geometry_msgs::msg::TwistWithCovarianceStamped;
+  using PoseStamped = geometry_msgs::msg::PoseStamped;
+  using Odometry = nav_msgs::msg::Odometry;
+  struct Errors
+  {
+    double lateral;
+    double long_radius;
+    Errors() : lateral(0), long_radius(0){};
+  };
+
 public:
   DeviationEvaluator(const std::string & node_name, const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Subscription<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
-    sub_twist_with_cov_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    sub_ndt_pose_with_cov_;
-  rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr
-    pub_twist_with_cov_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    pub_ndt_pose_with_cov_;
+  rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr sub_ndt_pose_with_cov_;
+  rclcpp::Subscription<Odometry>::SharedPtr sub_dr_odom_;
+  rclcpp::Subscription<Odometry>::SharedPtr sub_gt_odom_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_dr_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_with_cov_gt_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_init_pose_with_cov_;
+
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_dr_;
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_trigger_ekf_gt_;
 
   bool show_debug_info_;
   std::string save_dir_;
   double start_time_;
-  double stddev_vx_;
-  double stddev_wz_;
-  double coef_vx_;
-  double bias_wz_;
-  double period_;
-  double cut_;
 
-  geometry_msgs::msg::PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
-  geometry_msgs::msg::PoseStamped::SharedPtr current_ndt_pose_ptr_;
+  double wait_duration_;
+  Errors errors_threshold_;
+  Errors current_errors_;
 
-  /**
-   * @brief set twistWithCovariance measurement
-   */
-  void callbackTwistWithCovariance(
-    const geometry_msgs::msg::TwistWithCovarianceStamped::SharedPtr msg);
+  std::deque<PoseStamped::SharedPtr> dr_pose_queue_;
 
-  /**
-   * @brief set NDT poseWithCovariance measurement
-   */
-  void callbackNDTPoseWithCovariance(
-    const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+  PoseStamped::SharedPtr last_gt_pose_ptr_;
 
-  /**
-   * @brief save to Yaml file
-   */
-  void save2YamlFile();
+  PoseStamped::SharedPtr current_ekf_gt_pose_ptr_;
+  PoseStamped::SharedPtr current_ndt_pose_ptr_;
+
+  std::shared_ptr<tier4_autoware_utils::TransformListener> transform_listener_;
+
+  bool has_published_initial_pose_;
+
+  // void callbackWheelOdometry(const TwistWithCovarianceStamped::SharedPtr msg);
+
+  void callbackNDTPoseWithCovariance(const PoseWithCovarianceStamped::SharedPtr msg);
+
+  void callbackEKFDROdom(const Odometry::SharedPtr msg);
+
+  void callbackEKFGTOdom(const Odometry::SharedPtr msg);
+
+  geometry_msgs::msg::Pose interpolatePose(const double timestamp_seconds);
 };
 
 #endif  // DEVIATION_EVALUATOR__DEVIATION_EVALUATOR_HPP_

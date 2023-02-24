@@ -17,6 +17,14 @@
 #ifndef TIME_DELAY_ESTIMATOR__DATA_PROCESSOR_HPP_
 #define TIME_DELAY_ESTIMATOR__DATA_PROCESSOR_HPP_
 
+#include "estimator_utils/math_utils.hpp"
+#include "estimator_utils/optimization_utils.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "time_delay_estimator/parameters.hpp"
+
+#include "std_msgs/msg/float32_multi_array.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
+
 #include <cmath>
 #include <deque>
 #include <numeric>
@@ -24,18 +32,9 @@
 #include <utility>
 #include <vector>
 
-#include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/float32_multi_array.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
-
-#include "estimator_utils/math_utils.hpp"
-#include "estimator_utils/optimization_utils.hpp"
-#include "time_delay_estimator/parameters.hpp"
-
 struct Data
 {
-  Data()
-  : value{0.0}, p_value{0.0} {}
+  Data() : value{0.0}, p_value{0.0} {}
   double value;
   double p_value = 0;
   double stamp = 0;
@@ -89,46 +88,44 @@ struct MinMax
 
 namespace data_processor
 {
-enum class ForgetResult : std::int8_t
-{
+enum class ForgetResult : std::int8_t {
   CURRENT = 0,
   NONE = 1,
   OLD = 2,
   EXCEPTION = -1,
 };
 /**
-  * @brief : emplace back new data and filtering
-  * @param data : filtered data
-  * @param data_dot :  filtered diff data
-  * @param data_2dot : filtered diff2 data
-  * @param params : config for preprocessor
-  * @param buffer data for fitting
-  * @return : has enough data to estimate
-  **/
+ * @brief : emplace back new data and filtering
+ * @param data : filtered data
+ * @param data_dot :  filtered diff data
+ * @param data_2dot : filtered diff2 data
+ * @param params : config for preprocessor
+ * @param buffer data for fitting
+ * @return : has enough data to estimate
+ **/
 bool processResponseData(
-  rclcpp::Node * node, Data & data, Data & data_dot, Data & data_2dot,
-  const Params & params, const int buffer = 0);
+  rclcpp::Node * node, Data & data, Data & data_dot, Data & data_2dot, const Params & params,
+  const int buffer = 0);
 
 /**
-  * @brief : emplace back new data and filtering
-  * @param data : raw filtered processed data
-  * @param params : config for preprocessor
-  * @param buffer data for fitting
-  * @return : has enough data to estimate
-  **/
-bool processInputData(
-  Data & data, const Params & params, const int buffer = 0);
+ * @brief : emplace back new data and filtering
+ * @param data : raw filtered processed data
+ * @param params : config for preprocessor
+ * @param buffer data for fitting
+ * @return : has enough data to estimate
+ **/
+bool processInputData(Data & data, const Params & params, const int buffer = 0);
 
 /**
-  * @brief : forget no feature data to avoid over fitting
-  * @param input : input data
-  * @param response : response data
-  * @return : forget result 0: None 1:OLD 2:NEW
-  **/
+ * @brief : forget no feature data to avoid over fitting
+ * @param input : input data
+ * @param response : response data
+ * @return : forget result 0: None 1:OLD 2:NEW
+ **/
 bool checkIsValidData(
   Data & data, Data & response, const Params & params, double & max_stddev,
   const double & ignore_thresh);
 
 }  // namespace data_processor
 
-#endif  //  TIME_DELAY_ESTIMATOR__DATA_PROCESSOR_HPP_
+#endif  // TIME_DELAY_ESTIMATOR__DATA_PROCESSOR_HPP_

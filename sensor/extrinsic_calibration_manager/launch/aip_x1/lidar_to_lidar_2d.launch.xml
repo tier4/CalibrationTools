@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_x1"/>
+  <arg name="rviz" default="true"/>
+
+  <group>
+    <push-ros-namespace namespace="sensor_kit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/lidar_to_lidar_2d_sensor_kit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="rviz" value="$(var rviz)"/>
+    </include>
+  </group>
+</launch>

@@ -14,41 +14,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy
 from collections import deque
+import json
+import os
+import threading
+import time
+
+import cv2
 from cv_bridge import CvBridge
-from extrinsic_interactive_calibrator.utils import stamp_to_seconds, \
-    tf_message_to_transform_matrix, transform_matrix_to_tf_message, \
-    transform_points, decompose_transformation_matrix
-from geometry_msgs.msg import PointStamped, Point
+from extrinsic_interactive_calibrator.utils import decompose_transformation_matrix
+from extrinsic_interactive_calibrator.utils import stamp_to_seconds
+from extrinsic_interactive_calibrator.utils import tf_message_to_transform_matrix
+from extrinsic_interactive_calibrator.utils import transform_matrix_to_tf_message
+from extrinsic_interactive_calibrator.utils import transform_points
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
+import numpy as np
+import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data, qos_profile_system_default
+from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import qos_profile_system_default
+import ros2_numpy
 from rosidl_runtime_py.convert import message_to_ordereddict
-from sensor_msgs.msg import CameraInfo, CompressedImage, Image, PointCloud2
+from sensor_msgs.msg import CameraInfo
+from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import Image
+from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros.transform_listener import TransformListener
 from tier4_calibration_msgs.msg import CalibrationPoints
-from tier4_calibration_msgs.srv import ExtrinsicCalibrator, IntrinsicsOptimizer
+from tier4_calibration_msgs.srv import ExtrinsicCalibrator
+from tier4_calibration_msgs.srv import IntrinsicsOptimizer
+import transforms3d
 from visualization_msgs.msg import MarkerArray
 
-import cv2
-import json
-import numpy as np
-import os
-import ros2_numpy
-import time
-import threading
-import transforms3d
-class RosInterface(Node):
 
+class RosInterface(Node):
     def __init__(self):
 
-        super().__init__('interactive_calibrator')
+        super().__init__("interactive_calibrator")
 
         self.lock = threading.RLock()
 
@@ -60,21 +69,21 @@ class RosInterface(Node):
         self.declare_parameter("use_calibration_api", True)
         self.declare_parameter("can_publish_tf", True)
 
-        self.camera_parent_frame = \
+        self.camera_parent_frame = (
             self.get_parameter("camera_parent_frame").get_parameter_value().string_value
-        self.camera_frame = \
-            self.get_parameter("camera_frame").get_parameter_value().string_value
-        self.use_compressed = \
-            self.get_parameter("use_compressed").get_parameter_value().bool_value
-        self.timer_period = \
-            self.get_parameter("timer_period").get_parameter_value().double_value # 1.0
-        self.delay_tolerance = \
-            self.get_parameter("delay_tolerance").get_parameter_value().double_value # 0.03
-        self.use_calibration_api = \
+        )
+        self.camera_frame = self.get_parameter("camera_frame").get_parameter_value().string_value
+        self.use_compressed = self.get_parameter("use_compressed").get_parameter_value().bool_value
+        self.timer_period = (
+            self.get_parameter("timer_period").get_parameter_value().double_value
+        )  # 1.0
+        self.delay_tolerance = (
+            self.get_parameter("delay_tolerance").get_parameter_value().double_value
+        )  # 0.03
+        self.use_calibration_api = (
             self.get_parameter("use_calibration_api").get_parameter_value().bool_value
-        self.can_publish_tf = \
-            self.get_parameter("can_publish_tf").get_parameter_value().bool_value
-
+        )
+        self.can_publish_tf = self.get_parameter("can_publish_tf").get_parameter_value().bool_value
 
         self.image_frame = None
 
@@ -119,40 +128,52 @@ class RosInterface(Node):
         self.bridge = CvBridge()
 
         self.lidar_subs = self.create_subscription(
-            PointCloud2, "pointcloud", self.pointcloud_callback, qos_profile_sensor_data)
+            PointCloud2, "pointcloud", self.pointcloud_callback, qos_profile_sensor_data
+        )
 
         if self.use_compressed:
             self.image_sub = self.create_subscription(
-                CompressedImage, "image", self.image_callback, qos_profile_sensor_data)
+                CompressedImage, "image", self.image_callback, qos_profile_sensor_data
+            )
         else:
             self.image_sub = self.create_subscription(
-                Image, "image", self.image_callback, qos_profile_sensor_data)
+                Image, "image", self.image_callback, qos_profile_sensor_data
+            )
 
         self.camera_info_sub = self.create_subscription(
-            CameraInfo, "camera_info", self.camera_info_callback, qos_profile_sensor_data)
+            CameraInfo, "camera_info", self.camera_info_callback, qos_profile_sensor_data
+        )
         self.point_sub = self.create_subscription(
-            PointStamped, "/clicked_point", self.point_callback, qos_profile_system_default)
+            PointStamped, "/clicked_point", self.point_callback, qos_profile_system_default
+        )
         self.point_sub = self.create_subscription(
-            CalibrationPoints, "calibration_points_input",
-            self.calibration_points_callback, qos_profile_system_default)
+            CalibrationPoints,
+            "calibration_points_input",
+            self.calibration_points_callback,
+            qos_profile_system_default,
+        )
 
-        self.markers_pub = self.create_publisher(
-            MarkerArray, "markers", qos_profile_sensor_data)
-        self.image_pub = self.create_publisher(
-            Image, "calibration/image", qos_profile_sensor_data)
+        self.markers_pub = self.create_publisher(MarkerArray, "markers", qos_profile_sensor_data)
+        self.image_pub = self.create_publisher(Image, "calibration/image", qos_profile_sensor_data)
         self.camera_info_pub = self.create_publisher(
-            CameraInfo, "calibration/camera_info", qos_profile_sensor_data)
+            CameraInfo, "calibration/camera_info", qos_profile_sensor_data
+        )
         self.pointcloud_pub = self.create_publisher(
-            PointCloud2, "calibration/pointcloud", qos_profile_sensor_data)
+            PointCloud2, "calibration/pointcloud", qos_profile_sensor_data
+        )
 
         self.optimize_camera_intrinsics_client = self.create_client(
-            IntrinsicsOptimizer, 'optimize_intrinsics')
+            IntrinsicsOptimizer, "optimize_intrinsics"
+        )
 
         if self.use_calibration_api:
             self.service_callback_group = MutuallyExclusiveCallbackGroup()
-            self.calibration_api_service_server = self.create_service(ExtrinsicCalibrator,
-                "extrinsic_calibration", self.calibration_api_service_callback,
-                callback_group=self.service_callback_group)
+            self.calibration_api_service_server = self.create_service(
+                ExtrinsicCalibrator,
+                "extrinsic_calibration",
+                self.calibration_api_service_callback,
+                callback_group=self.service_callback_group,
+            )
 
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
 
@@ -160,7 +181,6 @@ class RosInterface(Node):
         with self.lock:
             self.calibration_api_sent_pending = True
             self.calibration_error = -calibration_error
-
 
     def calibration_api_service_callback(self, request, response):
 
@@ -239,28 +259,37 @@ class RosInterface(Node):
     def set_camera_lidar_transform(self, camera_optical_lidar_transform):
         with self.lock:
 
-            optical_axis_to_camera_transform = np.zeros((4,4))
-            optical_axis_to_camera_transform[0,1] = -1
-            optical_axis_to_camera_transform[1,2] = -1
-            optical_axis_to_camera_transform[2,0] = 1
-            optical_axis_to_camera_transform[3,3] = 1
+            optical_axis_to_camera_transform = np.zeros((4, 4))
+            optical_axis_to_camera_transform[0, 1] = -1
+            optical_axis_to_camera_transform[1, 2] = -1
+            optical_axis_to_camera_transform[2, 0] = 1
+            optical_axis_to_camera_transform[3, 3] = 1
 
             try:
                 camera_parent_lidar_tf = self.tf_buffer.lookup_transform(
-                    self.camera_parent_frame, self.lidar_frame, rclpy.time.Time(),
-                    timeout=Duration(seconds=1.0))
+                    self.camera_parent_frame,
+                    self.lidar_frame,
+                    rclpy.time.Time(),
+                    timeout=Duration(seconds=1.0),
+                )
                 camera_parent_lidar_transform = tf_message_to_transform_matrix(
-                    camera_parent_lidar_tf)
+                    camera_parent_lidar_tf
+                )
             except TransformException as ex:
                 self.get_logger().error(
-                    f'Could not transform {self.camera_parent_frame} to {self.lidar_frame}: {ex}')
+                    f"Could not transform {self.camera_parent_frame} to {self.lidar_frame}: {ex}"
+                )
                 return
 
-            camera_camera_parent_transform = np.linalg.inv(optical_axis_to_camera_transform) @ \
-                camera_optical_lidar_transform @ np.linalg.inv(camera_parent_lidar_transform)
+            camera_camera_parent_transform = (
+                np.linalg.inv(optical_axis_to_camera_transform)
+                @ camera_optical_lidar_transform
+                @ np.linalg.inv(camera_parent_lidar_transform)
+            )
 
             self.output_transform_msg = transform_matrix_to_tf_message(
-                np.linalg.inv(camera_camera_parent_transform))
+                np.linalg.inv(camera_camera_parent_transform)
+            )
             self.output_transform_msg.header.frame_id = self.camera_parent_frame
             self.output_transform_msg.child_frame_id = self.camera_frame
             self.new_output_tf = True
@@ -284,8 +313,9 @@ class RosInterface(Node):
 
         req.initial_camera_info = self.camera_info_sync
 
-        self.optimize_camera_intrinsics_future = \
-            self.optimize_camera_intrinsics_client.call_async(req)
+        self.optimize_camera_intrinsics_future = self.optimize_camera_intrinsics_client.call_async(
+            req
+        )
 
     def save_calibration_tfs(self, output_dir):
         with self.lock:
@@ -295,27 +325,23 @@ class RosInterface(Node):
             q = self.output_transform_msg.transform.rotation
             e = transforms3d.euler.quat2euler((q.w, q.x, q.y, q.z))
 
-            d['roll'] = e[0]
-            d['pitch'] = e[1]
-            d['yaw'] = e[2]
+            d["roll"] = e[0]
+            d["pitch"] = e[1]
+            d["yaw"] = e[2]
 
-            with open(os.path.join(output_dir, "tf.json"), 'w') as fout:
+            with open(os.path.join(output_dir, "tf.json"), "w") as fout:
                 fout.write(json.dumps(d, indent=4, sort_keys=False))
 
     def pointcloud_callback(self, pointcloud_msg):
 
         self.lidar_frame = pointcloud_msg.header.frame_id
         self.pointcloud_queue.append(pointcloud_msg)
-
-        t0 = time.time()
         self.check_sync()
-        t1 = time.time()
 
     def image_callback(self, image_msg):
 
         self.image_queue.append(image_msg)
         self.check_sync()
-
 
     def camera_info_callback(self, camera_info_msg):
 
@@ -329,7 +355,8 @@ class RosInterface(Node):
                 return
 
         if (
-            len(self.camera_info_queue) == 0 or len(self.image_queue) == 0
+            len(self.camera_info_queue) == 0
+            or len(self.image_queue) == 0
             or len(self.pointcloud_queue) == 0
         ):
             return
@@ -340,12 +367,14 @@ class RosInterface(Node):
         for pointcloud_msg in self.pointcloud_queue:
             for image_msg in self.image_queue:
 
-                current_delay = abs(stamp_to_seconds(pointcloud_msg.header.stamp) -
-                    stamp_to_seconds(image_msg.header.stamp))
+                current_delay = abs(
+                    stamp_to_seconds(pointcloud_msg.header.stamp)
+                    - stamp_to_seconds(image_msg.header.stamp)
+                )
 
                 min_delay = min(min_delay, current_delay)
 
-                if (current_delay < self.delay_tolerance):
+                if current_delay < self.delay_tolerance:
                     found = True
                     break
 
@@ -354,12 +383,15 @@ class RosInterface(Node):
 
         pc_data = ros2_numpy.numpify(pointcloud_msg)
         points = np.zeros(pc_data.shape + (4,))
-        points[...,0] = pc_data['x']
-        points[...,1] = pc_data['y']
-        points[...,2] = pc_data['z']
-        points[...,3] = pc_data['intensity'] if 'intensity' in pc_data.dtype.names \
-            else np.zeros_like(pc_data['x'])
-
+        points[..., 0] = pc_data["x"]
+        points[..., 1] = pc_data["y"]
+        points[..., 2] = pc_data["z"]
+        points[..., 3] = (
+            pc_data["intensity"]
+            if "intensity" in pc_data.dtype.names
+            else np.zeros_like(pc_data["x"])
+        )
+        points = points.reshape(-1, 4)
 
         with self.lock:
             self.camera_info_sync = self.camera_info_queue[-1]
@@ -371,32 +403,37 @@ class RosInterface(Node):
                 self.image_sync = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
             else:
                 self.image_sync = self.bridge.imgmsg_to_cv2(self.image_sync)
-                #image = cv2.cvtColor(self.raw_image, cv2.COLOR_BGR2RGB)
+                # image = cv2.cvtColor(self.raw_image, cv2.COLOR_BGR2RGB)
 
             self.sensor_data_callback(self.image_sync, self.camera_info_sync, points)
 
-
-        self.image_queue.clear() # this is suboptical but is only for the gui
+        self.image_queue.clear()  # this is suboptical but is only for the gui
         self.pointcloud_queue.clear()
-
 
     def point_callback(self, point):
 
-        point_xyz = np.array([point.point.x, point.point.y, point.point.z]).reshape(1,3)
+        point_xyz = np.array([point.point.x, point.point.y, point.point.z]).reshape(1, 3)
 
         if point.header.frame_id != self.lidar_frame:
             try:
-                lidar_to_point_frame_tf = self.tf_buffer.lookup_transform(self.lidar_frame,
-                    point.header.frame_id, rclpy.time.Time(), timeout=Duration(seconds=1.0))
-                lidar_to_point_frame_transform = \
-                    tf_message_to_transform_matrix(lidar_to_point_frame_tf)
-                translation, rotation = \
-                    decompose_transformation_matrix(lidar_to_point_frame_transform)
+                lidar_to_point_frame_tf = self.tf_buffer.lookup_transform(
+                    self.lidar_frame,
+                    point.header.frame_id,
+                    rclpy.time.Time(),
+                    timeout=Duration(seconds=1.0),
+                )
+                lidar_to_point_frame_transform = tf_message_to_transform_matrix(
+                    lidar_to_point_frame_tf
+                )
+                translation, rotation = decompose_transformation_matrix(
+                    lidar_to_point_frame_transform
+                )
 
                 point_xyz = transform_points(translation, rotation, point_xyz)
             except TransformException as ex:
                 self.get_logger().error(
-                    f'Could not transform {self.lidar_frame} to {point.header.frame_id}: {ex}')
+                    f"Could not transform {self.lidar_frame} to {point.header.frame_id}: {ex}"
+                )
                 return
 
         self.object_point_callback(point_xyz)
@@ -419,15 +456,15 @@ class RosInterface(Node):
 
             service_status = self.optimize_camera_intrinsics_client.service_is_ready()
             if (
-                service_status != self.optimize_camera_intrinsics_available and
-                self.camera_info_sync is not None
+                service_status != self.optimize_camera_intrinsics_available
+                and self.camera_info_sync is not None
             ):
                 self.optimize_camera_intrinsics_status_callback(service_status)
                 self.optimize_camera_intrinsics_available = service_status
 
             if (
-                self.optimize_camera_intrinsics_future is not None and
-                self.optimize_camera_intrinsics_future.done()
+                self.optimize_camera_intrinsics_future is not None
+                and self.optimize_camera_intrinsics_future.done()
             ):
                 response = self.optimize_camera_intrinsics_future.result()
                 self.optimize_camera_intrinsics_result_callback(response.optimized_camera_info)
@@ -437,14 +474,19 @@ class RosInterface(Node):
                 return
 
             try:
-                transform = self.tf_buffer.lookup_transform(self.image_frame, self.lidar_frame,
-                    rclpy.time.Time(seconds=0, nanoseconds=0), timeout=Duration(seconds=0.2))
+                transform = self.tf_buffer.lookup_transform(
+                    self.image_frame,
+                    self.lidar_frame,
+                    rclpy.time.Time(seconds=0, nanoseconds=0),
+                    timeout=Duration(seconds=0.2),
+                )
 
                 transform_matrix = tf_message_to_transform_matrix(transform)
                 self.transform_callback(transform_matrix)
             except TransformException as ex:
                 self.get_logger().error(
-                    f'Could not transform {self.image_frame} to {self.lidar_frame}: {ex}')
+                    f"Could not transform {self.image_frame} to {self.lidar_frame}: {ex}"
+                )
 
             now = self.get_clock().now().to_msg()
 
@@ -467,11 +509,9 @@ class RosInterface(Node):
                 self.camera_info_pub.publish(self.camera_info_sync)
                 self.pointcloud_pub.publish(self.pointcloud_sync)
 
-
-
     def spin(self):
 
-        self.ros_executor = MultiThreadedExecutor(num_threads = 2)
+        self.ros_executor = MultiThreadedExecutor(num_threads=2)
         self.ros_executor.add_node(self)
 
         self.thread = threading.Thread(target=self.executor.spin, args=())

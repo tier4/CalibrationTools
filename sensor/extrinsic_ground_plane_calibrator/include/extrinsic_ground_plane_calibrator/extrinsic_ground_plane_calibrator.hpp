@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_GROUND_PLANE_CALIBRATOR_EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
-#define EXTRINSIC_GROUND_PLANE_CALIBRATOR_EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
+#define EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
 
 #define PCL_NO_PRECOMPILE  // We require this macro to use the PCL templates with velodyne PCs
 #include <Eigen/Dense>
@@ -30,10 +30,15 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 #include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
 
 #include <iostream>
 #include <mutex>
@@ -79,14 +84,15 @@ protected:
   std::string base_frame_;
   std::string sensor_kit_frame_;  // the parent for this calibration method must be a sensor kit
   std::string lidar_base_frame_;  // the child for this calibration method must be a the base of a
-                                  // lidar (probably different from the actua lidar tf)
+                                  // lidar (probably different from the actual lidar tf)
   double marker_size_;
   double max_inlier_distance_;
   int min_plane_points_;
+  int min_plane_points_percentage_;
   double max_cos_distance_;
   int max_iterations_;
   bool verbose_;
-  bool broacast_calibration_tf_;
+  bool broadcast_calibration_tf_;
   bool filter_estimations_;
   double initial_angle_cov_;
   double initial_z_cov_;
@@ -98,7 +104,7 @@ protected:
   double z_convergence_threshold_;
 
   // ROS Interface
-  tf2_ros::StaticTransformBroadcaster tf_broascaster_;
+  tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
@@ -124,7 +130,7 @@ protected:
   tf2::Transform initial_base_to_lidar_tf2_;
   Eigen::Isometry3d initial_base_to_lidar_eigen_;
 
-  // Other tfs to calculate the complete chain. There are constant for our pourposes
+  // Other tfs to calculate the complete chain. There are constant for our purposes
   geometry_msgs::msg::Transform base_to_sensor_kit_msg_;
   tf2::Transform base_to_sensor_kit_tf2_;
   Eigen::Isometry3d base_to_sensor_kit_eigen_;
@@ -144,4 +150,4 @@ protected:
   bool first_observation_;
 };
 
-#endif  // EXTRINSIC_GROUND_PLANE_CALIBRATOR_EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_

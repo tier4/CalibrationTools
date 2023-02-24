@@ -14,11 +14,12 @@
 //  limitations under the License.
 //
 
-#include <vector>
-#include <limits>
-#include <string>
 #include "estimator_utils/math_utils.hpp"
 #include "time_delay_estimator/time_delay_estimator.hpp"
+
+#include <limits>
+#include <string>
+#include <vector>
 
 TimeDelayEstimator::DetectionResult TimeDelayEstimator::estimateDelayByLeastSquared(
   const std::vector<double> & x_dot, const std::vector<double> & x, const std::vector<double> & u,
@@ -45,7 +46,7 @@ TimeDelayEstimator::DetectionResult TimeDelayEstimator::estimateDelayByLeastSqua
   ls_estimator_.mae = min_error;
   ls_estimator_.estimated_delay_index = min_error_index;
   ls_estimator_.time_delay = static_cast<double>(min_error_index) * params.sampling_delta_time /
-    static_cast<double>(params.num_interpolation);
+                             static_cast<double>(params.num_interpolation);
   const double valid_mae_threshold = 0.1;
   if (ls_estimator_.mae < valid_mae_threshold) {
     return DetectionResult::BELOW_THRESH;
@@ -79,7 +80,7 @@ TimeDelayEstimator::DetectionResult TimeDelayEstimator::estimateDelayByLeastSqua
   ls2_estimator_.mae = min_error;
   ls2_estimator_.estimated_delay_index = min_error_index;
   ls2_estimator_.time_delay = static_cast<double>(min_error_index) * params.sampling_delta_time /
-    static_cast<double>(params.num_interpolation);
+                              static_cast<double>(params.num_interpolation);
   const double valid_mae_threshold = 0.1;
   if (ls2_estimator_.mae < valid_mae_threshold) {
     return DetectionResult::DETECTED;
@@ -88,9 +89,8 @@ TimeDelayEstimator::DetectionResult TimeDelayEstimator::estimateDelayByLeastSqua
 }
 
 TimeDelayEstimator::DetectionResult TimeDelayEstimator::estimateDelayByCrossCorrelation(
-  rclcpp::Node * node, const std::vector<double> & input,
-  const std::vector<double> & response, Estimator & cc_estimator,
-  std::string name, const Params & params)
+  rclcpp::Node * node, const std::vector<double> & input, const std::vector<double> & response,
+  Estimator & cc_estimator, std::string name, const Params & params)
 {
   auto & cross_corr = cc_estimator.cross_correlation;
   cross_corr = math_utils::calcCrossCorrelationCoefficient(
@@ -102,12 +102,12 @@ TimeDelayEstimator::DetectionResult TimeDelayEstimator::estimateDelayByCrossCorr
   if (peak_corr < params.valid_peak_cross_correlation_threshold) {
     auto & clk = *node->get_clock();
     RCLCPP_DEBUG_STREAM_THROTTLE(
-      rclcpp::get_logger("time_delay_estimator"), clk,
-      5000, name << "[time_delay_estimator] : correlation peak less than thresh: " << peak_corr);
+      rclcpp::get_logger("time_delay_estimator"), clk, 5000,
+      name << "[time_delay_estimator] : correlation peak less than thresh: " << peak_corr);
     return DetectionResult::BELOW_THRESH;
   }
   cc_estimator.mae = math_utils::calcMAE(input, response, cc_estimator.estimated_delay_index);
   cc_estimator.time_delay = static_cast<double>(peak_index) * params.sampling_delta_time /
-    static_cast<double>(params.num_interpolation);
+                            static_cast<double>(params.num_interpolation);
   return DetectionResult::DETECTED;
 }
