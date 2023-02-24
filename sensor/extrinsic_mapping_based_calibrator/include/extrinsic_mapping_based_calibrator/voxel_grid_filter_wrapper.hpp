@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_VOXEL_GRID_FILTER_WRAPPER_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_VOXEL_GRID_FILTER_WRAPPER_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__VOXEL_GRID_FILTER_WRAPPER_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__VOXEL_GRID_FILTER_WRAPPER_HPP_
 
-#include <tier4_pcl_extensions/voxel_grid_triplets_impl.hpp>
+#include <tier4_calibration_pcl_extensions/voxel_grid_triplets_impl.hpp>
 
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
@@ -52,4 +52,4 @@ protected:
   pcl::VoxelGrid<PointType> voxel_triplets;
 };
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_VOXEL_GRID_FILTER_WRAPPER_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__VOXEL_GRID_FILTER_WRAPPER_HPP_

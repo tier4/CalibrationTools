@@ -15,7 +15,7 @@
 #include <Eigen/Core>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <tier4_pcl_extensions/joint_icp_extended.hpp>
+#include <tier4_calibration_pcl_extensions/joint_icp_extended.hpp>
 
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/voxel_grid.h>
@@ -52,7 +52,6 @@ void transformPointcloud(
     pcl::transformPointCloud(*pc_ptr, *transformed_pc_ptr, transform);
 
     pc_ptr.swap(transformed_pc_ptr);
-
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(rclcpp::get_logger("tf_buffer"), "could not get initial tf. %s", ex.what());
   }

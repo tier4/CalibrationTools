@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_LIDAR_CALIBRATOR_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_LIDAR_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__LIDAR_CALIBRATOR_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__LIDAR_CALIBRATOR_HPP_
 
 #include <extrinsic_mapping_based_calibrator/filters/filter.hpp>
 #include <extrinsic_mapping_based_calibrator/sensor_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <tier4_pcl_extensions/joint_icp_extended.hpp>
+#include <tier4_calibration_pcl_extensions/joint_icp_extended.hpp>
 
 #include <tier4_calibration_msgs/srv/frame.hpp>
 
@@ -30,6 +30,10 @@
 #include <pcl/registration/registration.h>
 #include <pclomp/ndt_omp.h>
 #include <tf2_ros/buffer.h>
+
+#include <memory>
+#include <string>
+#include <vector>
 
 class LidarCalibrator : public SensorCalibrator
 {
@@ -46,22 +50,22 @@ public:
     PointPublisher::SharedPtr & calibrated_source_aligned_map_pub,
     PointPublisher::SharedPtr & target_map_pub);
 
-  virtual void singleSensorCalibrationCallback(
+  void singleSensorCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
-  virtual void multipleSensorCalibrationCallback(
+  void multipleSensorCalibrationCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
 
   /*!
    * Calibrate the lidar
    */
-  virtual bool calibrate(Eigen::Matrix4f & best_transform, float & best_score) override;
+  bool calibrate(Eigen::Matrix4f & best_transform, float & best_score) override;
 
   /*!
    * Configure the calibrator parameters
    */
-  virtual void configureCalibrators() override;
+  void configureCalibrators() override;
 
 protected:
   /*!
@@ -123,4 +127,4 @@ protected:
     calibration_batch_icp_ultrafine_;
 };
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_LIDAR_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__LIDAR_CALIBRATOR_HPP_

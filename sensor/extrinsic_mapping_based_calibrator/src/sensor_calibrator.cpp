@@ -14,7 +14,7 @@
 
 #include <extrinsic_mapping_based_calibrator/sensor_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
-#include <tier4_pcl_extensions/voxel_grid_triplets_impl.hpp>
+#include <tier4_calibration_pcl_extensions/voxel_grid_triplets_impl.hpp>
 
 SensorCalibrator::SensorCalibrator(
   const std::string calibrator_sensor_frame, const std::string calibrator_name,

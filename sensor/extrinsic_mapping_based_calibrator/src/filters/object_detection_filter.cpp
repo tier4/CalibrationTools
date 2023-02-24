@@ -18,7 +18,12 @@
 
 #include <pcl/common/transforms.h>
 #include <pcl/filters/crop_box.h>
+
+#ifdef ROS_DISTRO_GALACTIC
 #include <tf2_eigen/tf2_eigen.h>
+#else
+#include <tf2_eigen/tf2_eigen.hpp>
+#endif
 
 #include <array>
 #include <limits>
@@ -62,7 +67,6 @@ std::vector<CalibrationFrame> ObjectDetectionFilter::filter(
       tf2::transformToEigen(mapping_lidar_to_detection_frame_msg_).cast<float>();
     source_lidar_to_mapping_lidar_transform =
       tf2::transformToEigen(source_lidar_to_mapping_lidar_msg_).cast<float>();
-
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(
       rclcpp::get_logger(name_), "Could not get initial tfs. Aborting filter. %s", ex.what());

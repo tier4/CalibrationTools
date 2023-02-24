@@ -19,7 +19,7 @@
 #include <extrinsic_mapping_based_calibrator/filters/object_detection_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/filters/sequential_filter.hpp>
 #include <opencv2/core.hpp>
-#include <tier4_pcl_extensions/voxel_grid_triplets.hpp>
+#include <tier4_calibration_pcl_extensions/voxel_grid_triplets.hpp>
 
 #include <image_geometry/pinhole_camera_model.h>
 #include <pcl/common/transforms.h>

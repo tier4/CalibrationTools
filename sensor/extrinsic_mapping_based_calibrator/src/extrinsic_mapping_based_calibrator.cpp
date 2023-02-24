@@ -20,13 +20,15 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
+#ifdef ROS_DISTRO_GALACTIC
 #include <tf2_eigen/tf2_eigen.h>
+#else
+#include <tf2_eigen/tf2_eigen.hpp>
+#endif
 
 #include <chrono>
 #include <fstream>
 #include <iostream>
-
-using namespace std::chrono_literals;
 
 #define UNUSED(x) (void)x;
 
@@ -60,6 +62,8 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   calibration_parameters_(std::make_shared<CalibrationParameters>()),
   mapping_data_(std::make_shared<MappingData>())
 {
+  using std::chrono_literals::operator""s;
+
   std::vector<std::string> camera_calibration_service_names =
     this->declare_parameter<std::vector<std::string>>("camera_calibration_service_names");
   std::vector<std::string> lidar_calibration_service_names =
@@ -488,6 +492,7 @@ void ExtrinsicMappingBasedCalibrator::cameraCalibrationRequestReceivedCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   (void)request;
+  using std::chrono_literals::operator""ms;
 
   Eigen::Isometry3d parent_to_mapping_lidar_eigen;
   Eigen::Isometry3d camera_to_camera_optical_link_eigen;
@@ -588,6 +593,7 @@ void ExtrinsicMappingBasedCalibrator::lidarCalibrationRequestReceivedCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   (void)request;
+  using std::chrono_literals::operator""ms;
 
   Eigen::Isometry3d parent_to_mapping_lidar_eigen;
   Eigen::Isometry3d lidar_base_to_lidar_eigen;
