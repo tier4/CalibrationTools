@@ -15,13 +15,19 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__MATH_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__MATH_HPP_
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <Eigen/SVD>
 #include <extrinsic_tag_based_base_calibrator/calibration_types.hpp>
 #include <extrinsic_tag_based_base_calibrator/math.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/core/eigen.hpp>
 
 #include <iostream>
 #include <limits>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace extrinsic_tag_based_base_calibrator
 {
@@ -155,13 +161,13 @@ bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & gr
 }
 
 bool computeGroundPlane(
-  const std::vector<std::shared_ptr<cv::Affine3d>> & poses, double tag_size,
+  const std::map<UID, std::shared_ptr<cv::Affine3d>> & poses_map, double tag_size,
   cv::Affine3d & ground_pose)
 {
   std::vector<cv::Vec3d> points;
 
-  for (const auto & pose : poses) {
-    std::array<cv::Vec3d, 4> corners = tagPoseToCorners(*pose, tag_size);
+  for (const auto & pose_it : poses_map) {
+    std::array<cv::Vec3d, 4> corners = tagPoseToCorners(*pose_it.second, tag_size);
     points.insert(points.end(), corners.begin(), corners.end());
   }
 
@@ -216,233 +222,44 @@ cv::Point2d projectPoint(
   return cv::Point2d(cx + fx * d * xp, cy + fy * d * yp);
 }
 
-void estimateInitialPoses(CalibrationData & data, const UID & main_sensor_uid)
+void estimateInitialPosesAux(
+  const UID uid, std::unordered_set<UID> traversed_uids, cv::Affine3d current_pose, int depth,
+  std::unordered_map<UID, std::vector<cv::Affine3d>> & raw_poses_map, CalibrationData & data,
+  const int max_depth)
 {
-  // Input : the scenes
-  //          the main sensor
+  raw_poses_map[uid].push_back(current_pose);
+  traversed_uids.insert(uid);
 
-  // Keep a dictionary of all the UIDs in the scenes, which tracks if they were added or not
-  // Keep a dictionary from all the poses from the main sensor
-
-  // Iterate all scenes all sensors
-  //  For the detections of said sensors, check if one of them already has an entry in the pose
-  //  dictionary If there is compute the pose of said sensor. Compute the pose of all the remaining
-  //  sensors without a pose Mark the iteration as successful Stop when the iteration has no
-  //  successes
-
-  // Check that all the elements in the diationary have valid poses, otherwise pose an error
-
-  // Based on th
-
-  assert(false);
-  CV_UNUSED(data);
-  CV_UNUSED(main_sensor_uid);
-
-  return;
-
-  /*
-  // Estimate the the initial poses for all the tags
-  std::map<UID, std::map<UID, cv::Affine3d>> uid_poses_map; // TODO(knzo25): implement the hash
-  method to UID to enable the use of unordered maps std::map<UID, bool> uid_status_map;
-
-  // First get all the UIDs  in the dict and set them to false
-  for (const CalibrationScene & scene : scenes) {
-
-    //std::vector<LidartagDetection> calibration_lidar_detections;
-    //std::map<TagType, std::vector<ApriltagGridDetection>> calibration_camera_detections;
-    //std::vector<ExternalCameraFrame> external_camera_frames;
-    for(const LidartagDetection & lidar_detection : scene.calibration_lidar_detections) {
-      const int & id = lidar_detection.id;
-      const UID = UID::makeWaypointUID(scene_id, id);
-    }
+  if (++depth > max_depth) {
+    return;
   }
 
-  for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
-    const CalibrationScene & scene = data_->scenes[scene_index];
-
-    // Add the waypoints seen from the calibration sensor
-    for (auto & detection : scene.calibration_camera_detections) {
-      UID waypoint_uid = UID::makeWaypointUID(scene_index, detection.id);
-      poses_vector_map[waypoint_uid].push_back(detection.pose);
+  for (const UID & next_uid : data.uid_connections_map[uid]) {
+    if (traversed_uids.count(next_uid) > 0) {
+      continue;
     }
 
-    for (auto & detection : scene.calibration_lidar_detections) {
-      UID waypoint_uid = UID::makeWaypointUID(scene_index, detection.id);
-      poses_vector_map[waypoint_uid].push_back(detection.pose);
-    }
+    const cv::Affine3d rel_pose = data.detections_relative_poses_map[std::make_pair(uid, next_uid)];
+    const cv::Affine3d next_pose = current_pose * rel_pose;
 
-    // Add the remaining tags and poses when possib;e
-    for (std::size_t frame_id = 0; frame_id < scene.external_camera_frames.size(); frame_id++) {
-      auto & frame = scene.external_camera_frames[frame_id];
-      std::vector<ApriltagDetection> waypoint_detections;
-      std::vector<ApriltagDetection> wheel_detections;
-      std::vector<ApriltagDetection> ground_detections;
-
-      std::copy_if(
-        frame.detections.begin(), frame.detections.end(), std::back_inserter(waypoint_detections),
-        [this](const ApriltagDetection & detection) {
-          return waypoint_tag_ids_set_.count(detection.id) > 0;
-        });
-
-      std::copy_if(
-        frame.detections.begin(), frame.detections.end(), std::back_inserter(wheel_detections),
-        [this](const ApriltagDetection & detection) {
-          return wheel_tag_ids_set_.count(detection.id) > 0;
-        });
-
-      std::copy_if(
-        frame.detections.begin(), frame.detections.end(), std::back_inserter(ground_detections),
-        [this](const ApriltagDetection & detection) {
-          return ground_tag_ids_set_.count(detection.id) > 0;
-        });
-
-      for (const auto & waypoint_detection : waypoint_detections) {
-        UID waypoint_uid = UID::makeWaypointUID(scene_index, waypoint_detection.id);
-        cv::Affine3d sensor_to_waypoint_pose = poses_vector_map[waypoint_uid].back();
-
-        const cv::Affine3d & external_camera_to_waypoint_pose = waypoint_detection.pose;
-
-        cv::Affine3d sensor_to_external_camera_pose =
-          sensor_to_waypoint_pose * external_camera_to_waypoint_pose.inv();
-
-        UID external_camera_uid = UID::makeExternalCameraUID(scene_index, frame_id);
-
-        poses_vector_map[external_camera_uid].push_back(sensor_to_external_camera_pose);
-
-        for (const auto & wheel_detection : wheel_detections) {
-          const cv::Affine3d & external_camera_to_wheel_pose = wheel_detection.pose;
-
-          cv::Affine3d sensor_to_wheel_pose =
-            sensor_to_external_camera_pose * external_camera_to_wheel_pose;
-
-          UID wheel_tag_uid = UID::makeWheelTagUID(wheel_detection.id);
-          poses_vector_map[wheel_tag_uid].push_back(sensor_to_wheel_pose);
-        }
-
-        for (const auto & ground_detection : ground_detections) {
-          cv::Affine3d external_camera_to_ground_pose = ground_detection.pose;
-          cv::Affine3d sensor_to_ground_pose = sensor_to_waypoint_pose *
-                                               external_camera_to_waypoint_pose.inv() *
-                                               external_camera_to_ground_pose;
-
-          UID ground_tag_uid = UID::makeGroundTagUID(ground_detection.id);
-          poses_vector_map[ground_tag_uid].push_back(sensor_to_ground_pose);
-        }
-      }
-    }
+    estimateInitialPosesAux(
+      next_uid, traversed_uids, next_pose, depth, raw_poses_map, data, max_depth);
   }
+}
 
-  // Some external cameras are not conected to the waypoints, so we make another pass
-  for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
-    const CalibrationScene & scene = data_->scenes[scene_index];
+void estimateInitialPoses(
+  CalibrationData & data, const UID & main_sensor_uid, UID & left_wheel_uid, UID & right_wheel_uid,
+  int max_depth)
+{
+  std::unordered_map<UID, std::vector<cv::Affine3d>> raw_poses_map;
 
-    for (std::size_t frame_id = 0; frame_id < scene.external_camera_frames.size(); frame_id++) {
-      // Need to make sure all the cameras are in the map
-      UID external_camera_uid = UID::makeExternalCameraUID(scene_index, frame_id);
+  cv::Affine3d identity = cv::Affine3d::Identity();
+  estimateInitialPosesAux(
+    main_sensor_uid, std::unordered_set<UID>(), identity, 0, raw_poses_map, data, max_depth);
 
-      auto & frame = scene.external_camera_frames[frame_id];
-      std::vector<ApriltagDetection> linked_detections;
-      std::vector<ApriltagDetection> unlinked_wheel_detections;
-      std::vector<ApriltagDetection> unlinked_ground_detections;
-
-      std::copy_if(
-        frame.detections.begin(), frame.detections.end(), std::back_inserter(linked_detections),
-        [this, &poses_vector_map](const ApriltagDetection & detection) {
-          UID wheel_tag_uid = UID::makeWheelTagUID(detection.id);
-          UID ground_tag_uid = UID::makeGroundTagUID(detection.id);
-          return poses_vector_map.count(wheel_tag_uid) > 0 ||
-                 poses_vector_map.count(ground_tag_uid) > 0;
-        });
-
-      std::copy_if(
-        frame.detections.begin(), frame.detections.end(),
-        std::back_inserter(unlinked_wheel_detections),
-        [this, &poses_vector_map](const ApriltagDetection & detection) {
-          UID wheel_tag_uid = UID::makeWheelTagUID(detection.id);
-          return wheel_tag_ids_set_.count(detection.id) > 0 &&
-                 poses_vector_map.count(wheel_tag_uid) == 0;
-        });
-
-      std::copy_if(
-        frame.detections.begin(), frame.detections.end(),
-        std::back_inserter(unlinked_ground_detections),
-        [this, &poses_vector_map](const ApriltagDetection & detection) {
-          UID ground_tag_uid = UID::makeGroundTagUID(detection.id);
-          return ground_tag_ids_set_.count(detection.id) > 0 &&
-                 poses_vector_map.count(ground_tag_uid) == 0;
-        });
-
-      assert(linked_detections.size() > 0);
-
-      if (poses_vector_map.count(external_camera_uid) == 0) {
-        auto & linked_detection = linked_detections.front();
-
-        UID wheel_tag_uid = UID::makeWheelTagUID(linked_detection.id);
-        UID ground_tag_uid = UID::makeGroundTagUID(linked_detection.id);
-        cv::Affine3d sensor_to_linked_tag = poses_vector_map.count(wheel_tag_uid) > 0
-                                              ? poses_vector_map[wheel_tag_uid].front()
-                                              : poses_vector_map[ground_tag_uid].front();
-
-        const cv::Affine3d & external_camera_to_linked_tag_affine = linked_detection.pose;
-        poses_vector_map[external_camera_uid].push_back(
-          sensor_to_linked_tag * external_camera_to_linked_tag_affine.inv());
-      }
-
-      for (auto & unlinked_wheel_detection : unlinked_wheel_detections) {
-        auto & linked_detection = linked_detections.front();
-
-        UID unlinked_wheel_tag_uid = UID::makeWheelTagUID(unlinked_wheel_detection.id);
-        UID linked_wheel_tag_uid = UID::makeWheelTagUID(linked_detection.id);
-        UID linked_ground_tag_uid = UID::makeGroundTagUID(linked_detection.id);
-        cv::Affine3d sensor_to_linked_tag = poses_vector_map.count(linked_wheel_tag_uid) > 0
-                                              ? poses_vector_map[linked_wheel_tag_uid].front()
-                                              : poses_vector_map[linked_ground_tag_uid].front();
-
-        const cv::Affine3d & external_camera_to_linked_tag_affine = linked_detection.pose;
-        const cv::Affine3d & external_camera_to_unlinked_tag_affine = unlinked_wheel_detection.pose;
-
-        poses_vector_map[unlinked_wheel_tag_uid].push_back(
-          sensor_to_linked_tag * external_camera_to_linked_tag_affine.inv() *
-          external_camera_to_unlinked_tag_affine);
-      }
-
-      for (auto & unlinked_ground_detection : unlinked_ground_detections) {
-        auto & linked_detection = linked_detections.front();
-
-        UID unlinked_ground_tag_uid = UID::makeGroundTagUID(unlinked_ground_detection.id);
-        UID linked_wheel_tag_uid = UID::makeWheelTagUID(linked_detection.id);
-        UID linked_ground_tag_uid = UID::makeGroundTagUID(linked_detection.id);
-
-        cv::Affine3d sensor_to_linked_tag = poses_vector_map.count(linked_wheel_tag_uid) > 0
-                                              ? poses_vector_map[linked_wheel_tag_uid].front()
-                                              : poses_vector_map[linked_ground_tag_uid].front();
-
-        const cv::Affine3d & external_camera_to_linked_tag_affine = linked_detection.pose;
-        const cv::Affine3d & external_camera_to_unlinked_tag_affine =
-          unlinked_ground_detection.pose;
-
-        poses_vector_map[unlinked_ground_tag_uid].push_back(
-          sensor_to_linked_tag * external_camera_to_linked_tag_affine.inv() *
-          external_camera_to_unlinked_tag_affine);
-      }
-    }
-  }
-
-  std::array<double, CalibrationData::INTRINSICS_DIM> initial_intrinsics;
-  initial_intrinsics[0] = external_camera_intrinsics_.undistorted_camera_matrix(0, 2);
-  initial_intrinsics[1] = external_camera_intrinsics_.undistorted_camera_matrix(1, 2);
-  initial_intrinsics[2] = external_camera_intrinsics_.undistorted_camera_matrix(0, 0);
-  initial_intrinsics[3] = external_camera_intrinsics_.undistorted_camera_matrix(1, 1);
-  initial_intrinsics[4] = 0.0;
-  initial_intrinsics[5] = 0.0;
-
-  // Obtain the initial poses from averages
-  for (auto it = poses_vector_map.begin(); it != poses_vector_map.end(); it++) {
-    const UID & uid = it->first;
-    auto poses = it->second;
-
-    RCLCPP_INFO(
-      this->get_logger(), "UID: %s \tposes: %lu", it->first.to_string().c_str(), it->second.size());
+  for (const auto & it : raw_poses_map) {
+    const UID & uid = it.first;
+    const std::vector<cv::Affine3d> & poses = it.second;
 
     Eigen::Vector3d avg_translation = Eigen::Vector3d::Zero();
     std::vector<Eigen::Vector4d> quats;
@@ -470,27 +287,34 @@ void estimateInitialPoses(CalibrationData & data, const UID & main_sensor_uid)
     cv::eigen2cv(avg_rotation, avg_pose_rotation);
 
     auto initial_pose = std::make_shared<cv::Affine3d>(avg_pose_rotation, avg_pose_translation);
-    (void)initial_pose;
 
-    if (uid.is_tag) {
-      data_->initial_tag_poses_map[uid] = initial_pose;
+    if (uid.tag_type != TagType::Unknown) {
+      data.initial_tag_poses_map[uid] = initial_pose;
+    } else if (uid.sensor_type != SensorType::Unknown) {
+      data.initial_sensor_poses_map[uid] = initial_pose;
+    } else {
+      throw std::domain_error("Invalid UID");
+    }
 
-      if (uid.is_waypoint_tag) {
-        data_->initial_waypoint_tag_poses.push_back(initial_pose);
-      } else if (uid.is_ground_tag) {
-        data_->initial_ground_tag_poses.push_back(initial_pose);
-      } else if (uid.is_wheel_tag && uid.tag_id == left_wheel_tag_id_) {
-        data_->initial_left_wheel_tag_pose = initial_pose;
-      } else if (uid.is_wheel_tag && uid.tag_id == right_wheel_tag_id_) {
-        data_->initial_right_wheel_tag_pose = initial_pose;
-      }
-    } else if (uid.is_camera) {
-      data_->initial_external_camera_poses[uid] = initial_pose;
-      data_->initial_external_camera_intrinsics[uid] =
-        std::make_shared<std::array<double, CalibrationData::INTRINSICS_DIM>>(initial_intrinsics);
+    if (uid.tag_type == TagType::GroundTag) {
+      data.initial_ground_tag_poses_map[uid] = initial_pose;
+    }
+
+    if (uid == left_wheel_uid) {
+      data.initial_left_wheel_tag_pose = initial_pose;
+    }
+
+    if (uid == right_wheel_uid) {
+      data.initial_right_wheel_tag_pose = initial_pose;
     }
   }
-  */
+
+  data.optimized_camera_intrinsics_map = data.initial_camera_intrinsics_map;
+  data.optimized_ground_tag_poses_map = data.initial_ground_tag_poses_map;
+  data.optimized_left_wheel_tag_pose = data.initial_left_wheel_tag_pose;
+  data.optimized_right_wheel_tag_pose = data.initial_right_wheel_tag_pose;
+  data.optimized_sensor_poses_map = data.initial_sensor_poses_map;
+  data.optimized_tag_poses_map = data.initial_tag_poses_map;
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

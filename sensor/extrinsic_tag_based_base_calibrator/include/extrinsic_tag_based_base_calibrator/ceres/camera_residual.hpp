@@ -91,6 +91,8 @@ struct CameraResidual
     cx_ = intrinsics.undistorted_camera_matrix(0, 2);
     cy_ = intrinsics.undistorted_camera_matrix(1, 2);
 
+    assert(intrinsics.isValid());
+
     tag_size_ = detection.size;
 
     for (int j = 0; j < NUM_CORNERS; ++j) {

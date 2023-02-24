@@ -240,4 +240,18 @@ struct UID
 
 }  // namespace extrinsic_tag_based_base_calibrator
 
+namespace std
+{
+
+template <>
+struct hash<extrinsic_tag_based_base_calibrator::UID>
+{
+  std::size_t operator()(const extrinsic_tag_based_base_calibrator::UID & uid) const
+  {
+    return hash<string>()(uid.toString());
+  }
+};
+
+}  // namespace std
+
 #endif  // EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__TYPES_HPP_

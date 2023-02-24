@@ -20,6 +20,7 @@
 #include <extrinsic_tag_based_base_calibrator/scene_types.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -60,7 +61,7 @@ bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & gr
  * @returns whether or not the algorithm succeeded
  */
 bool computeGroundPlane(
-  const std::vector<std::shared_ptr<cv::Affine3d>> & poses, double tag_size,
+  const std::map<UID, std::shared_ptr<cv::Affine3d>> & poses, double tag_size,
   cv::Affine3d & ground_pose);
 
 /*!
@@ -89,7 +90,9 @@ cv::Affine3d computeBaseLink(
 cv::Point2d projectPoint(
   const cv::Vec3d & p, double fx, double fy, double cx, double cy, double k1, double k2);
 
-void estimateInitialPoses(CalibrationData & data, const UID & main_sensor_uid);
+void estimateInitialPoses(
+  CalibrationData & data, const UID & main_sensor_uid, UID & left_wheel_uid, UID & right_wheel_uid,
+  int max_depth = 5);
 
 }  // namespace extrinsic_tag_based_base_calibrator
 

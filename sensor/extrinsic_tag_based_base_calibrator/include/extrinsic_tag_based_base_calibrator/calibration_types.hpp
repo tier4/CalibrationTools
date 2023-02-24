@@ -22,6 +22,8 @@
 
 #include <map>
 #include <memory>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace extrinsic_tag_based_base_calibrator
@@ -59,31 +61,26 @@ struct CalibrationData
   std::vector<CalibrationScene> scenes;
 
   UID main_calibration_sensor_uid;
-  std::map<UID, std::vector<UID>> sensor_detections_map;
+  std::unordered_map<UID, std::vector<UID>> uid_connections_map;
+  std::map<std::pair<UID, UID>, cv::Affine3d> detections_relative_poses_map;
+
   std::map<UID, IntrinsicParameters> calibration_camera_intrinsics_map_;
 
   // Placeholders using during optimization
-  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_sensor_poses;
-  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_calibration_camera_poses;
-  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_calibration_lidar_poses;
-  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_external_camera_poses;
-  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>> initial_camera_intrinsics;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_sensor_poses_map;
+  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>> initial_camera_intrinsics_map;
 
   std::map<UID, std::shared_ptr<cv::Affine3d>> initial_tag_poses_map;
-  std::vector<std::shared_ptr<cv::Affine3d>> initial_waypoint_tag_poses;
-  std::vector<std::shared_ptr<cv::Affine3d>> initial_ground_tag_poses;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> initial_ground_tag_poses_map;
   std::shared_ptr<cv::Affine3d> initial_left_wheel_tag_pose;
   std::shared_ptr<cv::Affine3d> initial_right_wheel_tag_pose;
 
-  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_external_camera_poses;
-  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>> optimized_camera_intrinsics;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_sensor_poses_map;
+  std::map<UID, std::shared_ptr<std::array<double, INTRINSICS_DIM>>>
+    optimized_camera_intrinsics_map;
 
-  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_sensor_poses;
-  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_calibration_camera_poses;
-  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_calibration_lidar_poses;
   std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_tag_poses_map;
-  std::vector<std::shared_ptr<cv::Affine3d>> optimized_waypoint_tag_poses;
-  std::vector<std::shared_ptr<cv::Affine3d>> optimized_ground_tag_poses;
+  std::map<UID, std::shared_ptr<cv::Affine3d>> optimized_ground_tag_poses_map;
   std::shared_ptr<cv::Affine3d> optimized_left_wheel_tag_pose;
   std::shared_ptr<cv::Affine3d> optimized_right_wheel_tag_pose;
 };

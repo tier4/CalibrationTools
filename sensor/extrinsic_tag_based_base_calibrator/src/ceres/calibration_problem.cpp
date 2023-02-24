@@ -66,61 +66,44 @@ void CalibrationProblem::dataToPlaceholders()
 {
   // Compute the initial ground plane !
   cv::Affine3d ground_pose;
-  computeGroundPlane(data_->initial_ground_tag_poses, 0.0, ground_pose);
+  computeGroundPlane(data_->initial_ground_tag_poses_map, 0.0, ground_pose);
 
   // Prepare the placeholders
 
-  // Calibration camera poses
-  for (auto it = data_->initial_calibration_camera_poses.begin();
-       it != data_->initial_calibration_camera_poses.end(); it++) {
-    const UID & calibration_camera_uid = it->first;
+  // Sensor placeholders
+  for (auto it = data_->initial_sensor_poses_map.begin();
+       it != data_->initial_sensor_poses_map.end(); it++) {
+    const UID & sensor_uid = it->first;
     const auto & pose = it->second;
 
-    pose3dToPlaceholder(*pose, pose_opt_map[calibration_camera_uid], true);
-    placeholderToPose3d(
-      pose_opt_map[calibration_camera_uid],
-      data_->optimized_external_camera_poses[calibration_camera_uid], true);
-  }
+    if (
+      sensor_uid.sensor_type == SensorType::CalibrationCamera ||
+      sensor_uid.sensor_type == SensorType::CalibrationLidar) {
+      pose3dToPlaceholder(*pose, pose_opt_map[sensor_uid], true);
+      placeholderToPose3d(
+        pose_opt_map[sensor_uid], data_->optimized_sensor_poses_map[sensor_uid], true);
+    } else if (sensor_uid.sensor_type == SensorType::ExternalCamera) {
+      pose3dToPlaceholder(*pose, pose_opt_map[sensor_uid], true);
 
-  // Calibration lidar poses
-  for (auto it = data_->initial_calibration_lidar_poses.begin();
-       it != data_->initial_calibration_lidar_poses.end(); it++) {
-    const UID & calibration_lidar_uid = it->first;
-    const auto & pose = it->second;
+      if (share_intrinsics_) {
+        shared_intrinsics_opt = *data_->initial_camera_intrinsics_map[sensor_uid];
+      } else {
+        intrinsics_opt_map[sensor_uid] = *data_->initial_camera_intrinsics_map[sensor_uid];
+      }
 
-    pose3dToPlaceholder(*pose, pose_opt_map[calibration_lidar_uid], true);
-    placeholderToPose3d(
-      pose_opt_map[calibration_lidar_uid],
-      data_->optimized_external_camera_poses[calibration_lidar_uid], true);
-  }
+      placeholderToPose3d(
+        pose_opt_map[sensor_uid], data_->optimized_sensor_poses_map[sensor_uid], true);
 
-  // External camera poses
-  for (auto it = data_->initial_external_camera_poses.begin();
-       it != data_->initial_external_camera_poses.end(); it++) {
-    const UID & external_camera_uid = it->first;
-    const auto & pose = it->second;
+      data_->optimized_camera_intrinsics_map[sensor_uid] =
+        std::make_shared<std::array<double, INTRINSICS_DIM>>();
 
-    pose3dToPlaceholder(*pose, pose_opt_map[external_camera_uid], true);
-
-    if (share_intrinsics_) {
-      shared_intrinsics_opt = *data_->initial_camera_intrinsics[external_camera_uid];
+      if (share_intrinsics_) {
+        *data_->optimized_camera_intrinsics_map[sensor_uid] = shared_intrinsics_opt;
+      } else {
+        *data_->optimized_camera_intrinsics_map[sensor_uid] = intrinsics_opt_map[sensor_uid];
+      }
     } else {
-      intrinsics_opt_map[external_camera_uid] =
-        *data_->initial_camera_intrinsics[external_camera_uid];
-    }
-
-    placeholderToPose3d(
-      pose_opt_map[external_camera_uid],
-      data_->optimized_external_camera_poses[external_camera_uid], true);
-
-    data_->optimized_camera_intrinsics[external_camera_uid] =
-      std::make_shared<std::array<double, INTRINSICS_DIM>>();
-
-    if (share_intrinsics_) {
-      *data_->optimized_camera_intrinsics[external_camera_uid] = shared_intrinsics_opt;
-    } else {
-      *data_->optimized_camera_intrinsics[external_camera_uid] =
-        intrinsics_opt_map[external_camera_uid];
+      throw std::domain_error("Invalid UID");
     }
   }
 
@@ -145,41 +128,46 @@ void CalibrationProblem::dataToPlaceholders()
 
 void CalibrationProblem::placeholdersToData()
 {
-  for (auto it = data_->optimized_external_camera_poses.begin();
-       it != data_->optimized_external_camera_poses.end(); it++) {
-    const UID & uid = it->first;
+  for (auto it = data_->optimized_sensor_poses_map.begin();
+       it != data_->optimized_sensor_poses_map.end(); it++) {
+    const UID & sensor_uid = it->first;
+    auto & pose = it->second;
 
-    placeholderToPose3d(pose_opt_map[uid], data_->optimized_external_camera_poses[uid], true);
+    if (
+      sensor_uid.sensor_type == SensorType::CalibrationCamera ||
+      sensor_uid.sensor_type == SensorType::CalibrationLidar) {
+      placeholderToPose3d(pose_opt_map[sensor_uid], pose, true);
+    } else if (sensor_uid.sensor_type == SensorType::ExternalCamera) {
+      placeholderToPose3d(pose_opt_map[sensor_uid], pose, true);
 
-    if (share_intrinsics_) {
-      *data_->optimized_camera_intrinsics[uid] = shared_intrinsics_opt;
+      if (share_intrinsics_) {
+        *data_->optimized_camera_intrinsics_map[sensor_uid] = shared_intrinsics_opt;
+      } else {
+        *data_->optimized_camera_intrinsics_map[sensor_uid] = intrinsics_opt_map[sensor_uid];
+      }
     } else {
-      *data_->optimized_camera_intrinsics[uid] = intrinsics_opt_map[uid];
+      throw std::domain_error("Invalid UID");
     }
   }
 
   for (auto it = data_->optimized_tag_poses_map.begin(); it != data_->optimized_tag_poses_map.end();
        it++) {
-    const UID & uid = it->first;
-    auto & pose = data_->optimized_tag_poses_map[uid];
+    const UID & tag_uid = it->first;
+    auto & pose = data_->optimized_tag_poses_map[tag_uid];
 
-    if (uid.tag_type != TagType::GroundTag || !force_shared_ground_plane_) {
-      placeholderToPose3d(pose_opt_map[uid], pose, false);
+    if (tag_uid.tag_type != TagType::GroundTag || !force_shared_ground_plane_) {
+      placeholderToPose3d(pose_opt_map[tag_uid], pose, false);
     } else {
       groundTagPlaceholderToPose3d(
-        shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid], pose);
+        shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[tag_uid], pose);
     }
 
-    if (uid.tag_type == TagType::WaypointTag) {
-      data_->optimized_waypoint_tag_poses.push_back(pose);
-    } else if (uid.tag_type == TagType::GroundTag) {
-      data_->optimized_ground_tag_poses.push_back(pose);
-    } else if (uid.tag_type == TagType::WheelTag && uid.tag_id == left_wheel_tag_id_) {
+    if (tag_uid.tag_type == TagType::GroundTag) {
+      data_->optimized_ground_tag_poses_map[tag_uid] = pose;
+    } else if (tag_uid == left_wheel_tag_uid_) {
       data_->optimized_left_wheel_tag_pose = pose;
-    } else if (uid.tag_type == TagType::WheelTag && uid.tag_id == right_wheel_tag_id_) {
+    } else if (tag_uid == right_wheel_tag_uid_) {
       data_->optimized_right_wheel_tag_pose = pose;
-    } else {
-      throw std::domain_error("Invalid UID");
     }
   }
 }
@@ -564,11 +552,11 @@ void CalibrationProblem::writeDebugImages()
             UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
             cv::Affine3d initial_camera_pose =
-              *data_->initial_external_camera_poses[external_camera_uid];
+              *data_->initial_sensor_poses_map[external_camera_uid];
             cv::Affine3d initial_tag_pose = *data_->initial_tag_poses_map[detection_uid];
 
             cv::Affine3d optimized_camera_pose =
-              *data_->optimized_external_camera_poses[external_camera_uid];
+              *data_->optimized_sensor_poses_map[external_camera_uid];
             cv::Affine3d optimized_tag_pose = *data_->optimized_tag_poses_map[detection_uid];
 
             ApriltagDetection initial_detection = detection;
@@ -592,9 +580,10 @@ void CalibrationProblem::writeDebugImages()
                 camera_pose.inv() * corners_wcs[0], camera_pose.inv() * corners_wcs[1],
                 camera_pose.inv() * corners_wcs[2], camera_pose.inv() * corners_wcs[3]};
 
-              const auto & intrinsics = use_optimized_intrinsics
-                                          ? *data_->optimized_camera_intrinsics[external_camera_uid]
-                                          : *data_->initial_camera_intrinsics[external_camera_uid];
+              const auto & intrinsics =
+                use_optimized_intrinsics
+                  ? *data_->optimized_camera_intrinsics_map[external_camera_uid]
+                  : *data_->initial_camera_intrinsics_map[external_camera_uid];
               double cx = intrinsics[INTRINSICS_CX_INDEX];
               double cy = intrinsics[INTRINSICS_CY_INDEX];
               double fx = intrinsics[INTRINSICS_FX_INDEX];
@@ -612,7 +601,7 @@ void CalibrationProblem::writeDebugImages()
             project_corners(initial_detection, initial_camera_pose, initial_tag_pose, false);
             project_corners(optimized_detection, optimized_camera_pose, optimized_tag_pose, true);
 
-            const auto & intrinsics = *data_->optimized_camera_intrinsics[external_camera_uid];
+            const auto & intrinsics = *data_->optimized_camera_intrinsics_map[external_camera_uid];
             double cx = intrinsics[INTRINSICS_CX_INDEX];
             double cy = intrinsics[INTRINSICS_CY_INDEX];
             double fx = intrinsics[INTRINSICS_FX_INDEX];

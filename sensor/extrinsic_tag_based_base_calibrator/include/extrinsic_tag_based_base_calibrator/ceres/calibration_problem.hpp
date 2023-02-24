@@ -182,8 +182,8 @@ protected:
   // std::set<int> ground_tag_ids_set_;
   // std::set<int> wheel_tag_ids_set_;
 
-  int left_wheel_tag_id_;
-  int right_wheel_tag_id_;
+  UID left_wheel_tag_uid_;
+  UID right_wheel_tag_uid_;
 
   bool optimize_intrinsics_;
   bool share_intrinsics_;

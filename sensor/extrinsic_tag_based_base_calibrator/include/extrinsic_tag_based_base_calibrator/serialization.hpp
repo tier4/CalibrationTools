@@ -218,20 +218,17 @@ void serialize(
 {
   (void)version;
   ar & data.scenes;
-  // ar & data.detected_tag_ids_set; TODOKL : delete ?
-  ar & data.initial_external_camera_poses;
-  ar & data.initial_camera_intrinsics;
+  ar & data.initial_sensor_poses_map;
+  ar & data.initial_camera_intrinsics_map;
   ar & data.initial_tag_poses_map;
-  ar & data.initial_waypoint_tag_poses;
-  ar & data.initial_ground_tag_poses;
+  ar & data.initial_ground_tag_poses_map;
   ar & data.initial_left_wheel_tag_pose;
   ar & data.initial_right_wheel_tag_pose;
 
-  ar & data.optimized_external_camera_poses;
-  ar & data.optimized_camera_intrinsics;
+  ar & data.optimized_sensor_poses_map;
+  ar & data.optimized_camera_intrinsics_map;
   ar & data.optimized_tag_poses_map;
-  ar & data.optimized_waypoint_tag_poses;
-  ar & data.optimized_ground_tag_poses;
+  ar & data.optimized_ground_tag_poses_map;
   ar & data.optimized_left_wheel_tag_pose;
   ar & data.optimized_right_wheel_tag_pose;
 }

@@ -660,7 +660,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
       markers, tag_uid.toString(), tag_size, initial_estimations_color, *pose, base_marker);
   }
 
-  for (auto initial_sensor_poses_it : data_->initial_sensor_poses) {
+  for (auto initial_sensor_poses_it : data_->initial_sensor_poses_map) {
     const UID & sensor_uid = initial_sensor_poses_it.first;
     auto & sensor_pose = *initial_sensor_poses_it.second;
 
@@ -669,7 +669,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     addAxesMarkers(markers, 0.5, sensor_pose, base_marker);
 
     // Iterate over all the detections of said camera
-    for (const UID & tag_uid : data_->sensor_detections_map[sensor_uid]) {
+    for (const UID & tag_uid : data_->uid_connections_map[sensor_uid]) {
       addLineMarker(
         markers, initial_connections_color, sensor_pose, *data_->initial_tag_poses_map[tag_uid],
         initial_connections_base_marker);
@@ -705,7 +705,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
       markers, tag_uid.toString(), tag_size, optimized_estimations_color, *pose, base_marker);
   }
 
-  for (auto optimized_sensor_poses_it : data_->optimized_sensor_poses) {
+  for (auto optimized_sensor_poses_it : data_->optimized_sensor_poses_map) {
     const UID & sensor_uid = optimized_sensor_poses_it.first;
     auto & sensor_pose = *optimized_sensor_poses_it.second;
 
@@ -714,7 +714,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     addAxesMarkers(markers, 0.5, sensor_pose, base_marker);
 
     // Iterate over all the detections of said camera
-    for (const UID & tag_uid : data_->sensor_detections_map[sensor_uid]) {
+    for (const UID & tag_uid : data_->uid_connections_map[sensor_uid]) {
       addLineMarker(
         markers, optimized_connections_color, sensor_pose, *data_->optimized_tag_poses_map[tag_uid],
         optimized_connections_base_marker);
@@ -732,7 +732,7 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
   cv::Affine3d initial_ground_pose, optimized_ground_pose;
   if (computeGroundPlane(
-        data_->initial_ground_tag_poses, ground_tag_parameters_.size, initial_ground_pose)) {
+        data_->initial_ground_tag_poses_map, ground_tag_parameters_.size, initial_ground_pose)) {
     addGrid(markers, initial_ground_pose, 100, 0.2, initial_ground_base_marker);
     addAxesMarkers(markers, 0.5, initial_ground_pose, initial_ground_base_marker);
 
@@ -745,7 +745,8 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
   }
 
   if (computeGroundPlane(
-        data_->optimized_ground_tag_poses, ground_tag_parameters_.size, optimized_ground_pose)) {
+        data_->optimized_ground_tag_poses_map, ground_tag_parameters_.size,
+        optimized_ground_pose)) {
     addGrid(markers, optimized_ground_pose, 100, 0.2, optimized_ground_base_marker);
     addAxesMarkers(markers, 1.0, optimized_ground_pose, optimized_ground_base_marker);
 
@@ -1179,7 +1180,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
         for (const auto & grid_detection : apriltag_grid_detections) {
           UID tag_uid = UID::makeTagUID(tag_type, grid_detection.id);
 
-          data_->sensor_detections_map[camera_uid].push_back(tag_uid);
+          data_->uid_connections_map[camera_uid].push_back(tag_uid);
+          data_->uid_connections_map[tag_uid].push_back(camera_uid);
+
+          data_->detections_relative_poses_map[std::make_pair(camera_uid, tag_uid)] =
+            grid_detection.pose;
+          data_->detections_relative_poses_map[std::make_pair(tag_uid, camera_uid)] =
+            grid_detection.pose.inv();
         }
       }
     }
@@ -1199,7 +1206,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
         const TagType tag_type = TagType::WaypointTag;
         UID tag_uid = UID::makeTagUID(tag_type, lidartag_detection.id);
 
-        data_->sensor_detections_map[lidar_uid].push_back(tag_uid);
+        data_->uid_connections_map[lidar_uid].push_back(tag_uid);
+        data_->uid_connections_map[tag_uid].push_back(lidar_uid);
+
+        data_->detections_relative_poses_map[std::make_pair(lidar_uid, tag_uid)] =
+          lidartag_detection.pose;
+        data_->detections_relative_poses_map[std::make_pair(tag_uid, lidar_uid)] =
+          lidartag_detection.pose.inv();
       }
     }
 
@@ -1217,7 +1230,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
         for (const auto & grid_detection : apriltag_grid_detections) {
           UID tag_uid = UID::makeTagUID(tag_type, grid_detection.id);
 
-          data_->sensor_detections_map[external_camera_uid].push_back(tag_uid);
+          data_->uid_connections_map[external_camera_uid].push_back(tag_uid);
+          data_->uid_connections_map[tag_uid].push_back(external_camera_uid);
+
+          data_->detections_relative_poses_map[std::make_pair(external_camera_uid, tag_uid)] =
+            grid_detection.pose;
+          data_->detections_relative_poses_map[std::make_pair(tag_uid, external_camera_uid)] =
+            grid_detection.pose.inv();
         }
       }
     }
@@ -1239,8 +1258,11 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
     }
   }
 
+  UID left_wheel_uid = UID::makeTagUID(TagType::WheelTag, left_wheel_tag_id);
+  UID right_wheel_uid = UID::makeTagUID(TagType::WheelTag, right_wheel_tag_id);
+
   // Estimate the initial poses
-  estimateInitialPoses(*data_, main_sensor_uid);
+  estimateInitialPoses(*data_, main_sensor_uid, left_wheel_uid, right_wheel_uid);
 
   // Set the initial intrinsics for the external camera
   std::array<double, CalibrationData::INTRINSICS_DIM> initial_intrinsics;
@@ -1251,9 +1273,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
   initial_intrinsics[4] = 0.0;
   initial_intrinsics[5] = 0.0;
 
-  for (const auto & it : data_->initial_external_camera_poses) {
+  for (const auto & it : data_->initial_sensor_poses_map) {
+    if (it.first.sensor_type != SensorType::ExternalCamera) {
+      continue;
+    }
+
     const UID & camera_uid = it.first;
-    data_->initial_camera_intrinsics[camera_uid] =
+    data_->initial_camera_intrinsics_map[camera_uid] =
       std::make_shared<std::array<double, CalibrationData::INTRINSICS_DIM>>(initial_intrinsics);
   }
 
@@ -1294,7 +1320,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
 
   if (
     !computeGroundPlane(
-      data_->optimized_ground_tag_poses, ground_tag_parameters_.size, ground_pose) ||
+      data_->optimized_ground_tag_poses_map, ground_tag_parameters_.size, ground_pose) ||
     !data_->optimized_left_wheel_tag_pose || !data_->optimized_right_wheel_tag_pose) {
     RCLCPP_ERROR(this->get_logger(), "Could not compute the base link");
     response->success = false;
