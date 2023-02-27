@@ -26,7 +26,6 @@ from tier4_calibration_msgs.srv import FilesWithSceneId
 
 class ServiceWrapper:
     def __init__(self):
-
         self.client = None
         self.future = None
         self.status_callback = None
@@ -34,7 +33,6 @@ class ServiceWrapper:
         self.service_status = False
 
     def update(self):
-
         service_status = self.client.service_is_ready()
         if service_status != self.service_status and self.status_callback is not None:
             self.service_status = service_status
@@ -87,7 +85,6 @@ class FilesWithSceneIdServiceWrapper(ServiceWrapper):
 
 class RosInterface(Node):
     def __init__(self):
-
         super().__init__("extrinsic_tag_based_base_calibrator")
 
         self.declare_parameter("calibration_sensor_type", rclpy.Parameter.Type.STRING)
@@ -300,14 +297,11 @@ class RosInterface(Node):
         self.save_database_client(files)
 
     def timer_callback(self):
-
         with self.lock:
-
             for client in self.client_list:
                 client.update()
 
     def spin(self):
-
         self.ros_executor = SingleThreadedExecutor()
         self.ros_executor.add_node(self)
 

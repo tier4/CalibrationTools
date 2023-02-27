@@ -133,7 +133,6 @@ class CalibratorUI(QMainWindow):
         self.show()
 
     def make_scene_group(self):
-
         self.scene_group = QGroupBox("Scene group")
         self.scene_layout = QVBoxLayout()
 
@@ -174,7 +173,6 @@ class CalibratorUI(QMainWindow):
         self.scene_group.setLayout(self.scene_layout)
 
     def make_intrinsics_group(self):
-
         self.intrinsics_group = QGroupBox("Intrinsics")
         self.intrinsics_layout = QVBoxLayout()
 
@@ -202,7 +200,6 @@ class CalibratorUI(QMainWindow):
         self.intrinsics_layout.addWidget(self.calibrate_external_intrinsics_button)
 
         if self.sensor_type == "camera":
-
             self.load_camera_intrinsics_button = QPushButton("Load calibration camera intrinsics")
             self.load_camera_intrinsics_button.setEnabled(False)
             self.load_camera_intrinsics_button.clicked.connect(
@@ -229,7 +226,6 @@ class CalibratorUI(QMainWindow):
         self.intrinsics_group.setLayout(self.intrinsics_layout)
 
     def make_calibration_group(self):
-
         self.calibration_group = QGroupBox("Calibration")
         self.calibration_layout = QVBoxLayout()
 
@@ -262,7 +258,6 @@ class CalibratorUI(QMainWindow):
         self.database_group.setLayout(self.database_layout)
 
     def check_status(self):
-
         if self.sensor_type == "lidar":
             self.valid_scenes = (
                 self.valid_current_scene_external_images
@@ -320,7 +315,6 @@ class CalibratorUI(QMainWindow):
         )
 
         if self.sensor_type == "camera":
-
             self.load_camera_intrinsics_button.setEnabled(
                 self.load_calibration_camera_intrinsics_service_status
                 and not self.valid_calibration_camera_intrinsics
