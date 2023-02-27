@@ -75,6 +75,23 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<std::vector<std::string>>("calibration_lidar_frames");
   calibration_camera_frames_vector_ =
     this->declare_parameter<std::vector<std::string>>("calibration_camera_frames");
+
+  auto remove_empty_strings = [](const std::vector<std::string> & v1) {
+    std::vector<std::string> v2;
+    std::copy_if(v1.begin(), v1.end(), std::back_inserter(v2), [](const std::string & s) {
+      return s.size() > 0;
+    });
+
+    return v2;
+  };
+
+  lidar_sensor_kit_frames = remove_empty_strings(lidar_sensor_kit_frames);
+  calibration_lidar_parent_frames = remove_empty_strings(calibration_lidar_parent_frames);
+  camera_sensor_kit_frames = remove_empty_strings(camera_sensor_kit_frames);
+  calibration_camera_parent_frames = remove_empty_strings(calibration_camera_parent_frames);
+  calibration_lidar_frames_vector_ = remove_empty_strings(calibration_lidar_frames_vector_);
+  calibration_camera_frames_vector_ = remove_empty_strings(calibration_camera_frames_vector_);
+
   calibration_sensor_frames_vector_.insert(
     calibration_sensor_frames_vector_.end(), calibration_lidar_frames_vector_.begin(),
     calibration_lidar_frames_vector_.end());
@@ -88,6 +105,10 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<std::vector<std::string>>("calibration_image_detections_topics");
   std::vector<std::string> calibration_camera_info_topics =
     this->declare_parameter<std::vector<std::string>>("calibration_camera_info_topics");
+
+  calibration_lidar_detections_topics = remove_empty_strings(calibration_lidar_detections_topics);
+  calibration_image_detections_topics = remove_empty_strings(calibration_image_detections_topics);
+  calibration_camera_info_topics = remove_empty_strings(calibration_camera_info_topics);
 
   assert(lidar_sensor_kit_frames.size() == calibration_lidar_parent_frames.size());
   assert(lidar_sensor_kit_frames.size() == calibration_lidar_frames_vector_.size());
@@ -133,7 +154,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<std::string>("waypoint_tag_family", "16h5");
   waypoint_tag_parameters_.rows = this->declare_parameter<int>("waypoint_tag_rows", 1);
   waypoint_tag_parameters_.cols = this->declare_parameter<int>("waypoint_tag_cols", 1);
-  waypoint_tag_parameters_.size = this->declare_parameter<double>("waypoint_tag_size", 0.8);
+  waypoint_tag_parameters_.size = this->declare_parameter<double>("waypoint_tag_size", 0.6);
   waypoint_tag_parameters_.spacing = this->declare_parameter<double>("waypoint_tag_spacing", 0.2);
   std::vector<int64_t> waypoint_tag_ids =
     this->declare_parameter<std::vector<int64_t>>("waypoint_tag_ids");
@@ -141,19 +162,12 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     waypoint_tag_parameters_.ids.insert(static_cast<int>(id));
   });
 
-  wheel_tag_parameters_.tag_type = TagType::WheelTag;
-  wheel_tag_parameters_.family = this->declare_parameter<std::string>("wheel_tag_family", "16h5");
-  wheel_tag_parameters_.rows = this->declare_parameter<int>("wheel_tag_rows", 2);
-  wheel_tag_parameters_.cols = this->declare_parameter<int>("wheel_tag_cols", 2);
-  wheel_tag_parameters_.size = this->declare_parameter<double>("wheel_tag_size", 0.8);
-  wheel_tag_parameters_.spacing = this->declare_parameter<double>("wheel_tag_spacing", 0.2);
-
   ground_tag_parameters_.tag_type = TagType::GroundTag;
   ground_tag_parameters_.family =
     this->declare_parameter<std::string>("ground_tag_family", "36h11");
   ground_tag_parameters_.rows = this->declare_parameter<int>("ground_tag_rows", 1);
   ground_tag_parameters_.cols = this->declare_parameter<int>("ground_tag_cols", 1);
-  ground_tag_parameters_.size = this->declare_parameter<double>("ground_tag_size", 0.8);
+  ground_tag_parameters_.size = this->declare_parameter<double>("ground_tag_size", 0.6);
   ground_tag_parameters_.spacing = this->declare_parameter<double>("ground_tag_spacing", 0.2);
 
   std::vector<int64_t> ground_tag_ids =
@@ -162,6 +176,25 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     ground_tag_parameters_.ids.insert(static_cast<int>(id));
   });
 
+  wheel_tag_parameters_.tag_type = TagType::WheelTag;
+  wheel_tag_parameters_.family = this->declare_parameter<std::string>("wheel_tag_family", "16h5");
+  wheel_tag_parameters_.rows = this->declare_parameter<int>("wheel_tag_rows", 2);
+  wheel_tag_parameters_.cols = this->declare_parameter<int>("wheel_tag_cols", 2);
+  wheel_tag_parameters_.size = this->declare_parameter<double>("wheel_tag_size", 0.6);
+  wheel_tag_parameters_.spacing = this->declare_parameter<double>("wheel_tag_spacing", 0.2);
+
+  left_wheel_tag_id = this->declare_parameter<int>("left_wheel_tag_id", 3);
+  right_wheel_tag_id = this->declare_parameter<int>("right_wheel_tag_id", 4);
+  wheel_tag_parameters_.ids.insert(left_wheel_tag_id);
+  wheel_tag_parameters_.ids.insert(right_wheel_tag_id);
+
+  tag_parameters_map_[TagType::WaypointTag] = waypoint_tag_parameters_;
+  tag_parameters_map_[TagType::GroundTag] = ground_tag_parameters_;
+  tag_parameters_map_[TagType::WheelTag] = wheel_tag_parameters_;
+  tag_parameters_vector_ = {
+    waypoint_tag_parameters_, ground_tag_parameters_, wheel_tag_parameters_};
+
+  // Optimization options
   bool ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
   bool ba_share_intrinsics_ = this->declare_parameter<bool>("ba_share_intrinsics", false);
   bool ba_force_shared_ground_plane_ =
@@ -170,17 +203,6 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   calibration_problem_.setOptimizeIntrinsics(ba_optimize_intrinsics_);
   calibration_problem_.setShareIntrinsics(ba_share_intrinsics_);
   calibration_problem_.setForceSharedGroundPlane(ba_force_shared_ground_plane_);
-
-  left_wheel_tag_id = this->declare_parameter<int>("left_wheel_tag_id", 3);
-  right_wheel_tag_id = this->declare_parameter<int>("right_wheel_tag_id", 4);
-  ground_tag_parameters_.ids.insert(left_wheel_tag_id);
-  ground_tag_parameters_.ids.insert(right_wheel_tag_id);
-
-  tag_parameters_map_[TagType::WaypointTag] = waypoint_tag_parameters_;
-  tag_parameters_map_[TagType::GroundTag] = ground_tag_parameters_;
-  tag_parameters_map_[TagType::WheelTag] = wheel_tag_parameters_;
-  tag_parameters_vector_ = {
-    waypoint_tag_parameters_, ground_tag_parameters_, wheel_tag_parameters_};
 
   // Initial intrinsic calibration parameters
   initial_intrinsic_calibration_board_type_ =
@@ -216,13 +238,6 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<int>("initial_intrinsic_calibration_board_cols", 8);
   initial_intrinsic_calibration_board_rows_ =
     this->declare_parameter<int>("initial_intrinsic_calibration_board_rows", 6);
-
-  const std::string waypoint_tag_family =
-    this->declare_parameter<std::string>("waypoint_family", "16h5");
-  const std::string wheel_tag_family =
-    this->declare_parameter<std::string>("wheel_tag_family", "16h5");
-  const std::string ground_tag_family =
-    this->declare_parameter<std::string>("ground_tag_family", "36h11");
 
   apriltag_detector_parameters_.max_hamming =
     this->declare_parameter<int>("apriltag_max_hamming", 0);

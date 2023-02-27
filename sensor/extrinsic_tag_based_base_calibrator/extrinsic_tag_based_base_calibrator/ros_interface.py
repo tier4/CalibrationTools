@@ -16,17 +16,15 @@
 
 import threading
 
-import rclpy
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from tier4_calibration_msgs.srv import Empty
 from tier4_calibration_msgs.srv import Files
-from tier4_calibration_msgs.srv import FilesWithSceneId
+from tier4_calibration_msgs.srv import FilesWithFrameAndSceneId
 
 
 class ServiceWrapper:
     def __init__(self):
-
         self.client = None
         self.future = None
         self.status_callback = None
@@ -34,7 +32,6 @@ class ServiceWrapper:
         self.service_status = False
 
     def update(self):
-
         service_status = self.client.service_is_ready()
         if service_status != self.service_status and self.status_callback is not None:
             self.service_status = service_status
@@ -76,10 +73,10 @@ class FilesServiceWrapper(ServiceWrapper):
 class FilesWithSceneIdServiceWrapper(ServiceWrapper):
     def __init__(self, node, name):
         super().__init__()
-        self.client = node.create_client(FilesWithSceneId, name)
+        self.client = node.create_client(FilesWithFrameAndSceneId, name)
 
     def __call__(self, files, scene_id):
-        req = FilesWithSceneId.Request()
+        req = FilesWithFrameAndSceneId.Request()
         req.files = files
         req.scene_id = scene_id
         self.future = self.client.call_async(req)
@@ -87,14 +84,7 @@ class FilesWithSceneIdServiceWrapper(ServiceWrapper):
 
 class RosInterface(Node):
     def __init__(self):
-
         super().__init__("extrinsic_tag_based_base_calibrator")
-
-        self.declare_parameter("calibration_sensor_type", rclpy.Parameter.Type.STRING)
-
-        self.calibration_sensor_type = (
-            self.get_parameter("calibration_sensor_type").get_parameter_value().string_value
-        )
 
         self.ros_context = None
         self.ros_executor = None
@@ -108,11 +98,8 @@ class RosInterface(Node):
         self.add_calibration_camera_images_to_new_scene_client = FilesServiceWrapper(
             self, "add_calibration_camera_images_to_new_scene"
         )
-        self.add_calibration_camera_detections_to_new_scene_client = EmptyServiceWrapper(
-            self, "add_calibration_camera_detections_to_new_scene"
-        )
-        self.add_calibration_lidar_detections_to_new_scene_client = EmptyServiceWrapper(
-            self, "add_calibration_lidar_detections_to_new_scene"
+        self.add_calibration_sensor_detections_to_new_scene_client = EmptyServiceWrapper(
+            self, "add_calibration_sensor_detections_to_new_scene"
         )
 
         # External camera intrinsics related clients
@@ -148,8 +135,7 @@ class RosInterface(Node):
         self.client_list = [
             self.add_external_camera_images_to_scene_client,
             self.add_calibration_camera_images_to_new_scene_client,
-            self.add_calibration_camera_detections_to_new_scene_client,
-            self.add_calibration_lidar_detections_to_new_scene_client,
+            self.add_calibration_sensor_detections_to_new_scene_client,
             self.load_external_camera_intrinsics_client,
             self.save_external_camera_intrinsics_client,
             self.calibrate_external_camera_intrinsics_client,
@@ -163,9 +149,6 @@ class RosInterface(Node):
         ]
 
         self.timer = self.create_timer(0.1, self.timer_callback)
-
-    def get_sensor_type(self):
-        return self.calibration_sensor_type
 
     def set_add_external_camera_images_to_scene_callback(self, result_callback, status_callback):
         with self.lock:
@@ -183,25 +166,15 @@ class RosInterface(Node):
                 status_callback
             )
 
-    def set_add_calibration_camera_detections_to_new_scene_callback(
+    def set_add_calibration_sensor_detections_to_new_scene_callback(
         self, result_callback, status_callback
     ):
         with self.lock:
-            self.add_calibration_camera_detections_to_new_scene_client.set_result_callback(
+            self.add_calibration_sensor_detections_to_new_scene_client.set_result_callback(
                 result_callback
-            )
-            self.add_calibration_camera_detections_to_new_scene_client.set_status_callback(
-                status_callback
             )
 
-    def set_add_calibration_lidar_detections_to_new_scene_callback(
-        self, result_callback, status_callback
-    ):
-        with self.lock:
-            self.add_calibration_lidar_detections_to_new_scene_client.set_result_callback(
-                result_callback
-            )
-            self.add_calibration_lidar_detections_to_new_scene_client.set_status_callback(
+            self.add_calibration_sensor_detections_to_new_scene_client.set_status_callback(
                 status_callback
             )
 
@@ -263,10 +236,7 @@ class RosInterface(Node):
     def add_calibration_camera_images_to_new_scene(self, files):
         self.add_calibration_camera_images_to_new_scene_client(files)
 
-    def add_calibration_camera_detections_to_new_scene(self):
-        self.add_calibration_camera_detections_to_new_scene_client()
-
-    def add_calibration_lidar_detections_to_new_scene(self):
+    def add_calibration_sensor_detections_to_new_scene(self):
         self.add_calibration_lidar_detections_to_new_scene_client()
 
     def load_external_camera_intrinsics(self, files):
@@ -300,14 +270,11 @@ class RosInterface(Node):
         self.save_database_client(files)
 
     def timer_callback(self):
-
         with self.lock:
-
             for client in self.client_list:
                 client.update()
 
     def spin(self):
-
         self.ros_executor = SingleThreadedExecutor()
         self.ros_executor.add_node(self)
 
