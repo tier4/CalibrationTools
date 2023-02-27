@@ -16,8 +16,10 @@
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__LIDAR_RESIDUAL_HPP_
 
 #include <extrinsic_tag_based_base_calibrator/calibration_types.hpp>
+#include <extrinsic_tag_based_base_calibrator/ceres/sensor_residual.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
+#include <opencv2/core/eigen.hpp>
 
 #include <ceres/autodiff_cost_function.h>
 #include <ceres/ceres.h>
@@ -29,78 +31,69 @@
 namespace extrinsic_tag_based_base_calibrator
 {
 
-struct LidarResidual
+struct LidarResidual : public SensorResidual
 {
-  template <class T>
-  using Vector2 = Eigen::Matrix<T, 2, 1>;
-
-  template <class T>
-  using Vector3 = Eigen::Matrix<T, 3, 1>;
-
-  template <class T>
-  using Vector4 = Eigen::Matrix<T, 4, 1>;
-
-  template <class T>
-  using Vector6 = Eigen::Matrix<T, 6, 1>;
-
-  template <typename T>
-  using Matrix3 = Eigen::Matrix<T, 3, 3>;
-
-  static constexpr int POSE_OPT_DIM = CalibrationData::POSE_OPT_DIM;
-  static constexpr int SHRD_GROUND_TAG_POSE_DIM = CalibrationData::SHRD_GROUND_TAG_POSE_DIM;
-  static constexpr int INDEP_GROUND_TAG_POSE_DIM = CalibrationData::INDEP_GROUND_TAG_POSE_DIM;
-  static constexpr int INTRINSICS_DIM = CalibrationData::INTRINSICS_DIM;
-
-  static constexpr int ROTATION_W_INDEX = CalibrationData::ROTATION_W_INDEX;
-  static constexpr int ROTATION_X_INDEX = CalibrationData::ROTATION_X_INDEX;
-  static constexpr int ROTATION_Y_INDEX = CalibrationData::ROTATION_Y_INDEX;
-  static constexpr int ROTATION_Z_INDEX = CalibrationData::ROTATION_Z_INDEX;
-  static constexpr int TRANSLATION_X_INDEX = CalibrationData::TRANSLATION_X_INDEX;
-  static constexpr int TRANSLATION_Y_INDEX = CalibrationData::TRANSLATION_Y_INDEX;
-  static constexpr int TRANSLATION_Z_INDEX = CalibrationData::TRANSLATION_Z_INDEX;
-
-  static constexpr int INTRINSICS_CX_INDEX = CalibrationData::INTRINSICS_CX_INDEX;
-  static constexpr int INTRINSICS_CY_INDEX = CalibrationData::INTRINSICS_CY_INDEX;
-  static constexpr int INTRINSICS_FX_INDEX = CalibrationData::INTRINSICS_FX_INDEX;
-  static constexpr int INTRINSICS_FY_INDEX = CalibrationData::INTRINSICS_FY_INDEX;
-  static constexpr int INTRINSICS_K1_INDEX = CalibrationData::INTRINSICS_K1_INDEX;
-  static constexpr int INTRINSICS_K2_INDEX = CalibrationData::INTRINSICS_K2_INDEX;
-
-  static constexpr int GROUND_TAG_D_INDEX = CalibrationData::GROUND_TAG_D_INDEX;
-  static constexpr int GROUND_TAG_YAW_INDEX = CalibrationData::GROUND_TAG_YAW_INDEX;
-  static constexpr int GROUND_TAG_X_INDEX = CalibrationData::GROUND_TAG_X_INDEX;
-  static constexpr int GROUND_TAG_Y_INDEX = CalibrationData::GROUND_TAG_Y_INDEX;
-
-  static constexpr int RESIDUAL_DIM = 8;
-  static constexpr int NUM_CORNERS = 4;
-
   LidarResidual(
-    const UID & camera_uid, const double & virtual_f, const LidartagDetection & detection,
+    const UID & lidar_uid, const double & virtual_f, const LidartagDetection & detection,
     const std::array<double, CalibrationData::POSE_OPT_DIM> & fixed_lidar_pose_inv,
-    bool fix_camera_pose)
-  : camera_uid_(camera_uid),
+    bool fix_lidar_pose)
+  : lidar_uid_(lidar_uid),
     virtual_f_(virtual_f),
     detection_(detection),
-    fix_camera_pose_(fix_camera_pose)
+    fix_lidar_pose_(fix_lidar_pose)
   {
     (void)fixed_lidar_pose_inv;
-    tag_size_ = detection.size;
 
-    throw std::domain_error("Unimplemented");
-  }
+    // Instead of relying on the lidar coordinate system, we make a new one
+    // based on the same origin but pointing towards the detection
+    Eigen::Matrix3d detection_rotation_eigen;
+    Eigen::Vector3d detection_translation_eigen;
 
-  /*!
-   * Auxiliar method to construct a 3d rotation matrix representing a 2d rotatin matrix
-   * @param[in] yaw the rotation angle in the Z axis
-   */
-  template <typename T>
-  Eigen::Matrix<T, 3, 3> rotationMatrixFromYaw(const T & yaw) const
-  {
-    const T cos = ceres::cos(yaw);
-    const T sin = ceres::sin(yaw);
-    Eigen::Matrix<T, 3, 3> rotation;
-    rotation << cos, -sin, T(0.0), sin, cos, T(0.0), T(0.0), T(0.0), T(1.0);
-    return rotation;
+    cv::cv2eigen(detection.pose.rotation(), detection_rotation_eigen);
+    cv::cv2eigen(detection.pose.translation(), detection_translation_eigen);
+
+    Eigen::Matrix4d pose_matrix = Eigen::Matrix4d::Identity();
+    pose_matrix.block<3, 3>(0, 0) = detection_rotation_eigen;
+    pose_matrix.block<3, 1>(0, 3) = detection_translation_eigen;
+
+    // Compute z hat as the direction of the translation component
+    Eigen::Vector3d z_hat = detection_translation_eigen.normalized();
+
+    auto point_to_eigen = [](const cv::Point3d & p) -> Eigen::Vector3d {
+      return Eigen::Vector3d(p.x, p.y, p.z);
+    };
+
+    auto vec_to_eigen = [](const cv::Vec3d & v) -> Eigen::Vector3d {
+      return Eigen::Vector3d(v(0), v(1), v(2));
+    };
+
+    Eigen::Vector3d v1 = point_to_eigen(detection.object_corners[0]);
+    Eigen::Vector3d v2 = point_to_eigen(detection.object_corners[1]);
+
+    Eigen::Vector3d x_hat = v2 - v1;
+    x_hat = (x_hat - x_hat.dot(z_hat) * z_hat).normalized();
+
+    Eigen::Vector3d y_hat = z_hat.cross(x_hat);
+
+    Eigen::Matrix3d aux_rotation;
+    tag_centric_rotation_.row(0) = x_hat;
+    tag_centric_rotation_.row(1) = y_hat;
+    tag_centric_rotation_.row(2) = z_hat;
+
+    Eigen::Vector3d center = vec_to_eigen(detection.pose.translation());
+    Eigen::Vector3d rotated_center = aux_rotation * center;
+    assert(std::abs(rotated_center.x()) < 1e5);
+    assert(std::abs(rotated_center.y()) < 1e5);
+
+    assert(static_cast<int>(detection.object_corners.size()) == NUM_CORNERS);
+    for (std::size_t corner_index = 0; corner_index < detection.object_corners.size();
+         corner_index++) {
+      Eigen::Vector3d rotated_corner =
+        tag_centric_rotation_ * point_to_eigen(detection.object_corners[corner_index]);
+      observed_corners_[corner_index] = Eigen::Vector2d(
+        virtual_f_ * rotated_corner.x() / rotated_corner.z(),
+        virtual_f_ * rotated_corner.y() / rotated_corner.z());
+    }
   }
 
   /*!
@@ -115,25 +108,25 @@ struct LidarResidual
    * @returns success status
    */
   template <typename T>
-  bool impl(
-    const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
-    const T * const tag_rotation_z, const T * const tag_pose_2d, T * residuals) const
+  bool impl(const T * const lidar_pose_inv, const T * const tag_pose, T * residuals) const
   {
-    double hsize = 0.5 * tag_size_;
-
-    Vector3<T> template_corners_[NUM_CORNERS] = {
-      {T(-hsize), T(hsize), T(0.0)},
-      {T(hsize), T(hsize), T(0.0)},
-      {T(hsize), T(-hsize), T(0.0)},
-      {T(-hsize), T(-hsize), T(0.0)}};
+    Vector3<T> template_corners[NUM_CORNERS] = {
+      {T(detection_.template_corners[0].x), T(detection_.template_corners[0].y),
+       T(detection_.template_corners[0].z)},
+      {T(detection_.template_corners[1].x), T(detection_.template_corners[1].y),
+       T(detection_.template_corners[1].z)},
+      {T(detection_.template_corners[2].x), T(detection_.template_corners[2].y),
+       T(detection_.template_corners[2].z)},
+      {T(detection_.template_corners[3].x), T(detection_.template_corners[3].y),
+       T(detection_.template_corners[3].z)}};
 
     Vector3<T> corners_wcs[NUM_CORNERS];
-    Vector3<T> corners_ccs[NUM_CORNERS];
+    Vector3<T> corners_lcs[NUM_CORNERS];
+    Vector3<T> corners_lrcs[NUM_CORNERS];
 
-    const Eigen::Map<const Vector4<T>> camera_rotation_inv_map(camera_pose_inv);
-    const Eigen::Map<const Vector3<T>> camera_translation_inv_map(
-      &camera_pose_inv[TRANSLATION_X_INDEX]);
-    const Eigen::Map<const Vector6<T>> camera_intrinsics_map(camera_intrinsics);
+    const Eigen::Map<const Vector4<T>> lidar_rotation_inv_map(lidar_pose_inv);
+    const Eigen::Map<const Vector3<T>> lidar_translation_inv_map(
+      &lidar_pose_inv[TRANSLATION_X_INDEX]);
 
     auto transform_corners =
       [](auto & quaternion, auto & translation, auto & input_corners, auto & output_corners) {
@@ -142,151 +135,74 @@ struct LidarResidual
         }
       };
 
+    auto rotate_corners = [](auto & rotation, auto & input_corners, auto & output_corners) {
+      for (int i = 0; i < NUM_CORNERS; i++) {
+        output_corners[i] = rotation * input_corners[i];
+      }
+    };
+
     // Template corners to World coordinate system (wcs)
-    if (!is_ground_tag_) {
-      const Eigen::Map<const Vector4<T>> tag_rotation_map(tag_pose);
-      const Eigen::Map<const Vector3<T>> tag_translation_map(&tag_pose[TRANSLATION_X_INDEX]);
+    const Eigen::Map<const Vector4<T>> tag_rotation_map(tag_pose);
+    const Eigen::Map<const Vector3<T>> tag_translation_map(&tag_pose[TRANSLATION_X_INDEX]);
 
-      Eigen::Quaternion<T> tag_quaternion = {
-        tag_rotation_map(ROTATION_W_INDEX), tag_rotation_map(ROTATION_X_INDEX),
-        tag_rotation_map(ROTATION_Y_INDEX), tag_rotation_map(ROTATION_Z_INDEX)};
+    Eigen::Quaternion<T> tag_quaternion = {
+      tag_rotation_map(ROTATION_W_INDEX), tag_rotation_map(ROTATION_X_INDEX),
+      tag_rotation_map(ROTATION_Y_INDEX), tag_rotation_map(ROTATION_Z_INDEX)};
 
-      tag_quaternion = tag_quaternion.normalized();
+    tag_quaternion = tag_quaternion.normalized();
 
-      transform_corners(tag_quaternion, tag_translation_map, template_corners_, corners_wcs);
+    transform_corners(tag_quaternion, tag_translation_map, template_corners, corners_wcs);
 
+    // World corners to lidar coordinate system (lcs)
+    if (fix_lidar_pose_) {
+      const Eigen::Map<const Eigen::Vector4d> fixed_lidar_rotation_inv_map(
+        fixed_lidar_rotation_inv_.data());
+      const Eigen::Map<const Eigen::Vector3d> fixed_lidar_translation_inv_map(
+        fixed_lidar_translation_inv_.data());
+
+      Eigen::Quaternion<T> fixed_lidar_rotation_inv_quaternion = {
+        T(1) * fixed_lidar_rotation_inv_map(ROTATION_W_INDEX),
+        T(1) * fixed_lidar_rotation_inv_map(ROTATION_X_INDEX),
+        T(1) * fixed_lidar_rotation_inv_map(ROTATION_Y_INDEX),
+        T(1) * fixed_lidar_rotation_inv_map(ROTATION_Z_INDEX)};
+
+      fixed_lidar_rotation_inv_quaternion = fixed_lidar_rotation_inv_quaternion.normalized();
+      transform_corners(
+        fixed_lidar_rotation_inv_quaternion, fixed_lidar_translation_inv_map, corners_wcs,
+        corners_lcs);
     } else {
-      const Eigen::Map<const Vector4<T>> tag_rotation_map(tag_rotation_z);
-      Eigen::Quaternion<T> tag_quaternion = {
-        tag_rotation_map(ROTATION_W_INDEX), tag_rotation_map(ROTATION_X_INDEX),
-        tag_rotation_map(ROTATION_Y_INDEX), tag_rotation_map(ROTATION_Z_INDEX)};
+      Eigen::Quaternion<T> lidar_rotation_inv_quaternion = {
+        lidar_rotation_inv_map(ROTATION_W_INDEX), lidar_rotation_inv_map(ROTATION_X_INDEX),
+        lidar_rotation_inv_map(ROTATION_Y_INDEX), lidar_rotation_inv_map(ROTATION_Z_INDEX)};
 
-      const Matrix3<T> tag_rotation_2d = rotationMatrixFromYaw(tag_pose_2d[GROUND_TAG_YAW_INDEX]);
-      Vector3<T> tag_translation_2d(
-        tag_pose_2d[GROUND_TAG_X_INDEX], tag_pose_2d[GROUND_TAG_Y_INDEX], T(0));
-      transform_corners(tag_rotation_2d, tag_translation_2d, template_corners_, corners_wcs);
-
-      tag_quaternion = tag_quaternion.normalized().inverse();
-      Vector3<T> translation =
-        T(-1.0) * (tag_quaternion * Vector3<T>(T(0), T(0), tag_rotation_z[GROUND_TAG_D_INDEX]));
-      transform_corners(tag_quaternion, translation, corners_wcs, corners_wcs);
+      lidar_rotation_inv_quaternion = lidar_rotation_inv_quaternion.normalized();
+      transform_corners(
+        lidar_rotation_inv_quaternion, lidar_translation_inv_map, corners_wcs, corners_lcs);
     }
 
-    // World corners to camera coordinate system (ccs)
-    if (fix_camera_pose_) {
-      const Eigen::Map<const Eigen::Vector4d> fixed_camera_rotation_inv_map(
-        fixed_camera_rotation_inv_.data());
-      const Eigen::Map<const Eigen::Vector3d> fixed_camera_translation_inv_map(
-        fixed_camera_translation_inv_.data());
+    Eigen::Matrix<T, 3, 3> tag_centric_rotation = tag_centric_rotation_.cast<T>();
 
-      Eigen::Quaternion<T> fixed_camera_rotation_inv_quaternion = {
-        T(1) * fixed_camera_rotation_inv_map(ROTATION_W_INDEX),
-        T(1) * fixed_camera_rotation_inv_map(ROTATION_X_INDEX),
-        T(1) * fixed_camera_rotation_inv_map(ROTATION_Y_INDEX),
-        T(1) * fixed_camera_rotation_inv_map(ROTATION_Z_INDEX)};
-
-      fixed_camera_rotation_inv_quaternion = fixed_camera_rotation_inv_quaternion.normalized();
-      transform_corners(
-        fixed_camera_rotation_inv_quaternion, fixed_camera_translation_inv_map, corners_wcs,
-        corners_ccs);
-
-    } else {
-      Eigen::Quaternion<T> camera_rotation_inv_quaternion = {
-        camera_rotation_inv_map(ROTATION_W_INDEX), camera_rotation_inv_map(ROTATION_X_INDEX),
-        camera_rotation_inv_map(ROTATION_Y_INDEX), camera_rotation_inv_map(ROTATION_Z_INDEX)};
-
-      camera_rotation_inv_quaternion = camera_rotation_inv_quaternion.normalized();
-      transform_corners(
-        camera_rotation_inv_quaternion, camera_translation_inv_map, corners_wcs, corners_ccs);
-    }
+    rotate_corners(tag_centric_rotation, corners_lcs, corners_lrcs);
 
     // Compute the reprojection error residuals
     auto compute_reproj_error_point = [&](
                                         auto & predicted_ccs, auto observed_ics, auto * residuals) {
-      const T & cx = camera_intrinsics_map(INTRINSICS_CX_INDEX);
-      const T & cy = camera_intrinsics_map(INTRINSICS_CY_INDEX);
-      const T & fx = camera_intrinsics_map(INTRINSICS_FX_INDEX);
-      const T & fy = camera_intrinsics_map(INTRINSICS_FY_INDEX);
-      const T & k1 = camera_intrinsics_map(INTRINSICS_K1_INDEX);
-      const T & k2 = camera_intrinsics_map(INTRINSICS_K2_INDEX);
+      const T f = T(virtual_f_);
 
       const T xp = predicted_ccs.x() / predicted_ccs.z();
       const T yp = predicted_ccs.y() / predicted_ccs.z();
-      const T r2 = xp * xp + yp * yp;
-      const T d = 1.0 + r2 * (k1 + k2 * r2);
-      const T predicted_ics_x = cx + fx * d * xp;
-      const T predicted_ics_y = cy + fy * d * yp;
+      const T predicted_ics_x = f * xp;
+      const T predicted_ics_y = f * yp;
 
       residuals[0] = predicted_ics_x - observed_ics.x();
       residuals[1] = predicted_ics_y - observed_ics.y();
     };
 
     for (int i = 0; i < NUM_CORNERS; i++) {
-      compute_reproj_error_point(corners_ccs[i], observed_corners_[i], residuals + 2 * i);
+      compute_reproj_error_point(corners_lrcs[i], observed_corners_[i], residuals + 2 * i);
     }
 
     return true;
-  }
-
-  /*!
-   * The cost function wrapper for the case where the tag is in the ground and the intrinsics are
-   * optimized
-   * @param[in] camera_pose_inv The pose from the camera to the origin
-   * @param[in] camera_intrinsics The camera intrinsics
-   * @param[in] tag_rotation_z The pose from the ground plane to the origin (only used when using
-   * ground tags)
-   * @param[in] tag_pose_2d The pose from ground plane to the tag (only used when using ground tags)
-   * @param[in] residuals The residual error of projecting the tag into the camera
-   * @returns success status
-   */
-  template <typename T>
-  bool operator()(
-    const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_rot_z,
-    const T * const tag_pose_2d, T * residuals) const
-  {
-    assert(fix_camera_pose_ == false);
-    assert(optimize_intrinsics_ == true);
-    assert(is_ground_tag_ == true);
-
-    return impl(
-      camera_pose_inv, camera_intrinsics, static_cast<T *>(nullptr), tag_rot_z, tag_pose_2d,
-      residuals);
-
-    return false;
-  }
-
-  /*!
-   * The cost function wrapper for the following casesL
-   *     - the tag is in the ground and the intrinsics are not optimized
-   *     - the camera is not fixed and the intrinsics are optimized
-   * @param[in] arg1 The pose from the camera to the origin
-   * @param[in] arg2 The camera intrinsics
-   * @param[in] arg3 The pose from the ground plane to the origin (only used when using ground tags)
-   * @param[in] residuals The residual error of projecting the tag into the camera
-   * @returns success status
-   */
-  template <typename T>
-  bool operator()(
-    const T * const arg1, const T * const arg2, const T * const arg3, T * residuals) const
-  {
-    if (is_ground_tag_) {
-      // Case where the tag is in the ground and the intrinsics are not optimized
-      assert(fix_camera_pose_ == false);
-      assert(optimize_intrinsics_ == false);
-
-      std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                               T(1.0) * fy_, T(0.0),       T(0.0)};
-
-      return impl(arg1, intrinsics.data(), static_cast<T *>(nullptr), arg2, arg3, residuals);
-
-    } else {
-      // Case where the camera is not fixed and the intrinsics are optimized
-      assert(fix_camera_pose_ == false);
-      assert(optimize_intrinsics_ == true);
-
-      return impl(
-        arg1, arg2, arg3, static_cast<T *>(nullptr), static_cast<T *>(nullptr), residuals);
-    }
   }
 
   /*!
@@ -299,22 +215,11 @@ struct LidarResidual
    * @returns success status
    */
   template <typename T>
-  bool operator()(const T * const arg1, const T * const arg2, T * residuals) const
+  bool operator()(const T * const lidar_pose_inv, const T * const tag_pose, T * residuals) const
   {
-    assert(fix_camera_pose_ == false);
-    assert(is_ground_tag_ == false);
+    assert(fix_lidar_pose_ == false);
 
-    assert(optimize_intrinsics_ == false);
-
-    const T * const camera_pose_inv = arg1;
-    const T * const tag_pose = arg2;
-
-    std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                             T(1.0) * fy_, T(0.0),       T(0.0)};
-
-    return impl(
-      camera_pose_inv, intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
-      static_cast<T *>(nullptr), residuals);
+    return impl(lidar_pose_inv, tag_pose, residuals);
   }
 
   /*!
@@ -326,16 +231,9 @@ struct LidarResidual
   template <typename T>
   bool operator()(const T * const tag_pose, T * residuals) const
   {
-    assert(fix_camera_pose_ == true);
-    assert(optimize_intrinsics_ == false);
-    assert(is_ground_tag_ == false);
+    assert(fix_lidar_pose_ == true);
 
-    std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                             T(1.0) * fy_, T(0.0),       T(0.0)};
-
-    return impl(
-      static_cast<T *>(nullptr), intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
-      static_cast<T *>(nullptr), residuals);
+    return impl(static_cast<T *>(nullptr), tag_pose, residuals);
   }
 
   /*!
@@ -370,28 +268,20 @@ struct LidarResidual
               POSE_OPT_DIM>(  // 7 tag pose parameters
         f));
     }
-
-    return nullptr;
   }
-
-  double cx_;
-  double cy_;
-  double fx_;
-  double fy_;
-  double tag_size_;
 
   Eigen::Vector2d observed_corners_[NUM_CORNERS];
 
-  UID camera_uid_;
+  UID lidar_uid_;
   double virtual_f_;
   LidartagDetection detection_;
-  Eigen::Vector4d fixed_camera_rotation_inv_;
-  Eigen::Vector3d fixed_camera_translation_inv_;
+  Eigen::Vector4d fixed_lidar_rotation_inv_;
+  Eigen::Vector3d fixed_lidar_translation_inv_;
   Eigen::Vector4d fixed_tag_rotation_;
   Eigen::Vector3d fixed_tag_translation_;
-  bool fix_camera_pose_;
-  bool optimize_intrinsics_;
-  bool is_ground_tag_;
+  bool fix_lidar_pose_;
+
+  Eigen::Matrix3d tag_centric_rotation_;
 };
 
 }  // namespace extrinsic_tag_based_base_calibrator

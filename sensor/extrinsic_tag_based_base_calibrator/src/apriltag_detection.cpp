@@ -16,13 +16,19 @@
 #include <Eigen/Geometry>
 #include <extrinsic_tag_based_base_calibrator/apriltag_detection.hpp>
 #include <extrinsic_tag_based_base_calibrator/math.hpp>
+#include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
 
 #ifdef ROS_DISTRO_GALACTIC
 #include <tf2_eigen/tf2_eigen.h>
 #else
 #include <tf2_eigen/tf2_eigen.hpp>
 #endif
+
+#include <tier4_tag_utils/cv/sqpnp.hpp>
+
+#include <limits>
 
 namespace extrinsic_tag_based_base_calibrator
 {
@@ -73,7 +79,7 @@ void LidartagDetection::computeObjectCorners()
   assert(size > 0.0);
   double hsize = 0.5 * size;
 
-  object_corners = {
+  template_corners = {
     {-hsize, hsize, 0.0}, {hsize, hsize, 0.0}, {hsize, -hsize, 0.0}, {-hsize, -hsize, 0.0}};
 }
 
@@ -104,6 +110,44 @@ double ApriltagDetection::computePose(const IntrinsicParameters & intrinsics)
   CV_UNUSED(intrinsics);
   assert(false);  // not implemented
   return 0.0;
+
+  std::vector<std::vector<cv::Point3f>> object_points_;
+  std::vector<std::vector<cv::Point2f>> image_points_;
+  std::vector<cv::Mat> rvecs_;
+  std::vector<cv::Mat> tvecs_;
+
+  ////
+
+  std::vector<cv::Point2d> undistorted_points;
+
+  cv::undistortPoints(
+    image_corners, undistorted_points, intrinsics.camera_matrix, intrinsics.dist_coeffs);
+
+  cv::sqpnp::PoseSolver solver;
+  std::vector<cv::Mat> rvec_vec, tvec_vec;
+  solver.solve(template_corners, undistorted_points, rvec_vec, tvec_vec);
+
+  if (tvec_vec.size() == 0) {
+    assert(false);
+    return std::numeric_limits<double>::infinity();
+  }
+
+  assert(rvec_vec.size() == 1);
+  cv::Mat rvec = rvec_vec[0];
+  cv::Mat tvec = tvec_vec[0];
+
+  cv::Matx31d translation_vector = tvec;
+  cv::Matx33d rotation_matrix;
+
+  translation_vector = tvec;
+  cv::Rodrigues(rvec, rotation_matrix);
+
+  pose = cv::Affine3d(rvec, tvec);
+
+  for (cv::Point3d & template_corner : template_corners) {
+    cv::Matx31d p = rotation_matrix * cv::Matx31d(template_corner) + translation_vector;
+    object_corners.push_back(cv::Point3d(p(0), p(1), p(2)));
+  }
 }
 
 double ApriltagGridDetection::recomputeFromSubDetections(const TagParameters & tag_parameters)
@@ -120,15 +164,15 @@ double ApriltagGridDetection::recomputeFromSubDetections(const TagParameters & t
     double corner_offset_y = (row - 0.5 * (rows - 1)) * factor;
     cv::Point3d corner_offset(corner_offset_x, corner_offset_y, 0.0);
 
-    for (auto & object_corner : sub_detection.object_corners) {
+    for (auto & object_corner : sub_detection.template_corners) {
       object_corner = object_corner + corner_offset;
     }
 
     image_corners.insert(
       image_corners.end(), sub_detection.image_corners.begin(), sub_detection.image_corners.end());
-    object_corners.insert(
-      object_corners.end(), sub_detection.object_corners.begin(),
-      sub_detection.object_corners.end());
+    template_corners.insert(
+      template_corners.end(), sub_detection.template_corners.begin(),
+      sub_detection.template_corners.end());
   }
 
   center = std::accumulate(image_corners.begin(), image_corners.end(), cv::Point2d(0.0, 0.0)) /

@@ -37,6 +37,7 @@
   <depend>tf2_ros</depend>
   <depend>tier4_autoware_utils</depend>
   <depend>tier4_calibration_msgs</depend>
+  <depend>tier4_tag_utils</depend>
   <depend>visualization_msgs</depend>
 
   <exec_depend>rclpy</exec_depend>

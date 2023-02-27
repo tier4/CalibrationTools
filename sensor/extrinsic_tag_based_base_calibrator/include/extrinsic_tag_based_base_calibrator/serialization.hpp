@@ -116,6 +116,7 @@ void serialize(
   ar & detection.id;
   ar & detection.image_corners;
   ar & detection.object_corners;
+  ar & detection.template_corners;
   ar & detection.center;
   ar & detection.pose;
   ar & detection.size;
@@ -134,6 +135,7 @@ void serialize(
   ar & detection.id;
   ar & detection.image_corners;
   ar & detection.object_corners;
+  ar & detection.template_corners;
   ar & detection.center;
   ar & detection.pose;
   ar & detection.size;
@@ -147,6 +149,7 @@ void serialize(
   (void)version;
   ar & detection.id;
   ar & detection.object_corners;
+  ar & detection.template_corners;
   ar & detection.pose;
   ar & detection.size;
 }

@@ -16,6 +16,7 @@
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__CAMERA_RESIDUAL_HPP_
 
 #include <extrinsic_tag_based_base_calibrator/calibration_types.hpp>
+#include <extrinsic_tag_based_base_calibrator/ceres/sensor_residual.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 
@@ -29,51 +30,8 @@
 namespace extrinsic_tag_based_base_calibrator
 {
 
-struct CameraResidual
+struct CameraResidual : public SensorResidual
 {
-  template <class T>
-  using Vector2 = Eigen::Matrix<T, 2, 1>;
-
-  template <class T>
-  using Vector3 = Eigen::Matrix<T, 3, 1>;
-
-  template <class T>
-  using Vector4 = Eigen::Matrix<T, 4, 1>;
-
-  template <class T>
-  using Vector6 = Eigen::Matrix<T, 6, 1>;
-
-  template <typename T>
-  using Matrix3 = Eigen::Matrix<T, 3, 3>;
-
-  static constexpr int POSE_OPT_DIM = CalibrationData::POSE_OPT_DIM;
-  static constexpr int SHRD_GROUND_TAG_POSE_DIM = CalibrationData::SHRD_GROUND_TAG_POSE_DIM;
-  static constexpr int INDEP_GROUND_TAG_POSE_DIM = CalibrationData::INDEP_GROUND_TAG_POSE_DIM;
-  static constexpr int INTRINSICS_DIM = CalibrationData::INTRINSICS_DIM;
-
-  static constexpr int ROTATION_W_INDEX = CalibrationData::ROTATION_W_INDEX;
-  static constexpr int ROTATION_X_INDEX = CalibrationData::ROTATION_X_INDEX;
-  static constexpr int ROTATION_Y_INDEX = CalibrationData::ROTATION_Y_INDEX;
-  static constexpr int ROTATION_Z_INDEX = CalibrationData::ROTATION_Z_INDEX;
-  static constexpr int TRANSLATION_X_INDEX = CalibrationData::TRANSLATION_X_INDEX;
-  static constexpr int TRANSLATION_Y_INDEX = CalibrationData::TRANSLATION_Y_INDEX;
-  static constexpr int TRANSLATION_Z_INDEX = CalibrationData::TRANSLATION_Z_INDEX;
-
-  static constexpr int INTRINSICS_CX_INDEX = CalibrationData::INTRINSICS_CX_INDEX;
-  static constexpr int INTRINSICS_CY_INDEX = CalibrationData::INTRINSICS_CY_INDEX;
-  static constexpr int INTRINSICS_FX_INDEX = CalibrationData::INTRINSICS_FX_INDEX;
-  static constexpr int INTRINSICS_FY_INDEX = CalibrationData::INTRINSICS_FY_INDEX;
-  static constexpr int INTRINSICS_K1_INDEX = CalibrationData::INTRINSICS_K1_INDEX;
-  static constexpr int INTRINSICS_K2_INDEX = CalibrationData::INTRINSICS_K2_INDEX;
-
-  static constexpr int GROUND_TAG_D_INDEX = CalibrationData::GROUND_TAG_D_INDEX;
-  static constexpr int GROUND_TAG_YAW_INDEX = CalibrationData::GROUND_TAG_YAW_INDEX;
-  static constexpr int GROUND_TAG_X_INDEX = CalibrationData::GROUND_TAG_X_INDEX;
-  static constexpr int GROUND_TAG_Y_INDEX = CalibrationData::GROUND_TAG_Y_INDEX;
-
-  static constexpr int RESIDUAL_DIM = 8;
-  static constexpr int NUM_CORNERS = 4;
-
   CameraResidual(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection,
@@ -140,13 +98,25 @@ struct CameraResidual
     const T * const camera_pose_inv, const T * const camera_intrinsics, const T * const tag_pose,
     const T * const tag_rotation_z, const T * const tag_pose_2d, T * residuals) const
   {
-    double hsize = 0.5 * tag_size_;
+    // double hsize = 0.5 * tag_size_;
 
-    Vector3<T> template_corners_[NUM_CORNERS] = {
-      {T(-hsize), T(hsize), T(0.0)},
-      {T(hsize), T(hsize), T(0.0)},
-      {T(hsize), T(-hsize), T(0.0)},
-      {T(-hsize), T(-hsize), T(0.0)}};
+    assert(detection_.template_corners.size() == 4);
+
+    // Vector3<T> template_corners_[NUM_CORNERS] = {
+    //   {T(-hsize), T(hsize), T(0.0)},
+    //   {T(hsize), T(hsize), T(0.0)},
+    //   {T(hsize), T(-hsize), T(0.0)},
+    //   {T(-hsize), T(-hsize), T(0.0)}};
+
+    Vector3<T> template_corners[NUM_CORNERS] = {
+      {T(detection_.template_corners[0].x), T(detection_.template_corners[0].y),
+       T(detection_.template_corners[0].z)},
+      {T(detection_.template_corners[1].x), T(detection_.template_corners[1].y),
+       T(detection_.template_corners[1].z)},
+      {T(detection_.template_corners[2].x), T(detection_.template_corners[2].y),
+       T(detection_.template_corners[2].z)},
+      {T(detection_.template_corners[3].x), T(detection_.template_corners[3].y),
+       T(detection_.template_corners[3].z)}};
 
     Vector3<T> corners_wcs[NUM_CORNERS];
     Vector3<T> corners_ccs[NUM_CORNERS];
@@ -174,7 +144,7 @@ struct CameraResidual
 
       tag_quaternion = tag_quaternion.normalized();
 
-      transform_corners(tag_quaternion, tag_translation_map, template_corners_, corners_wcs);
+      transform_corners(tag_quaternion, tag_translation_map, template_corners, corners_wcs);
 
     } else {
       const Eigen::Map<const Vector4<T>> tag_rotation_map(tag_rotation_z);
@@ -185,7 +155,7 @@ struct CameraResidual
       const Matrix3<T> tag_rotation_2d = rotationMatrixFromYaw(tag_pose_2d[GROUND_TAG_YAW_INDEX]);
       Vector3<T> tag_translation_2d(
         tag_pose_2d[GROUND_TAG_X_INDEX], tag_pose_2d[GROUND_TAG_Y_INDEX], T(0));
-      transform_corners(tag_rotation_2d, tag_translation_2d, template_corners_, corners_wcs);
+      transform_corners(tag_rotation_2d, tag_translation_2d, template_corners, corners_wcs);
 
       tag_quaternion = tag_quaternion.normalized().inverse();
       Vector3<T> translation =

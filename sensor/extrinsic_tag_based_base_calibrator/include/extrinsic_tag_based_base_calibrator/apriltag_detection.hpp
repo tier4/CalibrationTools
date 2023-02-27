@@ -39,6 +39,7 @@ struct LidartagDetection
   std::string family = "";
   int id = -1;
   std::vector<cv::Point3d> object_corners;
+  std::vector<cv::Point3d> template_corners;
   cv::Affine3d pose;
   double size = 0.0;
 };
@@ -51,6 +52,7 @@ struct ApriltagDetection : public LidartagDetection
   double computePose(const IntrinsicParameters & intrinsics);
 
   std::vector<cv::Point2d> image_corners;
+
   cv::Point2d center;
 };
 
@@ -63,6 +65,7 @@ struct ApriltagGridDetection : public ApriltagDetection
     family = other.family;
     id = other.id;
     object_corners = other.object_corners;
+    template_corners = other.template_corners;
     pose = other.pose;
     size = other.size;
     image_corners = other.image_corners;
