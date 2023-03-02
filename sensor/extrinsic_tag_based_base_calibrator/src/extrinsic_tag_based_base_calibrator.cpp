@@ -68,6 +68,11 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   std::vector<std::string> calibration_camera_parent_frames =
     this->declare_parameter<std::vector<std::string>>("calibration_camera_parent_frames");
 
+  std::vector<std::string> lidar_calibration_service_names =
+    this->declare_parameter<std::vector<std::string>>("lidar_calibration_service_names");
+  std::vector<std::string> camera_calibration_service_names =
+    this->declare_parameter<std::vector<std::string>>("camera_calibration_service_names");
+
   main_calibration_sensor_frame_ =
     this->declare_parameter<std::string>("main_calibration_sensor_frame");
 
@@ -127,6 +132,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     calibration_sensor_parent_frame_map_[lidar_name] = calibration_lidar_parent_frames[lidar_index];
     calibration_lidar_detections_topic_map_[lidar_name] =
       calibration_lidar_detections_topics[lidar_index];
+    calibration_service_names_map_[lidar_name] = lidar_calibration_service_names[lidar_index];
   }
 
   for (std::size_t camera_index = 0; camera_index < calibration_camera_frames_vector_.size();
@@ -140,6 +146,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     calibration_image_detections_topic_map_[camera_name] =
       calibration_image_detections_topics[camera_index];
     calibration_camera_info_topic_map_[camera_name] = calibration_camera_info_topics[camera_index];
+    calibration_service_names_map_[camera_name] = lidar_calibration_service_names[camera_index];
   }
 
   assert(
@@ -195,14 +202,11 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     waypoint_tag_parameters_, ground_tag_parameters_, wheel_tag_parameters_};
 
   // Optimization options
-  bool ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
-  bool ba_share_intrinsics_ = this->declare_parameter<bool>("ba_share_intrinsics", false);
-  bool ba_force_shared_ground_plane_ =
+  ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
+  ba_share_intrinsics_ = this->declare_parameter<bool>("ba_share_intrinsics", false);
+  ba_force_shared_ground_plane_ =
     this->declare_parameter<bool>("ba_force_shared_ground_plane", false);
-
-  calibration_problem_.setOptimizeIntrinsics(ba_optimize_intrinsics_);
-  calibration_problem_.setShareIntrinsics(ba_share_intrinsics_);
-  calibration_problem_.setForceSharedGroundPlane(ba_force_shared_ground_plane_);
+  virtual_lidar_f_ = this->declare_parameter<double>("virtual_lidar_f", 10000.0);
 
   // Initial intrinsic calibration parameters
   initial_intrinsic_calibration_board_type_ =
@@ -243,6 +247,10 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<int>("apriltag_max_hamming", 0);
   apriltag_detector_parameters_.min_margin =
     this->declare_parameter<double>("apriltag_min_margin", 20.0);
+  apriltag_detector_parameters_.max_out_of_plane_angle =
+    this->declare_parameter<double>("apriltag_max_out_of_plane_angle", 90.0);
+  apriltag_detector_parameters_.max_reproj_error =
+    this->declare_parameter<double>("apriltag_max_reproj_error", 10.0);
   apriltag_detector_parameters_.max_homography_error =
     this->declare_parameter<double>("apriltag_max_homography_error", 0.5);
   apriltag_detector_parameters_.quad_decimate =
@@ -297,7 +305,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
     calibration_api_srv_map_[calibration_sensor_frame] =
       this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
-        calibration_sensor_frame + "/extrinsic_calibration",
+        calibration_service_names_map_[calibration_sensor_frame] + "/extrinsic_calibration",
         [&](
           const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
           const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
@@ -773,24 +781,75 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     }
   }
 
+  // Publish tf for visualization if available
+  if (!calibration_done_) {
+    for (std::size_t marker_index = 0; marker_index < markers.markers.size(); marker_index++) {
+      markers.markers[marker_index].id = marker_index;
+    }
+
+    markers_pub_->publish(markers);
+    return;
+  }
+
+  Eigen::Matrix4d main_sensor_to_base_link_transform;
+  cv::cv2eigen(
+    calibrated_main_sensor_to_base_link_pose_.matrix, main_sensor_to_base_link_transform);
+
+  geometry_msgs::msg::TransformStamped tf_msg =
+    tf2::eigenToTransform(Eigen::Affine3d(main_sensor_to_base_link_transform));
+  tf_msg.header.frame_id = main_calibration_sensor_frame_;
+  tf_msg.child_frame_id = "estimated_base_link";
+  tf_broadcaster_.sendTransform(tf_msg);
+
+  // Publish the tf to all external cameras
+  for (const auto & [uid, sensor_pose_cv] : data_->optimized_sensor_poses_map) {
+    Eigen::Matrix4d sensor_pose_eigen;
+    cv::cv2eigen(sensor_pose_cv->matrix, sensor_pose_eigen);
+
+    geometry_msgs::msg::TransformStamped tf_msg =
+      tf2::eigenToTransform(Eigen::Affine3d(sensor_pose_eigen));
+    tf_msg.header.frame_id = main_calibration_sensor_frame_;
+    tf_msg.child_frame_id = uid.toString();
+    tf_broadcaster_.sendTransform(tf_msg);
+  }
+
+  visualization_msgs::msg::Marker detections_base_marker = base_marker;
+
+  for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
+    const CalibrationScene & scene = data_->scenes[scene_index];
+
+    std_msgs::msg::ColorRGBA color;
+    color.r = 1.0;
+    color.g = 1.0;
+    color.b = 1.0;
+    color.a = 1.0;
+
+    for (std::size_t frame_id = 0; frame_id < scene.external_camera_frames.size(); frame_id++) {
+      const auto & grouped_grid_detections = scene.external_camera_frames[frame_id].detections;
+      UID external_camera_uid =
+        UID::makeSensorUID(SensorType::ExternalCamera, scene_index, frame_id);
+      detections_base_marker.ns = "raw_detections_" + external_camera_uid.toString();
+
+      detections_base_marker.header.frame_id = external_camera_uid.toString();
+
+      for (const auto & group_grid_detections : grouped_grid_detections) {
+        const std::vector<ApriltagGridDetection> & grid_detections = group_grid_detections.second;
+        for (const auto & grid_detection : grid_detections) {
+          for (const auto & detection : grid_detection.sub_detections) {
+            addTagMarkers(
+              markers, std::to_string(detection.id), detection.size, color, detection.pose,
+              detections_base_marker);
+          }
+        }
+      }
+    }
+  }
+
   for (std::size_t marker_index = 0; marker_index < markers.markers.size(); marker_index++) {
     markers.markers[marker_index].id = marker_index;
   }
 
   markers_pub_->publish(markers);
-
-  // Publish tf for visualization if available
-  if (calibration_done_) {
-    Eigen::Matrix4d main_sensor_to_base_link_transform;
-    cv::cv2eigen(
-      calibrated_main_sensor_to_base_link_pose_.matrix, main_sensor_to_base_link_transform);
-
-    geometry_msgs::msg::TransformStamped tf_msg =
-      tf2::eigenToTransform(Eigen::Affine3d(main_sensor_to_base_link_transform));
-    tf_msg.header.frame_id = main_calibration_sensor_frame_;
-    tf_msg.child_frame_id = "estimated_base_link";
-    tf_broadcaster_.sendTransform(tf_msg);
-  }
 }
 
 std_msgs::msg::ColorRGBA ExtrinsicTagBasedBaseCalibrator::getNextColor()
@@ -815,11 +874,15 @@ bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Request> request,
   std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Response> response)
 {
-  std::size_t num_scenes = std::max(
-    std::max(
-      scenes_calibration_apriltag_detections_.size(),
-      scenes_calibration_lidartag_detections_.size()),
-    scenes_calibration_camera_images_.size());
+  int camera_scenes = std::transform_reduce(
+    scenes_calibration_apriltag_detections_.begin(), scenes_calibration_apriltag_detections_.end(),
+    0, std::plus{}, [](auto it) { return it.second.size(); });
+
+  int lidar_scenes = std::transform_reduce(
+    scenes_calibration_lidartag_detections_.begin(), scenes_calibration_lidartag_detections_.end(),
+    0, std::plus{}, [](auto it) { return it.second.size(); });
+
+  std::size_t num_scenes = std::max(camera_scenes, lidar_scenes);
 
   RCLCPP_INFO(
     this->get_logger(), "Attempting to add external camera images to scene id=%ld",
@@ -839,6 +902,10 @@ bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
 
   scenes_external_camera_images_.resize(num_scenes);
   scenes_external_camera_images_[request->scene_id] = request->files;
+
+  RCLCPP_INFO(
+    this->get_logger(), "Addded %lu external images to scene id=%ld", request->files.size(),
+    request->scene_id);
 
   response->success = true;
   return true;
@@ -883,8 +950,11 @@ bool ExtrinsicTagBasedBaseCalibrator::addCalibrationSensorDetectionsCallback(
     scenes_calibration_apriltag_detections_[camera_frame].push_back(latest_detections);
 
     if (latest_detections.size() > 0) {
+      RCLCPP_INFO(
+        this->get_logger(), "Added %lu detections to camera=%s (%lu scenes)",
+        latest_detections.size(), camera_frame.c_str(),
+        scenes_calibration_apriltag_detections_[camera_frame].size());
       latest_detections.clear();
-      response->success = true;
     } else {
       RCLCPP_WARN(this->get_logger(), "Camera frame %s had no detections", camera_frame.c_str());
     }
@@ -896,8 +966,11 @@ bool ExtrinsicTagBasedBaseCalibrator::addCalibrationSensorDetectionsCallback(
     scenes_calibration_lidartag_detections_[lidar_frame].push_back(latest_detections);
 
     if (latest_detections.size() > 0) {
+      RCLCPP_INFO(
+        this->get_logger(), "Added %lu detections to lidar=%s (%lu scenes)",
+        latest_detections.size(), lidar_frame.c_str(),
+        scenes_calibration_lidartag_detections_[lidar_frame].size());
       latest_detections.clear();
-      response->success = true;
     } else {
       RCLCPP_WARN(this->get_logger(), "Lidar frame %s had no detections", lidar_frame.c_str());
     }
@@ -1193,7 +1266,7 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
         const ApriltagGridDetections & apriltag_grid_detections = group_detections_it.second;
 
         for (const auto & grid_detection : apriltag_grid_detections) {
-          UID tag_uid = UID::makeTagUID(tag_type, grid_detection.id);
+          UID tag_uid = UID::makeTagUID(tag_type, scene_index, grid_detection.id);
 
           data_->uid_connections_map[camera_uid].push_back(tag_uid);
           data_->uid_connections_map[tag_uid].push_back(camera_uid);
@@ -1219,7 +1292,7 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
 
       for (const auto & lidartag_detection : lidar_it.detections) {
         const TagType tag_type = TagType::WaypointTag;
-        UID tag_uid = UID::makeTagUID(tag_type, lidartag_detection.id);
+        UID tag_uid = UID::makeTagUID(tag_type, scene_index, lidartag_detection.id);
 
         data_->uid_connections_map[lidar_uid].push_back(tag_uid);
         data_->uid_connections_map[tag_uid].push_back(lidar_uid);
@@ -1243,7 +1316,7 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
         const ApriltagGridDetections & apriltag_grid_detections = group_detections_it.second;
 
         for (const auto & grid_detection : apriltag_grid_detections) {
-          UID tag_uid = UID::makeTagUID(tag_type, grid_detection.id);
+          UID tag_uid = UID::makeTagUID(tag_type, scene_index, grid_detection.id);
 
           data_->uid_connections_map[external_camera_uid].push_back(tag_uid);
           data_->uid_connections_map[tag_uid].push_back(external_camera_uid);
@@ -1257,6 +1330,19 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
     }
   }
 
+  response->success = true;
+  return true;
+}
+
+bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
+  __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request>
+    request,
+  __attribute__((unused)) std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
+{
+  // if (is_lidar_calibration_) {
+  //   calibration_problem_.setFixedWaypointPoses(true);
+  // } TODOKL delete since lidars always do participate
+
   UID main_sensor_uid;
 
   for (const auto & detections : data_->scenes[0].calibration_cameras_detections) {
@@ -1269,12 +1355,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
   for (const auto & detections : data_->scenes[0].calibration_lidars_detections) {
     if (detections.calibration_frame == main_calibration_sensor_frame_) {
       main_sensor_uid =
-        UID::makeSensorUID(SensorType::CalibrationCamera, detections.calibration_lidar_id);
+        UID::makeSensorUID(SensorType::CalibrationLidar, detections.calibration_lidar_id);
     }
   }
 
-  UID left_wheel_uid = UID::makeTagUID(TagType::WheelTag, left_wheel_tag_id);
-  UID right_wheel_uid = UID::makeTagUID(TagType::WheelTag, right_wheel_tag_id);
+  assert(main_sensor_uid.isValid());
+  UID left_wheel_uid = UID::makeTagUID(TagType::WheelTag, -1, left_wheel_tag_id);
+  UID right_wheel_uid = UID::makeTagUID(TagType::WheelTag, -1, right_wheel_tag_id);
 
   // Estimate the initial poses
   estimateInitialPoses(*data_, main_sensor_uid, left_wheel_uid, right_wheel_uid);
@@ -1307,19 +1394,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
       calibration_camera_intrinsics_map_[calibration_camera_frame];
   }
 
-  response->success = true;
-  return true;
-}
-
-bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
-  __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request>
-    request,
-  __attribute__((unused)) std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
-{
-  // if (is_lidar_calibration_) {
-  //   calibration_problem_.setFixedWaypointPoses(true);
-  // } TODOKL delete since lidars always do participate
-
+  calibration_problem_.setOptimizeIntrinsics(ba_optimize_intrinsics_);
+  calibration_problem_.setShareIntrinsics(ba_share_intrinsics_);
+  calibration_problem_.setForceSharedGroundPlane(ba_force_shared_ground_plane_);
+  calibration_problem_.setCalibrationLidarIntrinsics(virtual_lidar_f_);
+  calibration_problem_.setWheelTagUIDs(
+    UID::makeTagUID(TagType::WheelTag, -1, left_wheel_tag_id),
+    UID::makeTagUID(TagType::WheelTag, -1, right_wheel_tag_id));
   calibration_problem_.setData(data_);
 
   calibration_problem_.dataToPlaceholders();

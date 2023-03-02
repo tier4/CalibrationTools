@@ -303,6 +303,7 @@ protected:
   // calibration_camera_parent_frame_map_;
   std::unordered_map<std::string, std::string> sensor_kit_frame_map_;
   std::unordered_map<std::string, std::string> calibration_sensor_parent_frame_map_;
+  std::unordered_map<std::string, std::string> calibration_service_names_map_;
 
   std::mutex mutex_;
   tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
@@ -346,6 +347,12 @@ protected:
   // Intrinsics calibration : chessboard
   int initial_intrinsic_calibration_board_cols_;
   int initial_intrinsic_calibration_board_rows_;
+
+  // Optimization parameters
+  bool ba_optimize_intrinsics_;
+  bool ba_share_intrinsics_;
+  bool ba_force_shared_ground_plane_;
+  double virtual_lidar_f_;
 
   // Detections
   std::unordered_map<std::string, GroupedApriltagGridDetections> latest_apriltag_detections_map_;

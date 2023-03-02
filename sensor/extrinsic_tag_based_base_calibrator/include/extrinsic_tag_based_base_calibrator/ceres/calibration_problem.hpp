@@ -95,7 +95,14 @@ public:
    * Sets the calibration lidars intrinsics
    * @param[in] calibration_lidar_virtual_f the camera intrinsics
    */
-  void setCalibrationLidarIntrinsics(double calibration_lidar);
+  void setCalibrationLidarIntrinsics(double calibration_lidar_virtual_f);
+
+  /*!
+   * Sets UIDs corresponding to the left and wheel tags
+   * @param[in] left_wheel_tag_uid the left wheel tag uid
+   * @param[in] right_wheel_tag_uid the right wheel tag uid
+   */
+  void setWheelTagUIDs(UID left_wheel_tag_uid, UID right_wheel_tag_uid);
 
   /*!
    * Sets whether the waypoint poses should be fixed during optimization. This is used for base

@@ -85,10 +85,17 @@ cv::Affine3d computeBaseLink(
  * @param[in] cy the optical center in y
  * @param[in] k1 the 1st radial distortion component
  * @param[in] k2 the 2st radial distortion component
- * @returns the base link pose
+ * @returns the point projected in the camera
  */
 cv::Point2d projectPoint(
   const cv::Vec3d & p, double fx, double fy, double cx, double cy, double k1, double k2);
+
+/*!
+ * Projects a point into an image using a distortion model
+ * @param[in] p the point to be projected
+ * @param[in] intrinsics the array containing the intrinsics
+ */
+cv::Point2d projectPoint(const cv::Vec3d & p, const std::array<double, 6> & intrinsics);
 
 void estimateInitialPoses(
   CalibrationData & data, const UID & main_sensor_uid, UID & left_wheel_uid, UID & right_wheel_uid,

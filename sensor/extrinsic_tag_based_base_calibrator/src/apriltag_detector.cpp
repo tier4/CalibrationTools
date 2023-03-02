@@ -31,16 +31,16 @@ namespace extrinsic_tag_based_base_calibrator
 
 std::unordered_map<std::string, ApriltagDetector::create_family_fn_type>
   ApriltagDetector::tag_create_fn_map = {
-    {"16h5", tag16h5_create},
-    {"25h9", tag25h9_create},
-    {"36h11", tag36h11_create},
+    {"tag16h5", tag16h5_create},
+    {"tag25h9", tag25h9_create},
+    {"tag36h11", tag36h11_create},
 };
 
 std::unordered_map<std::string, ApriltagDetector::destroy_family_fn_type>
   ApriltagDetector::tag_destroy_fn_map = {
-    {"16h5", tag16h5_destroy},
-    {"25h9", tag25h9_destroy},
-    {"36h11", tag36h11_destroy},
+    {"tag16h5", tag16h5_destroy},
+    {"tag25h9", tag25h9_destroy},
+    {"tahg36h11", tag36h11_destroy},
 };
 
 ApriltagDetector::ApriltagDetector(
@@ -86,7 +86,7 @@ ApriltagDetector::ApriltagDetector(
     for (const auto & id : tag_parameters.ids) {
       for (int offset = 0; offset < tag_parameters.rows * tag_parameters.cols; offset++) {
         tag_id_to_offset_map_[tag_parameters.tag_type][id + offset] = offset;
-        tag_family_and_id_to_type_map_[tag_family_name + std::to_string(id + offset)] =
+        tag_family_and_id_to_type_map_[tag_family_name + "_" + std::to_string(id + offset)] =
           tag_parameters.tag_type;
 
         if (tag_uniqueness_map[tag_parameters.family].count(id + offset) != 0) {
@@ -168,13 +168,8 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
       max_homography_error = std::max(max_homography_error, h_error);
     }
 
-    RCLCPP_INFO(
-      rclcpp::get_logger("apriltag_detector"),
-      "Detected apriltag: %d \t margin: %.2f\t hom.error=%.2f", result.id, det->decision_margin,
-      max_homography_error);
-
     if (max_homography_error > detector_parameters_.max_homography_error) {
-      RCLCPP_INFO(
+      RCLCPP_WARN(
         rclcpp::get_logger("apriltag_detector"),
         "Detection rejected due to its homography error. This may be due to its having a high "
         "out-of-plane rotation but we prefer to void them");
@@ -182,16 +177,20 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
     }
 
     std::string tag_family(det->family->name);
-    std::string tag_family_and_id = tag_family + std::to_string(result.id);
+    std::string tag_family_and_id = tag_family + "_" + std::to_string(result.id);
 
     if (tag_family_and_id_to_type_map_.count(tag_family_and_id) == 0) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("apriltag_detector"),
+        "Detected apriltag: %d \t but discarded since it is not part of the detection tags",
+        result.id);
       continue;
     }
 
     TagType tag_type = tag_family_and_id_to_type_map_.at(tag_family_and_id);
-    double tag_size = tag_sizes_map_.count(tag_type);
+    double tag_size = tag_sizes_map_.at(tag_type);
     result.size = tag_size;
-    result.computeObjectCorners();
+    result.computeTemplateCorners();
 
     if (fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0) {
       apriltag_detection_info_t detection_info;
@@ -208,12 +207,57 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
       cv::Matx33d rotation(pose.R->data);
       cv::Vec3d translation(pose.t->data);
 
+      if (std::abs(cv::determinant(rotation) - 1.0) > 1e-5) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("apriltag_detector"),
+          "Detected apriltag: %d bit dicarded due to its rotation not having unit determinant\t "
+          "det=%.2f",
+          det->id, std::abs(cv::determinant(rotation)));
+        continue;
+      }
+
       result.pose = cv::Affine3d(rotation, translation);
       result.size = tag_size;
+
+      RCLCPP_WARN(
+        rclcpp::get_logger("apriltag_detector"), "det=%.2f | det=%.2f", cv::determinant(rotation),
+        cv::determinant(result.pose.rotation()));
 
       matd_destroy(pose.R);
       matd_destroy(pose.t);
     }
+
+    cv::Point3d v_front = result.pose.rotation() * cv::Point3d(0.0, 0.0, 1.0);
+    cv::Point3d v_to_tag = cv::Point3d(
+      result.pose.translation()(0), result.pose.translation()(1), result.pose.translation()(2));
+    v_to_tag = v_to_tag / cv::norm(v_to_tag);
+    double rotation_angle = (180.0 / CV_PI) * std::acos(v_front.dot(v_to_tag));
+
+    result.computeObjectCorners();
+    double reproj_error = result.computeReprojError(cx_, cy_, fx_, fy_);
+
+    if (reproj_error > detector_parameters_.max_reproj_error) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("apriltag_detector"),
+        "Detected apriltag: %d bit dicarded due to its reprojection error\t margin: %.2f\t "
+        "hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
+        result.id, det->decision_margin, max_homography_error, reproj_error, rotation_angle);
+      continue;
+    }
+
+    if (rotation_angle > detector_parameters_.max_out_of_plane_angle) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("apriltag_detector"),
+        "Detected apriltag: %d bit dicarded due to its out-of-plane angle\t margin: %.2f\t "
+        "hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
+        result.id, det->decision_margin, max_homography_error, reproj_error, rotation_angle);
+      continue;
+    }
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("apriltag_detector"),
+      "Detected apriltag: %d \t margin: %.2f\t hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
+      result.id, det->decision_margin, max_homography_error, reproj_error, rotation_angle);
 
     individual_detections_map[tag_type].emplace_back(result);
   }
@@ -246,7 +290,7 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
 
       ApriltagGridDetection grid_detection;
       grid_detection.rows = rows;
-      grid_detection.rows = cols;
+      grid_detection.cols = cols;
       grid_detection.size = size;
       grid_detection.id = grouped_detections_it.first;
       grid_detection.family = tag_parameters.family;

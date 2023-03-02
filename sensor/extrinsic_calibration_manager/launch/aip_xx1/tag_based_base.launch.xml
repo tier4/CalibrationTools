@@ -88,9 +88,9 @@
   <!-- base -> sensor_kit: extrinsic_calibration_manager -->
   <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="base_to_sensor_kit_extrinsic_calibration_manager" output="screen">
     <remap from="extrinsic_calibration_manager" to="base_to_sensor_kit_extrinsic_calibration_manager"/>
-    <param name="parent_frame" value="base_link"/>
+    <param name="parent_frame" value="$(var base_frame)"/>
     <param name="child_frames" value="
-    [sensor_kit_base_link]"/>
+    [$(var sensor_kit_frame)]"/>
   </node>
 
   <!-- base-lidar calibrator -->
@@ -99,16 +99,18 @@
 
     <arg name="lidar_sensor_kit_frames" value="[$(var sensor_kit_frame)]"/>
     <arg name="calibration_lidar_parent_frames" value="[$(var lidar_base_frame)]"/>
+    <arg name="lidar_calibration_service_names" value="['$(var base_frame)/$(var sensor_kit_frame)']"/>
 
     <arg name="camera_sensor_kit_frames" value="['']"/>
     <arg name="calibration_camera_parent_frames" value="['']"/>
+    <arg name="camera_calibration_service_names" value="['']"/>
 
     <arg name="main_calibration_sensor_frame" value="$(var lidar_frame)"/>
     <arg name="calibration_lidar_frames" value="[$(var lidar_frame)]"/>
     <arg name="calibration_camera_frames" value="['']"/>
 
     <!-- Topic configuration -->
-    <arg name="calibration_lidar_detections_topics" value="['dummy_topic_detection_asasdd']"/>
+    <arg name="calibration_lidar_detections_topics" value="['/lidartag/filtered/detections_array']"/>
     <arg name="calibration_image_detections_topics" value="['']"/>
     <arg name="calibration_camera_info_topics" value="['']"/>
 
@@ -126,7 +128,7 @@
 
     <!-- Optimization configuration -->
     <arg name="ba_optimize_intrinsics" value="true"/>
-    <arg name="ba_share_intrinsics" value="true"/>
+    <arg name="ba_share_intrinsics" value="false"/>
     <arg name="ba_force_shared_ground_plane" value="true"/>
   </include>
 

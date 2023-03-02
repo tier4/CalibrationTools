@@ -68,19 +68,29 @@ LidartagDetection LidartagDetection::fromLidartagDetectionMsg(
   cv::eigen2cv(translation_eigen, translation_cv);
   cv::eigen2cv(rotation_eigen, rotation_cv);
 
+  detection.computeTemplateCorners();
   detection.pose = cv::Affine3d(rotation_cv, translation_cv);
   detection.computeObjectCorners();
 
   return detection;
 }
 
-void LidartagDetection::computeObjectCorners()
+void LidartagDetection::computeTemplateCorners()
 {
   assert(size > 0.0);
   double hsize = 0.5 * size;
 
   template_corners = {
     {-hsize, hsize, 0.0}, {hsize, hsize, 0.0}, {hsize, -hsize, 0.0}, {-hsize, -hsize, 0.0}};
+}
+
+void LidartagDetection::computeObjectCorners()
+{
+  object_corners.resize(4);
+  for (std::size_t corner_index = 0; corner_index < template_corners.size(); corner_index++) {
+    cv::Point3d p = pose * template_corners[corner_index];
+    object_corners[corner_index] = p;  // cv::Point3d(p(0), p(1), p(2));
+  }
 }
 
 ApriltagDetection ApriltagDetection::fromApriltagDetectionMsg(
@@ -116,8 +126,6 @@ double ApriltagDetection::computePose(const IntrinsicParameters & intrinsics)
   std::vector<cv::Mat> rvecs_;
   std::vector<cv::Mat> tvecs_;
 
-  ////
-
   std::vector<cv::Point2d> undistorted_points;
 
   cv::undistortPoints(
@@ -143,11 +151,33 @@ double ApriltagDetection::computePose(const IntrinsicParameters & intrinsics)
   cv::Rodrigues(rvec, rotation_matrix);
 
   pose = cv::Affine3d(rvec, tvec);
+  computeObjectCorners();
+}
 
-  for (cv::Point3d & template_corner : template_corners) {
-    cv::Matx31d p = rotation_matrix * cv::Matx31d(template_corner) + translation_vector;
-    object_corners.push_back(cv::Point3d(p(0), p(1), p(2)));
+double ApriltagDetection::computeReprojError(const IntrinsicParameters & intrinsics) const
+{
+  return computeReprojError(
+    intrinsics.undistorted_camera_matrix(0, 2), intrinsics.undistorted_camera_matrix(1, 2),
+    intrinsics.undistorted_camera_matrix(0, 0), intrinsics.undistorted_camera_matrix(1, 1));
+}
+
+double ApriltagDetection::computeReprojError(double cx, double cy, double fx, double fy) const
+{
+  assert(template_corners.size() == 4);
+  assert(image_corners.size() == 4);
+
+  double error = 0;
+  for (int corner_index = 0; corner_index < 4; corner_index++) {
+    const auto & object_corner = object_corners[corner_index];
+    const auto & image_corner = image_corners[corner_index];
+    double prx = cx + fx * (object_corner.x / object_corner.z);
+    double pry = cy + fy * (object_corner.y / object_corner.z);
+    double errx = std::abs(prx - image_corner.x);
+    double erry = std::abs(pry - image_corner.y);
+    error += std::sqrt(errx * errx + erry * erry);
   }
+
+  return 0.25 * error;
 }
 
 double ApriltagGridDetection::recomputeFromSubDetections(const TagParameters & tag_parameters)

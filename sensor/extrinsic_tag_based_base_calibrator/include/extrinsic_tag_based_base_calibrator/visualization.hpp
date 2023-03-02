@@ -115,14 +115,22 @@ void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scala
 /*!
  * Draws the detections in an image
  * @param[inout] img the image to draw on
- * @param[in] center the center of the axes
- * @param[in] px the point in the x direction
- * @param[in] py the point in the y direction
- * @param[in] pz the point in the z direction
+ * @param[in] detection the detectin to draw
+ * @param[in] camera_to_tag_pose pose from the camera to the tag
+ * @param[in] intrinsics the array containing the intrinsics
  */
 void drawAxes(
-  cv::Mat & img, const ApriltagDetection & detection, const cv::Point2d & center,
-  const cv::Point2d & px, const cv::Point2d & py, const cv::Point2d & pz);
+  cv::Mat & img, const ApriltagDetection & detection, const cv::Affine3d & camera_to_tag_pose,
+  const std::array<double, 6> & intrinsics);
+
+/*!
+ * Draws the detections in an image
+ * @param[inout] img the image to draw on
+ * @param[in] detection the detection to draw
+ * @param[in] intrinsics the camera intrinsics
+ */
+void drawAxes(
+  cv::Mat & img, const ApriltagDetection & detection, const IntrinsicParameters & intrinsics);
 
 }  // namespace extrinsic_tag_based_base_calibrator
 

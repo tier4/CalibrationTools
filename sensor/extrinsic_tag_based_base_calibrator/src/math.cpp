@@ -23,6 +23,7 @@
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <iostream>
 #include <limits>
@@ -222,28 +223,131 @@ cv::Point2d projectPoint(
   return cv::Point2d(cx + fx * d * xp, cy + fy * d * yp);
 }
 
-void estimateInitialPosesAux(
-  const UID uid, std::unordered_set<UID> traversed_uids, cv::Affine3d current_pose, int depth,
-  std::unordered_map<UID, std::vector<cv::Affine3d>> & raw_poses_map, CalibrationData & data,
-  const int max_depth)
+cv::Point2d projectPoint(const cv::Vec3d & p, const std::array<double, 6> & intrinsics)
 {
-  raw_poses_map[uid].push_back(current_pose);
-  traversed_uids.insert(uid);
+  double cx = intrinsics[CalibrationData::INTRINSICS_CX_INDEX];
+  double cy = intrinsics[CalibrationData::INTRINSICS_CY_INDEX];
+  double fx = intrinsics[CalibrationData::INTRINSICS_FX_INDEX];
+  double fy = intrinsics[CalibrationData::INTRINSICS_FY_INDEX];
+  double k1 = intrinsics[CalibrationData::INTRINSICS_K1_INDEX];
+  double k2 = intrinsics[CalibrationData::INTRINSICS_K2_INDEX];
 
-  if (++depth > max_depth) {
-    return;
-  }
+  return projectPoint(p, fx, fy, cx, cy, k1, k2);
+}
 
-  for (const UID & next_uid : data.uid_connections_map[uid]) {
-    if (traversed_uids.count(next_uid) > 0) {
-      continue;
+cv::Affine3d estimateInitialPosesFilterOutliers(
+  UID uid, const std::vector<std::pair<UID, cv::Affine3d>> & parent_uid_and_poses,
+  std::set<std::pair<UID, UID>> & outliers, double threshold = 1.0)
+{
+  std::vector<std::pair<UID, cv::Affine3d>> best_model_inliers;
+  std::set<UID> best_model_outliers;
+
+  auto is_consensus = [&threshold](const cv::Affine3d & pose1, const cv::Affine3d & pose2) -> bool {
+    bool rotation_consensus =
+      std::acos(std::min(1.0, 0.5 * (cv::trace(pose2.rotation().inv() * pose1.rotation()) - 1.0))) <
+      CV_PI / 4;
+    return cv::norm(pose1.translation() - pose2.translation()) < threshold && rotation_consensus;
+  };
+
+  for (const auto & [model_parent_uid, iteration_model_pose] : parent_uid_and_poses) {
+    std::set<UID> iteration_outlier_uids;
+    std::vector<std::pair<UID, cv::Affine3d>> iteration_inlier_poses;
+
+    for (const auto & [parent_uid, iteration_pose] : parent_uid_and_poses) {
+      if (is_consensus(iteration_model_pose, iteration_pose)) {
+        iteration_inlier_poses.push_back(std::make_pair(parent_uid, iteration_pose));
+      } else {
+        iteration_outlier_uids.insert(parent_uid);
+      }
     }
 
-    const cv::Affine3d rel_pose = data.detections_relative_poses_map[std::make_pair(uid, next_uid)];
-    const cv::Affine3d next_pose = current_pose * rel_pose;
+    if (iteration_inlier_poses.size() > best_model_inliers.size()) {
+      best_model_inliers = iteration_inlier_poses;
+      best_model_outliers = iteration_outlier_uids;
+    }
 
-    estimateInitialPosesAux(
-      next_uid, traversed_uids, next_pose, depth, raw_poses_map, data, max_depth);
+    if (iteration_inlier_poses.size() == parent_uid_and_poses.size()) {
+      break;
+    }
+  }
+
+  // Update the overall outliers
+  for (const auto outlier_uid : best_model_outliers) {
+    outliers.insert(std::make_pair(outlier_uid, uid));
+    outliers.insert(std::make_pair(uid, outlier_uid));
+    RCLCPP_WARN(
+      rclcpp::get_logger("pose_estimation"), "\tThe pair %s <-> %s was deemed to be an outlier",
+      uid.toString().c_str(), outlier_uid.toString().c_str());
+  }
+
+  // Estimate the average pose
+  Eigen::Vector3d avg_translation = Eigen::Vector3d::Zero();
+  std::vector<Eigen::Vector4d> quats;
+
+  for (auto & [parent_uid, pose] : best_model_inliers) {
+    Eigen::Vector3d translation;
+    Eigen::Matrix3d rotation;
+    cv::cv2eigen(pose.translation(), translation);
+    cv::cv2eigen(pose.rotation(), rotation);
+    Eigen::Quaterniond quat(rotation);
+    quats.emplace_back(quat.w(), quat.x(), quat.y(), quat.z());
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("pose_estimation"),
+      "\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f] parent_uid=[%s]",
+      translation.x(), translation.y(), translation.z(), quat.x(), quat.y(), quat.z(), quat.w(),
+      parent_uid.toString().c_str());
+
+    avg_translation += translation;
+  }
+
+  avg_translation /= best_model_inliers.size();
+  Eigen::Vector4d avg_quat = quaternionAverage(quats);
+
+  Eigen::Matrix3d avg_rotation =
+    Eigen::Quaterniond(avg_quat(0), avg_quat(1), avg_quat(2), avg_quat(3)).toRotationMatrix();
+
+  cv::Vec3d avg_pose_translation;
+  cv::Matx33d avg_pose_rotation;
+  cv::eigen2cv(avg_translation, avg_pose_translation);
+  cv::eigen2cv(avg_rotation, avg_pose_rotation);
+
+  return cv::Affine3d(avg_pose_rotation, avg_pose_translation);
+}
+
+void estimateInitialPosesAveragePoses(
+  CalibrationData & data, UID & left_wheel_uid, UID & right_wheel_uid,
+  std::map<UID, cv::Affine3d> & estimated_poses,
+  const std::map<UID, std::vector<std::pair<UID, cv::Affine3d>>> & raw_poses_map)
+{
+  for (const auto & [uid, parent_uid_and_pose_pair] : raw_poses_map) {
+    assert(parent_uid_and_pose_pair.size() > 0);
+
+    auto initial_pose =
+      estimateInitialPosesFilterOutliers(uid, parent_uid_and_pose_pair, data.invalid_pairs_set);
+    auto initial_pose_ptr = std::make_shared<cv::Affine3d>(initial_pose);
+
+    if (uid.tag_type != TagType::Unknown) {
+      data.initial_tag_poses_map[uid] = initial_pose_ptr;
+      estimated_poses[uid] = initial_pose;
+    } else if (uid.sensor_type != SensorType::Unknown) {
+      data.initial_sensor_poses_map[uid] = initial_pose_ptr;
+      estimated_poses[uid] = initial_pose;
+    } else {
+      throw std::domain_error("Invalid UID");
+    }
+
+    if (uid.tag_type == TagType::GroundTag) {
+      data.initial_ground_tag_poses_map[uid] = initial_pose_ptr;
+    }
+
+    if (uid == left_wheel_uid) {
+      data.initial_left_wheel_tag_pose = initial_pose_ptr;
+    }
+
+    if (uid == right_wheel_uid) {
+      data.initial_right_wheel_tag_pose = initial_pose_ptr;
+    }
   }
 }
 
@@ -251,62 +355,42 @@ void estimateInitialPoses(
   CalibrationData & data, const UID & main_sensor_uid, UID & left_wheel_uid, UID & right_wheel_uid,
   int max_depth)
 {
-  std::unordered_map<UID, std::vector<cv::Affine3d>> raw_poses_map;
+  std::map<UID, cv::Affine3d> estimated_poses;
+  std::set<UID> iteration_uids;
 
-  cv::Affine3d identity = cv::Affine3d::Identity();
-  estimateInitialPosesAux(
-    main_sensor_uid, std::unordered_set<UID>(), identity, 0, raw_poses_map, data, max_depth);
+  {
+    std::map<UID, std::vector<std::pair<UID, cv::Affine3d>>> raw_poses_map;
+    raw_poses_map[main_sensor_uid].push_back(
+      std::make_pair(main_sensor_uid, cv::Affine3d::Identity()));
+    estimateInitialPosesAveragePoses(
+      data, left_wheel_uid, right_wheel_uid, estimated_poses, raw_poses_map);
+  }
 
-  for (const auto & it : raw_poses_map) {
-    const UID & uid = it.first;
-    const std::vector<cv::Affine3d> & poses = it.second;
+  iteration_uids.insert(main_sensor_uid);
 
-    Eigen::Vector3d avg_translation = Eigen::Vector3d::Zero();
-    std::vector<Eigen::Vector4d> quats;
+  for (int iteration_max_depth = 0; iteration_max_depth <= max_depth; iteration_max_depth++) {
+    std::map<UID, std::vector<std::pair<UID, cv::Affine3d>>> raw_poses_map;
+    std::set<UID> next_iteration_uids;
 
-    for (auto & pose : poses) {
-      Eigen::Vector3d translation;
-      Eigen::Matrix3d rotation;
-      cv::cv2eigen(pose.translation(), translation);
-      cv::cv2eigen(pose.rotation(), rotation);
-      Eigen::Quaterniond quat(rotation);
-      quats.emplace_back(quat.w(), quat.x(), quat.y(), quat.z());
+    for (const auto & uid : iteration_uids) {
+      for (const UID & next_uid : data.uid_connections_map[uid]) {
+        if (
+          estimated_poses.count(next_uid) > 0 ||
+          data.invalid_pairs_set.count(std::make_pair(uid, next_uid)) > 0) {
+          continue;
+        }
 
-      avg_translation += translation;
+        const cv::Affine3d rel_pose =
+          data.detections_relative_poses_map[std::make_pair(uid, next_uid)];
+        const cv::Affine3d next_pose = estimated_poses.at(uid) * rel_pose;
+        raw_poses_map[next_uid].push_back(std::make_pair(uid, next_pose));
+        next_iteration_uids.insert(next_uid);
+      }
     }
 
-    avg_translation /= poses.size();
-    Eigen::Vector4d avg_quat = quaternionAverage(quats);
-
-    Eigen::Matrix3d avg_rotation =
-      Eigen::Quaterniond(avg_quat(0), avg_quat(1), avg_quat(2), avg_quat(3)).toRotationMatrix();
-
-    cv::Vec3d avg_pose_translation;
-    cv::Matx33d avg_pose_rotation;
-    cv::eigen2cv(avg_translation, avg_pose_translation);
-    cv::eigen2cv(avg_rotation, avg_pose_rotation);
-
-    auto initial_pose = std::make_shared<cv::Affine3d>(avg_pose_rotation, avg_pose_translation);
-
-    if (uid.tag_type != TagType::Unknown) {
-      data.initial_tag_poses_map[uid] = initial_pose;
-    } else if (uid.sensor_type != SensorType::Unknown) {
-      data.initial_sensor_poses_map[uid] = initial_pose;
-    } else {
-      throw std::domain_error("Invalid UID");
-    }
-
-    if (uid.tag_type == TagType::GroundTag) {
-      data.initial_ground_tag_poses_map[uid] = initial_pose;
-    }
-
-    if (uid == left_wheel_uid) {
-      data.initial_left_wheel_tag_pose = initial_pose;
-    }
-
-    if (uid == right_wheel_uid) {
-      data.initial_right_wheel_tag_pose = initial_pose;
-    }
+    estimateInitialPosesAveragePoses(
+      data, left_wheel_uid, right_wheel_uid, estimated_poses, raw_poses_map);
+    iteration_uids = next_iteration_uids;
   }
 
   data.optimized_camera_intrinsics_map = data.initial_camera_intrinsics_map;

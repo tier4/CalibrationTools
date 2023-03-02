@@ -31,8 +31,9 @@ namespace extrinsic_tag_based_base_calibrator
 
 struct ApriltagDetectorParameters
 {
-  // std::vector<std::string> families; moved out TODOKL remove
   int max_hamming;
+  double max_out_of_plane_angle;
+  double max_reproj_error;
   double min_margin;
   double max_homography_error;
   double quad_decimate;
@@ -128,9 +129,9 @@ struct UID
   std::string toString() const
   {
     if (sensor_type == SensorType::CalibrationCamera) {
-      return "c" + std::to_string(frame_id);
+      return "c" + std::to_string(calibration_sensor_id);
     } else if (sensor_type == SensorType::CalibrationLidar) {
-      return "l" + std::to_string(frame_id);
+      return "l" + std::to_string(calibration_sensor_id);
     } else if (sensor_type == SensorType::ExternalCamera) {
       return "s" + std::to_string(scene_id) + "_e" + std::to_string(frame_id);
     } else if (tag_type == TagType::WaypointTag) {
@@ -146,7 +147,9 @@ struct UID
 
   bool isValid() const
   {
-    if (sensor_type == SensorType::Unknown || tag_type == TagType::Unknown) {
+    if (sensor_type != SensorType::Unknown && tag_type != TagType::Unknown) {
+      return false;
+    } else if (sensor_type == SensorType::Unknown && tag_type == TagType::Unknown) {
       return false;
     } else if (
       (sensor_type == SensorType::CalibrationCamera ||
@@ -190,38 +193,24 @@ struct UID
     return uid;
   }
 
-  static UID makeSensorUID(SensorType sensor_type, int frame_id)
+  static UID makeSensorUID(SensorType sensor_type, int calibration_sensor_id)
   {
     assert(sensor_type != SensorType::ExternalCamera);
 
     UID uid;
     uid.type = SensorUID;
     uid.sensor_type = sensor_type;
-    uid.frame_id = frame_id;
+    uid.calibration_sensor_id = calibration_sensor_id;
 
     return uid;
   }
 
   static UID makeTagUID(TagType tag_type, int scene_id, int tag_id)
   {
-    assert(tag_type == TagType::WaypointTag);
-
     UID uid;
     uid.type = TagUID;
     uid.tag_type = tag_type;
     uid.scene_id = scene_id;
-    uid.tag_id = tag_id;
-
-    return uid;
-  }
-
-  static UID makeTagUID(TagType tag_type, int tag_id)
-  {
-    assert(tag_type != TagType::WaypointTag);
-
-    UID uid;
-    uid.type = TagUID;
-    uid.tag_type = tag_type;
     uid.tag_id = tag_id;
 
     return uid;

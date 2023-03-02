@@ -7,9 +7,11 @@
 
   <arg name="lidar_sensor_kit_frames"/>
   <arg name="calibration_lidar_parent_frames"/>
+  <arg name="lidar_calibration_service_names"/>
 
   <arg name="camera_sensor_kit_frames"/>
   <arg name="calibration_camera_parent_frames"/>
+  <arg name="camera_calibration_service_names"/>
 
   <arg name="main_calibration_sensor_frame"/>
   <arg name="calibration_lidar_frames"/>
@@ -23,24 +25,24 @@
   <!-- Tag configuration-->
   <arg name="lidartag_to_apriltag_scale" default="0.75"/>
 
-  <arg name="waypoint_tag_family" default="16h5"/>
+  <arg name="waypoint_tag_family" default="tag16h5"/>
   <arg name="waypoint_tag_rows" default="1"/>
   <arg name="waypoint_tag_cols" default="1"/>
-  <arg name="waypoint_tag_size" default="0.8"/>
+  <arg name="waypoint_tag_size" default="0.6"/>
   <arg name="waypoint_tag_spacing" default="0.2"/>
   <arg name="waypoint_tag_ids"/>
 
-  <arg name="ground_tag_family" default="16h5"/>
+  <arg name="ground_tag_family" default="tag16h5"/>
   <arg name="ground_tag_rows" default="1"/>
   <arg name="ground_tag_cols" default="1"/>
-  <arg name="ground_tag_size" default="0.8"/>
+  <arg name="ground_tag_size" default="0.163"/>
   <arg name="ground_tag_spacing" default="0.2"/>
   <arg name="ground_tag_ids"/>
 
-  <arg name="wheel_tag_family" default="16h5"/>
+  <arg name="wheel_tag_family" default="tag16h5"/>
   <arg name="wheel_tag_rows" default="1"/>
   <arg name="wheel_tag_cols" default="1"/>
-  <arg name="wheel_tag_size" default="0.8"/>
+  <arg name="wheel_tag_size" default="0.6"/>
   <arg name="wheel_tag_spacing" default="0.2"/>
   <arg name="left_wheel_tag_id"/>
   <arg name="right_wheel_tag_id"/>
@@ -51,7 +53,7 @@
   <arg name="initial_intrinsic_calibration_radial_distortion_coeffs" default="2"/>
   <arg name="initial_intrinsic_calibration_debug" default="true"/>
 
-  <arg name="initial_intrinsic_calibration_tag_family" default="16h5"/>
+  <arg name="initial_intrinsic_calibration_tag_family" default="tag16h5"/>
   <arg name="initial_intrinsic_calibration_tag_rows" default="1"/>
   <arg name="initial_intrinsic_calibration_tag_cols" default="1"/>
   <arg name="initial_intrinsic_calibration_tag_size" default="0.6"/>
@@ -68,7 +70,9 @@
 
   <!-- Apriltag detector configuration -->
   <arg name="apriltag_max_hamming" default="0"/>
-  <arg name="apriltag_min_margin" default="20.0"/>
+  <arg name="apriltag_min_margin" default="50.0"/>
+  <arg name="apriltag_max_out_of_plane_angle" default="90.0"/>
+  <arg name="apriltag_max_reproj_error" default="10.0"/>
   <arg name="apriltag_max_homography_error" default="0.5"/>
   <arg name="apriltag_quad_decimate" default="1.0"/>
   <arg name="apriltag_quad_sigma" default="0.0"/>
@@ -84,9 +88,11 @@
 
       <param name="lidar_sensor_kit_frames" value="$(var lidar_sensor_kit_frames)"/>
       <param name="calibration_lidar_parent_frames" value="$(var calibration_lidar_parent_frames)"/>
+      <param name="lidar_calibration_service_names" value="$(var lidar_calibration_service_names)"/>
 
       <param name="camera_sensor_kit_frames" value="$(var camera_sensor_kit_frames)"/>
       <param name="calibration_camera_parent_frames" value="$(var calibration_camera_parent_frames)"/>
+      <param name="camera_calibration_service_names" value="$(var camera_calibration_service_names)"/>
 
       <param name="main_calibration_sensor_frame" value="$(var main_calibration_sensor_frame)"/>
       <param name="calibration_lidar_frames" value="$(var calibration_lidar_frames)"/>

@@ -26,6 +26,7 @@
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/split_free.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/version.hpp>
 
@@ -33,6 +34,7 @@
 #include <vector>
 
 BOOST_SERIALIZATION_SPLIT_FREE(cv::Mat)
+BOOST_SERIALIZATION_SPLIT_FREE(cv::Mat_<double>)
 
 namespace boost
 {
@@ -71,6 +73,46 @@ void load(Archive & ar, cv::Mat & m, const unsigned int version)
 
   size_t data_size = m.cols * m.rows * elem_size;
   ar & make_array(m.ptr(), data_size);
+}
+
+template <class Archive, typename _Tp>
+void save(Archive & ar, const cv::Mat_<_Tp> & m, const unsigned int version)
+{
+  (void)version;
+  size_t elem_size = m.elemSize();
+
+  ar & m.cols;
+  ar & m.rows;
+  ar & elem_size;
+
+  const size_t data_size = m.cols * m.rows * elem_size;
+  ar & make_array(m.ptr(), data_size);
+}
+
+template <class Archive, typename _Tp>
+void load(Archive & ar, cv::Mat_<_Tp> & m, const unsigned int version)
+{
+  (void)version;
+  int cols, rows;
+  size_t elem_size;
+
+  ar & cols;
+  ar & rows;
+  ar & elem_size;
+
+  m.create(rows, cols);
+
+  size_t data_size = m.cols * m.rows * elem_size;
+  ar & make_array(m.ptr(), data_size);
+}
+
+template <class Archive, typename _Tp>
+inline void serialize(Archive & ar, cv::Size_<_Tp> & size, const unsigned int version)
+{
+  (void)version;
+
+  ar & size.height;
+  ar & size.width;
 }
 
 template <class Archive, typename _Tp>
@@ -216,11 +258,28 @@ void serialize(
 
 template <class Archive>
 void serialize(
+  Archive & ar, extrinsic_tag_based_base_calibrator::IntrinsicParameters & intrinsics,
+  const unsigned int version)
+{
+  (void)version;
+  ar & intrinsics.size;
+  ar & intrinsics.camera_matrix;
+  ar & intrinsics.dist_coeffs;
+  ar & intrinsics.undistorted_camera_matrix;
+}
+
+template <class Archive>
+void serialize(
   Archive & ar, extrinsic_tag_based_base_calibrator::CalibrationData & data,
   const unsigned int version)
 {
   (void)version;
   ar & data.scenes;
+  ar & data.main_calibration_sensor_uid;
+  ar & data.uid_connections_map;
+  ar & data.detections_relative_poses_map;
+  ar & data.calibration_camera_intrinsics_map_;
+
   ar & data.initial_sensor_poses_map;
   ar & data.initial_camera_intrinsics_map;
   ar & data.initial_tag_poses_map;

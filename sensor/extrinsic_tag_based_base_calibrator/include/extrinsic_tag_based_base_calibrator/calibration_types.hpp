@@ -22,6 +22,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -63,6 +64,7 @@ struct CalibrationData
   UID main_calibration_sensor_uid;
   std::unordered_map<UID, std::vector<UID>> uid_connections_map;
   std::map<std::pair<UID, UID>, cv::Affine3d> detections_relative_poses_map;
+  std::set<std::pair<UID, UID>> invalid_pairs_set;
 
   std::map<UID, IntrinsicParameters> calibration_camera_intrinsics_map_;
 

@@ -42,7 +42,9 @@ struct LidarResidual : public SensorResidual
     detection_(detection),
     fix_lidar_pose_(fix_lidar_pose)
   {
-    (void)fixed_lidar_pose_inv;
+    fixed_lidar_rotation_inv_ = Eigen::Map<const Vector4<double>>(fixed_lidar_pose_inv.data());
+    fixed_lidar_translation_inv_ =
+      Eigen::Map<const Vector3<double>>(&fixed_lidar_pose_inv[TRANSLATION_X_INDEX]);
 
     // Instead of relying on the lidar coordinate system, we make a new one
     // based on the same origin but pointing towards the detection
@@ -74,16 +76,19 @@ struct LidarResidual : public SensorResidual
     x_hat = (x_hat - x_hat.dot(z_hat) * z_hat).normalized();
 
     Eigen::Vector3d y_hat = z_hat.cross(x_hat);
+    assert(std::abs(1.0 - y_hat.norm()) < 1e-5);
 
-    Eigen::Matrix3d aux_rotation;
+    assert(std::abs(x_hat.dot(y_hat)) < 1e-5);
+    assert(std::abs(x_hat.dot(z_hat)) < 1e-5);
+
     tag_centric_rotation_.row(0) = x_hat;
     tag_centric_rotation_.row(1) = y_hat;
     tag_centric_rotation_.row(2) = z_hat;
 
     Eigen::Vector3d center = vec_to_eigen(detection.pose.translation());
-    Eigen::Vector3d rotated_center = aux_rotation * center;
-    assert(std::abs(rotated_center.x()) < 1e5);
-    assert(std::abs(rotated_center.y()) < 1e5);
+    Eigen::Vector3d rotated_center = tag_centric_rotation_ * center;
+    assert(std::abs(rotated_center.x()) < 1e-5);
+    assert(std::abs(rotated_center.y()) < 1e-5);
 
     assert(static_cast<int>(detection.object_corners.size()) == NUM_CORNERS);
     for (std::size_t corner_index = 0; corner_index < detection.object_corners.size();
@@ -123,10 +128,6 @@ struct LidarResidual : public SensorResidual
     Vector3<T> corners_wcs[NUM_CORNERS];
     Vector3<T> corners_lcs[NUM_CORNERS];
     Vector3<T> corners_lrcs[NUM_CORNERS];
-
-    const Eigen::Map<const Vector4<T>> lidar_rotation_inv_map(lidar_pose_inv);
-    const Eigen::Map<const Vector3<T>> lidar_translation_inv_map(
-      &lidar_pose_inv[TRANSLATION_X_INDEX]);
 
     auto transform_corners =
       [](auto & quaternion, auto & translation, auto & input_corners, auto & output_corners) {
@@ -171,6 +172,10 @@ struct LidarResidual : public SensorResidual
         fixed_lidar_rotation_inv_quaternion, fixed_lidar_translation_inv_map, corners_wcs,
         corners_lcs);
     } else {
+      const Eigen::Map<const Vector4<T>> lidar_rotation_inv_map(lidar_pose_inv);
+      const Eigen::Map<const Vector3<T>> lidar_translation_inv_map(
+        &lidar_pose_inv[TRANSLATION_X_INDEX]);
+
       Eigen::Quaternion<T> lidar_rotation_inv_quaternion = {
         lidar_rotation_inv_map(ROTATION_W_INDEX), lidar_rotation_inv_map(ROTATION_X_INDEX),
         lidar_rotation_inv_map(ROTATION_Y_INDEX), lidar_rotation_inv_map(ROTATION_Z_INDEX)};

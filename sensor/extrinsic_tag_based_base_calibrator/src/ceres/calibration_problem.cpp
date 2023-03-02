@@ -60,6 +60,12 @@ void CalibrationProblem::setCalibrationLidarIntrinsics(double calibration_lidar_
   calibration_lidar_intrinsics_ = calibration_lidar_virtual_f;
 }
 
+void CalibrationProblem::setWheelTagUIDs(UID left_wheel_tag_uid, UID right_wheel_tag_uid)
+{
+  left_wheel_tag_uid_ = left_wheel_tag_uid;
+  right_wheel_tag_uid_ = right_wheel_tag_uid;
+}
+
 void CalibrationProblem::setData(CalibrationData::Ptr & data) { data_ = data; }
 
 void CalibrationProblem::dataToPlaceholders()
@@ -199,12 +205,24 @@ void CalibrationProblem::evaluate()
           for (const auto & detection : grid_detection.sub_detections) {
             std::array<double, RESIDUAL_DIM> residuals;
 
+            if (
+              pose_opt_map.count(calibration_camera_uid) == 0 ||
+              pose_opt_map.count(detection_uid) == 0 ||
+              data_->invalid_pairs_set.count(
+                std::make_pair(calibration_camera_uid, detection_uid)) > 0) {
+              RCLCPP_ERROR(
+                rclcpp::get_logger("calibration_problem"),
+                "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
+                calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+              continue;
+            }
+
             auto f = CameraResidual(
               calibration_camera_uid,
               data_->calibration_camera_intrinsics_map_[calibration_camera_uid], detection,
-              pose_opt_map[calibration_camera_uid], false, false, false);
+              pose_opt_map.at(calibration_camera_uid), false, false, false);
 
-            f(pose_opt_map[detection_uid].data(), residuals.data());
+            f(pose_opt_map.at(detection_uid).data(), residuals.data());
 
             sum_res = std::transform_reduce(
               residuals.begin(), residuals.end(), sum_res, std::plus{},
@@ -232,11 +250,23 @@ void CalibrationProblem::evaluate()
 
         std::array<double, RESIDUAL_DIM> residuals;
 
+        if (
+          pose_opt_map.count(calibration_lidar_uid) == 0 ||
+          pose_opt_map.count(detection_uid) == 0 ||
+          data_->invalid_pairs_set.count(std::make_pair(calibration_lidar_uid, detection_uid)) >
+            0) {
+          RCLCPP_ERROR(
+            rclcpp::get_logger("calibration_problem"),
+            "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
+            calibration_lidar_uid.toString().c_str(), detection_uid.toString().c_str());
+          continue;
+        }
+
         auto f = LidarResidual(
           calibration_lidar_uid, calibration_lidar_intrinsics_, detection,
-          pose_opt_map[calibration_lidar_uid], false);
+          pose_opt_map.at(calibration_lidar_uid), false);
 
-        f(pose_opt_map[calibration_lidar_uid].data(), pose_opt_map[detection_uid].data(),
+        f(pose_opt_map.at(calibration_lidar_uid).data(), pose_opt_map.at(detection_uid).data(),
           residuals.data());
 
         double sum_res = std::transform_reduce(
@@ -264,6 +294,19 @@ void CalibrationProblem::evaluate()
           const int tag_id = grid_detection.id;
           UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
+          if (
+            pose_opt_map.count(external_camera_uid) == 0 ||
+            (pose_opt_map.count(detection_uid) == 0 &&
+             indep_ground_tag_pose_opt_map.count(detection_uid) == 0) ||
+            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) >
+              0) {
+            RCLCPP_ERROR(
+              rclcpp::get_logger("calibration_problem"),
+              "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
+              external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+            continue;
+          }
+
           double sum_res = 0.0;
           const int res_size = RESIDUAL_DIM * grid_detection.cols * grid_detection.rows;
 
@@ -274,7 +317,7 @@ void CalibrationProblem::evaluate()
               detection_uid.tag_type == TagType::WaypointTag ||
               detection_uid.tag_type == TagType::WheelTag ||
               (detection_uid.tag_type == TagType::GroundTag && !force_shared_ground_plane_)) {
-              double * external_camera_pose_op = pose_opt_map[external_camera_uid].data();
+              double * external_camera_pose_op = pose_opt_map.at(external_camera_uid).data();
               double * external_camera_intrinsics_op =
                 share_intrinsics_ ? shared_intrinsics_opt.data()
                                   : intrinsics_opt_map[external_camera_uid].data();
@@ -282,30 +325,31 @@ void CalibrationProblem::evaluate()
               if (optimize_intrinsics_) {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map[external_camera_uid], false, true, false);
+                  pose_opt_map.at(external_camera_uid), false, true, false);
 
                 f(external_camera_pose_op, external_camera_intrinsics_op,
-                  pose_opt_map[detection_uid].data(), residuals.data());
+                  pose_opt_map.at(detection_uid).data(), residuals.data());
 
               } else {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map[external_camera_uid], false, false, false);
+                  pose_opt_map.at(external_camera_uid), false, false, false);
 
-                f(external_camera_pose_op, pose_opt_map[detection_uid].data(), residuals.data());
+                f(external_camera_pose_op, pose_opt_map.at(detection_uid).data(), residuals.data());
               }
             } else if (detection_uid.tag_type == TagType::GroundTag && force_shared_ground_plane_) {
-              double * external_camera_pose_op = pose_opt_map[external_camera_uid].data();
+              double * external_camera_pose_op = pose_opt_map.at(external_camera_uid).data();
               double * external_camera_intrinsics_op =
                 share_intrinsics_ ? shared_intrinsics_opt.data()
                                   : intrinsics_opt_map[external_camera_uid].data();
               double * shrd_ground_pose_op = shrd_ground_tag_pose_opt.data();
-              double * indep_ground_pose_op = indep_ground_tag_pose_opt_map[detection_uid].data();
+              double * indep_ground_pose_op =
+                indep_ground_tag_pose_opt_map.at(detection_uid).data();
 
               if (optimize_intrinsics_) {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map[external_camera_uid], false, true, true);
+                  pose_opt_map.at(external_camera_uid), false, true, true);
 
                 f(external_camera_pose_op, external_camera_intrinsics_op, shrd_ground_pose_op,
                   indep_ground_pose_op, residuals.data());
@@ -313,7 +357,7 @@ void CalibrationProblem::evaluate()
               } else {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map[external_camera_uid], false, false, true);
+                  pose_opt_map.at(external_camera_uid), false, false, true);
 
                 f(external_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op,
                   residuals.data());
@@ -341,9 +385,6 @@ void CalibrationProblem::solve()
 {
   ceres::Problem problem;
 
-  // auto identity = std::make_shared<std::array<double, POSE_OPT_DIM>>(
-  //   std::array<double, POSE_OPT_DIM>{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
-
   // Build the optimization problem
   for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
     CalibrationScene & scene = data_->scenes[scene_index];
@@ -361,6 +402,18 @@ void CalibrationProblem::solve()
           const int tag_id = grid_detection.id;
           UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
+          if (
+            pose_opt_map.count(calibration_camera_uid) == 0 ||
+            pose_opt_map.count(detection_uid) == 0 ||
+            data_->invalid_pairs_set.count(std::make_pair(calibration_camera_uid, detection_uid)) >
+              0) {
+            RCLCPP_ERROR(
+              rclcpp::get_logger("calibration_problem"),
+              "Skipping %s <-> %s since there are no poses available or was deemed an outleir",
+              calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+            continue;
+          }
+
           for (const auto & detection : grid_detection.sub_detections) {
             if (
               detection_uid.tag_type == TagType::WaypointTag ||
@@ -368,27 +421,29 @@ void CalibrationProblem::solve()
               ceres::CostFunction * res = CameraResidual::createTagResidual(
                 calibration_camera_uid,
                 data_->calibration_camera_intrinsics_map_[calibration_camera_uid], detection,
-                pose_opt_map[calibration_camera_uid], fix_sensor_pose, false);
+                pose_opt_map.at(calibration_camera_uid), fix_sensor_pose, false);
 
               if (fix_sensor_pose) {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
-                  pose_opt_map[detection_uid].data());
+                  pose_opt_map.at(detection_uid).data());
               } else {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
-                  pose_opt_map[calibration_camera_uid].data(), pose_opt_map[detection_uid].data());
+                  pose_opt_map.at(calibration_camera_uid).data(),
+                  pose_opt_map.at(detection_uid).data());
               }
             } else if (detection_uid.tag_type == TagType::GroundTag && force_shared_ground_plane_) {
               double * shrd_ground_pose_op = shrd_ground_tag_pose_opt.data();
-              double * indep_ground_pose_op = indep_ground_tag_pose_opt_map[detection_uid].data();
+              double * indep_ground_pose_op =
+                indep_ground_tag_pose_opt_map.at(detection_uid).data();
 
               ceres::CostFunction * res = CameraResidual::createGroundTagResidual(
                 calibration_camera_uid,
                 data_->calibration_camera_intrinsics_map_[calibration_camera_uid], detection,
-                pose_opt_map[calibration_camera_uid], fix_sensor_pose, false);
+                pose_opt_map.at(calibration_camera_uid), fix_sensor_pose, false);
 
               if (fix_sensor_pose) {
                 problem.AddResidualBlock(
@@ -399,7 +454,7 @@ void CalibrationProblem::solve()
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
-                  pose_opt_map[calibration_camera_uid].data(), shrd_ground_pose_op,
+                  pose_opt_map.at(calibration_camera_uid).data(), shrd_ground_pose_op,
                   indep_ground_pose_op);
               }
             } else {
@@ -420,14 +475,31 @@ void CalibrationProblem::solve()
         const int tag_id = detection.id;
         UID detection_uid = UID::makeTagUID(TagType::WaypointTag, scene_index, tag_id);
 
+        if (
+          pose_opt_map.count(lidar_uid) == 0 || pose_opt_map.count(detection_uid) == 0 ||
+          data_->invalid_pairs_set.count(std::make_pair(lidar_uid, detection_uid)) > 0) {
+          RCLCPP_ERROR(
+            rclcpp::get_logger("calibration_problem"),
+            "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
+            lidar_uid.toString().c_str(), detection_uid.toString().c_str());
+          continue;
+        }
+
         ceres::CostFunction * res = LidarResidual::createTagResidual(
-          lidar_uid, calibration_lidar_intrinsics_, detection, pose_opt_map[lidar_uid],
+          lidar_uid, calibration_lidar_intrinsics_, detection, pose_opt_map.at(lidar_uid),
           fix_sensor_pose);
 
-        problem.AddResidualBlock(
-          res,
-          nullptr,  // L2
-          pose_opt_map[lidar_uid].data(), pose_opt_map[detection_uid].data());
+        if (fix_sensor_pose) {
+          problem.AddResidualBlock(
+            res,
+            nullptr,  // L2
+            pose_opt_map.at(detection_uid).data());
+        } else {
+          problem.AddResidualBlock(
+            res,
+            nullptr,  // L2
+            pose_opt_map.at(lidar_uid).data(), pose_opt_map.at(detection_uid).data());
+        }
       }
     }
 
@@ -446,6 +518,19 @@ void CalibrationProblem::solve()
           const int tag_id = grid_detection.id;
           UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
+          if (
+            pose_opt_map.count(external_camera_uid) == 0 ||
+            (pose_opt_map.count(detection_uid) == 0 &&
+             indep_ground_tag_pose_opt_map.count(detection_uid) == 0) ||
+            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) >
+              0) {
+            RCLCPP_ERROR(
+              rclcpp::get_logger("calibration_problem"),
+              "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
+              external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+            continue;
+          }
+
           for (const auto & detection : grid_detection.sub_detections) {
             if (
               detection_uid.tag_type == TagType::WaypointTag ||
@@ -458,45 +543,47 @@ void CalibrationProblem::solve()
               if (optimize_intrinsics_) {
                 ceres::CostFunction * res = CameraResidual::createTagResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map[external_camera_uid], false, true);
+                  pose_opt_map.at(external_camera_uid), false, true);
 
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
-                  pose_opt_map[external_camera_uid].data(), external_camera_intrinsics_op,
-                  pose_opt_map[detection_uid].data());
+                  pose_opt_map.at(external_camera_uid).data(), external_camera_intrinsics_op,
+                  pose_opt_map.at(detection_uid).data());
               } else {
                 ceres::CostFunction * res = CameraResidual::createTagResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map[external_camera_uid], false, false);
+                  pose_opt_map.at(external_camera_uid), false, false);
 
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
-                  pose_opt_map[external_camera_uid].data(), pose_opt_map[detection_uid].data());
+                  pose_opt_map.at(external_camera_uid).data(),
+                  pose_opt_map.at(detection_uid).data());
               }
             } else if (detection_uid.tag_type == TagType::GroundTag && force_shared_ground_plane_) {
               double * external_camera_intrinsics_op =
                 share_intrinsics_ ? shared_intrinsics_opt.data()
                                   : intrinsics_opt_map[external_camera_uid].data();
               double * shrd_ground_pose_op = shrd_ground_tag_pose_opt.data();
-              double * indep_ground_pose_op = indep_ground_tag_pose_opt_map[detection_uid].data();
+              double * indep_ground_pose_op =
+                indep_ground_tag_pose_opt_map.at(detection_uid).data();
 
               ceres::CostFunction * res = CameraResidual::createGroundTagResidual(
                 external_camera_uid, external_camera_intrinsics_, detection,
-                pose_opt_map[external_camera_uid], false, optimize_intrinsics_);
+                pose_opt_map.at(external_camera_uid), false, optimize_intrinsics_);
 
               if (optimize_intrinsics_) {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
-                  pose_opt_map[external_camera_uid].data(), external_camera_intrinsics_op,
+                  pose_opt_map.at(external_camera_uid).data(), external_camera_intrinsics_op,
                   shrd_ground_pose_op, indep_ground_pose_op);
               } else {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
-                  pose_opt_map[external_camera_uid].data(), shrd_ground_pose_op,
+                  pose_opt_map.at(external_camera_uid).data(), shrd_ground_pose_op,
                   indep_ground_pose_op);
               }
             } else {
@@ -508,11 +595,13 @@ void CalibrationProblem::solve()
     }
   }
 
+  double initial_cost = 0.0;
   std::vector<double> residuals;
   ceres::Problem::EvaluateOptions eval_opt;
   eval_opt.num_threads = 1;
   problem.GetResidualBlocks(&eval_opt.residual_blocks);
-  problem.Evaluate(eval_opt, nullptr, &residuals, nullptr, nullptr);
+  problem.Evaluate(eval_opt, &initial_cost, &residuals, nullptr, nullptr);
+  RCLCPP_INFO_STREAM(rclcpp::get_logger("calibration_problem"), "Initial cost: " << initial_cost);
 
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_SCHUR;
@@ -526,6 +615,10 @@ void CalibrationProblem::solve()
 
 void CalibrationProblem::writeDebugImages()
 {
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"),
+    "Drawing the optimized poses on the external camera images");
+
   for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
     CalibrationScene & scene = data_->scenes[scene_index];
 
@@ -547,10 +640,22 @@ void CalibrationProblem::writeDebugImages()
         const TagType tag_type = group_detections.first;
 
         for (const auto & grid_detection : group_detections.second) {
-          for (const auto & detection : grid_detection.sub_detections) {
-            const int tag_id = grid_detection.id + detection.id;
-            UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
+          const int tag_id = grid_detection.id;
+          UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
+          if (
+            data_->initial_sensor_poses_map.count(external_camera_uid) == 0 ||
+            data_->initial_tag_poses_map.count(detection_uid) == 0 ||
+            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) >
+              0) {
+            RCLCPP_ERROR(
+              rclcpp::get_logger("calibration_problem"),
+              "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
+              external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+            continue;
+          }
+
+          for (const auto & detection : grid_detection.sub_detections) {
             cv::Affine3d initial_camera_pose =
               *data_->initial_sensor_poses_map[external_camera_uid];
             cv::Affine3d initial_tag_pose = *data_->initial_tag_poses_map[detection_uid];
@@ -584,49 +689,26 @@ void CalibrationProblem::writeDebugImages()
                 use_optimized_intrinsics
                   ? *data_->optimized_camera_intrinsics_map[external_camera_uid]
                   : *data_->initial_camera_intrinsics_map[external_camera_uid];
-              double cx = intrinsics[INTRINSICS_CX_INDEX];
-              double cy = intrinsics[INTRINSICS_CY_INDEX];
-              double fx = intrinsics[INTRINSICS_FX_INDEX];
-              double fy = intrinsics[INTRINSICS_FY_INDEX];
-              double k1 = intrinsics[INTRINSICS_K1_INDEX];
-              double k2 = intrinsics[INTRINSICS_K2_INDEX];
 
               detection.image_corners = std::vector<cv::Point2d>{
-                projectPoint(corners_ccs[0], fx, fy, cx, cy, k1, k2),
-                projectPoint(corners_ccs[1], fx, fy, cx, cy, k1, k2),
-                projectPoint(corners_ccs[2], fx, fy, cx, cy, k1, k2),
-                projectPoint(corners_ccs[3], fx, fy, cx, cy, k1, k2)};
+                projectPoint(corners_ccs[0], intrinsics), projectPoint(corners_ccs[1], intrinsics),
+                projectPoint(corners_ccs[2], intrinsics), projectPoint(corners_ccs[3], intrinsics)};
             };
 
             project_corners(initial_detection, initial_camera_pose, initial_tag_pose, false);
             project_corners(optimized_detection, optimized_camera_pose, optimized_tag_pose, true);
 
             const auto & intrinsics = *data_->optimized_camera_intrinsics_map[external_camera_uid];
-            double cx = intrinsics[INTRINSICS_CX_INDEX];
-            double cy = intrinsics[INTRINSICS_CY_INDEX];
-            double fx = intrinsics[INTRINSICS_FX_INDEX];
-            double fy = intrinsics[INTRINSICS_FY_INDEX];
-            double k1 = intrinsics[INTRINSICS_K1_INDEX];
-            double k2 = intrinsics[INTRINSICS_K2_INDEX];
-
-            cv::Affine3d camera_to_tag_pose = optimized_camera_pose.inv() * optimized_tag_pose;
-
-            cv::Vec3d px3d =
-              camera_to_tag_pose * cv::Vec3d(0.5 * optimized_detection.size, 0.0, 0.0);
-            cv::Vec3d py3d =
-              camera_to_tag_pose * cv::Vec3d(0.0, 0.5 * optimized_detection.size, 0.0);
-            cv::Vec3d pz3d =
-              camera_to_tag_pose * cv::Vec3d(0.0, 0.0, 0.5 * optimized_detection.size);
-            cv::Vec3d center3d = camera_to_tag_pose.translation();
-            cv::Point2d px2d = projectPoint(px3d, fx, fy, cx, cy, k1, k2);
-            cv::Point2d py2d = projectPoint(py3d, fx, fy, cx, cy, k1, k2);
-            cv::Point2d pz2d = projectPoint(pz3d, fx, fy, cx, cy, k1, k2);
-            cv::Point2d center2d = projectPoint(center3d, fx, fy, cx, cy, k1, k2);
+            cv::Affine3d initial_camera_to_tag_pose = initial_camera_pose.inv() * initial_tag_pose;
+            cv::Affine3d optimized_camera_to_tag_pose =
+              optimized_camera_pose.inv() * optimized_tag_pose;
 
             drawDetection(undistorted_img, detection, cv::Scalar(255, 0, 255));
             drawDetection(undistorted_img, initial_detection, cv::Scalar(0, 0, 255));
             drawDetection(undistorted_img, optimized_detection, cv::Scalar(0, 255, 0));
-            drawAxes(undistorted_img, optimized_detection, center2d, px2d, py2d, pz2d);
+            drawAxes(undistorted_img, initial_detection, initial_camera_to_tag_pose, intrinsics);
+            drawAxes(
+              undistorted_img, optimized_detection, optimized_camera_to_tag_pose, intrinsics);
           }
         }
       }

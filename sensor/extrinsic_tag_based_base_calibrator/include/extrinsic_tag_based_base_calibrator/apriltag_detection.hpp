@@ -35,6 +35,7 @@ struct LidartagDetection
   static LidartagDetection fromLidartagDetectionMsg(
     const lidartag_msgs::msg::LidarTagDetection & msg, double scale_factor);
   void computeObjectCorners();
+  void computeTemplateCorners();
 
   std::string family = "";
   int id = -1;
@@ -50,6 +51,8 @@ struct ApriltagDetection : public LidartagDetection
     const apriltag_msgs::msg::AprilTagDetection & msg, const IntrinsicParameters & intrinsics,
     double size);
   double computePose(const IntrinsicParameters & intrinsics);
+  double computeReprojError(const IntrinsicParameters & intrinsics) const;
+  double computeReprojError(double cx, double cy, double fx, double fy) const;
 
   std::vector<cv::Point2d> image_corners;
 

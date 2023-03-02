@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <extrinsic_tag_based_base_calibrator/calibration_scene_extractor.hpp>
+#include <extrinsic_tag_based_base_calibrator/visualization.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #ifdef ROS_DISTRO_GALACTIC
@@ -123,9 +124,16 @@ void CalibrationSceneExtractor::processExternalCameraImages(
     GroupedApriltagGridDetections detections =
       detect(external_camera_detector_, external_camera_intrinsics_, image_name);
 
-    if (detections.size() == 0) {
+    int num_detections = std::transform_reduce(
+      detections.begin(), detections.end(), 0, std::plus{},
+      [](auto it) { return it.second.size(); });
+
+    if (num_detections == 0) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("scene_extractor"), "Image name: %s contained only 0 detections.",
+        image_name.c_str());
       continue;
-    } else if (detections.size() < 2) {
+    } else if (num_detections < 2) {
       RCLCPP_INFO(
         rclcpp::get_logger("scene_extractor"),
         "Image name: %s contained only 1 detection. We need at least two to contribute to the "
@@ -139,41 +147,12 @@ void CalibrationSceneExtractor::processExternalCameraImages(
     frame.detections = detections;
 
     RCLCPP_INFO(
-      rclcpp::get_logger("scene_extractor"), "Processed: %s Detections: %lu", image_name.c_str(),
-      frame.detections.size());
+      rclcpp::get_logger("scene_extractor"), "Processed: %s Detections: %d", image_name.c_str(),
+      num_detections);
 
     scene.external_camera_frames.emplace_back(frame);
 
     if (debug_) {
-      auto draw_detection =
-        [](cv::Mat & img, const ApriltagDetection & detection, cv::Scalar color) {
-          std::vector<double> edge_sizes;
-
-          for (std::size_t i = 0; i < detection.image_corners.size(); ++i) {
-            std::size_t j = (i + 1) % detection.image_corners.size();
-            edge_sizes.push_back(cv::norm(detection.image_corners[i] - detection.image_corners[j]));
-          }
-
-          double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
-
-          for (std::size_t i = 0; i < detection.image_corners.size(); ++i) {
-            std::size_t j = (i + 1) % detection.image_corners.size();
-            cv::line(
-              img, detection.image_corners[i], detection.image_corners[j], color,
-              static_cast<int>(std::max(tag_size / 256.0, 1.0)), cv::LINE_AA);
-
-            cv::putText(
-              img, std::to_string(i), detection.image_corners[i], cv::FONT_HERSHEY_SIMPLEX,
-              std::max(tag_size / 256.0, 1.0), color,
-              static_cast<int>(std::max(tag_size / 128.0, 1.0)));
-          }
-
-          cv::putText(
-            img, std::to_string(detection.id), detection.center, cv::FONT_HERSHEY_SIMPLEX,
-            std::max(tag_size / 128.0, 1.0), color,
-            static_cast<int>(std::max(tag_size / 128.0, 1.0)));
-        };
-
       cv::Mat distorted_img =
         cv::imread(image_name, cv::IMREAD_COLOR | cv::IMREAD_IGNORE_ORIENTATION);
       cv::Mat undistorted_img;
@@ -185,7 +164,8 @@ void CalibrationSceneExtractor::processExternalCameraImages(
       for (const auto & detection_group : frame.detections) {
         for (const auto & detection_grid : detection_group.second) {
           for (const auto & detection : detection_grid.sub_detections) {
-            draw_detection(undistorted_img, detection, cv::Scalar(0, 255, 0));
+            drawDetection(undistorted_img, detection, cv::Scalar(0, 255, 0));
+            drawAxes(undistorted_img, detection, external_camera_intrinsics_);
           }
         }
       }
@@ -194,7 +174,7 @@ void CalibrationSceneExtractor::processExternalCameraImages(
       std::size_t name_end_pos = image_name.find_last_of(".\\");
       std::string output_name =
         image_name.substr(name_start_pos + 1, name_end_pos - name_start_pos - 1) +
-        "undistorted.jpg";
+        "_undistorted.jpg";
       cv::imwrite(output_name, undistorted_img);
     }
   }

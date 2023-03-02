@@ -18,6 +18,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <iostream>
+
 namespace extrinsic_tag_based_base_calibrator
 {
 
@@ -73,6 +75,7 @@ void addTagMarkers(
   markers.markers.push_back(marker);
   marker.points.clear();
 
+  addAxesMarkers(markers, 0.5 * size, pose, base_marker);
   addTextMarker(markers, tag_name, color, pose, base_marker);
 }
 
@@ -208,9 +211,18 @@ void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scala
 }
 
 void drawAxes(
-  cv::Mat & img, const ApriltagDetection & detection, const cv::Point2d & center,
-  const cv::Point2d & px, const cv::Point2d & py, const cv::Point2d & pz)
+  cv::Mat & img, const ApriltagDetection & detection, const cv::Affine3d & camera_to_tag_pose,
+  const std::array<double, 6> & intrinsics)
 {
+  cv::Vec3d px3d = camera_to_tag_pose * cv::Vec3d(0.5 * detection.size, 0.0, 0.0);
+  cv::Vec3d py3d = camera_to_tag_pose * cv::Vec3d(0.0, 0.5 * detection.size, 0.0);
+  cv::Vec3d pz3d = camera_to_tag_pose * cv::Vec3d(0.0, 0.0, 0.5 * detection.size);
+  cv::Vec3d center3d = camera_to_tag_pose.translation();
+  cv::Point2d px2d = projectPoint(px3d, intrinsics);
+  cv::Point2d py2d = projectPoint(py3d, intrinsics);
+  cv::Point2d pz2d = projectPoint(pz3d, intrinsics);
+  cv::Point2d center2d = projectPoint(center3d, intrinsics);
+
   std::vector<double> edge_sizes;
 
   for (std::size_t i = 0; i < detection.image_corners.size(); ++i) {
@@ -221,16 +233,62 @@ void drawAxes(
   double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
 
   cv::line(
-    img, center, px, cv::Scalar(0, 0, 255), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
+    img, center2d, px2d, cv::Scalar(0, 0, 255), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
     cv::LINE_AA);
 
   cv::line(
-    img, center, py, cv::Scalar(0, 255, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
+    img, center2d, py2d, cv::Scalar(0, 255, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
     cv::LINE_AA);
 
   cv::line(
-    img, center, pz, cv::Scalar(255, 0, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
+    img, center2d, pz2d, cv::Scalar(255, 0, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
     cv::LINE_AA);
+}
+
+void drawAxes(
+  cv::Mat & undistorted_image, const ApriltagDetection & detection,
+  const IntrinsicParameters & intrinsics)
+{
+  double fx = intrinsics.undistorted_camera_matrix(0, 0);
+  double fy = intrinsics.undistorted_camera_matrix(1, 1);
+  double cx = intrinsics.undistorted_camera_matrix(0, 2);
+  double cy = intrinsics.undistorted_camera_matrix(1, 2);
+
+  cv::Vec3d px3d = detection.pose * cv::Vec3d(0.5 * detection.size, 0.0, 0.0);
+  cv::Vec3d py3d = detection.pose * cv::Vec3d(0.0, 0.5 * detection.size, 0.0);
+  cv::Vec3d pz3d = detection.pose * cv::Vec3d(0.0, 0.0, 0.5 * detection.size);
+  cv::Vec3d center3d = detection.pose.translation();
+  cv::Point2d px2d = projectPoint(px3d, fx, fy, cx, cy, 0.0, 0.0);
+  cv::Point2d py2d = projectPoint(py3d, fx, fy, cx, cy, 0.0, 0.0);
+  cv::Point2d pz2d = projectPoint(pz3d, fx, fy, cx, cy, 0.0, 0.0);
+  cv::Point2d center2d = projectPoint(center3d, fx, fy, cx, cy, 0.0, 0.0);
+
+  std::cout << "Drawing axes for id=" << detection.id << std::endl;
+  std::cout << "\t pose translation =" << detection.pose.translation() << std::endl;
+  std::cout << "\t pose translation =" << detection.pose.rotation() << std::endl;
+  std::cout << "\t delta pz3d =" << pz3d - center3d << std::endl;
+  std::cout << "\t delta pz2d =" << pz2d - center2d << std::endl;
+
+  std::vector<double> edge_sizes;
+
+  for (std::size_t i = 0; i < detection.image_corners.size(); ++i) {
+    std::size_t j = (i + 1) % detection.image_corners.size();
+    edge_sizes.push_back(cv::norm(detection.image_corners[i] - detection.image_corners[j]));
+  }
+
+  double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
+
+  cv::line(
+    undistorted_image, center2d, px2d, cv::Scalar(0, 0, 255),
+    static_cast<int>(std::max(tag_size / 512.0, 1.0)), cv::LINE_AA);
+
+  cv::line(
+    undistorted_image, center2d, py2d, cv::Scalar(0, 255, 0),
+    static_cast<int>(std::max(tag_size / 512.0, 1.0)), cv::LINE_AA);
+
+  cv::line(
+    undistorted_image, center2d, pz2d, cv::Scalar(255, 0, 0),
+    static_cast<int>(std::max(tag_size / 512.0, 1.0)), cv::LINE_AA);
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator
