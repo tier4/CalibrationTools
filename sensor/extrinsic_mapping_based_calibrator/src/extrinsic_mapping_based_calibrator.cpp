@@ -14,11 +14,15 @@
 
 #include <extrinsic_mapping_based_calibrator/extrinsic_mapping_based_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/serialization.hpp>
+#include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <rosbag2_interfaces/srv/pause.hpp>
 #include <rosbag2_interfaces/srv/resume.hpp>
+#include <tier4_calibration_pcl_extensions/voxel_grid_triplets.hpp>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+
+#include <pcl/io/pcd_io.h>
 
 #ifdef ROS_DISTRO_GALACTIC
 #include <tf2_eigen/tf2_eigen.h>
@@ -108,7 +112,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   mapping_parameters_->local_map_num_keyframes_ =
     this->declare_parameter<int>("local_map_num_keyframes", 15);
   calibration_parameters_->dense_pointcloud_num_keyframes_ =
-    this->declare_parameter<int>("dense_pointcloud_num_keyframes_", 10);
+    this->declare_parameter<int>("dense_pointcloud_num_keyframes", 10);
   mapping_parameters_->mapping_max_range_ =
     this->declare_parameter<double>("mapping_max_range", 60.0);
   mapping_parameters_->min_pointcloud_size_ =
@@ -813,6 +817,29 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
 
   RCLCPP_INFO(this->get_logger(), "Saving %ld objects...", mapping_data_->detected_objects_.size());
   oa << mapping_data_->detected_objects_;
+
+  RCLCPP_INFO(this->get_logger(), "Saving dense map cloud...");
+
+  PointcloudType::Ptr map_cloud_ptr(new PointcloudType());
+  PointcloudType::Ptr map_subsampled_cloud_ptr(new PointcloudType());
+
+  for (const auto & frame : mapping_data_->processed_frames_) {
+    PointcloudType::Ptr tmp_cloud_ptr(new PointcloudType());
+
+    pcl::transformPointCloud(*frame->pointcloud_raw_, *tmp_cloud_ptr, frame->pose_);
+    *map_cloud_ptr += *tmp_cloud_ptr;
+  }
+
+  PointcloudType::Ptr map_cropped_cloud_ptr =
+    cropPointCloud<PointcloudType>(map_cloud_ptr, mapping_parameters_->mapping_max_range_);
+
+  pcl::VoxelGridTriplets<PointType> voxel_grid;
+  voxel_grid.setLeafSize(
+    calibration_parameters_->leaf_size_dense_map_, calibration_parameters_->leaf_size_dense_map_,
+    calibration_parameters_->leaf_size_dense_map_);
+  voxel_grid.setInputCloud(map_cropped_cloud_ptr);
+  voxel_grid.filter(*map_subsampled_cloud_ptr);
+  pcl::io::savePCDFileASCII("dense_map.pcd", *map_subsampled_cloud_ptr);
 
   mapper_->stop();
 
