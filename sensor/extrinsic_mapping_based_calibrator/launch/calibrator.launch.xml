@@ -31,6 +31,10 @@
 
   <arg name="lidar_calibration_max_frames" default="7"/>
   <arg name="camera_calibration_max_frames" default="1"/>
+  <arg name="lost_frame_max_angle_diff" default="25.0"/>
+  <arg name="lost_frame_interpolation_error" default="0.05"/>
+  <arg name="lost_frame_max_acceleration" default="8.0"/>
+  <arg name="max_calibration_range" default="80.0"/>
   <arg name="calibration_min_pca_eigenvalue" default="0.02"/>
   <arg name="calibration_eval_max_corr_distance" default="0.2"/>
   <arg name="solver_iterations" default="100"/>
@@ -70,6 +74,11 @@
 
       <param name="lidar_calibration_max_frames" value="$(var lidar_calibration_max_frames)"/>
       <param name="camera_calibration_max_frames" value="$(var camera_calibration_max_frames)"/>
+
+      <param name="lost_frame_max_angle_diff" value="$(var lost_frame_max_angle_diff)"/>
+      <param name="lost_frame_interpolation_error" value="$(var lost_frame_interpolation_error)"/>
+      <param name="lost_frame_max_acceleration" value="$(var lost_frame_max_acceleration)"/>
+      <param name="max_calibration_range" value="$(var max_calibration_range)"/>
       <param name="calibration_min_pca_eigenvalue" value="$(var calibration_min_pca_eigenvalue)"/>
       <param name="calibration_eval_max_corr_distance" value="$(var calibration_eval_max_corr_distance)"/>
       <param name="solver_iterations" value="$(var solver_iterations)"/>

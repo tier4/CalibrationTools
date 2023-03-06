@@ -226,7 +226,7 @@
     <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
 
     <arg name="local_map_num_keyframes" value="30"/>
-    <arg name="dense_pointcloud_num_keyframes" value="20.0"/>
+    <arg name="dense_pointcloud_num_keyframes" value="20"/>
     <arg name="ndt_resolution" value="0.5"/>
     <arg name="ndt_max_iterations" value="100"/>
     <arg name="ndt_epsilon" value="0.005"/>

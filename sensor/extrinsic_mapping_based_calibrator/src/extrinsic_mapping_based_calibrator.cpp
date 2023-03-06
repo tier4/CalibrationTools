@@ -101,6 +101,26 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   std::vector<std::string> calibration_pointcloud_topics =
     this->declare_parameter<std::vector<std::string>>("calibration_pointcloud_topics");
 
+  auto remove_empty_strings = [](std::vector<std::string> & v1) {
+    std::vector<std::string> v2;
+    std::copy_if(v1.begin(), v1.end(), std::back_inserter(v2), [](const std::string & s) {
+      return s.size() > 0;
+    });
+
+    v1 = v2;
+  };
+
+  remove_empty_strings(camera_calibration_service_names);
+  remove_empty_strings(lidar_calibration_service_names);
+  remove_empty_strings(lidar_calibration_sensor_kit_frames);
+  remove_empty_strings(calibration_camera_frames);
+  remove_empty_strings(calibration_lidar_base_frames);
+  remove_empty_strings(mapping_data_->calibration_camera_optical_link_frame_names);
+  remove_empty_strings(mapping_data_->calibration_lidar_frame_names_);
+  remove_empty_strings(calibration_camera_info_topics);
+  remove_empty_strings(calibration_image_topics);
+  remove_empty_strings(calibration_pointcloud_topics);
+
   mapping_data_->mapping_lidar_frame_ = this->declare_parameter<std::string>("mapping_lidar_frame");
 
   mapping_parameters_->mapping_verbose_ = this->declare_parameter<bool>("mapping_verbose", false);
