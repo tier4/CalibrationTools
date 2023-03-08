@@ -237,7 +237,7 @@ class RosInterface(Node):
         self.add_calibration_camera_images_to_new_scene_client(files)
 
     def add_calibration_sensor_detections_to_new_scene(self):
-        self.add_calibration_lidar_detections_to_new_scene_client()
+        self.add_calibration_sensor_detections_to_new_scene_client()
 
     def load_external_camera_intrinsics(self, files):
         self.load_external_camera_intrinsics_client(files)

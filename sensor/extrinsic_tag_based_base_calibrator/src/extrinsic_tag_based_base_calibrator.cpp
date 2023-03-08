@@ -1441,6 +1441,55 @@ bool ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback(
 
   ia >> data_;
 
+  // Overwrite the tag sizes in case the parameters change
+  for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
+    CalibrationScene & scene = data_->scenes[scene_index];
+
+    for (auto & scene_camera_detections_it : scene.calibration_cameras_detections) {
+      GroupedApriltagGridDetections & grouped_grid_detections =
+        scene_camera_detections_it.grouped_detections;
+
+      for (auto & group_grid_detections : grouped_grid_detections) {
+        std::vector<ApriltagGridDetection> & grid_detections = group_grid_detections.second;
+        const auto tag_parameters = tag_parameters_map_[group_grid_detections.first];
+
+        for (auto & grid_detection : grid_detections) {
+          for (auto & detection : grid_detection.sub_detections) {
+            detection.size = tag_parameters.size;
+            detection.computeTemplateCorners();
+            detection.computeObjectCorners();
+          }
+        }
+      }
+    }
+
+    for (auto & scene_lidar_detections_it : scene.calibration_lidars_detections) {
+      LidartagDetections & detections = scene_lidar_detections_it.detections;
+
+      for (auto & detection : detections) {
+        detection.size = waypoint_tag_parameters_.size;
+        detection.computeTemplateCorners();
+        detection.computeObjectCorners();
+      }
+    }
+
+    for (std::size_t frame_id = 0; frame_id < scene.external_camera_frames.size(); frame_id++) {
+      auto & grouped_grid_detections = scene.external_camera_frames[frame_id].detections;
+      for (auto & group_grid_detections : grouped_grid_detections) {
+        std::vector<ApriltagGridDetection> & grid_detections = group_grid_detections.second;
+        const auto tag_parameters = tag_parameters_map_[group_grid_detections.first];
+
+        for (auto & grid_detection : grid_detections) {
+          for (auto & detection : grid_detection.sub_detections) {
+            detection.size = tag_parameters.size;
+            detection.computeTemplateCorners();
+            detection.computeObjectCorners();
+          }
+        }
+      }
+    }
+  }
+
   RCLCPP_INFO(this->get_logger(), "Database loaded");
 
   response->success = true;
