@@ -87,8 +87,8 @@ struct LidarResidual : public SensorResidual
 
     Eigen::Vector3d center = vec_to_eigen(detection.pose.translation());
     Eigen::Vector3d rotated_center = tag_centric_rotation_ * center;
-    assert(std::abs(rotated_center.x()) < 1e-5);
-    assert(std::abs(rotated_center.y()) < 1e-5);
+    CV_Assert(std::abs(rotated_center.x()) < 1e-5);
+    CV_Assert(std::abs(rotated_center.y()) < 1e-5);
 
     assert(static_cast<int>(detection.object_corners.size()) == NUM_CORNERS);
     for (std::size_t corner_index = 0; corner_index < detection.object_corners.size();
