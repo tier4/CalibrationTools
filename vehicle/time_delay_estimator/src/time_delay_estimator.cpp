@@ -14,11 +14,13 @@
 //  limitations under the License.
 //
 
-#include <string>
-#include <memory>
 #include "time_delay_estimator/time_delay_estimator.hpp"
+
 #include "time_delay_estimator/data_processor.hpp"
 #include "time_delay_estimator/parameters.hpp"
+
+#include <memory>
+#include <string>
 
 TimeDelayEstimator::TimeDelayEstimator(
   rclcpp::Node * node, const Params & params, const std::string & name, int total_data_size,
@@ -66,8 +68,8 @@ void TimeDelayEstimator::preprocessData(rclcpp::Node * node)
         node, response_, response_dot_, response_2dot_, params_, buffer);
     }
   } catch (std::runtime_error & e) {  // Handle runtime errors
-    std::cerr << "[time_delay_estimator] at preprocessData runtime_error: " << e.what() <<
-      std::endl;
+    std::cerr << "[time_delay_estimator] at preprocessData runtime_error: " << e.what()
+              << std::endl;
   } catch (std::logic_error & e) {
     std::cerr << "[time_delay_estimator] at preprocessData logic_error: " << e.what() << std::endl;
   } catch (...) {  // Handle all unexpected exceptions
@@ -81,8 +83,8 @@ void TimeDelayEstimator::processDebugData(rclcpp::Node * node)
   if (input_.raw.size() <= 5 && response_.raw.size() <= 5) {
     auto & clk = *node->get_clock();
     RCLCPP_DEBUG_STREAM_THROTTLE(
-      rclcpp::get_logger("time_delay_estimator"), clk,
-      5000, "[time_delay_estimator] current input data size: " << input_.processed.size());
+      rclcpp::get_logger("time_delay_estimator"), clk, 5000,
+      "[time_delay_estimator] current input data size: " << input_.processed.size());
   } else {
     // debug I/O
     de.data[debugger_->DBGVAL::INPUT_RAW] = input_.raw.back();
@@ -183,12 +185,11 @@ void TimeDelayEstimator::setOutput(Estimator & estimator)
   time_delay_.time_delay = estimator.time_delay;
   time_delay_.correlation_peak = estimator.peak_correlation;
   time_delay_.time_delay_by_cross_correlation = {estimator.time_delay};
-  time_delay_.first_order_model_coefficients = {estimator.w(1), estimator.w(0),
-    estimator.time_delay};
+  time_delay_.first_order_model_coefficients = {
+    estimator.w(1), estimator.w(0), estimator.time_delay};
   time_delay_.mean = estimator.stat_delay.mean;
   time_delay_.stddev = estimator.stat_delay.stddev;
 }
-
 
 tier4_calibration_msgs::msg::TimeDelay TimeDelayEstimator::estimateTimeDelay(
   rclcpp::Node * node, std::string estimator_type)
@@ -227,15 +228,15 @@ tier4_calibration_msgs::msg::TimeDelay TimeDelayEstimator::estimateTimeDelay(
     } else {
       detection_result_ = DetectionResult::SLEEP;
       RCLCPP_DEBUG_STREAM_THROTTLE(
-        rclcpp::get_logger("time_delay_estimator"), clk,
-        2000, "[time_delay_estimator] less than data size: " << input_.processed.size());
+        rclcpp::get_logger("time_delay_estimator"), clk, 2000,
+        "[time_delay_estimator] less than data size: " << input_.processed.size());
     }
     // for publish statistics
     time_delay_.is_valid_data = is_valid_data_;
     RCLCPP_DEBUG_STREAM_THROTTLE(
-      rclcpp::get_logger("time_delay_estimator"), clk,
-      5000, name_ << ": (" << time_delay_.time_delay << "," << time_delay_.correlation_peak <<
-        "," << time_delay_.mean << "," << time_delay_.stddev << ")");
+      rclcpp::get_logger("time_delay_estimator"), clk, 5000,
+      name_ << ": (" << time_delay_.time_delay << "," << time_delay_.correlation_peak << ","
+            << time_delay_.mean << "," << time_delay_.stddev << ")");
   } catch (std::runtime_error & e) {  // Handle runtime errors
     std::cerr << "[time_delay_estimator] at estimate runtime_error: " << e.what() << std::endl;
   } catch (std::logic_error & e) {

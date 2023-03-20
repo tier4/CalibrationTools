@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
-#define EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR__EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
+#define EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR__EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
 
 #include <Eigen/Dense>
 #include <kalman_filter/kalman_filter.hpp>
@@ -31,12 +31,17 @@
 #include <pcl/registration/gicp.h>
 #include <pcl/registration/icp.h>
 #include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -46,7 +51,7 @@ using PointType = pcl::PointXYZ;
 class LidarToLidar2DCalibrator : public rclcpp::Node
 {
 public:
-  LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options);
+  explicit LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
   void requestReceivedCallback(
@@ -159,4 +164,4 @@ protected:
   bool first_observation_;
 };
 
-#endif  // EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR__EXTRINSIC_LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_

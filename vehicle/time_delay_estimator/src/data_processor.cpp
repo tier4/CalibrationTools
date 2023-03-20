@@ -14,8 +14,9 @@
 //  limitations under the License.
 //
 
-#include <algorithm>
 #include "time_delay_estimator/data_processor.hpp"
+
+#include <algorithm>
 
 namespace data_processor
 {
@@ -39,10 +40,7 @@ bool checkIsValidData(
 
   const auto input_val_size = static_cast<int>(input.validation.size());
   const auto response_val_size = static_cast<int>(response.validation.size());
-  if (
-    input_val_size > params.validation_size &&
-    response_val_size > params.validation_size)
-  {
+  if (input_val_size > params.validation_size && response_val_size > params.validation_size) {
     // Ignore None featured data or Too much deviation data
     double input_stddev = math_utils::getStddevFromVector(input.validation);
     double response_stddev = math_utils::getStddevFromVector(response.validation);
@@ -90,8 +88,7 @@ bool processInputData(Data & input, const Params & params, const int buffer)
   // fail safe
   if (input_raw_size > params.data_size + buffer) {
     RCLCPP_ERROR(
-      rclcpp::get_logger("time_delay_estimator"),
-      "invalid index size raw input > data_size");
+      rclcpp::get_logger("time_delay_estimator"), "invalid index size raw input > data_size");
     input.stamps.pop_front();
     input.raw.pop_front();
     input.filtered.pop_front();
@@ -100,8 +97,8 @@ bool processInputData(Data & input, const Params & params, const int buffer)
 }
 
 bool processResponseData(
-  rclcpp::Node * node, Data & data, Data & data_dot, Data & data_2dot,
-  const Params & params, const int buffer)
+  rclcpp::Node * node, Data & data, Data & data_dot, Data & data_2dot, const Params & params,
+  const int buffer)
 {
   bool has_enough_data = true;
   data.raw.emplace_back(data.value);
@@ -133,8 +130,8 @@ bool processResponseData(
 
     auto & clk = *node->get_clock();
     RCLCPP_DEBUG_STREAM_THROTTLE(
-      rclcpp::get_logger("time_delay_estimator"), clk,
-      3000, "[time delay estimator] diff : " << diff << " diff2 : " << diff2);
+      rclcpp::get_logger("time_delay_estimator"), clk, 3000,
+      "[time delay estimator] diff : " << diff << " diff2 : " << diff2);
     data_dot.filtered.emplace_back(diff);
     data_2dot.filtered.emplace_back(diff2);
     // Filtered
@@ -165,8 +162,7 @@ bool processResponseData(
     data_2dot.filtered.pop_front();
     data.stamps.pop_front();
     RCLCPP_ERROR(
-      rclcpp::get_logger("time_delay_estimator"),
-      "invalid index size raw input > data_size");
+      rclcpp::get_logger("time_delay_estimator"), "invalid index size raw input > data_size");
   }
   return has_enough_data;
 }

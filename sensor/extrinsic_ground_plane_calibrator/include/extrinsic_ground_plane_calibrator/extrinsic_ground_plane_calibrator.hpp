@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_GROUND_PLANE_CALIBRATOR_EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
-#define EXTRINSIC_GROUND_PLANE_CALIBRATOR_EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
+#define EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
 
 #define PCL_NO_PRECOMPILE  // We require this macro to use the PCL templates with velodyne PCs
 #include <Eigen/Dense>
@@ -30,12 +30,18 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 #include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
+
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -45,7 +51,7 @@ using PointType = pcl::PointXYZ;
 class ExtrinsicGroundPlaneCalibrator : public rclcpp::Node
 {
 public:
-  ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options);
+  explicit ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
   void requestReceivedCallback(
@@ -153,4 +159,4 @@ protected:
   bool first_observation_;
 };
 
-#endif  // EXTRINSIC_GROUND_PLANE_CALIBRATOR_EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_

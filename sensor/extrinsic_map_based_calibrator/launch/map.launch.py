@@ -45,7 +45,7 @@ def generate_launch_description():
         remappings=[("output/pointcloud_map", "/map/pointcloud_map_without_wall")],
         parameters=[
             {"pcd_paths_or_directory": ["[", LaunchConfiguration("pointcloud_map_path"), "]"]},
-            {"map_frame": "map"}
+            {"map_frame": "map"},
         ],
         extra_arguments=[{"use_intra_process_comms": LaunchConfiguration("use_intra_process")}],
     )

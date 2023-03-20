@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 
-#include <memory>
 #include "pitch_checker/pitch_checker.hpp"
+
+#include <memory>
 
 int main(int argc, char ** argv)
 {

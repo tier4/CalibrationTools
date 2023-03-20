@@ -14,7 +14,6 @@
 //  limitations under the License.
 //
 
-
 #ifndef ESTIMATOR_UTILS__MATH_UTILS_HPP_
 #define ESTIMATOR_UTILS__MATH_UTILS_HPP_
 
@@ -57,13 +56,13 @@ inline std::vector<double> getLinearInterpolation(const std::vector<double> & ar
   return interp;
 }
 
-template<class T>
+template <class T>
 int getMaximumIndexFromVector(const T & x)
 {
   const auto iter = std::max_element(x.begin(), x.end());
   return std::distance(x.begin(), iter);
 }
-template<class T>
+template <class T>
 double getAverageFromVector(const T & arr)
 {
   if (arr.size() == 0) {
@@ -72,10 +71,12 @@ double getAverageFromVector(const T & arr)
   return std::accumulate((arr).begin(), (arr).end(), 0.0) / static_cast<double>(arr.size());
 }
 
-template<class T>
+template <class T>
 double getStddevFromVector(const T & arr)
 {
-  if (arr.empty()) {return 0;}
+  if (arr.empty()) {
+    return 0;
+  }
   double average = getAverageFromVector(arr);
   double diff = 0;
   for (const auto & v : arr) {
@@ -84,10 +85,12 @@ double getStddevFromVector(const T & arr)
   return std::sqrt(diff / static_cast<double>(arr.size()));
 }
 
-template<class T>
+template <class T>
 double getCorrelationCoefficientFromVector(const T & x, const T & y)
 {
-  if (x.empty()) {return 0;}
+  if (x.empty()) {
+    return 0;
+  }
   int sz = x.size();
   double coeff = 0;
   double x_avg = getAverageFromVector(x);
@@ -104,10 +107,12 @@ double getCorrelationCoefficientFromVector(const T & x, const T & y)
   return coeff;
 }
 
-template<class T>
+template <class T>
 double getAverageFromVector(const T & arr, const T & w)
 {
-  if (arr.empty()) {return 0;}
+  if (arr.empty()) {
+    return 0;
+  }
   double sum = 0;
   double sum_w = 0;
   for (size_t i = 0; i < arr.size(); ++i) {
@@ -117,10 +122,12 @@ double getAverageFromVector(const T & arr, const T & w)
   return sum / sum_w;
 }
 
-template<class T>
+template <class T>
 double getCovarianceFromVector(const T & x, const T & y, const T & w)
 {
-  if (x.empty()) {return 0;}
+  if (x.empty()) {
+    return 0;
+  }
   double cov = 0;
   double sum_w = 0;
   double avg_x = getAverageFromVector(x, w);
@@ -131,10 +138,12 @@ double getCovarianceFromVector(const T & x, const T & y, const T & w)
   }
   return cov / sum_w;
 }
-template<class T>
+template <class T>
 double getStddevFromVector(const T & arr, const T & w)
 {
-  if (arr.empty()) {return 0;}
+  if (arr.empty()) {
+    return 0;
+  }
   double average = getAverageFromVector(arr, w);
   double var = 0;
   double w_sum = 0;
@@ -145,10 +154,12 @@ double getStddevFromVector(const T & arr, const T & w)
   return std::sqrt(var / w_sum);
 }
 
-template<class T>
+template <class T>
 double getCorrelationCoefficientFromVector(const T & x, const T & y, const T & w)
 {
-  if (x.empty()) {return 0;}
+  if (x.empty()) {
+    return 0;
+  }
   double x_stddev = getStddevFromVector(x, w);
   double y_stddev = getStddevFromVector(y, w);
   double xy_cov = getCovarianceFromVector(x, y, w);
@@ -167,10 +178,12 @@ inline double lowpassFilter(
  * @param : arr vector like container
  * @return : avg_arr processed arr vector
  */
-template<class T>
+template <class T>
 std::vector<double> getAveragedVector(const T & arr)
 {
-  if (arr.empty()) {return arr;}
+  if (arr.empty()) {
+    return arr;
+  }
   std::vector<double> avg_arr = {arr.begin(), arr.end()};
   double avg = std::accumulate((arr).begin(), (arr).end(), 0.0) / static_cast<double>(arr.size());
   for (auto & v : avg_arr) {
@@ -183,7 +196,7 @@ std::vector<double> getAveragedVector(const T & arr)
  * @param : arr vector like container
  * @return : avg_arr processed arr vector
  */
-template<class T>
+template <class T>
 std::vector<double> arrToVector(const T & arr)
 {
   std::vector<double> vec = {arr.begin(), arr.end()};
@@ -195,10 +208,12 @@ std::vector<double> arrToVector(const T & arr)
  * @param : slide move vector placement 0 or 1
  * @return : avg_arr processed arr vector
  */
-template<class T>
+template <class T>
 std::vector<double> fitToTheSizeOfVector(const T & arr, const int size, const int num_slide = 0)
 {
-  if (static_cast<int>(arr.size()) < (size + num_slide)) {return {arr.begin(), arr.end()};}
+  if (static_cast<int>(arr.size()) < (size + num_slide)) {
+    return {arr.begin(), arr.end()};
+  }
   return {arr.end() - size - num_slide, arr.end() - num_slide};
 }
 
@@ -209,13 +224,15 @@ std::vector<double> fitToTheSizeOfVector(const T & arr, const int size, const in
  * @param : response : deque type response
  * @param : size : size of final output
  */
-template<class T>
+template <class T>
 void fitToTheSizeOfVector(
   const T & input_stamp, const T & response_stamp, std::vector<double> & input,
   std::vector<double> & response, const int size, const int num_slide)
 {
   const size_t max_slide = num_slide;
-  if (input.size() < (size + max_slide) && response.size() < (size + max_slide)) {return;}
+  if (input.size() < (size + max_slide) && response.size() < (size + max_slide)) {
+    return;
+  }
   double in0 = *(input_stamp.end() - 1);
   double in1 = *(input_stamp.end() - 2);
   double re0 = *(response_stamp.end() - 1);
@@ -240,7 +257,7 @@ void fitToTheSizeOfVector(
  * @param valid_delay_index_ratio : number of shift to compare rate
  * @return corr : size of (input+num_shift) , type T correlation value
  */
-template<class T>
+template <class T>
 T calcCrossCorrelationCoefficient(
   const T & input, const T & response, const double valid_delay_index_ratio)
 {
@@ -272,7 +289,7 @@ T calcCrossCorrelationCoefficient(
  * @param valid_delay_index_ratio : number of shift to compare rate
  * @return corr : size of (input+num_shift) , type T correlation value
  */
-template<class T>
+template <class T>
 T calcCrossCorrelationCoefficient(
   const T & input, const T & response, const T & weight, const double valid_delay_index_ratio)
 {
@@ -296,7 +313,7 @@ T calcCrossCorrelationCoefficient(
   return CorrCoeff;
 }
 
-template<class T>
+template <class T>
 double calcMAE(const T & input, const T & response, const int delay_index)
 {
   size_t sz = input.size() / 2;
@@ -345,7 +362,7 @@ inline void calcSequentialStddev(Statistics & stat)
     const auto old_avg = stat.mean[i];
     mean = (seq * mean + val) / (seq + 1.0);
     variance = (seq * (variance + std::pow(old_avg, 2)) + std::pow(val, 2)) / (seq + 1.0) -
-      std::pow(mean, 2);
+               std::pow(mean, 2);
     stddev = std::sqrt(variance);
   }
   cnt++;
@@ -366,7 +383,7 @@ struct Statistic
     double seq = static_cast<double>(cnt);
     mean = (seq * mean + val) / (seq + 1.0);
     variance = (seq * (variance + std::pow(old_avg, 2)) + std::pow(val, 2)) / (seq + 1.0) -
-      std::pow(mean, 2);
+               std::pow(mean, 2);
     cnt++;
     return std::sqrt(variance);
   }
