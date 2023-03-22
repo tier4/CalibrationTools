@@ -99,7 +99,7 @@ cv::Point2d projectPoint(const cv::Vec3d & p, const std::array<double, 6> & intr
 
 void estimateInitialPoses(
   CalibrationData & data, const UID & main_sensor_uid, UID & left_wheel_uid, UID & right_wheel_uid,
-  int max_depth = 5);
+  int max_depth = 10);
 
 }  // namespace extrinsic_tag_based_base_calibrator
 

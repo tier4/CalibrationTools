@@ -46,14 +46,14 @@ void addTextMarker(
  * Adds markers representing a tag
  * @param[out] markers the output markers vector
  * @param[in] tag_name the text to be displayed in the marker
- * @param[in] size the size of the tag
+ * @param[in] parsm the parameters of the tag
  * @param[in] color the color of the text
  * @param[in] pose the pose of the tag
  * @param[in] base_marker the marker to use as a template
  */
 void addTagMarkers(
-  visualization_msgs::msg::MarkerArray & markers, const std::string & tag_name, double size,
-  const std_msgs::msg::ColorRGBA & color, const cv::Affine3d & pose,
+  visualization_msgs::msg::MarkerArray & markers, const std::string & tag_name,
+  const TagParameters & params, const std_msgs::msg::ColorRGBA & color, const cv::Affine3d & pose,
   const visualization_msgs::msg::Marker & base_marker);
 
 /*!

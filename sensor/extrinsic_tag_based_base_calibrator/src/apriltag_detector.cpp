@@ -40,7 +40,7 @@ std::unordered_map<std::string, ApriltagDetector::destroy_family_fn_type>
   ApriltagDetector::tag_destroy_fn_map = {
     {"tag16h5", tag16h5_destroy},
     {"tag25h9", tag25h9_destroy},
-    {"tahg36h11", tag36h11_destroy},
+    {"tag36h11", tag36h11_destroy},
 };
 
 ApriltagDetector::ApriltagDetector(
@@ -182,8 +182,8 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
     if (tag_family_and_id_to_type_map_.count(tag_family_and_id) == 0) {
       RCLCPP_WARN(
         rclcpp::get_logger("apriltag_detector"),
-        "Detected apriltag: %d \t but discarded since it is not part of the detection tags",
-        result.id);
+        "Detected apriltag: %s \t but discarded since it is not part of the detection tags",
+        tag_family_and_id.c_str());
       continue;
     }
 
@@ -210,9 +210,9 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
       if (std::abs(cv::determinant(rotation) - 1.0) > 1e-5) {
         RCLCPP_WARN(
           rclcpp::get_logger("apriltag_detector"),
-          "Detected apriltag: %d bit dicarded due to its rotation not having unit determinant\t "
+          "Detected apriltag: %s but dicarded due to its rotation not having unit determinant\t "
           "det=%.2f",
-          det->id, std::abs(cv::determinant(rotation)));
+          tag_family_and_id.c_str(), std::abs(cv::determinant(rotation)));
         continue;
       }
 
@@ -236,28 +236,35 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
     result.computeObjectCorners();
     double reproj_error = result.computeReprojError(cx_, cy_, fx_, fy_);
 
-    if (reproj_error > detector_parameters_.max_reproj_error) {
+    if (
+      fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0 &&
+      reproj_error > detector_parameters_.max_reproj_error) {
       RCLCPP_WARN(
         rclcpp::get_logger("apriltag_detector"),
-        "Detected apriltag: %d bit dicarded due to its reprojection error\t margin: %.2f\t "
+        "Detected apriltag: %s but dicarded due to its reprojection error\t margin: %.2f\t "
         "hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
-        result.id, det->decision_margin, max_homography_error, reproj_error, rotation_angle);
+        tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reproj_error,
+        rotation_angle);
       continue;
     }
 
-    if (rotation_angle > detector_parameters_.max_out_of_plane_angle) {
+    if (
+      fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0 &&
+      rotation_angle > detector_parameters_.max_out_of_plane_angle) {
       RCLCPP_WARN(
         rclcpp::get_logger("apriltag_detector"),
-        "Detected apriltag: %d bit dicarded due to its out-of-plane angle\t margin: %.2f\t "
+        "Detected apriltag: %s but dicarded due to its out-of-plane angle\t margin: %.2f\t "
         "hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
-        result.id, det->decision_margin, max_homography_error, reproj_error, rotation_angle);
+        tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reproj_error,
+        rotation_angle);
       continue;
     }
 
     RCLCPP_INFO(
       rclcpp::get_logger("apriltag_detector"),
-      "Detected apriltag: %d \t margin: %.2f\t hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
-      result.id, det->decision_margin, max_homography_error, reproj_error, rotation_angle);
+      "Detected apriltag: %s \t margin: %.2f\t hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
+      tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reproj_error,
+      rotation_angle);
 
     individual_detections_map[tag_type].emplace_back(result);
   }
@@ -278,13 +285,16 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
 
     // Group the detections into their respective grids
     for (const ApriltagDetection & detection : detections) {
-      int base_id = detection.id / (rows * cols);
+      int base_id = detection.id - tag_id_to_offset_map_.at(tag_type).at(detection.id);
       grouped_detections[base_id].push_back(detection);
     }
 
     // Create the grid detections after checking their status and consistency
     for (const auto & grouped_detections_it : grouped_detections) {
       if (grouped_detections_it.second.size() != static_cast<std::size_t>(rows * cols)) {
+        RCLCPP_INFO(
+          rclcpp::get_logger("apriltag_detector"), "Discarding: id%d since it has size %lu",
+          grouped_detections_it.first, grouped_detections_it.second.size());
         continue;
       }
 

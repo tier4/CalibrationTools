@@ -241,29 +241,46 @@ cv::Affine3d estimateInitialPosesFilterOutliers(
 {
   std::vector<std::pair<UID, cv::Affine3d>> best_model_inliers;
   std::set<UID> best_model_outliers;
+  std::map<UID, double> best_model_outliers_rotation_error_map;
+  std::map<UID, double> best_model_outliers_translation_error_map;
 
-  auto is_consensus = [&threshold](const cv::Affine3d & pose1, const cv::Affine3d & pose2) -> bool {
-    bool rotation_consensus =
-      std::acos(std::min(1.0, 0.5 * (cv::trace(pose2.rotation().inv() * pose1.rotation()) - 1.0))) <
-      CV_PI / 4;
-    return cv::norm(pose1.translation() - pose2.translation()) < threshold && rotation_consensus;
+  auto rotation_diff = [](const cv::Affine3d & pose1, const cv::Affine3d & pose2) -> double {
+    return std::acos(
+      std::min(1.0, 0.5 * (cv::trace(pose2.rotation().inv() * pose1.rotation()) - 1.0)));
+  };
+
+  auto translation_diff = [](const cv::Affine3d & pose1, const cv::Affine3d & pose2) -> double {
+    return cv::norm(pose1.translation() - pose2.translation());
+  };
+
+  auto is_consensus = [&threshold, rotation_diff, translation_diff](
+                        const cv::Affine3d & pose1, const cv::Affine3d & pose2) -> bool {
+    return translation_diff(pose1, pose2) < threshold && rotation_diff(pose1, pose2) < CV_PI / 4;
   };
 
   for (const auto & [model_parent_uid, iteration_model_pose] : parent_uid_and_poses) {
     std::set<UID> iteration_outlier_uids;
     std::vector<std::pair<UID, cv::Affine3d>> iteration_inlier_poses;
+    std::map<UID, double> iteration_outliers_rotation_error_map;
+    std::map<UID, double> iteration_outliers_translation_error_map;
 
     for (const auto & [parent_uid, iteration_pose] : parent_uid_and_poses) {
       if (is_consensus(iteration_model_pose, iteration_pose)) {
         iteration_inlier_poses.push_back(std::make_pair(parent_uid, iteration_pose));
       } else {
         iteration_outlier_uids.insert(parent_uid);
+        iteration_outliers_rotation_error_map[parent_uid] =
+          rotation_diff(iteration_model_pose, iteration_pose);
+        iteration_outliers_translation_error_map[parent_uid] =
+          translation_diff(iteration_model_pose, iteration_pose);
       }
     }
 
     if (iteration_inlier_poses.size() > best_model_inliers.size()) {
       best_model_inliers = iteration_inlier_poses;
       best_model_outliers = iteration_outlier_uids;
+      best_model_outliers_rotation_error_map = iteration_outliers_rotation_error_map;
+      best_model_outliers_translation_error_map = iteration_outliers_translation_error_map;
     }
 
     if (iteration_inlier_poses.size() == parent_uid_and_poses.size()) {
@@ -272,12 +289,18 @@ cv::Affine3d estimateInitialPosesFilterOutliers(
   }
 
   // Update the overall outliers
-  for (const auto outlier_uid : best_model_outliers) {
-    outliers.insert(std::make_pair(outlier_uid, uid));
-    outliers.insert(std::make_pair(uid, outlier_uid));
+  for (const auto parent_outlier_uid : best_model_outliers) {
+    outliers.insert(std::make_pair(parent_outlier_uid, uid));
+    outliers.insert(std::make_pair(uid, parent_outlier_uid));
     RCLCPP_WARN(
       rclcpp::get_logger("pose_estimation"), "\tThe pair %s <-> %s was deemed to be an outlier",
-      uid.toString().c_str(), outlier_uid.toString().c_str());
+      parent_outlier_uid.toString().c_str(), uid.toString().c_str());
+    RCLCPP_WARN(
+      rclcpp::get_logger("pose_estimation"), "\trotation error: %.2f",
+      best_model_outliers_rotation_error_map[parent_outlier_uid]);
+    RCLCPP_WARN(
+      rclcpp::get_logger("pose_estimation"), "\ttranslation error: %.2f",
+      best_model_outliers_translation_error_map[parent_outlier_uid]);
   }
 
   // Estimate the average pose
@@ -294,9 +317,9 @@ cv::Affine3d estimateInitialPosesFilterOutliers(
 
     RCLCPP_INFO(
       rclcpp::get_logger("pose_estimation"),
-      "\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f] parent_uid=[%s]",
-      translation.x(), translation.y(), translation.z(), quat.x(), quat.y(), quat.z(), quat.w(),
-      parent_uid.toString().c_str());
+      "uid=%s\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f] parent_uid=[%s]",
+      uid.toString().c_str(), translation.x(), translation.y(), translation.z(), quat.x(), quat.y(),
+      quat.z(), quat.w(), parent_uid.toString().c_str());
 
     avg_translation += translation;
   }
@@ -368,9 +391,11 @@ void estimateInitialPoses(
 
   iteration_uids.insert(main_sensor_uid);
 
-  for (int iteration_max_depth = 0; iteration_max_depth <= max_depth; iteration_max_depth++) {
+  for (int iteration_depth = 0; iteration_depth <= max_depth; iteration_depth++) {
     std::map<UID, std::vector<std::pair<UID, cv::Affine3d>>> raw_poses_map;
     std::set<UID> next_iteration_uids;
+
+    RCLCPP_INFO(rclcpp::get_logger("pose_estimation"), "Iteration depth=%d", iteration_depth);
 
     for (const auto & uid : iteration_uids) {
       for (const UID & next_uid : data.uid_connections_map[uid]) {

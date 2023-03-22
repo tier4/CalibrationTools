@@ -671,16 +671,9 @@ void CalibrationProblem::writeDebugImages()
                                      ApriltagDetection & detection,
                                      const cv::Affine3d & camera_pose,
                                      const cv::Affine3d & tag_pose, bool use_optimized_intrinsics) {
-              cv::Vec3d template_corners[4] = {
-                {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {-1.0, -1.0, 0.0}};
-
-              for (int j = 0; j < 4; ++j) {
-                template_corners[j] *= 0.5 * detection.size;
-              }
-
               std::vector<cv::Vec3d> corners_wcs{
-                tag_pose * template_corners[0], tag_pose * template_corners[1],
-                tag_pose * template_corners[2], tag_pose * template_corners[3]};
+                tag_pose * detection.template_corners[0], tag_pose * detection.template_corners[1],
+                tag_pose * detection.template_corners[2], tag_pose * detection.template_corners[3]};
               std::vector<cv::Vec3d> corners_ccs{
                 camera_pose.inv() * corners_wcs[0], camera_pose.inv() * corners_wcs[1],
                 camera_pose.inv() * corners_wcs[2], camera_pose.inv() * corners_wcs[3]};

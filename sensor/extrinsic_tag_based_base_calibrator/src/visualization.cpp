@@ -44,36 +44,47 @@ void addTextMarker(
 }
 
 void addTagMarkers(
-  visualization_msgs::msg::MarkerArray & markers, const std::string & tag_name, double size,
-  const std_msgs::msg::ColorRGBA & color, const cv::Affine3d & pose,
+  visualization_msgs::msg::MarkerArray & markers, const std::string & tag_name,
+  const TagParameters & params, const std_msgs::msg::ColorRGBA & color, const cv::Affine3d & pose,
   const visualization_msgs::msg::Marker & base_marker)
 {
-  visualization_msgs::msg::Marker marker;
-
-  marker = base_marker;
-  marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
-  marker.color = color;
-  marker.scale.x = 0.001;
-  marker.points.clear();
+  double factor = params.size * (1.0 + params.spacing);
+  double size = params.size;
 
   std::array<cv::Matx31d, 4> template_points{
     cv::Matx31d{-0.5 * size, -0.5 * size, 0.0}, cv::Matx31d{0.5 * size, -0.5 * size, 0.0},
     cv::Matx31d{0.5 * size, 0.5 * size, 0.0}, cv::Matx31d{-0.5 * size, 0.5 * size, 0.0}};
 
-  for (std::size_t index = 0; index < 5; ++index) {
-    int normalized_index = index % 4;
+  for (int row = 0; row < params.rows; row++) {
+    for (int col = 0; col < params.cols; col++) {
+      double corner_offset_x = (col - 0.5 * (params.cols - 1)) * factor;
+      double corner_offset_y = (row - 0.5 * (params.rows - 1)) * factor;
+      cv::Matx31d offset(corner_offset_x, corner_offset_y, 0.0);
+      visualization_msgs::msg::Marker marker;
 
-    cv::Matx31d p = pose.rotation() * template_points[normalized_index] + pose.translation();
-    geometry_msgs::msg::Point p_msg;
-    p_msg.x = p(0);
-    p_msg.y = p(1);
-    p_msg.z = p(2);
+      marker = base_marker;
+      marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+      marker.color = color;
+      marker.scale.x = 0.001;
+      marker.points.clear();
 
-    marker.points.push_back(p_msg);
+      for (std::size_t index = 0; index < 5; ++index) {
+        int normalized_index = index % 4;
+
+        cv::Matx31d p =
+          pose.rotation() * (template_points[normalized_index] + offset) + pose.translation();
+        geometry_msgs::msg::Point p_msg;
+        p_msg.x = p(0);
+        p_msg.y = p(1);
+        p_msg.z = p(2);
+
+        marker.points.push_back(p_msg);
+      }
+
+      markers.markers.push_back(marker);
+      marker.points.clear();
+    }
   }
-
-  markers.markers.push_back(marker);
-  marker.points.clear();
 
   addAxesMarkers(markers, 0.5 * size, pose, base_marker);
   addTextMarker(markers, tag_name, color, pose, base_marker);

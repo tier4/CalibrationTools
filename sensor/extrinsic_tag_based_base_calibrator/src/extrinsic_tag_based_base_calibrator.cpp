@@ -407,6 +407,15 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
       }
     }
   }
+
+  // Initialize the detections map with null detections
+  for (const auto & lidar_frame : calibration_lidar_frames_vector_) {
+    latest_lidartag_detections_map_[lidar_frame] = LidartagDetections();
+  }
+
+  for (const auto & camera_frame : calibration_camera_frames_vector_) {
+    latest_apriltag_detections_map_[camera_frame] = GroupedApriltagGridDetections();
+  }
 }
 
 void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
@@ -630,11 +639,13 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
       base_marker.header.frame_id = camera_frame;
 
       for (const auto & group_grid_detections : grouped_grid_detections) {
+        const auto & tag_type = group_grid_detections.first;
+        const auto & tag_parameters = tag_parameters_map_.at(tag_type);
         const std::vector<ApriltagGridDetection> & grid_detections = group_grid_detections.second;
         for (const auto & grid_detection : grid_detections) {
           for (const auto & detection : grid_detection.sub_detections) {
             addTagMarkers(
-              markers, std::to_string(detection.id), detection.size, color, detection.pose,
+              markers, std::to_string(detection.id), tag_parameters, color, detection.pose,
               base_marker);
           }
         }
@@ -645,10 +656,11 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
       const std::string & lidar_frame = scene_lidar_detections_it.calibration_frame;
       const LidartagDetections & detections = scene_lidar_detections_it.detections;
       base_marker.header.frame_id = lidar_frame;
+      const auto & tag_parameters = tag_parameters_map_.at(TagType::WaypointTag);
 
       for (const auto & detection : detections) {
         addTagMarkers(
-          markers, std::to_string(detection.id), detection.size, color, detection.pose,
+          markers, std::to_string(detection.id), tag_parameters, color, detection.pose,
           base_marker);
       }
     }
@@ -656,9 +668,10 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
   // Initial estimations markers (in the main sensor frame)
   base_marker.ns = "initial_estimations";
+  base_marker.header.frame_id = main_calibration_sensor_frame_;
+
   visualization_msgs::msg::Marker initial_connections_base_marker = base_marker;
   initial_connections_base_marker.ns = "initial_connections";
-  initial_connections_base_marker.header.frame_id = main_calibration_sensor_frame_;
 
   std_msgs::msg::ColorRGBA initial_estimations_color;
   initial_estimations_color.r = 1.f;
@@ -677,10 +690,10 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     const UID & tag_uid = it->first;
     auto & pose = it->second;
     const TagType & tag_type = tag_uid.tag_type;
-    const double tag_size = tag_parameters_map_.at(tag_type).size;
+    const auto & tag_parameters = tag_parameters_map_.at(tag_type);
 
     addTagMarkers(
-      markers, tag_uid.toString(), tag_size, initial_estimations_color, *pose, base_marker);
+      markers, tag_uid.toString(), tag_parameters, initial_estimations_color, *pose, base_marker);
   }
 
   for (auto initial_sensor_poses_it : data_->initial_sensor_poses_map) {
@@ -722,10 +735,10 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     const UID & tag_uid = it->first;
     auto & pose = it->second;
     const TagType & tag_type = tag_uid.tag_type;
-    const double tag_size = tag_parameters_map_.at(tag_type).size;
 
     addTagMarkers(
-      markers, tag_uid.toString(), tag_size, optimized_estimations_color, *pose, base_marker);
+      markers, tag_uid.toString(), tag_parameters_map_.at(tag_type), optimized_estimations_color,
+      *pose, base_marker);
   }
 
   for (auto optimized_sensor_poses_it : data_->optimized_sensor_poses_map) {
@@ -833,11 +846,13 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
       detections_base_marker.header.frame_id = external_camera_uid.toString();
 
       for (const auto & group_grid_detections : grouped_grid_detections) {
+        const auto & tag_type = group_grid_detections.first;
+        const auto & tag_parameters = tag_parameters_map_.at(tag_type);
         const std::vector<ApriltagGridDetection> & grid_detections = group_grid_detections.second;
         for (const auto & grid_detection : grid_detections) {
           for (const auto & detection : grid_detection.sub_detections) {
             addTagMarkers(
-              markers, std::to_string(detection.id), detection.size, color, detection.pose,
+              markers, std::to_string(detection.id), tag_parameters, color, detection.pose,
               detections_base_marker);
           }
         }
@@ -876,11 +891,13 @@ bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
 {
   int camera_scenes = std::transform_reduce(
     scenes_calibration_apriltag_detections_.begin(), scenes_calibration_apriltag_detections_.end(),
-    0, std::plus{}, [](auto it) { return it.second.size(); });
+    0, [](const auto & lhs, const auto & rhs) { return std::max<std::size_t>(lhs, rhs); },
+    [](auto it) { return it.second.size(); });
 
   int lidar_scenes = std::transform_reduce(
     scenes_calibration_lidartag_detections_.begin(), scenes_calibration_lidartag_detections_.end(),
-    0, std::plus{}, [](auto it) { return it.second.size(); });
+    0, [](const auto & lhs, const auto & rhs) { return std::max<std::size_t>(lhs, rhs); },
+    [](auto it) { return it.second.size(); });
 
   std::size_t num_scenes = std::max(camera_scenes, lidar_scenes);
 
@@ -904,8 +921,8 @@ bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
   scenes_external_camera_images_[request->scene_id] = request->files;
 
   RCLCPP_INFO(
-    this->get_logger(), "Addded %lu external images to scene id=%ld", request->files.size(),
-    request->scene_id);
+    this->get_logger(), "Addded %lu external images to scene id=%ld (scenes=%lu)",
+    request->files.size(), request->scene_id, num_scenes);
 
   response->success = true;
   return true;
@@ -922,7 +939,6 @@ bool ExtrinsicTagBasedBaseCalibrator::addCalibrationSensorDetectionsCallback(
     GroupedApriltagGridDetections & latest_detections = latest_apriltag_detections_it.second;
 
     if (latest_detections.size() > 0) {
-      ;
       response->success = true;
       break;
     }
