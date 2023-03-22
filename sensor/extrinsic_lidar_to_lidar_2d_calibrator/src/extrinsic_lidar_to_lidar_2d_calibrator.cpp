@@ -36,8 +36,6 @@
 
 #define UNUSED(x) (void)x;
 
-using namespace std::chrono_literals;
-
 LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_lidar_to_lidar_2d_calibrator", options),
   tf_broadcaster_(this),
@@ -46,6 +44,8 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   calibration_done_(false),
   first_observation_(true)
 {
+  using std::chrono_literals::operator""ms;
+
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -145,6 +145,7 @@ void LidarToLidar2DCalibrator::requestReceivedCallback(
 {
   // This tool uses several tfs, so for consistency we take the initial calibration using lookups
   UNUSED(request);
+  using std::chrono_literals::operator""s;
 
   {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -223,7 +224,6 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
     lidar_base_to_source_eigen_ = tf2::transformToEigen(lidar_base_to_source_msg_);
 
     got_initial_transform_ = true;
-
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(this->get_logger(), "could not get initial tf. %s", ex.what());
     return false;
@@ -418,7 +418,7 @@ double LidarToLidar2DCalibrator::getAlignmentError(
   double error = 0.0;
   int n = 0;
 
-  for (unsigned long i = 0; i < correspondences.size(); ++i) {
+  for (std::size_t i = 0; i < correspondences.size(); ++i) {
     if (correspondences[i].distance <= max_corr_distance_) {
       error += std::sqrt(correspondences[i].distance);
       n += 1;
@@ -443,7 +443,7 @@ void LidarToLidar2DCalibrator::findBestTransform(
 
   best_transform = Eigen::Matrix4f::Identity();
   best_score = 0.f;
-  for (int i = 0; i < int(correspondences.size()); ++i) {
+  for (std::size_t i = 0; i < correspondences.size(); ++i) {
     best_score += correspondences[i].distance;
   }
 

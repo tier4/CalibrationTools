@@ -41,6 +41,7 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -50,7 +51,7 @@ using PointType = pcl::PointXYZ;
 class LidarToLidar2DCalibrator : public rclcpp::Node
 {
 public:
-  LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options);
+  explicit LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
   void requestReceivedCallback(

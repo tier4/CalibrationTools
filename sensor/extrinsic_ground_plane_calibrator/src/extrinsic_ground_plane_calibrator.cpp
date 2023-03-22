@@ -18,6 +18,7 @@
 #include <pcl/ModelCoefficients.h>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/common/pca.h>
+#include <pcl/filters/crop_box.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
@@ -35,8 +36,6 @@
 
 #define UNUSED(x) (void)x;
 
-using namespace std::chrono_literals;
-
 ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_ground_plane_calibrator_node", options),
   tf_broadcaster_(this),
@@ -52,6 +51,16 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
   lidar_base_frame_ = this->declare_parameter<std::string>("child_frame");
 
   marker_size_ = this->declare_parameter<double>("marker_size", 20.0);
+
+  use_crop_box_filter_ = this->declare_parameter<bool>("use_crop_box_filter", true);
+  crop_box_min_x_ = this->declare_parameter<double>("crop_box_min_x", -50.0);
+  crop_box_min_y_ = this->declare_parameter<double>("crop_box_min_y", -50.0);
+  crop_box_min_z_ = this->declare_parameter<double>("crop_box_min_z", -50.0);
+  crop_box_max_x_ = this->declare_parameter<double>("crop_box_max_x", 50.0);
+  crop_box_max_y_ = this->declare_parameter<double>("crop_box_max_y", 50.0);
+  crop_box_max_z_ = this->declare_parameter<double>("crop_box_max_z", 50.0);
+
+  use_pca_rough_normal_ = this->declare_parameter<bool>("use_pca_rough_normal", true);
   max_inlier_distance_ = this->declare_parameter<double>("max_inlier_distance", 0.01);
   min_plane_points_ = this->declare_parameter<int>("min_plane_points", 500);
   min_plane_points_percentage_ =
@@ -117,10 +126,11 @@ void ExtrinsicGroundPlaneCalibrator::requestReceivedCallback(
 {
   // This tool uses several tfs, so for consistency we take the initial calibration using lookups
   UNUSED(request);
+  using std::chrono_literals::operator""s;
 
   // Loop until the calibration finishes
   while (rclcpp::ok()) {
-    rclcpp::sleep_for(1s);
+    rclcpp::sleep_for(10s);
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (calibration_done_) {
@@ -216,7 +226,6 @@ bool ExtrinsicGroundPlaneCalibrator::checkInitialTransforms()
     lidar_base_to_lidar_eigen_ = tf2::transformToEigen(lidar_base_to_lidar_msg_);
 
     got_initial_transform_ = true;
-
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(this->get_logger(), "could not get initial tf. %s", ex.what());
     return false;
@@ -229,18 +238,33 @@ bool ExtrinsicGroundPlaneCalibrator::extractGroundPlane(
   pcl::PointCloud<PointType>::Ptr & pointcloud, Eigen::Vector4d & model,
   pcl::PointCloud<PointType>::Ptr & inliers_pointcloud)
 {
-  std::vector<pcl::ModelCoefficients> models;
+  if (use_crop_box_filter_) {
+    pcl::CropBox<PointType> boxFilter;
+    boxFilter.setMin(Eigen::Vector4f(crop_box_min_x_, crop_box_min_y_, crop_box_min_z_, 1.0));
+    boxFilter.setMax(Eigen::Vector4f(crop_box_max_x_, crop_box_max_y_, crop_box_max_z_, 1.0));
+    boxFilter.setInputCloud(pointcloud);
+    boxFilter.filter(*pointcloud);
+  }
 
-  // Obtain an idea of the ground plane using PCA
-  // under the assumption that the axis with less variance will be the ground plane normal
-  pcl::PCA<PointType> pca;
-  pca.setInputCloud(pointcloud);
-  Eigen::MatrixXf vectors = pca.getEigenVectors();
-  Eigen::Vector3f rough_normal = vectors.col(2);
+  std::vector<pcl::ModelCoefficients> models;
+  Eigen::Vector3f rough_normal;
+
+  if (use_pca_rough_normal_) {
+    // Obtain an idea of the ground plane using PCA
+    // under the assumption that the axis with less variance will be the ground plane normal
+    pcl::PCA<PointType> pca;
+    pca.setInputCloud(pointcloud);
+    Eigen::MatrixXf vectors = pca.getEigenVectors();
+    rough_normal = vectors.col(2);
+  } else {
+    rough_normal =
+      (initial_base_to_lidar_eigen_.inverse().rotation() * Eigen::Vector3d(0.0, 0.0, 1.0))
+        .cast<float>();
+  }
 
   if (verbose_) {
     RCLCPP_INFO(
-      this->get_logger(), "PCA-based rough plane normal. x=%.2f, y=%.2f, z=%.2f", rough_normal.x(),
+      this->get_logger(), "Rough plane normal. x=%.2f, y=%.2f, z=%.2f", rough_normal.x(),
       rough_normal.y(), rough_normal.z());
   }
 
