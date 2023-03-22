@@ -6,14 +6,12 @@
   <arg name="rviz" default="false"/>
 
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
-  <let name="lidar_model" value="velodyne_vls128"/>
   <let name="calibration_sensor_frame" value="velodyne_top"/>
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_base_calibrator)/rviz/velodyne_top.rviz"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_base_calibrator)/rviz/xx1.rviz"/>
 
   <let name="image_decompressed_topic" value="/sensing/camera/camera0/image_rect_color/decompressed"/>
   <let name="image_compressed_topic" value="/sensing/camera/camera0/image_rect_color/compressed"/>
   <let name="camera_info_topic" value="/sensing/camera/camera0/camera_info"/>
-  <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
 
   <let name="camera_frame" value="camera0/camera_link"/>
 
@@ -29,24 +27,97 @@
     <remap from="decompressor/output/raw_image" to="$(var image_decompressed_topic)"/>
   </node>
 
-  <!-- lidartag detector -->
-  <include file="$(find-pkg-share lidartag)/launch/lidartag_$(var lidar_model).launch.xml">
-    <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
-  </include>
+  <!-- top: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="top"/>
 
-  <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
-    <param name="max_no_observation_time" value="3.0"/>
-    <param name="new_hypothesis_distance" value="1.5"/>
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls128.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
+    </include>
 
-    <param name="new_hypothesis_transl" value="0.1"/>
-    <param name="new_hypothesis_rot" value="15.0"/>
-    <param name="measurement_noise_transl" value="0.05"/>
-    <param name="measurement_noise_rot" value="5.0"/>
-    <param name="process_noise_transl" value="0.01"/>
-    <param name="process_noise_transl_dot" value="0.001"/>
-    <param name="process_noise_rot" value="1.0"/>
-    <param name="process_noise_rot_dot" value="0.1"/>
-  </node>
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
+
+  <!-- left: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="left"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls16.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/left/pointcloud_raw"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
+
+  <!-- right: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="right"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls16.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/right/pointcloud_raw"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
+
+  <!-- rear: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="rear"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls16.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/rear/pointcloud_raw"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
 
   <!-- apriltag detector -->
   <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
@@ -110,7 +181,7 @@
     <arg name="calibration_camera_frames" value="['']"/>
 
     <!-- Topic configuration -->
-    <arg name="calibration_lidar_detections_topics" value="['/lidartag/filtered/detections_array']"/>
+    <arg name="calibration_lidar_detections_topics" value="['/top/lidartag/filtered/detections_array']"/>
     <arg name="calibration_image_detections_topics" value="['']"/>
     <arg name="calibration_camera_info_topics" value="['']"/>
 
@@ -128,7 +199,7 @@
 
     <!-- Optimization configuration -->
     <arg name="ba_optimize_intrinsics" value="true"/>
-    <arg name="ba_share_intrinsics" value="false"/>
+    <arg name="ba_share_intrinsics" value="true"/>
     <arg name="ba_force_shared_ground_plane" value="true"/>
   </include>
 
