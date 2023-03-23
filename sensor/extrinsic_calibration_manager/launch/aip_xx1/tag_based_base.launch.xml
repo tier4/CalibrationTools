@@ -54,7 +54,7 @@
   <group>
     <push-ros-namespace namespace="left"/>
 
-    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls16.launch.xml">
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vlp16.launch.xml">
       <arg name="pointcloud_topic" value="/sensing/lidar/left/pointcloud_raw"/>
     </include>
 
@@ -77,7 +77,7 @@
   <group>
     <push-ros-namespace namespace="right"/>
 
-    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls16.launch.xml">
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vlp16.launch.xml">
       <arg name="pointcloud_topic" value="/sensing/lidar/right/pointcloud_raw"/>
     </include>
 
@@ -100,7 +100,7 @@
   <group>
     <push-ros-namespace namespace="rear"/>
 
-    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls16.launch.xml">
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vlp16.launch.xml">
       <arg name="pointcloud_topic" value="/sensing/lidar/rear/pointcloud_raw"/>
     </include>
 
