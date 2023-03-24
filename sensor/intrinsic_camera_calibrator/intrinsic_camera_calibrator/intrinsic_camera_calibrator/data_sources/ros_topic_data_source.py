@@ -88,7 +88,8 @@ class RosTopicDataSource(DataSource, Node):
             self.qos_profile = rclpy.qos.QoSProfile(
                 reliability=reliability,
                 durability=durability,
-                history=rclpy.qos.HistoryPolicy.SYSTEM_DEFAULT,
+                history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+                depth=1,
             )
 
             for image_type in topics_dict[image_topic]:
