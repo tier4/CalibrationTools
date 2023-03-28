@@ -19,7 +19,7 @@
   <arg name="mapping_lidar_frame"/>
 
   <arg name="local_map_num_keyframes" default="15"/>
-  <arg name="dense_pointcloud_num_keyframes" default="10.0"/>
+  <arg name="dense_pointcloud_num_keyframes" default="10"/>
   <arg name="mapping_max_frames" default="5000"/>
   <arg name="mapping_max_range" default="100.0"/>
   <arg name="marker_size" default="10.0"/>
