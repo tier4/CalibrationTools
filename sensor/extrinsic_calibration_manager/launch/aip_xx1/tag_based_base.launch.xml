@@ -185,16 +185,51 @@
     <arg name="calibration_image_detections_topics" value="['']"/>
     <arg name="calibration_camera_info_topics" value="['']"/>
 
-    <!-- Tag configuration-->
-    <arg name="waypoint_tag_ids" value="[0]"/>
+    <!-- Tag configuration - 2022 - BS -->
+    <!--arg name="waypoint_tag_ids" value="[0]"/>
     <arg name="ground_tag_ids" value="[6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]"/>
 
     <arg name="left_wheel_tag_id" value="4"/>
     <arg name="right_wheel_tag_id" value="3"/>
 
-    <arg name="ground_tag_size" value="0.163"/>
+    <arg name="ground_tag_size" value="0.163"/-->
+
+    <!--Tag configuration - 2023/03/23 - Omiya -->
+    <arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
+
+    <arg name="ground_tag_family" value="tag36h11"/>
+    <arg name="ground_tag_rows" value="1"/>
+    <arg name="ground_tag_cols" value="1"/>
+    <arg name="ground_tag_size" value="0.2"/>
+    <arg name="ground_tag_spacing" value="0.2"/>
+    <arg
+      name="ground_tag_ids"
+      value="[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]"
+    />
+
+    <arg name="wheel_tag_family" value="tag16h5"/>
+    <arg name="wheel_tag_rows" value="2"/>
+    <arg name="wheel_tag_cols" value="2"/>
+    <arg name="wheel_tag_size" value="0.166"/>
+    <arg name="wheel_tag_spacing" value="0.2"/>
+    <arg name="left_wheel_tag_id" value="26"/>
+    <arg name="right_wheel_tag_id" value="22"/>
 
     <!-- Initial intrinsics calibration -->
+    <arg name="initial_intrinsic_calibration_tag_family" value="tag16h5"/>
+    <arg name="initial_intrinsic_calibration_tag_rows" value="1"/>
+    <arg name="initial_intrinsic_calibration_tag_cols" value="1"/>
+    <arg name="initial_intrinsic_calibration_tag_size" value="0.6"/>
+    <arg name="initial_intrinsic_calibration_tag_spacing" value="0.2"/>
+    <arg name="intrinsic_calibration_tag_ids" value="[0, 1, 2, 3, 4, 5]"/>
+
+    <!-- Optimization configuration -->
+    <arg name="ba_optimize_intrinsics" value="true"/>
+    <arg name="ba_share_intrinsics" value="true"/>
+    <arg name="ba_force_shared_ground_plane" value="true"/>
+
+    <!-- Initial intrinsics calibration -->
+    <arg name="initial_intrinsic_calibration_board_type" value="chessboard"/>
     <arg name="intrinsic_calibration_tag_ids" value="[0, 4]"/>
 
     <!-- Optimization configuration -->

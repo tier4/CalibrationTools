@@ -1470,11 +1470,8 @@ bool ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback(
         const auto tag_parameters = tag_parameters_map_[group_grid_detections.first];
 
         for (auto & grid_detection : grid_detections) {
-          for (auto & detection : grid_detection.sub_detections) {
-            detection.size = tag_parameters.size;
-            detection.computeTemplateCorners();
-            detection.computeObjectCorners();
-          }
+          grid_detection.computeTemplateCorners(tag_parameters);
+          grid_detection.computeObjectCorners();
         }
       }
     }
@@ -1496,11 +1493,8 @@ bool ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback(
         const auto tag_parameters = tag_parameters_map_[group_grid_detections.first];
 
         for (auto & grid_detection : grid_detections) {
-          for (auto & detection : grid_detection.sub_detections) {
-            detection.size = tag_parameters.size;
-            detection.computeTemplateCorners();
-            detection.computeObjectCorners();
-          }
+          grid_detection.computeTemplateCorners(tag_parameters);
+          grid_detection.computeObjectCorners();
         }
       }
     }

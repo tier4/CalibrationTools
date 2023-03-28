@@ -179,6 +179,50 @@ double ApriltagDetection::computeReprojError(double cx, double cy, double fx, do
   return error / object_corners.size();
 }
 
+void ApriltagGridDetection::computeTemplateCorners(const TagParameters & tag_parameters)
+{
+  template_corners.clear();
+
+  for (auto & sub_detection : sub_detections) {
+    int offset = sub_detection.id - id;
+    assert(offset >= 0 && offset < rows * cols);
+
+    double factor = tag_parameters.size * (1.0 + tag_parameters.spacing);
+
+    int row = offset / cols;
+    int col = offset % cols;
+    double corner_offset_x = (col - 0.5 * (cols - 1)) * factor;
+    double corner_offset_y = -1.0 * (row - 0.5 * (rows - 1)) * factor;
+    cv::Point3d corner_offset(corner_offset_x, corner_offset_y, 0.0);
+
+    sub_detection.computeTemplateCorners();
+
+    for (auto & template_corner : sub_detection.template_corners) {
+      template_corner = template_corner + corner_offset;
+    }
+    template_corners.insert(
+      template_corners.end(), sub_detection.template_corners.begin(),
+      sub_detection.template_corners.end());
+  }
+}
+
+void ApriltagGridDetection::computeObjectCorners()
+{
+  object_corners.resize(template_corners.size());
+  for (std::size_t corner_index = 0; corner_index < template_corners.size(); corner_index++) {
+    cv::Point3d p = pose * template_corners[corner_index];
+    object_corners[corner_index] = p;  // cv::Point3d(p(0), p(1), p(2));
+  }
+
+  for (auto & sub_detection : sub_detections) {
+    for (std::size_t corner_index = 0; corner_index < sub_detection.template_corners.size();
+         corner_index++) {
+      cv::Point3d p = pose * sub_detection.template_corners[corner_index];
+      sub_detection.object_corners[corner_index] = p;  // cv::Point3d(p(0), p(1), p(2));
+    }
+  }
+}
+
 double ApriltagGridDetection::recomputeFromSubDetections(const TagParameters & tag_parameters)
 {
   image_corners.clear();

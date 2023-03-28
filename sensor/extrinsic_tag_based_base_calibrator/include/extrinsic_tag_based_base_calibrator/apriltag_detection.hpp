@@ -82,6 +82,8 @@ struct ApriltagGridDetection : public ApriltagDetection
     const std::map<TagType, std::vector<ApriltagDetection>> & grouped_detection,
     std::unordered_map<TagType, TagParameters> & parameters_map);
 
+  void computeObjectCorners();
+  void computeTemplateCorners(const TagParameters & tag_parameters);
   double recomputeFromSubDetections(const TagParameters & tag_parameters);
 
   std::vector<ApriltagDetection> sub_detections;
