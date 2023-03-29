@@ -489,8 +489,35 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
                                                  lidar_base_to_lidar_pose.inverse() *
                                                  sensor_kit_to_lidar_base_pose.inverse();
 
+  Eigen::Affine3d initial_base_link_to_sensor_kit_pose = initial_base_link_to_lidar_pose *
+                                                         lidar_base_to_lidar_pose.inverse() *
+                                                         sensor_kit_to_lidar_base_pose.inverse();
+
+  geometry_msgs::msg::Pose base_link_to_sensor_kit_msg = tf2::toMsg(base_link_to_sensor_kit_pose);
+  geometry_msgs::msg::Pose initial_base_link_to_sensor_kit_msg =
+    tf2::toMsg(initial_base_link_to_sensor_kit_pose);
+  (void)base_link_to_sensor_kit_msg;
+  (void)initial_base_link_to_sensor_kit_msg;
+
   response->success = true;
-  response->result_pose = tf2::toMsg(base_link_to_sensor_kit_pose);
+  response->result_pose = base_link_to_sensor_kit_msg;
+
+  // Display the initial and calibrated values
+  const auto & base_to_sensor_kit_rpy =
+    tier4_autoware_utils::getRPY(base_link_to_sensor_kit_msg.orientation);
+  const auto & initial_base_to_sensor_kit_rpy =
+    tier4_autoware_utils::getRPY(initial_base_link_to_sensor_kit_msg.orientation);
+  RCLCPP_INFO(this->get_logger(), "base_link: initial and calibrated statistics statistics");
+  RCLCPP_INFO(
+    this->get_logger(), "\tinitial: x=%.3f y=%.3f z=%.3f roll=%.3f pitch=%.3f yaw=%.3f",
+    initial_base_link_to_sensor_kit_msg.position.x, initial_base_link_to_sensor_kit_msg.position.y,
+    initial_base_link_to_sensor_kit_msg.position.z, initial_base_to_sensor_kit_rpy.x,
+    initial_base_to_sensor_kit_rpy.y, initial_base_to_sensor_kit_rpy.z);
+  RCLCPP_INFO(
+    this->get_logger(), "\tcalibrated: x=%.3f y=%.3f z=%.3f roll=%.3f pitch=%.3f yaw=%.3f",
+    base_link_to_sensor_kit_msg.position.x, base_link_to_sensor_kit_msg.position.y,
+    base_link_to_sensor_kit_msg.position.z, base_to_sensor_kit_rpy.x, base_to_sensor_kit_rpy.y,
+    base_to_sensor_kit_rpy.z);
 
   // Display the correction in calibration
   Eigen::Affine3d initial_base_link_to_calibrated_base_link_pose =
@@ -508,7 +535,7 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
     initial_base_link_to_calibrated_base_link_rot(1, 0),
     initial_base_link_to_calibrated_base_link_rot(0, 0));
 
-  RCLCPP_INFO(this->get_logger(), "base_link: initial to calibrated information");
+  RCLCPP_INFO(this->get_logger(), "base_link: initial to calibrated statistics");
   RCLCPP_INFO(
     this->get_logger(), "\t normal angle difference: %.3f degrees",
     180.0 * normal_angle_diff / M_PI);
