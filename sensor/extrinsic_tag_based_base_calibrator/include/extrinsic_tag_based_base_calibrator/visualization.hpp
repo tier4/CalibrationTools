@@ -121,7 +121,7 @@ void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scala
  */
 void drawAxes(
   cv::Mat & img, const ApriltagDetection & detection, const cv::Affine3d & camera_to_tag_pose,
-  const std::array<double, 6> & intrinsics);
+  const std::array<double, 6> & intrinsics, double thickness_factor = 1.f);
 
 /*!
  * Draws the detections in an image

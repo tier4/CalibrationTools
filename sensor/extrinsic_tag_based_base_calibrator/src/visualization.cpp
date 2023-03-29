@@ -223,7 +223,7 @@ void drawDetection(cv::Mat & img, const ApriltagDetection & detection, cv::Scala
 
 void drawAxes(
   cv::Mat & img, const ApriltagDetection & detection, const cv::Affine3d & camera_to_tag_pose,
-  const std::array<double, 6> & intrinsics)
+  const std::array<double, 6> & intrinsics, double thickness_factor)
 {
   cv::Vec3d px3d = camera_to_tag_pose * cv::Vec3d(0.5 * detection.size, 0.0, 0.0);
   cv::Vec3d py3d = camera_to_tag_pose * cv::Vec3d(0.0, 0.5 * detection.size, 0.0);
@@ -244,16 +244,16 @@ void drawAxes(
   double tag_size = *std::max_element(edge_sizes.begin(), edge_sizes.end());
 
   cv::line(
-    img, center2d, px2d, cv::Scalar(0, 0, 255), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
-    cv::LINE_AA);
+    img, center2d, px2d, cv::Scalar(0, 0, 255),
+    static_cast<int>(std::max(thickness_factor * tag_size / 512.0, 1.0)), cv::LINE_AA);
 
   cv::line(
-    img, center2d, py2d, cv::Scalar(0, 255, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
-    cv::LINE_AA);
+    img, center2d, py2d, cv::Scalar(0, 255, 0),
+    static_cast<int>(std::max(thickness_factor * tag_size / 512.0, 1.0)), cv::LINE_AA);
 
   cv::line(
-    img, center2d, pz2d, cv::Scalar(255, 0, 0), static_cast<int>(std::max(tag_size / 512.0, 1.0)),
-    cv::LINE_AA);
+    img, center2d, pz2d, cv::Scalar(255, 0, 0),
+    static_cast<int>(std::max(thickness_factor * tag_size / 512.0, 1.0)), cv::LINE_AA);
 }
 
 void drawAxes(

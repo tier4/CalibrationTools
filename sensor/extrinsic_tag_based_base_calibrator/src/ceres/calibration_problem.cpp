@@ -701,7 +701,7 @@ void CalibrationProblem::writeDebugImages()
             drawDetection(undistorted_img, optimized_detection, cv::Scalar(0, 255, 0));
             drawAxes(undistorted_img, initial_detection, initial_camera_to_tag_pose, intrinsics);
             drawAxes(
-              undistorted_img, optimized_detection, optimized_camera_to_tag_pose, intrinsics);
+              undistorted_img, optimized_detection, optimized_camera_to_tag_pose, intrinsics, 2.f);
           }
         }
       }
