@@ -65,6 +65,19 @@ void LidartagFilter::lidarTagDetectionsCallback(
     updateHypothesis(detection, header);
   }
 
+  rclcpp::Time timestamp = rclcpp::Time(header.stamp);
+
+  std::vector<int> erase_list;
+  for (auto it = hypotheses_map_.begin(); it != hypotheses_map_.end(); it++) {
+    if (!it->second.update(timestamp)) {
+      erase_list.push_back(it->first);
+    }
+  }
+
+  for (auto id : erase_list) {
+    hypotheses_map_.erase(id);
+  }
+
   publishFilteredDetections(header);
 }
 
@@ -103,19 +116,6 @@ void LidartagFilter::updateHypothesis(
   } else {
     hypotheses_map_[detection.id].update(translation_cv, rotation_cv, detection.size, timestamp);
   }
-
-  std::vector<int> erase_list;
-  for (auto it = hypotheses_map_.begin(); it != hypotheses_map_.end(); it++) {
-    if (!it->second.update(timestamp)) {
-      erase_list.push_back(it->first);
-    }
-  }
-
-  for (auto id : erase_list) {
-    hypotheses_map_.erase(id);
-  }
-
-  publishFilteredDetections(header);
 }
 
 void LidartagFilter::publishFilteredDetections(const std_msgs::msg::Header & header)
