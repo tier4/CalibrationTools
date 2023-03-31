@@ -15,7 +15,7 @@
   <!-- TODO before merge (koji minoda) any other way to get appropriate param? -->
   <arg name="error_monitor_param_path" default="$(find-pkg-share autoware_launch)/config/localization/localization_error_monitor.param.yaml"/>
   <arg name="imu_corrector_param_path" default="$(env HOME)/imu_corrector.param.yaml"/>
-  <arg name="vehicle_velocity_converter_param_path" default="$(env HOME)/vehicle_velocity_converter_param_path.param.yaml"/>
+  <arg name="vehicle_velocity_converter_param_path" default="$(env HOME)/vehicle_velocity_converter.param.yaml"/>
 
   <arg name="in_ndt_pose_with_covariance" default="/localization/pose_estimator/pose_with_covariance"/>
 
