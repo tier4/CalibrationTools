@@ -64,6 +64,8 @@ public:
    * corresponding to the external camera
    */
   CalibrationScene processScene(
+    const std::unordered_map<std::string, sensor_msgs::msg::CompressedImage::SharedPtr> &
+      camera_images_map,
     const std::unordered_map<std::string, LidartagDetections> & lidar_detections_map,
     const std::unordered_map<std::string, GroupedApriltagGridDetections> & camera_detections_map,
     const std::vector<std::string> & calibration_lidar_frames,

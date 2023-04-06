@@ -22,6 +22,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace extrinsic_tag_based_base_calibrator
@@ -137,6 +138,14 @@ public:
    * Formulates and solves the BA problem
    */
   void solve();
+
+  /*!
+   * Generates debug image displaying the detections with the poses and intrinsics resulting from BA
+   */
+  void writeDebugImage(
+    std::size_t scene_index, const UID & sensor_uid, cv::Mat undistorted_img,
+    const GroupedApriltagGridDetections & grouped_detections,
+    const std::string & output_image_name);
 
   /*!
    * Generates debug image displaying the detections with the poses and intrinsics resulting from BA

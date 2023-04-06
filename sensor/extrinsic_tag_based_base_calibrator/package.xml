@@ -16,6 +16,7 @@
   <depend>apriltag</depend>
   <depend>apriltag_msgs</depend>
   <depend>backward_ros</depend>
+  <depend>cv_bridge</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>image_geometry</depend>

@@ -28,6 +28,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <ceres/ceres.h>
+#include <cv_bridge/cv_bridge.h>
 
 #include <algorithm>
 #include <numeric>
@@ -82,9 +83,13 @@ void CalibrationProblem::dataToPlaceholders()
     const UID & sensor_uid = it->first;
     const auto & pose = it->second;
 
-    if (
-      sensor_uid.sensor_type == SensorType::CalibrationCamera ||
-      sensor_uid.sensor_type == SensorType::CalibrationLidar) {
+    if (sensor_uid.sensor_type == SensorType::CalibrationCamera) {
+      pose3dToPlaceholder(*pose, pose_opt_map[sensor_uid], true);
+      placeholderToPose3d(
+        pose_opt_map[sensor_uid], data_->optimized_sensor_poses_map[sensor_uid], true);
+
+      intrinsics_opt_map[sensor_uid] = *data_->initial_camera_intrinsics_map[sensor_uid];
+    } else if (sensor_uid.sensor_type == SensorType::CalibrationLidar) {
       pose3dToPlaceholder(*pose, pose_opt_map[sensor_uid], true);
       placeholderToPose3d(
         pose_opt_map[sensor_uid], data_->optimized_sensor_poses_map[sensor_uid], true);
@@ -219,10 +224,11 @@ void CalibrationProblem::evaluate()
 
             auto f = CameraResidual(
               calibration_camera_uid,
-              data_->calibration_camera_intrinsics_map_[calibration_camera_uid], detection,
+              data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
               pose_opt_map.at(calibration_camera_uid), false, false, false);
 
-            f(pose_opt_map.at(detection_uid).data(), residuals.data());
+            f(pose_opt_map.at(calibration_camera_uid).data(), pose_opt_map.at(detection_uid).data(),
+              residuals.data());
 
             sum_res = std::transform_reduce(
               residuals.begin(), residuals.end(), sum_res, std::plus{},
@@ -420,7 +426,7 @@ void CalibrationProblem::solve()
               (detection_uid.tag_type == TagType::GroundTag && !force_shared_ground_plane_)) {
               ceres::CostFunction * res = CameraResidual::createTagResidual(
                 calibration_camera_uid,
-                data_->calibration_camera_intrinsics_map_[calibration_camera_uid], detection,
+                data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
                 pose_opt_map.at(calibration_camera_uid), fix_sensor_pose, false);
 
               if (fix_sensor_pose) {
@@ -442,7 +448,7 @@ void CalibrationProblem::solve()
 
               ceres::CostFunction * res = CameraResidual::createGroundTagResidual(
                 calibration_camera_uid,
-                data_->calibration_camera_intrinsics_map_[calibration_camera_uid], detection,
+                data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
                 pose_opt_map.at(calibration_camera_uid), fix_sensor_pose, false);
 
               if (fix_sensor_pose) {
@@ -613,6 +619,78 @@ void CalibrationProblem::solve()
   RCLCPP_INFO_STREAM(rclcpp::get_logger("calibration_problem"), "Report: " << summary.FullReport());
 }
 
+void CalibrationProblem::writeDebugImage(
+  std::size_t scene_index, const UID & sensor_uid, cv::Mat undistorted_img,
+  const GroupedApriltagGridDetections & grouped_detections, const std::string & output_image_name)
+{
+  for (const auto & group_detections : grouped_detections) {
+    const TagType tag_type = group_detections.first;
+
+    for (const auto & grid_detection : group_detections.second) {
+      const int tag_id = grid_detection.id;
+      UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
+
+      if (
+        data_->initial_sensor_poses_map.count(sensor_uid) == 0 ||
+        data_->initial_tag_poses_map.count(detection_uid) == 0 ||
+        data_->invalid_pairs_set.count(std::make_pair(sensor_uid, detection_uid)) > 0) {
+        RCLCPP_ERROR(
+          rclcpp::get_logger("calibration_problem"),
+          "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
+          sensor_uid.toString().c_str(), detection_uid.toString().c_str());
+        continue;
+      }
+
+      for (const auto & detection : grid_detection.sub_detections) {
+        cv::Affine3d initial_camera_pose = *data_->initial_sensor_poses_map[sensor_uid];
+        cv::Affine3d initial_tag_pose = *data_->initial_tag_poses_map[detection_uid];
+
+        cv::Affine3d optimized_camera_pose = *data_->optimized_sensor_poses_map[sensor_uid];
+        cv::Affine3d optimized_tag_pose = *data_->optimized_tag_poses_map[detection_uid];
+
+        ApriltagDetection initial_detection = detection;
+        ApriltagDetection optimized_detection = detection;
+
+        auto project_corners = [this, &sensor_uid](
+                                 ApriltagDetection & detection, const cv::Affine3d & camera_pose,
+                                 const cv::Affine3d & tag_pose, bool use_optimized_intrinsics) {
+          std::vector<cv::Vec3d> corners_wcs{
+            tag_pose * detection.template_corners[0], tag_pose * detection.template_corners[1],
+            tag_pose * detection.template_corners[2], tag_pose * detection.template_corners[3]};
+          std::vector<cv::Vec3d> corners_ccs{
+            camera_pose.inv() * corners_wcs[0], camera_pose.inv() * corners_wcs[1],
+            camera_pose.inv() * corners_wcs[2], camera_pose.inv() * corners_wcs[3]};
+
+          const auto & intrinsics = use_optimized_intrinsics
+                                      ? *data_->optimized_camera_intrinsics_map.at(sensor_uid)
+                                      : *data_->initial_camera_intrinsics_map.at(sensor_uid);
+
+          detection.image_corners = std::vector<cv::Point2d>{
+            projectPoint(corners_ccs[0], intrinsics), projectPoint(corners_ccs[1], intrinsics),
+            projectPoint(corners_ccs[2], intrinsics), projectPoint(corners_ccs[3], intrinsics)};
+        };
+
+        project_corners(initial_detection, initial_camera_pose, initial_tag_pose, false);
+        project_corners(optimized_detection, optimized_camera_pose, optimized_tag_pose, true);
+
+        const auto & intrinsics = *data_->optimized_camera_intrinsics_map[sensor_uid];
+        cv::Affine3d initial_camera_to_tag_pose = initial_camera_pose.inv() * initial_tag_pose;
+        cv::Affine3d optimized_camera_to_tag_pose =
+          optimized_camera_pose.inv() * optimized_tag_pose;
+
+        drawDetection(undistorted_img, detection, cv::Scalar(255, 0, 255));
+        drawDetection(undistorted_img, initial_detection, cv::Scalar(0, 0, 255));
+        drawDetection(undistorted_img, optimized_detection, cv::Scalar(0, 255, 0));
+        drawAxes(undistorted_img, initial_detection, initial_camera_to_tag_pose, intrinsics);
+        drawAxes(
+          undistorted_img, optimized_detection, optimized_camera_to_tag_pose, intrinsics, 2.f);
+      }
+    }
+  }
+
+  cv::imwrite(output_image_name, undistorted_img);
+}
+
 void CalibrationProblem::writeDebugImages()
 {
   RCLCPP_INFO(
@@ -621,6 +699,25 @@ void CalibrationProblem::writeDebugImages()
 
   for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
     CalibrationScene & scene = data_->scenes[scene_index];
+
+    for (std::size_t camera_id = 0; camera_id < scene.calibration_cameras_detections.size();
+         camera_id++) {
+      // Need to make sure all the cameras are in the map
+      UID calibration_camera_uid = UID::makeSensorUID(SensorType::CalibrationCamera, camera_id);
+
+      cv_bridge::CvImagePtr cv_ptr;
+      cv_ptr = cv_bridge::toCvCopy(
+        *scene.calibration_cameras_detections[camera_id].calibration_image,
+        sensor_msgs::image_encodings::BGR8);
+
+      cv::Mat undistorted_img = cv_ptr->image;
+      ;  // we assume we use the undistorted image
+
+      writeDebugImage(
+        scene_index, calibration_camera_uid, undistorted_img,
+        scene.calibration_cameras_detections[camera_id].grouped_detections,
+        "s" + std::to_string(scene_index) + "_" + calibration_camera_uid.toString() + "_debug.jpg");
+    }
 
     for (std::size_t frame_id = 0; frame_id < scene.external_camera_frames.size(); frame_id++) {
       // Need to make sure all the cameras are in the map
@@ -636,78 +733,10 @@ void CalibrationProblem::writeDebugImages()
         external_camera_intrinsics_.dist_coeffs,
         external_camera_intrinsics_.undistorted_camera_matrix);
 
-      for (const auto & group_detections : scene.external_camera_frames[frame_id].detections) {
-        const TagType tag_type = group_detections.first;
-
-        for (const auto & grid_detection : group_detections.second) {
-          const int tag_id = grid_detection.id;
-          UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
-
-          if (
-            data_->initial_sensor_poses_map.count(external_camera_uid) == 0 ||
-            data_->initial_tag_poses_map.count(detection_uid) == 0 ||
-            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) >
-              0) {
-            RCLCPP_ERROR(
-              rclcpp::get_logger("calibration_problem"),
-              "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
-              external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
-            continue;
-          }
-
-          for (const auto & detection : grid_detection.sub_detections) {
-            cv::Affine3d initial_camera_pose =
-              *data_->initial_sensor_poses_map[external_camera_uid];
-            cv::Affine3d initial_tag_pose = *data_->initial_tag_poses_map[detection_uid];
-
-            cv::Affine3d optimized_camera_pose =
-              *data_->optimized_sensor_poses_map[external_camera_uid];
-            cv::Affine3d optimized_tag_pose = *data_->optimized_tag_poses_map[detection_uid];
-
-            ApriltagDetection initial_detection = detection;
-            ApriltagDetection optimized_detection = detection;
-
-            auto project_corners = [this, &external_camera_uid](
-                                     ApriltagDetection & detection,
-                                     const cv::Affine3d & camera_pose,
-                                     const cv::Affine3d & tag_pose, bool use_optimized_intrinsics) {
-              std::vector<cv::Vec3d> corners_wcs{
-                tag_pose * detection.template_corners[0], tag_pose * detection.template_corners[1],
-                tag_pose * detection.template_corners[2], tag_pose * detection.template_corners[3]};
-              std::vector<cv::Vec3d> corners_ccs{
-                camera_pose.inv() * corners_wcs[0], camera_pose.inv() * corners_wcs[1],
-                camera_pose.inv() * corners_wcs[2], camera_pose.inv() * corners_wcs[3]};
-
-              const auto & intrinsics =
-                use_optimized_intrinsics
-                  ? *data_->optimized_camera_intrinsics_map[external_camera_uid]
-                  : *data_->initial_camera_intrinsics_map[external_camera_uid];
-
-              detection.image_corners = std::vector<cv::Point2d>{
-                projectPoint(corners_ccs[0], intrinsics), projectPoint(corners_ccs[1], intrinsics),
-                projectPoint(corners_ccs[2], intrinsics), projectPoint(corners_ccs[3], intrinsics)};
-            };
-
-            project_corners(initial_detection, initial_camera_pose, initial_tag_pose, false);
-            project_corners(optimized_detection, optimized_camera_pose, optimized_tag_pose, true);
-
-            const auto & intrinsics = *data_->optimized_camera_intrinsics_map[external_camera_uid];
-            cv::Affine3d initial_camera_to_tag_pose = initial_camera_pose.inv() * initial_tag_pose;
-            cv::Affine3d optimized_camera_to_tag_pose =
-              optimized_camera_pose.inv() * optimized_tag_pose;
-
-            drawDetection(undistorted_img, detection, cv::Scalar(255, 0, 255));
-            drawDetection(undistorted_img, initial_detection, cv::Scalar(0, 0, 255));
-            drawDetection(undistorted_img, optimized_detection, cv::Scalar(0, 255, 0));
-            drawAxes(undistorted_img, initial_detection, initial_camera_to_tag_pose, intrinsics);
-            drawAxes(
-              undistorted_img, optimized_detection, optimized_camera_to_tag_pose, intrinsics, 2.f);
-          }
-        }
-      }
-
-      std::string output_name = external_camera_uid.toString() + "_debug.jpg";
-      cv::imwrite(output_name, undistorted_img);
+      writeDebugImage(
+        scene_index, external_camera_uid, undistorted_img,
+        scene.external_camera_frames[frame_id].detections,
+        external_camera_uid.toString() + "_debug.jpg");
     }
   }
 }

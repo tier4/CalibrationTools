@@ -20,6 +20,8 @@
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 
+#include <sensor_msgs/msg/compressed_image.hpp>
+
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -228,6 +230,7 @@ void serialize(
   ar & camera_detections.calibration_frame;
   ar & camera_detections.calibration_camera_id;
   ar & camera_detections.grouped_detections;
+  ar & camera_detections.calibration_image;
 }
 
 template <class Archive>
@@ -293,6 +296,14 @@ void serialize(
   ar & data.optimized_ground_tag_poses_map;
   ar & data.optimized_left_wheel_tag_pose;
   ar & data.optimized_right_wheel_tag_pose;
+}
+
+template <class Archive>
+void serialize(Archive & ar, sensor_msgs::msg::CompressedImage & msg, const unsigned int version)
+{
+  (void)version;
+  ar & msg.format;
+  ar & msg.data;
 }
 
 }  // namespace serialization

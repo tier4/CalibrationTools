@@ -27,6 +27,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
 #include <tier4_calibration_msgs/srv/empty.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/files.hpp>
@@ -74,6 +75,13 @@ protected:
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response,
     const std::string & sensor_kit_frame, const std::string & calibration_sensor_parent_frame,
     const std::string & calibration_sensor_frame);
+
+  /*!
+   * Callback method for the image of the calibration cameras
+   * @param msg The camera info msg
+   */
+  void calibrationImageCallback(
+    const sensor_msgs::msg::CompressedImage::SharedPtr & msg, const std::string & camera_frame);
 
   /*!
    * Callback method for camera info of the calibration cameras
@@ -129,16 +137,6 @@ protected:
   bool addCalibrationSensorDetectionsCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
     std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response);
-
-  /*!
-   * Attempts to add images from the calibration camera to the scene
-   * @param request Vector of files from the calibration camera
-   * @param response whether or not the service callback succeeded
-   * @returns whether or not the service callback succeeded
-   */
-  bool addCalibrationImagesCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Response> response);
 
   // Intrinsics realated services
   /*!
@@ -246,6 +244,9 @@ protected:
 
   rclcpp::TimerBase::SharedPtr visualization_timer_;
 
+  std::unordered_map<
+    std::string, rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr>
+    image_sub_map_;
   std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr>
     camera_info_sub_map_;
   std::unordered_map<
@@ -268,8 +269,6 @@ protected:
     add_external_camera_images_srv_;
   rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr
     add_calibration_sensor_detections_to_scene_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId>::SharedPtr
-    add_calibration_camera_images_srv_;
 
   // Intrinsics realated services
   rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr
@@ -322,6 +321,7 @@ protected:
     calibration_lidar_detections_topic_map_;  // sensor calibration frame -> topic
   std::unordered_map<std::string, std::string> calibration_image_detections_topic_map_;
   std::unordered_map<std::string, std::string> calibration_camera_info_topic_map_;
+  std::unordered_map<std::string, std::string> calibration_image_topic_map_;
 
   ApriltagDetectorParameters apriltag_detector_parameters_;
   double lidartag_to_apriltag_scale_;
@@ -357,6 +357,8 @@ protected:
   // Detections
   std::unordered_map<std::string, GroupedApriltagGridDetections> latest_apriltag_detections_map_;
   std::unordered_map<std::string, LidartagDetections> latest_lidartag_detections_map_;
+  std::unordered_map<std::string, sensor_msgs::msg::CompressedImage::SharedPtr>
+    latest_calibration_camera_images_map_;
 
   // Scene building parameters
   std::unordered_map<std::string, std::vector<GroupedApriltagGridDetections>>
@@ -365,7 +367,7 @@ protected:
     scenes_calibration_lidartag_detections_;
   std::vector<std::vector<std::string>>
     scenes_external_camera_images_;  // scene x external camera images
-  std::unordered_map<std::string, std::vector<std::string>>
+  std::unordered_map<std::string, std::vector<sensor_msgs::msg::CompressedImage::SharedPtr>>
     scenes_calibration_camera_images_;  // scene x sensor name x image file name
 
   // Calibration & data

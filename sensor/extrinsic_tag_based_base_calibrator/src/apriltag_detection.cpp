@@ -108,6 +108,7 @@ ApriltagDetection ApriltagDetection::fromApriltagDetectionMsg(
     [](const apriltag_msgs::msg::Point & p) { return cv::Point2d(p.x, p.y); });
 
   detection.size = size;
+  detection.computeTemplateCorners();
   detection.computeObjectCorners();
   double reprojection_error = detection.computePose(intrinsics);
   CV_UNUSED(reprojection_error);
@@ -117,19 +118,13 @@ ApriltagDetection ApriltagDetection::fromApriltagDetectionMsg(
 
 double ApriltagDetection::computePose(const IntrinsicParameters & intrinsics)
 {
-  CV_UNUSED(intrinsics);
-  assert(false);  // not implemented
-  return 0.0;
-
-  std::vector<std::vector<cv::Point3f>> object_points_;
-  std::vector<std::vector<cv::Point2f>> image_points_;
-  std::vector<cv::Mat> rvecs_;
-  std::vector<cv::Mat> tvecs_;
-
   std::vector<cv::Point2d> undistorted_points;
 
   cv::undistortPoints(
     image_corners, undistorted_points, intrinsics.camera_matrix, intrinsics.dist_coeffs);
+
+  assert(template_corners.size() > 0);
+  assert(template_corners.size() == undistorted_points.size());
 
   cv::sqpnp::PoseSolver solver;
   std::vector<cv::Mat> rvec_vec, tvec_vec;
@@ -144,14 +139,16 @@ double ApriltagDetection::computePose(const IntrinsicParameters & intrinsics)
   cv::Mat rvec = rvec_vec[0];
   cv::Mat tvec = tvec_vec[0];
 
-  cv::Matx31d translation_vector = tvec;
-  cv::Matx33d rotation_matrix;
+  // cv::Matx31d translation_vector = tvec;
+  // cv::Matx33d rotation_matrix;
 
-  translation_vector = tvec;
-  cv::Rodrigues(rvec, rotation_matrix);
+  // translation_vector = tvec;
+  // cv::Rodrigues(rvec, rotation_matrix);
 
   pose = cv::Affine3d(rvec, tvec);
   computeObjectCorners();
+
+  return computeReprojError(intrinsics);
 }
 
 double ApriltagDetection::computeReprojError(const IntrinsicParameters & intrinsics) const
@@ -330,7 +327,7 @@ GroupedApriltagGridDetections ApriltagGridDetection::fromGroupedApriltagDetectio
 
       ApriltagGridDetection grid_detection;
       grid_detection.rows = rows;
-      grid_detection.rows = cols;
+      grid_detection.cols = cols;
       grid_detection.size = size;
       grid_detection.id = partial_detections_it.first;
       grid_detection.family = tag_parameters.family;

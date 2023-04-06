@@ -18,6 +18,8 @@
 #include <extrinsic_tag_based_base_calibrator/apriltag_detection.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 
+#include <sensor_msgs/msg/compressed_image.hpp>
+
 #include <string>
 #include <vector>
 
@@ -42,6 +44,7 @@ struct SingleCalibrationCameraDetections
   std::string calibration_frame;
   int calibration_camera_id;
   GroupedApriltagGridDetections grouped_detections;
+  sensor_msgs::msg::CompressedImage::SharedPtr calibration_image;
 };
 
 struct CalibrationScene

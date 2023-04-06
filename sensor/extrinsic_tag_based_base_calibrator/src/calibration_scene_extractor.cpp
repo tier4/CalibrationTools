@@ -52,6 +52,8 @@ void CalibrationSceneExtractor::setExternalCameraIntrinsics(IntrinsicParameters 
 }
 
 CalibrationScene CalibrationSceneExtractor::processScene(
+  const std::unordered_map<std::string, sensor_msgs::msg::CompressedImage::SharedPtr> &
+    camera_images_map,
   const std::unordered_map<std::string, LidartagDetections> & lidar_detections_map,
   const std::unordered_map<std::string, GroupedApriltagGridDetections> & camera_detections_map,
   const std::vector<std::string> & calibration_lidar_frames,
@@ -81,6 +83,7 @@ CalibrationScene CalibrationSceneExtractor::processScene(
     camera_detections.calibration_frame = calibration_frame;
     camera_detections.calibration_camera_id = calibration_camera_id;
     camera_detections.grouped_detections = camera_detections_map.at(calibration_frame);
+    camera_detections.calibration_image = camera_images_map.at(calibration_frame);
 
     scene.calibration_cameras_detections.push_back(camera_detections);
   }

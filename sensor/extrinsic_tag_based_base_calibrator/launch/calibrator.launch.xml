@@ -21,6 +21,7 @@
   <arg name="calibration_lidar_detections_topics"/>
   <arg name="calibration_image_detections_topics"/>
   <arg name="calibration_camera_info_topics"/>
+  <arg name="calibration_image_topics"/>
 
   <!-- Tag configuration-->
   <arg name="lidartag_to_apriltag_scale" default="0.75"/>
@@ -102,6 +103,7 @@
       <param name="calibration_lidar_detections_topics" value="$(var calibration_lidar_detections_topics)"/>
       <param name="calibration_image_detections_topics" value="$(var calibration_image_detections_topics)"/>
       <param name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
+      <param name="calibration_image_topics" value="$(var calibration_image_topics)"/>
 
       <!-- Tag configuration-->
       <param name="lidartag_to_apriltag_scale" value="$(var lidartag_to_apriltag_scale)"/>

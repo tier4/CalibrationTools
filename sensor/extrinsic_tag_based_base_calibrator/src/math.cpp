@@ -417,13 +417,6 @@ void estimateInitialPoses(
       data, left_wheel_uid, right_wheel_uid, estimated_poses, raw_poses_map);
     iteration_uids = next_iteration_uids;
   }
-
-  data.optimized_camera_intrinsics_map = data.initial_camera_intrinsics_map;
-  data.optimized_ground_tag_poses_map = data.initial_ground_tag_poses_map;
-  data.optimized_left_wheel_tag_pose = data.initial_left_wheel_tag_pose;
-  data.optimized_right_wheel_tag_pose = data.initial_right_wheel_tag_pose;
-  data.optimized_sensor_poses_map = data.initial_sensor_poses_map;
-  data.optimized_tag_poses_map = data.initial_tag_poses_map;
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

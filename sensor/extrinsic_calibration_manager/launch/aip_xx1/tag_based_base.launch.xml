@@ -184,6 +184,7 @@
     <arg name="calibration_lidar_detections_topics" value="['/top/lidartag/filtered/detections_array']"/>
     <arg name="calibration_image_detections_topics" value="['']"/>
     <arg name="calibration_camera_info_topics" value="['']"/>
+    <arg name="calibration_image_topics" value="['']"/>
 
     <!-- Tag configuration - 2022 - BS -->
     <!--arg name="waypoint_tag_ids" value="[0]"/>
