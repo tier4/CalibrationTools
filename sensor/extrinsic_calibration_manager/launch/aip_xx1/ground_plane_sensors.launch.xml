@@ -45,13 +45,13 @@
       <arg name="crop_box_max_z" value="-1.0" /-->
 
       <!--2023/03/23 - Parking lot - 1 -->
-      <!--arg name="use_crop_box_filter" value="true" />
-      <arg name="crop_box_min_x" value="-9.0" />
-      <arg name="crop_box_min_y" value="-9.0" />
-      <arg name="crop_box_min_z" value="-9.0" />
-      <arg name="crop_box_max_x" value="9.0" />
-      <arg name="crop_box_max_y" value="9.0" />
-      <arg name="crop_box_max_z" value="-1.0" /-->
+      <arg name="use_crop_box_filter" value="true"/>
+      <arg name="crop_box_min_x" value="-9.0"/>
+      <arg name="crop_box_min_y" value="-9.0"/>
+      <arg name="crop_box_min_z" value="-9.0"/>
+      <arg name="crop_box_max_x" value="9.0"/>
+      <arg name="crop_box_max_y" value="9.0"/>
+      <arg name="crop_box_max_z" value="-1.0"/>
 
       <!--2023/03/23 - Parking lot - 2 -->
       <!--arg name="use_crop_box_filter" value="true" />
