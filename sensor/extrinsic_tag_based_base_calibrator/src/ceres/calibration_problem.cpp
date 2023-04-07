@@ -129,7 +129,7 @@ void CalibrationProblem::dataToPlaceholders()
       placeholderToPose3d(pose_opt_map[uid], data_->optimized_tag_poses_map[uid], false);
     } else {
       pose3dToGroundTagPlaceholder(
-        *pose, ground_pose, shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid]);
+        uid, *pose, ground_pose, shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid]);
       groundTagPlaceholderToPose3d(
         shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid],
         data_->optimized_tag_poses_map[uid]);
@@ -185,6 +185,9 @@ void CalibrationProblem::placeholdersToData()
 
 void CalibrationProblem::evaluate()
 {
+  std::map<UID, std::vector<double>> sensor_reprojection_errors_map;
+  std::map<TagType, std::vector<double>> tag_reprojection_errors_map;
+
   auto identity = std::make_shared<std::array<double, POSE_OPT_DIM>>(
     std::array<double, POSE_OPT_DIM>{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
 
@@ -204,41 +207,71 @@ void CalibrationProblem::evaluate()
           const int tag_id = grid_detection.id;
           UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
-          double sum_res = 0;
+          bool camera_status = pose_opt_map.count(calibration_camera_uid) > 0;
+          bool detection_status = pose_opt_map.count(detection_uid) > 0 ||
+                                  indep_ground_tag_pose_opt_map.count(detection_uid) > 0;
+          bool pair_status = data_->invalid_pairs_set.count(
+                               std::make_pair(calibration_camera_uid, detection_uid)) == 0;
+
+          if (!camera_status || !detection_status || !pair_status) {
+            RCLCPP_ERROR(
+              rclcpp::get_logger("calibration_problem"),
+              "Skipping %s <-> %s since there are no poses available or was deemed an outlier. "
+              "camera_status=%d. detection_status=%d. pair_status=%d",
+              calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str(),
+              camera_status, detection_status, pair_status);
+            continue;
+          }
+
+          double sum_res = 0.0;
           const int res_size = RESIDUAL_DIM * grid_detection.cols * grid_detection.rows;
 
           for (const auto & detection : grid_detection.sub_detections) {
             std::array<double, RESIDUAL_DIM> residuals;
 
             if (
-              pose_opt_map.count(calibration_camera_uid) == 0 ||
-              pose_opt_map.count(detection_uid) == 0 ||
-              data_->invalid_pairs_set.count(
-                std::make_pair(calibration_camera_uid, detection_uid)) > 0) {
-              RCLCPP_ERROR(
-                rclcpp::get_logger("calibration_problem"),
-                "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
-                calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str());
-              continue;
+              detection_uid.tag_type == TagType::WaypointTag ||
+              detection_uid.tag_type == TagType::WheelTag ||
+              (detection_uid.tag_type == TagType::GroundTag && !force_shared_ground_plane_)) {
+              double * calibration_camera_pose_op = pose_opt_map.at(calibration_camera_uid).data();
+
+              auto f = CameraResidual(
+                calibration_camera_uid,
+                data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
+                pose_opt_map.at(calibration_camera_uid), false, false, false);
+
+              f(calibration_camera_pose_op, pose_opt_map.at(detection_uid).data(),
+                residuals.data());
+            } else if (detection_uid.tag_type == TagType::GroundTag && force_shared_ground_plane_) {
+              double * calibration_camera_pose_op = pose_opt_map.at(calibration_camera_uid).data();
+              double * shrd_ground_pose_op = shrd_ground_tag_pose_opt.data();
+              double * indep_ground_pose_op =
+                indep_ground_tag_pose_opt_map.at(detection_uid).data();
+
+              auto f = CameraResidual(
+                calibration_camera_uid,
+                data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
+                pose_opt_map.at(calibration_camera_uid), false, false, true);
+
+              f(calibration_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op,
+                residuals.data());
+            } else {
+              throw std::domain_error("Invalid residual");
             }
 
-            auto f = CameraResidual(
-              calibration_camera_uid,
-              data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
-              pose_opt_map.at(calibration_camera_uid), false, false, false);
-
-            f(pose_opt_map.at(calibration_camera_uid).data(), pose_opt_map.at(detection_uid).data(),
-              residuals.data());
-
-            sum_res = std::transform_reduce(
+            sum_res += std::transform_reduce(
               residuals.begin(), residuals.end(), sum_res, std::plus{},
               [](auto v) { return std::abs(v); });
           }
 
+          double avg_reprojection_error = sum_res / res_size;
+          tag_reprojection_errors_map[tag_type].push_back(avg_reprojection_error);
+          sensor_reprojection_errors_map[calibration_camera_uid].push_back(avg_reprojection_error);
+
           RCLCPP_INFO(
             rclcpp::get_logger("calibration_problem"), "%s <-> %s error: %.2f",
             calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str(),
-            sum_res / res_size);
+            avg_reprojection_error);
         }
       }
     }
@@ -256,15 +289,19 @@ void CalibrationProblem::evaluate()
 
         std::array<double, RESIDUAL_DIM> residuals;
 
-        if (
-          pose_opt_map.count(calibration_lidar_uid) == 0 ||
-          pose_opt_map.count(detection_uid) == 0 ||
-          data_->invalid_pairs_set.count(std::make_pair(calibration_lidar_uid, detection_uid)) >
-            0) {
+        bool lidar_status = pose_opt_map.count(calibration_lidar_uid) > 0;
+        bool detection_status = pose_opt_map.count(detection_uid) > 0 ||
+                                indep_ground_tag_pose_opt_map.count(detection_uid) > 0;
+        bool pair_status =
+          data_->invalid_pairs_set.count(std::make_pair(calibration_lidar_uid, detection_uid)) == 0;
+
+        if (!lidar_status || !detection_status || !pair_status) {
           RCLCPP_ERROR(
             rclcpp::get_logger("calibration_problem"),
-            "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
-            calibration_lidar_uid.toString().c_str(), detection_uid.toString().c_str());
+            "Skipping %s <-> %s since there are no poses available or was deemed an outlier. "
+            "lidar_status=%d. detection_status=%d. pair_status=%d",
+            calibration_lidar_uid.toString().c_str(), detection_uid.toString().c_str(),
+            lidar_status, detection_status, pair_status);
           continue;
         }
 
@@ -277,6 +314,9 @@ void CalibrationProblem::evaluate()
 
         double sum_res = std::transform_reduce(
           residuals.begin(), residuals.end(), 0.0, std::plus{}, [](auto v) { return std::abs(v); });
+
+        tag_reprojection_errors_map[tag_type].push_back(sum_res / residuals.size());
+        sensor_reprojection_errors_map[calibration_lidar_uid].push_back(sum_res / residuals.size());
 
         RCLCPP_INFO(
           rclcpp::get_logger("calibration_problem"), "%s <-> %s error: %.2f",
@@ -300,16 +340,19 @@ void CalibrationProblem::evaluate()
           const int tag_id = grid_detection.id;
           UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
-          if (
-            pose_opt_map.count(external_camera_uid) == 0 ||
-            (pose_opt_map.count(detection_uid) == 0 &&
-             indep_ground_tag_pose_opt_map.count(detection_uid) == 0) ||
-            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) >
-              0) {
+          bool external_camera_status = pose_opt_map.count(external_camera_uid) > 0;
+          bool detection_status = pose_opt_map.count(detection_uid) > 0 ||
+                                  indep_ground_tag_pose_opt_map.count(detection_uid) > 0;
+          bool pair_status =
+            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) == 0;
+
+          if (!external_camera_status || !detection_status || !pair_status) {
             RCLCPP_ERROR(
               rclcpp::get_logger("calibration_problem"),
-              "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
-              external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+              "Skipping %s <-> %s since there are no poses available or was deemed an outlier. "
+              "external_camera_status=%d. detection_status=%d. pair_status=%d",
+              external_camera_uid.toString().c_str(), detection_uid.toString().c_str(),
+              external_camera_status, detection_status, pair_status);
             continue;
           }
 
@@ -372,18 +415,71 @@ void CalibrationProblem::evaluate()
               throw std::domain_error("Invalid residual");
             }
 
-            sum_res = std::transform_reduce(
+            sum_res += std::transform_reduce(
               residuals.begin(), residuals.end(), sum_res, std::plus{},
               [](auto v) { return std::abs(v); });
           }
 
+          double avg_reprojection_error = sum_res / res_size;
+          UID common_external_camera_uid = external_camera_uid;
+          common_external_camera_uid.scene_id = 0;
+          common_external_camera_uid.frame_id = 0;
+          tag_reprojection_errors_map[tag_type].push_back(avg_reprojection_error);
+          sensor_reprojection_errors_map[common_external_camera_uid].push_back(
+            avg_reprojection_error);
+
           RCLCPP_INFO(
             rclcpp::get_logger("calibration_problem"), "%s <-> %s error: %.2f",
             external_camera_uid.toString().c_str(), detection_uid.toString().c_str(),
-            sum_res / res_size);
+            avg_reprojection_error);
         }
       }
     }
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"), "Reprojection error statistics per tag type");
+
+  for (const auto & [tag_type, reprojection_errors] : tag_reprojection_errors_map) {
+    double min_reprojection_error =
+      *std::min_element(reprojection_errors.begin(), reprojection_errors.end());
+    double max_reprojection_error =
+      *std::max_element(reprojection_errors.begin(), reprojection_errors.end());
+    double mean_reprojection_error =
+      std::accumulate(reprojection_errors.begin(), reprojection_errors.end(), 0.0) /
+      reprojection_errors.size();
+
+    std::string tag_type_str = tag_type == TagType::WaypointTag ? "WaypointTag"
+                               : tag_type == TagType::GroundTag ? "GroundTag"
+                               : tag_type == TagType::WheelTag  ? "WheelTag"
+                                                                : "Unknown";
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("calibration_problem"),
+      "\t%s reprojection errors:  mean=%.2f min=%.2f max=%.2f observations=%lu",
+      tag_type_str.c_str(), mean_reprojection_error, min_reprojection_error, max_reprojection_error,
+      reprojection_errors.size());
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"), "Reprojection error statistics per sensor");
+  for (const auto & [sensor_uid, reprojection_errors] : sensor_reprojection_errors_map) {
+    double min_reprojection_error =
+      *std::min_element(reprojection_errors.begin(), reprojection_errors.end());
+    double max_reprojection_error =
+      *std::max_element(reprojection_errors.begin(), reprojection_errors.end());
+    double mean_reprojection_error =
+      std::accumulate(reprojection_errors.begin(), reprojection_errors.end(), 0.0) /
+      reprojection_errors.size();
+    std::string sensor_name = sensor_uid.sensor_type == SensorType::ExternalCamera
+                                ? "external_camera"
+                                : sensor_uid.toString();
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("calibration_problem"),
+      "\t%s reprojection errors:  mean=%.2f min=%.2f max=%.2f observations=%lu",
+      sensor_name.c_str(), mean_reprojection_error, min_reprojection_error, max_reprojection_error,
+      reprojection_errors.size());
   }
 }
 
@@ -408,15 +504,19 @@ void CalibrationProblem::solve()
           const int tag_id = grid_detection.id;
           UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
-          if (
-            pose_opt_map.count(calibration_camera_uid) == 0 ||
-            pose_opt_map.count(detection_uid) == 0 ||
-            data_->invalid_pairs_set.count(std::make_pair(calibration_camera_uid, detection_uid)) >
-              0) {
+          bool camera_status = pose_opt_map.count(calibration_camera_uid) > 0;
+          bool detection_status = pose_opt_map.count(detection_uid) > 0 ||
+                                  indep_ground_tag_pose_opt_map.count(detection_uid) > 0;
+          bool pair_status = data_->invalid_pairs_set.count(
+                               std::make_pair(calibration_camera_uid, detection_uid)) == 0;
+
+          if (!camera_status || !detection_status || !pair_status) {
             RCLCPP_ERROR(
               rclcpp::get_logger("calibration_problem"),
-              "Skipping %s <-> %s since there are no poses available or was deemed an outleir",
-              calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+              "Skipping %s <-> %s since there are no poses available or was deemed an outlier. "
+              "camera_status=%d. detection_status=%d. pair_status=%d",
+              calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str(),
+              camera_status, detection_status, pair_status);
             continue;
           }
 
@@ -474,26 +574,32 @@ void CalibrationProblem::solve()
     // Calibration lidar residuals
     for (const auto & single_lidar_detections : scene.calibration_lidars_detections) {
       const int & lidar_id = single_lidar_detections.calibration_lidar_id;
-      UID lidar_uid = UID::makeSensorUID(SensorType::CalibrationLidar, lidar_id);
-      bool fix_sensor_pose = data_->main_calibration_sensor_uid == lidar_uid;
+      UID calibration_lidar_uid = UID::makeSensorUID(SensorType::CalibrationLidar, lidar_id);
+      bool fix_sensor_pose = data_->main_calibration_sensor_uid == calibration_lidar_uid;
 
       for (const auto & detection : single_lidar_detections.detections) {
         const int tag_id = detection.id;
         UID detection_uid = UID::makeTagUID(TagType::WaypointTag, scene_index, tag_id);
 
-        if (
-          pose_opt_map.count(lidar_uid) == 0 || pose_opt_map.count(detection_uid) == 0 ||
-          data_->invalid_pairs_set.count(std::make_pair(lidar_uid, detection_uid)) > 0) {
+        bool lidar_status = pose_opt_map.count(calibration_lidar_uid) > 0;
+        bool detection_status = pose_opt_map.count(detection_uid) > 0 ||
+                                indep_ground_tag_pose_opt_map.count(detection_uid) > 0;
+        bool pair_status =
+          data_->invalid_pairs_set.count(std::make_pair(calibration_lidar_uid, detection_uid)) == 0;
+
+        if (!lidar_status || !detection_status || !pair_status) {
           RCLCPP_ERROR(
             rclcpp::get_logger("calibration_problem"),
-            "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
-            lidar_uid.toString().c_str(), detection_uid.toString().c_str());
+            "Skipping %s <-> %s since there are no poses available or was deemed an outlier. "
+            "lidar_status=%d. detection_status=%d. pair_status=%d",
+            calibration_lidar_uid.toString().c_str(), detection_uid.toString().c_str(),
+            lidar_status, detection_status, pair_status);
           continue;
         }
 
         ceres::CostFunction * res = LidarResidual::createTagResidual(
-          lidar_uid, calibration_lidar_intrinsics_, detection, pose_opt_map.at(lidar_uid),
-          fix_sensor_pose);
+          calibration_lidar_uid, calibration_lidar_intrinsics_, detection,
+          pose_opt_map.at(calibration_lidar_uid), fix_sensor_pose);
 
         if (fix_sensor_pose) {
           problem.AddResidualBlock(
@@ -504,7 +610,7 @@ void CalibrationProblem::solve()
           problem.AddResidualBlock(
             res,
             nullptr,  // L2
-            pose_opt_map.at(lidar_uid).data(), pose_opt_map.at(detection_uid).data());
+            pose_opt_map.at(calibration_lidar_uid).data(), pose_opt_map.at(detection_uid).data());
         }
       }
     }
@@ -524,16 +630,19 @@ void CalibrationProblem::solve()
           const int tag_id = grid_detection.id;
           UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
-          if (
-            pose_opt_map.count(external_camera_uid) == 0 ||
-            (pose_opt_map.count(detection_uid) == 0 &&
-             indep_ground_tag_pose_opt_map.count(detection_uid) == 0) ||
-            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) >
-              0) {
+          bool external_camera_status = pose_opt_map.count(external_camera_uid) > 0;
+          bool detection_status = pose_opt_map.count(detection_uid) > 0 ||
+                                  indep_ground_tag_pose_opt_map.count(detection_uid) > 0;
+          bool pair_status =
+            data_->invalid_pairs_set.count(std::make_pair(external_camera_uid, detection_uid)) == 0;
+
+          if (!external_camera_status || !detection_status || !pair_status) {
             RCLCPP_ERROR(
               rclcpp::get_logger("calibration_problem"),
-              "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
-              external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
+              "Skipping %s <-> %s since there are no poses available or was deemed an outlier. "
+              "external_camera_status=%d. detection_status=%d. pair_status=%d",
+              external_camera_uid.toString().c_str(), detection_uid.toString().c_str(),
+              external_camera_status, detection_status, pair_status);
             continue;
           }
 
@@ -630,14 +739,19 @@ void CalibrationProblem::writeDebugImage(
       const int tag_id = grid_detection.id;
       UID detection_uid = UID::makeTagUID(tag_type, scene_index, tag_id);
 
-      if (
-        data_->initial_sensor_poses_map.count(sensor_uid) == 0 ||
-        data_->initial_tag_poses_map.count(detection_uid) == 0 ||
-        data_->invalid_pairs_set.count(std::make_pair(sensor_uid, detection_uid)) > 0) {
+      bool sensor_status = pose_opt_map.count(sensor_uid) > 0;
+      bool detection_status = pose_opt_map.count(detection_uid) > 0 ||
+                              indep_ground_tag_pose_opt_map.count(detection_uid) > 0;
+      bool pair_status =
+        data_->invalid_pairs_set.count(std::make_pair(sensor_uid, detection_uid)) == 0;
+
+      if (!sensor_status || !detection_status || !pair_status) {
         RCLCPP_ERROR(
           rclcpp::get_logger("calibration_problem"),
-          "Skipping %s <-> %s since there are no poses available or was deemed an outlier",
-          sensor_uid.toString().c_str(), detection_uid.toString().c_str());
+          "Skipping %s <-> %s since there are no poses available or was deemed an outlier. "
+          "camera_status=%d. detection_status=%d. pair_status=%d",
+          sensor_uid.toString().c_str(), detection_uid.toString().c_str(), sensor_status,
+          detection_status, pair_status);
         continue;
       }
 
@@ -795,7 +909,7 @@ void CalibrationProblem::placeholderToPose3d(
 }
 
 void CalibrationProblem::pose3dToGroundTagPlaceholder(
-  cv::Affine3d tag_pose, cv::Affine3d ground_pose,
+  const UID & uid, cv::Affine3d tag_pose, cv::Affine3d ground_pose,
   std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
   std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder)
 {
@@ -827,7 +941,13 @@ void CalibrationProblem::pose3dToGroundTagPlaceholder(
   shrd_placeholder[ROTATION_Z_INDEX] = ground_quat.z();
   shrd_placeholder[GROUND_TAG_D_INDEX] = d;
 
-  assert(tag_pose_aux.rotation()(2, 2) > 0);
+  if (tag_pose_aux.rotation()(2, 2) < 0) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_problem"),
+      "Invalid pose rotation (%.2f) for UID=%s. Ignoring", tag_pose_aux.rotation()(2, 2),
+      uid.toString().c_str());
+    return;
+  }
 
   std::fill(indep_placeholder.begin(), indep_placeholder.end(), 0);
   indep_placeholder[GROUND_TAG_YAW_INDEX] =

@@ -48,15 +48,17 @@ ApriltagFilter::ApriltagFilter(const rclcpp::NodeOptions & options)
   measurement_noise_transl_ = this->declare_parameter<double>("measurement_noise_transl");
   process_noise_transl_ = this->declare_parameter<double>("process_noise_transl");
 
-  std::vector<int64_t> tag_ids = this->declare_parameter<std::vector<int64_t>>("tag_ids");
+  std::vector<std::string> tag_families =
+    this->declare_parameter<std::vector<std::string>>("tag_families");
+  // std::vector<int64_t> tag_ids = this->declare_parameter<std::vector<int64_t>>("tag_ids");
   std::vector<double> tag_sizes = this->declare_parameter<std::vector<double>>("tag_sizes");
 
-  if (tag_ids.size() != tag_sizes.size()) {
+  if (tag_families.size() != tag_sizes.size()) {
     throw std::invalid_argument("Tag ids and sizes must be of the same size");
   }
 
-  for (std::size_t i = 0; i < tag_ids.size(); i++) {
-    tag_sizes_map_[tag_ids[i]] = tag_sizes[i];
+  for (std::size_t i = 0; i < tag_families.size(); i++) {
+    tag_sizes_map_["tag" + tag_families[i]] = tag_sizes[i];
   }
 
   camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
@@ -134,31 +136,32 @@ void ApriltagFilter::detectionsCallback(
   }
 
   for (auto & detection : filtered_detections.detections) {
-    detection_map_[detection.id] = detection;
+    std::string family_and_id = detection.family + "_" + std::to_string(detection.id);
+    detection_map_[family_and_id] = detection;
     std::vector<cv::Point2d> corners;
 
     for (auto & c : detection.corners) {
       corners.push_back(cv::Point2d(c.x, c.y));
     }
 
-    if (hypotheses_map_.count(detection.id) == 0) {
-      hypotheses_map_[detection.id] =
+    if (hypotheses_map_.count(family_and_id) == 0) {
+      hypotheses_map_[family_and_id] =
         tier4_tag_utils::ApriltagHypothesis(detection.id, pinhole_camera_model_);
-      auto & h = hypotheses_map_[detection.id];
+      auto & h = hypotheses_map_[family_and_id];
       h.setMaxConvergenceThreshold(0.0);
       h.setMaxNoObservationTime(max_no_observation_time_);
       h.setMeasurementNoise(measurement_noise_transl_);
       h.setMinConvergenceTime(std::numeric_limits<double>::max());
       h.setNewHypothesisThreshold(new_hypothesis_transl_);
       h.setProcessNoise(process_noise_transl_);
-      h.setTagSize(tag_sizes_map_[detection.id]);
+      h.setTagSize(tag_sizes_map_[detection.family]);
       h.update(corners, timestamp);
     } else {
-      hypotheses_map_[detection.id].update(corners, timestamp);
+      hypotheses_map_[family_and_id].update(corners, timestamp);
     }
   }
 
-  std::vector<int> erase_list;
+  std::vector<std::string> erase_list;
   for (auto it = hypotheses_map_.begin(); it != hypotheses_map_.end(); it++) {
     if (!it->second.update(timestamp)) {
       erase_list.push_back(it->first);

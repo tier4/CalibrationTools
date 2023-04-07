@@ -30,6 +30,15 @@
   <let name="camera4_info_topic" value="/sensing/camera/camera4/camera_info"/>
   <let name="camera5_info_topic" value="/sensing/camera/camera5/camera_info"/>
 
+  <!-- Common tag parameters -->
+  <let name="waypoint_tag_size" value="0.6"/>
+  <let name="ground_tag_size" value="0.2"/>
+  <let name="wheel_tag_size" value="0.166"/>
+
+  <!-- External apriltag detector parameters-->
+  <let name="apriltag_detector_families" value="[16h5, 36h11]"/>
+  <let name="apriltag_detector_sizes" value="[$(var waypoint_tag_size), $(var ground_tag_size)]"/>
+
   <!-- calibration api -->
   <arg name="base_frame" default="base_link"/>
   <arg name="sensor_kit_frame" default="sensor_kit_base_link"/>
@@ -162,9 +171,11 @@
   <!-- camera0: apriltag detector -->
   <group>
     <push-ros-namespace namespace="camera0"/>
-    <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
       <arg name="image_topic" value="$(var image0_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera0_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
@@ -179,8 +190,8 @@
 
       <param name="max_no_observation_time" value="3.0"/>
       <param name="new_hypothesis_distance" value="1.5"/>
-      <param name="tag_ids" value="[0, 3, 4]"/>
-      <param name="tag_sizes" value="[0.6, 0.6, 0.6]"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
       <!-- the sizes of tag_ids -->
       <param name="max_convergence_transl" value="2.0"/>
       <param name="new_hypothesis_transl" value="20.0"/>
@@ -193,9 +204,11 @@
   <!-- camera1: apriltag detector -->
   <group>
     <push-ros-namespace namespace="camera1"/>
-    <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
       <arg name="image_topic" value="$(var image1_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera1_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
@@ -210,8 +223,8 @@
 
       <param name="max_no_observation_time" value="3.0"/>
       <param name="new_hypothesis_distance" value="1.5"/>
-      <param name="tag_ids" value="[0, 3, 4]"/>
-      <param name="tag_sizes" value="[0.6, 0.6, 0.6]"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
       <!-- the sizes of tag_ids -->
       <param name="max_convergence_transl" value="2.0"/>
       <param name="new_hypothesis_transl" value="20.0"/>
@@ -224,9 +237,11 @@
   <!-- camera2: apriltag detector -->
   <group>
     <push-ros-namespace namespace="camera2"/>
-    <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
       <arg name="image_topic" value="$(var image2_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera2_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
@@ -241,8 +256,8 @@
 
       <param name="max_no_observation_time" value="3.0"/>
       <param name="new_hypothesis_distance" value="1.5"/>
-      <param name="tag_ids" value="[0, 3, 4]"/>
-      <param name="tag_sizes" value="[0.6, 0.6, 0.6]"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
       <!-- the sizes of tag_ids -->
       <param name="max_convergence_transl" value="2.0"/>
       <param name="new_hypothesis_transl" value="20.0"/>
@@ -255,9 +270,11 @@
   <!-- camera3: apriltag detector -->
   <group>
     <push-ros-namespace namespace="camera3"/>
-    <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
       <arg name="image_topic" value="$(var image3_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera3_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
@@ -272,8 +289,8 @@
 
       <param name="max_no_observation_time" value="3.0"/>
       <param name="new_hypothesis_distance" value="1.5"/>
-      <param name="tag_ids" value="[0, 3, 4]"/>
-      <param name="tag_sizes" value="[0.6, 0.6, 0.6]"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
       <!-- the sizes of tag_ids -->
       <param name="max_convergence_transl" value="2.0"/>
       <param name="new_hypothesis_transl" value="20.0"/>
@@ -286,9 +303,11 @@
   <!-- camera4: apriltag detector -->
   <group>
     <push-ros-namespace namespace="camera4"/>
-    <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
       <arg name="image_topic" value="$(var image4_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera4_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
@@ -303,8 +322,8 @@
 
       <param name="max_no_observation_time" value="3.0"/>
       <param name="new_hypothesis_distance" value="1.5"/>
-      <param name="tag_ids" value="[0, 3, 4]"/>
-      <param name="tag_sizes" value="[0.6, 0.6, 0.6]"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
       <!-- the sizes of tag_ids -->
       <param name="max_convergence_transl" value="2.0"/>
       <param name="new_hypothesis_transl" value="20.0"/>
@@ -317,9 +336,11 @@
   <!-- camera5: apriltag detector -->
   <group>
     <push-ros-namespace namespace="camera5"/>
-    <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/apriltag_16h5.launch.py">
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
       <arg name="image_topic" value="$(var image5_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera5_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
@@ -334,8 +355,8 @@
 
       <param name="max_no_observation_time" value="3.0"/>
       <param name="new_hypothesis_distance" value="1.5"/>
-      <param name="tag_ids" value="[0, 3, 4]"/>
-      <param name="tag_sizes" value="[0.6, 0.6, 0.6]"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
       <!-- the sizes of tag_ids -->
       <param name="max_convergence_transl" value="2.0"/>
       <param name="new_hypothesis_transl" value="20.0"/>
@@ -498,12 +519,12 @@
 
     <!--Tag configuration - 2023/03/23 - Omiya -->
     <arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
-    <arg name="ground_tag_size" value="0.79987"/>
+    <arg name="waypoint_tag_size" value="$(var waypoint_tag_size)"/>
 
     <arg name="ground_tag_family" value="tag36h11"/>
     <arg name="ground_tag_rows" value="1"/>
     <arg name="ground_tag_cols" value="1"/>
-    <arg name="ground_tag_size" value="0.2"/>
+    <arg name="ground_tag_size" value="$(var ground_tag_size)"/>
     <arg name="ground_tag_spacing" value="0.2"/>
     <arg
       name="ground_tag_ids"
@@ -513,7 +534,7 @@
     <arg name="wheel_tag_family" value="tag16h5"/>
     <arg name="wheel_tag_rows" value="2"/>
     <arg name="wheel_tag_cols" value="2"/>
-    <arg name="wheel_tag_size" value="0.166"/>
+    <arg name="wheel_tag_size" value="$(var wheel_tag_size)"/>
     <arg name="wheel_tag_spacing" value="0.2"/>
     <arg name="left_wheel_tag_id" value="26"/>
     <arg name="right_wheel_tag_id" value="22"/>

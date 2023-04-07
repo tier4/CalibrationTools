@@ -44,7 +44,7 @@ protected:
   void publishFilteredDetections(const std_msgs::msg::Header & header);
 
   // Parameters
-  std::unordered_map<int, double> tag_sizes_map_;
+  std::unordered_map<std::string, double> tag_sizes_map_;
 
   double max_no_observation_time_;
   double new_hypothesis_transl_;
@@ -68,8 +68,8 @@ protected:
   sensor_msgs::msg::CameraInfo camera_info_;
   image_geometry::PinholeCameraModel pinhole_camera_model_;
 
-  std::unordered_map<int, ApriltagHypothesis> hypotheses_map_;
-  std::unordered_map<int, apriltag_msgs::msg::AprilTagDetection> detection_map_;
+  std::unordered_map<std::string, ApriltagHypothesis> hypotheses_map_;
+  std::unordered_map<std::string, apriltag_msgs::msg::AprilTagDetection> detection_map_;
 };
 
 }  // namespace tier4_tag_utils

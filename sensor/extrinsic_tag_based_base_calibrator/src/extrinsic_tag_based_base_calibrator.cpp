@@ -997,18 +997,23 @@ bool ExtrinsicTagBasedBaseCalibrator::addCalibrationSensorDetectionsCallback(
 
   for (auto & latest_apriltag_detections_it : latest_apriltag_detections_map_) {
     const std::string camera_frame = latest_apriltag_detections_it.first;
-    GroupedApriltagGridDetections & latest_detections = latest_apriltag_detections_it.second;
-    scenes_calibration_apriltag_detections_[camera_frame].push_back(latest_detections);
+    GroupedApriltagGridDetections & latest_grouped_detections =
+      latest_apriltag_detections_it.second;
+    scenes_calibration_apriltag_detections_[camera_frame].push_back(latest_grouped_detections);
+
+    std::size_t num_detections = 0;
+    std::for_each(
+      latest_grouped_detections.begin(), latest_grouped_detections.end(),
+      [&num_detections](const auto & it) { num_detections += it.second.size(); });
 
     scenes_calibration_camera_images_[camera_frame].push_back(
       latest_calibration_camera_images_map_[camera_frame]);
 
-    if (latest_detections.size() > 0) {
+    if (num_detections > 0) {
       RCLCPP_INFO(
-        this->get_logger(), "Added %lu detections to camera=%s (%lu scenes)",
-        latest_detections.size(), camera_frame.c_str(),
-        scenes_calibration_apriltag_detections_[camera_frame].size());
-      latest_detections.clear();
+        this->get_logger(), "Added %lu detections to camera=%s (%lu scenes)", num_detections,
+        camera_frame.c_str(), scenes_calibration_apriltag_detections_[camera_frame].size());
+      latest_grouped_detections.clear();
     } else {
       RCLCPP_WARN(this->get_logger(), "Camera frame %s had no detections", camera_frame.c_str());
     }
@@ -1242,9 +1247,13 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
     for (const auto & it : scenes_calibration_apriltag_detections_) {
       scene_calibration_apriltag_detections[it.first] = it.second[scene_index];
 
+      std::size_t num_detections = 0;
+      std::for_each(
+        it.second[scene_index].begin(), it.second[scene_index].end(),
+        [&num_detections](const auto & it) { num_detections += it.second.size(); });
+
       RCLCPP_INFO(
-        this->get_logger(), "\t%s %lu apriltag detections", it.first.c_str(),
-        it.second[scene_index].size());
+        this->get_logger(), "\t%s %lu apriltag detections", it.first.c_str(), num_detections);
     }
 
     for (const auto & it : scenes_calibration_lidartag_detections_) {

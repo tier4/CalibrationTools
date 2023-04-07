@@ -174,12 +174,13 @@ protected:
 
   /*!
    * Converts a 3d pose into a ground tag optimization placeholder
+   * @param[in] uid the tag uid
    * @param[in] pose the input 3d pose
    * @param[out] shrd_placeholder the output placeholder shared among all ground tags
    * @param[out] indep_placeholder the output placeholder independent from other ground tags
    */
   void pose3dToGroundTagPlaceholder(
-    cv::Affine3d tag_pose, cv::Affine3d ground_pose,
+    const UID & uid, cv::Affine3d tag_pose, cv::Affine3d ground_pose,
     std::array<double, SHRD_GROUND_TAG_POSE_DIM> & shrd_placeholder,
     std::array<double, INDEP_GROUND_TAG_POSE_DIM> & indep_placeholder);
 
