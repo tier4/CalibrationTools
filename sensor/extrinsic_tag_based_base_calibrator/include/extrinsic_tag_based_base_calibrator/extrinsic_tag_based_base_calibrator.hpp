@@ -30,8 +30,8 @@
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <tier4_calibration_msgs/srv/empty.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
-#include <tier4_calibration_msgs/srv/files.hpp>
-#include <tier4_calibration_msgs/srv/files_with_frame_and_scene_id.hpp>
+#include <tier4_calibration_msgs/srv/files_list_srv.hpp>
+#include <tier4_calibration_msgs/srv/files_srv.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #ifdef ROS_DISTRO_GALACTIC
@@ -125,8 +125,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool addExternalCameraImagesCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::FilesListSrv::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::FilesListSrv::Response> response);
 
   /*!
    * Attempts to add detections from the calibration sensors to the scene
@@ -146,8 +146,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool loadExternalIntrinsicsCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response);
 
   /*!
    * Saves the external camera intrinsics to a file
@@ -156,8 +156,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool saveExternalIntrinsicsCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response);
 
   /*!
    * Attempts to caibrate the external camera intrinsics from a set of images containing tags
@@ -166,38 +166,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool calibrateExternalIntrinsicsCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
-
-  /*!
-   * Attempts to load the calibration camera intrinsics from a file
-   * @param request Vector containing the intrinsics path
-   * @param response whether or not the service callback succeeded
-   * @returns whether or not the service callback succeeded
-   */
-  bool loadCalibrationIntrinsicsCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Response> response);
-
-  /*!
-   * Saves the calibration camera intrinsics to a file
-   * @param request Vector containing the intrinsics path
-   * @param response whether or not the service callback succeeded
-   * @returns whether or not the service callback succeeded
-   */
-  bool saveCalibrationIntrinsicsCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Response> response);
-
-  /*!
-   * Attempts to caibrate the calibratioon intrinsics from a set of images containing tags
-   * @param request Vector containing the path to the images to use for intrinsic calibration
-   * @param response whether or not the service callback succeeded
-   * @returns whether or not the service callback succeeded
-   */
-  bool calibrateCalibrationIntrinsicsCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response);
 
   // Calibration related services
   /*!
@@ -229,8 +199,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool loadDatabaseCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response);
 
   /*!
    * Save a calibration database to a path
@@ -239,8 +209,8 @@ protected:
    * @returns whether or not the service callback succeeded
    */
   bool saveDatabaseCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Files::Request> request,
-    std::shared_ptr<tier4_calibration_msgs::srv::Files::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
+    std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response);
 
   rclcpp::TimerBase::SharedPtr visualization_timer_;
 
@@ -265,41 +235,29 @@ protected:
     calibration_api_srv_map_;
 
   // Scene related services
-  rclcpp::Service<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId>::SharedPtr
+  rclcpp::Service<tier4_calibration_msgs::srv::FilesListSrv>::SharedPtr
     add_external_camera_images_srv_;
   rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr
     add_calibration_sensor_detections_to_scene_srv_;
 
   // Intrinsics realated services
-  rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr
+  rclcpp::Service<tier4_calibration_msgs::srv::FilesSrv>::SharedPtr
     load_external_camera_intrinsics_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr
+  rclcpp::Service<tier4_calibration_msgs::srv::FilesSrv>::SharedPtr
     save_external_camera_intrinsics_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr
+  rclcpp::Service<tier4_calibration_msgs::srv::FilesSrv>::SharedPtr
     calibrate_external_camera_intrinsics_srv_;
-
-  rclcpp::Service<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId>::SharedPtr
-    load_calibration_camera_intrinsics_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId>::SharedPtr
-    save_calibration_camera_intrinsics_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::FilesWithFrameAndSceneId>::SharedPtr
-    calibrate_calibration_camera_intrinsics_srv_;
 
   // Calibration related services
   rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr process_scenes_srv_;
   rclcpp::Service<tier4_calibration_msgs::srv::Empty>::SharedPtr calibration_srv_;
 
   // Calibration related services
-  rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr load_database_srv_;
-  rclcpp::Service<tier4_calibration_msgs::srv::Files>::SharedPtr save_database_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::FilesSrv>::SharedPtr load_database_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::FilesSrv>::SharedPtr save_database_srv_;
 
   // Calibration API parameters and variables
   std::string base_frame_;
-  // std::unordered_map<std::string, std::string> lidar_sensor_kit_frame_map_; // sensor calibration
-  // frame -> topic std::unordered_map<std::string, std::string>
-  // calibration_lidar_parent_frame_map_; std::unordered_map<std::string, std::string>
-  // camera_sensor_kit_frame_map_; std::unordered_map<std::string, std::string>
-  // calibration_camera_parent_frame_map_;
   std::unordered_map<std::string, std::string> sensor_kit_frame_map_;
   std::unordered_map<std::string, std::string> calibration_sensor_parent_frame_map_;
   std::unordered_map<std::string, std::string> calibration_service_names_map_;

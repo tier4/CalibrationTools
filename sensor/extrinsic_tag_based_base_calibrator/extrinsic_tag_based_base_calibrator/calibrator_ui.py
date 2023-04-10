@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from PySide2.QtWidgets import QComboBox
+from glob import glob
+import os
+
 from PySide2.QtWidgets import QFileDialog
 from PySide2.QtWidgets import QGroupBox
-from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtWidgets import QMainWindow
 from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QVBoxLayout
@@ -42,7 +43,7 @@ class CalibratorUI(QMainWindow):
         self.database_loaded = False
         self.pending_service = False
 
-        self.add_external_camera_images_to_scene_service_status = False
+        self.add_external_camera_images_to_scenes_service_status = False
         self.add_calibration_sensor_detections_to_new_scene_service_status = False
         self.load_external_camera_intrinsics_service_status = False
         self.save_external_camera_intrinsics_service_status = False
@@ -52,9 +53,9 @@ class CalibratorUI(QMainWindow):
         self.load_database_service_status = False
         self.save_database_service_status = False
 
-        self.ros_interface.set_add_external_camera_images_to_scene_callback(
-            self.add_external_camera_images_to_scene_result_callback,
-            self.add_external_camera_images_to_scene_status_callback,
+        self.ros_interface.set_add_external_camera_images_to_scenes_callback(
+            self.add_external_camera_images_to_scenes_result_callback,
+            self.add_external_camera_images_to_scenes_status_callback,
         )
         self.ros_interface.set_add_calibration_sensor_detections_to_new_scene_callback(
             self.add_calibration_sensor_detections_to_new_scene_result_callback,
@@ -108,24 +109,15 @@ class CalibratorUI(QMainWindow):
         self.scene_group = QGroupBox("Scene group")
         self.scene_layout = QVBoxLayout()
 
-        self.add_external_images_layout = QHBoxLayout()
-
-        self.add_external_images_button = QPushButton("Add external camera images to scene")
-        self.add_external_images_button.setEnabled(False)
-        self.add_external_images_button.clicked.connect(self.add_external_images_button_callback)
-        self.add_external_images_layout.addWidget(self.add_external_images_button)
-
-        self.add_external_images_combobox = QComboBox()
-        self.add_external_images_combobox.setEnabled(False)
-        self.add_external_images_combobox.setMaximumWidth(50)
-        self.add_external_images_layout.addWidget(self.add_external_images_combobox)
-
-        self.scene_layout.addLayout(self.add_external_images_layout)
-
         self.add_detections_button = QPushButton("Add detections to scene")
         self.add_detections_button.setEnabled(False)
         self.add_detections_button.clicked.connect(self.add_detections_button_callback)
         self.scene_layout.addWidget(self.add_detections_button)
+
+        self.add_external_images_button = QPushButton("Add external camera images to scene")
+        self.add_external_images_button.setEnabled(False)
+        self.add_external_images_button.clicked.connect(self.add_external_images_button_callback)
+        self.scene_layout.addWidget(self.add_external_images_button)
 
         self.scene_group.setLayout(self.scene_layout)
 
@@ -199,13 +191,9 @@ class CalibratorUI(QMainWindow):
         # Scene group
         self.add_external_images_button.setEnabled(
             self.num_valid_scenes > 0
-            and self.add_external_camera_images_to_scene_service_status
+            and self.add_external_camera_images_to_scenes_service_status
             and not self.pending_service
         )
-
-        self.add_external_images_combobox.setEnabled(self.num_valid_scenes > 0)
-        self.add_external_images_combobox.clear()
-        self.add_external_images_combobox.addItems([str(i) for i in range(self.num_valid_scenes)])
 
         self.add_detections_button.setEnabled(
             self.add_calibration_sensor_detections_to_new_scene_service_status
@@ -254,14 +242,14 @@ class CalibratorUI(QMainWindow):
             self.save_database_service_status and self.processed_scenes and not self.pending_service
         )
 
-    def add_external_camera_images_to_scene_result_callback(self, result):
+    def add_external_camera_images_to_scenes_result_callback(self, result):
         self.pending_service = False
         if result.success:
             self.valid_current_scene_external_images = True
         self.check_status()
 
-    def add_external_camera_images_to_scene_status_callback(self, status):
-        self.add_external_camera_images_to_scene_service_status = status
+    def add_external_camera_images_to_scenes_status_callback(self, status):
+        self.add_external_camera_images_to_scenes_service_status = status
         self.check_status()
 
     def add_calibration_sensor_detections_to_new_scene_result_callback(self, result):
@@ -336,17 +324,33 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_external_images_button_callback(self):
-        filenames, _ = QFileDialog.getOpenFileNames(
-            None, "Load external camera images", ".", "Image file (*.jpg *.JPG *.png *.PNG)"
+        # Here simply select folder
+        # Iterate folder looking for scene{i}
+        # Call the same service
+
+        output_folder = QFileDialog.getExistingDirectory(
+            None,
+            "Select directory to save the calibration result",
+            ".",
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
         )
 
-        if len(filenames) == 0:
+        if output_folder is None or output_folder == "":
             return
 
-        scene_id = self.add_external_images_combobox.currentIndex()
+        def filter_function(x):
+            return x.lower().endswith(suffixes)
+
+        scenes_images_paths = []
+
+        for scene_id in range(self.num_valid_scenes):
+            folder = os.path.join(output_folder, f"scene{scene_id}")
+            suffixes = ("png", "jpg", "jpeg")
+            scene_image_paths = list(filter(filter_function, glob(os.path.join(folder, "*"))))
+            scenes_images_paths.append(scene_image_paths)
 
         self.pending_service = True
-        self.ros_interface.add_external_camera_images_to_scene(filenames, scene_id)
+        self.ros_interface.add_external_camera_images_to_scenes(scenes_images_paths)
         self.check_status()
 
     def add_detections_button_callback(self):
