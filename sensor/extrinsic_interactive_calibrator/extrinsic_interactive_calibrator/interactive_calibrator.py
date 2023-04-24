@@ -993,6 +993,7 @@ class InteractiveCalibratorUI(QMainWindow):
 
 
 def main(args=None):
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
     app = QApplication(sys.argv)
 
     rclpy.init(args=args)
