@@ -48,6 +48,13 @@
   <arg name="left_wheel_tag_id"/>
   <arg name="right_wheel_tag_id"/>
 
+  <arg name="auxiliar_tag_family" default="tag16h5"/>
+  <arg name="auxiliar_tag_rows" default="1"/>
+  <arg name="auxiliar_tag_cols" default="1"/>
+  <arg name="auxiliar_tag_size" default="0.2"/>
+  <arg name="auxiliar_tag_spacing" default="0.2"/>
+  <arg name="auxiliar_tag_ids" default="[-1]"/>
+
   <!-- Initial intrinsics calibration -->
   <arg name="initial_intrinsic_calibration_board_type" default="apriltag"/>
   <arg name="initial_intrinsic_calibration_tangent_distortion" default="true"/>
@@ -121,6 +128,13 @@
       <param name="ground_tag_size" value="$(var ground_tag_size)"/>
       <param name="ground_tag_spacing" value="$(var ground_tag_spacing)"/>
       <param name="ground_tag_ids" value="$(var ground_tag_ids)"/>
+
+      <param name="auxiliar_tag_family" value="$(var auxiliar_tag_family)"/>
+      <param name="auxiliar_tag_rows" value="$(var auxiliar_tag_rows)"/>
+      <param name="auxiliar_tag_cols" value="$(var auxiliar_tag_cols)"/>
+      <param name="auxiliar_tag_size" value="$(var auxiliar_tag_size)"/>
+      <param name="auxiliar_tag_spacing" value="$(var auxiliar_tag_spacing)"/>
+      <param name="auxiliar_tag_ids" value="$(var auxiliar_tag_ids)"/>
 
       <param name="wheel_tag_family" value="$(var wheel_tag_family)"/>
       <param name="wheel_tag_rows" value="$(var wheel_tag_rows)"/>

@@ -230,6 +230,7 @@ void CalibrationProblem::evaluate()
             std::array<double, RESIDUAL_DIM> residuals;
 
             if (
+              detection_uid.tag_type == TagType::AuxiliarTag ||
               detection_uid.tag_type == TagType::WaypointTag ||
               detection_uid.tag_type == TagType::WheelTag ||
               (detection_uid.tag_type == TagType::GroundTag && !force_shared_ground_plane_)) {
@@ -256,6 +257,9 @@ void CalibrationProblem::evaluate()
               f(calibration_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op,
                 residuals.data());
             } else {
+              RCLCPP_ERROR(
+                rclcpp::get_logger("calibration_problem"), "%s <-> %s error",
+                calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str());
               throw std::domain_error("Invalid residual");
             }
 
@@ -363,6 +367,7 @@ void CalibrationProblem::evaluate()
             std::array<double, RESIDUAL_DIM> residuals;
 
             if (
+              detection_uid.tag_type == TagType::AuxiliarTag ||
               detection_uid.tag_type == TagType::WaypointTag ||
               detection_uid.tag_type == TagType::WheelTag ||
               (detection_uid.tag_type == TagType::GroundTag && !force_shared_ground_plane_)) {
@@ -412,6 +417,9 @@ void CalibrationProblem::evaluate()
                   residuals.data());
               }
             } else {
+              RCLCPP_ERROR(
+                rclcpp::get_logger("calibration_problem"), "%s <-> %s error",
+                external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
               throw std::domain_error("Invalid residual");
             }
 
@@ -449,10 +457,11 @@ void CalibrationProblem::evaluate()
       std::accumulate(reprojection_errors.begin(), reprojection_errors.end(), 0.0) /
       reprojection_errors.size();
 
-    std::string tag_type_str = tag_type == TagType::WaypointTag ? "WaypointTag"
-                               : tag_type == TagType::GroundTag ? "GroundTag"
-                               : tag_type == TagType::WheelTag  ? "WheelTag"
-                                                                : "Unknown";
+    std::string tag_type_str = tag_type == TagType::WaypointTag   ? "WaypointTag"
+                               : tag_type == TagType::GroundTag   ? "GroundTag"
+                               : tag_type == TagType::WheelTag    ? "WheelTag"
+                               : tag_type == TagType::AuxiliarTag ? "AuxiliarTag"
+                                                                  : "Unknown";
 
     RCLCPP_INFO(
       rclcpp::get_logger("calibration_problem"),
@@ -522,6 +531,7 @@ void CalibrationProblem::solve()
 
           for (const auto & detection : grid_detection.sub_detections) {
             if (
+              detection_uid.tag_type == TagType::AuxiliarTag ||
               detection_uid.tag_type == TagType::WaypointTag ||
               (detection_uid.tag_type == TagType::GroundTag && !force_shared_ground_plane_)) {
               ceres::CostFunction * res = CameraResidual::createTagResidual(
@@ -564,6 +574,9 @@ void CalibrationProblem::solve()
                   indep_ground_pose_op);
               }
             } else {
+              RCLCPP_ERROR(
+                rclcpp::get_logger("calibration_problem"), "%s <-> %s error",
+                calibration_camera_uid.toString().c_str(), detection_uid.toString().c_str());
               throw std::domain_error("Invalid residual");
             }
           }
@@ -648,6 +661,7 @@ void CalibrationProblem::solve()
 
           for (const auto & detection : grid_detection.sub_detections) {
             if (
+              detection_uid.tag_type == TagType::AuxiliarTag ||
               detection_uid.tag_type == TagType::WaypointTag ||
               detection_uid.tag_type == TagType::WheelTag ||
               (detection_uid.tag_type == TagType::GroundTag && !force_shared_ground_plane_)) {
@@ -702,6 +716,9 @@ void CalibrationProblem::solve()
                   indep_ground_pose_op);
               }
             } else {
+              RCLCPP_ERROR(
+                rclcpp::get_logger("calibration_problem"), "%s <-> %s error",
+                external_camera_uid.toString().c_str(), detection_uid.toString().c_str());
               throw std::domain_error("Invalid residual");
             }
           }
@@ -1005,6 +1022,23 @@ void CalibrationProblem::groundTagPlaceholderToPose3d(
   cv::eigen2cv(pose_rotation, cv_rot);
 
   pose = std::make_shared<cv::Affine3d>(cv_rot, cv_transl);
+}
+
+void CalibrationProblem::printCalibrationResults()
+{
+  for (auto & [sensor_uid, sensor_pose] : data_->optimized_sensor_poses_map) {
+    Eigen::Vector3d translation;
+    Eigen::Matrix3d rotation;
+    cv::cv2eigen(sensor_pose->translation(), translation);
+    cv::cv2eigen(sensor_pose->rotation(), rotation);
+    Eigen::Quaterniond quat(rotation);
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("calibration_problem"),
+      "sensor_uid=%s\toptimized pose: translation=[%.5f, %.5f, %.5f] quat=[%.5f, %.5f, %.5f, %.5f]",
+      sensor_uid.toString().c_str(), translation.x(), translation.y(), translation.z(), quat.x(),
+      quat.y(), quat.z(), quat.w());
+  }
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

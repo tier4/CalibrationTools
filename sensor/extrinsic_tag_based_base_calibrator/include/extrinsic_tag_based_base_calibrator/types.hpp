@@ -46,6 +46,7 @@ struct ApriltagDetectorParameters
 enum class TagType {
   Unknown,
   IntrinsicCalibrationTag,
+  AuxiliarTag,
   WaypointTag,
   WheelTag,
   GroundTag,
@@ -136,6 +137,8 @@ struct UID
       return "s" + std::to_string(scene_id) + "_e" + std::to_string(frame_id);
     } else if (tag_type == TagType::WaypointTag) {
       return "s" + std::to_string(scene_id) + "_w" + std::to_string(tag_id);
+    } else if (tag_type == TagType::AuxiliarTag) {
+      return "a" + std::to_string(tag_id);
     } else if (tag_type == TagType::GroundTag) {
       return "g" + std::to_string(tag_id);
     } else if (tag_type == TagType::WheelTag) {
@@ -161,7 +164,8 @@ struct UID
       (frame_id < 0 || scene_id < 0 || calibration_sensor_id >= 0)) {
       return false;
     } else if (
-      (tag_type == TagType::GroundTag || tag_type == TagType::WheelTag) &&
+      (tag_type == TagType::AuxiliarTag || tag_type == TagType::GroundTag ||
+       tag_type == TagType::WheelTag) &&
       (frame_id >= 0 || scene_id >= 0 || calibration_sensor_id >= 0)) {
       return false;
     } else if (

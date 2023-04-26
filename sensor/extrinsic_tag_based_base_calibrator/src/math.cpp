@@ -237,7 +237,7 @@ cv::Point2d projectPoint(const cv::Vec3d & p, const std::array<double, 6> & intr
 
 cv::Affine3d estimateInitialPosesFilterOutliers(
   UID uid, const std::vector<std::pair<UID, cv::Affine3d>> & parent_uid_and_poses,
-  std::set<std::pair<UID, UID>> & outliers, double threshold = 1.0)
+  std::set<std::pair<UID, UID>> & outliers, double threshold = 3.0)
 {
   std::vector<std::pair<UID, cv::Affine3d>> best_model_inliers;
   std::set<UID> best_model_outliers;
@@ -301,6 +301,25 @@ cv::Affine3d estimateInitialPosesFilterOutliers(
     RCLCPP_WARN(
       rclcpp::get_logger("pose_estimation"), "\ttranslation error: %.2f",
       best_model_outliers_translation_error_map[parent_outlier_uid]);
+  }
+
+  if (best_model_outliers.size() > 0) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("pose_estimation"),
+      "uid=%s presented outliers. Displaying all the hypotheses", uid.toString().c_str());
+
+    for (const auto & [parent_uid, pose] : parent_uid_and_poses) {
+      Eigen::Vector3d translation;
+      Eigen::Matrix3d rotation;
+      cv::cv2eigen(pose.translation(), translation);
+      cv::cv2eigen(pose.rotation(), rotation);
+      Eigen::Quaterniond quat(rotation);
+      RCLCPP_WARN(
+        rclcpp::get_logger("pose_estimation"),
+        "parent_uid=%s\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f]",
+        parent_uid.toString().c_str(), translation.x(), translation.y(), translation.z(), quat.x(),
+        quat.y(), quat.z(), quat.w());
+    }
   }
 
   // Estimate the average pose

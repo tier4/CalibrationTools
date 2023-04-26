@@ -159,6 +159,19 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
   lidartag_to_apriltag_scale_ = this->declare_parameter<double>("lidartag_to_apriltag_scale", 0.75);
 
+  auxiliar_tag_parameters_.tag_type = TagType::AuxiliarTag;
+  auxiliar_tag_parameters_.family =
+    this->declare_parameter<std::string>("auxiliar_tag_family", "36h11");
+  auxiliar_tag_parameters_.rows = this->declare_parameter<int>("auxiliar_tag_rows", 1);
+  auxiliar_tag_parameters_.cols = this->declare_parameter<int>("auxiliar_tag_cols", 1);
+  auxiliar_tag_parameters_.size = this->declare_parameter<double>("auxiliar_tag_size", 0.2);
+  auxiliar_tag_parameters_.spacing = this->declare_parameter<double>("auxiliar_tag_spacing", 0.2);
+  std::vector<int64_t> auxiliar_tag_ids =
+    this->declare_parameter<std::vector<int64_t>>("auxiliar_tag_ids");
+  std::for_each(auxiliar_tag_ids.begin(), auxiliar_tag_ids.end(), [&](const auto & id) {
+    auxiliar_tag_parameters_.ids.insert(static_cast<int>(id));
+  });
+
   waypoint_tag_parameters_.tag_type = TagType::WaypointTag;
   waypoint_tag_parameters_.family =
     this->declare_parameter<std::string>("waypoint_tag_family", "16h5");
@@ -198,11 +211,13 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   wheel_tag_parameters_.ids.insert(left_wheel_tag_id);
   wheel_tag_parameters_.ids.insert(right_wheel_tag_id);
 
+  tag_parameters_map_[TagType::AuxiliarTag] = auxiliar_tag_parameters_;
   tag_parameters_map_[TagType::WaypointTag] = waypoint_tag_parameters_;
   tag_parameters_map_[TagType::GroundTag] = ground_tag_parameters_;
   tag_parameters_map_[TagType::WheelTag] = wheel_tag_parameters_;
   tag_parameters_vector_ = {
-    waypoint_tag_parameters_, ground_tag_parameters_, wheel_tag_parameters_};
+    auxiliar_tag_parameters_, waypoint_tag_parameters_, ground_tag_parameters_,
+    wheel_tag_parameters_};
 
   // Optimization options
   ba_optimize_intrinsics_ = this->declare_parameter<bool>("ba_optimize_intrinsics", false);
@@ -427,6 +442,17 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
       this->get_logger(), *this->get_clock(), 30000, "Waiting for the calibration to end");
   }
 
+  Eigen::Vector3d translation;
+  Eigen::Matrix3d rotation;
+  cv::cv2eigen(calibrated_main_sensor_to_base_link_pose_.translation(), translation);
+  cv::cv2eigen(calibrated_main_sensor_to_base_link_pose_.rotation(), rotation);
+  Eigen::Quaterniond quat(rotation);
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"),
+    "sensor_to_base_link: translation=[%.5f, %.5f, %.5f] quat=[%.5f, %.5f, %.5f, %.5f]",
+    translation.x(), translation.y(), translation.z(), quat.x(), quat.y(), quat.z(), quat.w());
+
   cv::Matx44d base_link_to_lidar_transform_cv =
     calibrated_main_sensor_to_base_link_pose_.inv().matrix;
   Eigen::Matrix4d base_link_to_lidar_transform;
@@ -493,12 +519,12 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
     tier4_autoware_utils::getRPY(initial_base_link_to_sensor_kit_msg.orientation);
   RCLCPP_INFO(this->get_logger(), "base_link: initial and calibrated statistics statistics");
   RCLCPP_INFO(
-    this->get_logger(), "\tinitial: x=%.3f y=%.3f z=%.3f roll=%.3f pitch=%.3f yaw=%.3f",
+    this->get_logger(), "\tinitial: x=%.5f y=%.5f z=%.5f roll=%.5f pitch=%.5f yaw=%.5f",
     initial_base_link_to_sensor_kit_msg.position.x, initial_base_link_to_sensor_kit_msg.position.y,
     initial_base_link_to_sensor_kit_msg.position.z, initial_base_to_sensor_kit_rpy.x,
     initial_base_to_sensor_kit_rpy.y, initial_base_to_sensor_kit_rpy.z);
   RCLCPP_INFO(
-    this->get_logger(), "\tcalibrated: x=%.3f y=%.3f z=%.3f roll=%.3f pitch=%.3f yaw=%.3f",
+    this->get_logger(), "\tcalibrated: x=%.5f y=%.5f z=%.5f roll=%.5f pitch=%.5f yaw=%.5f",
     base_link_to_sensor_kit_msg.position.x, base_link_to_sensor_kit_msg.position.y,
     base_link_to_sensor_kit_msg.position.z, base_to_sensor_kit_rpy.x, base_to_sensor_kit_rpy.y,
     base_to_sensor_kit_rpy.z);
@@ -1363,6 +1389,7 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
   calibration_problem_.placeholdersToData();
   calibration_problem_.evaluate();
   calibration_problem_.writeDebugImages();
+  calibration_problem_.printCalibrationResults();
   RCLCPP_INFO(this->get_logger(), "Finished optimization");
 
   // Derive the base link pose

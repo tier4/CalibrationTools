@@ -152,6 +152,11 @@ public:
    */
   void writeDebugImages();
 
+  /*!
+   * Prints the optimization results for the calibration sensors
+   */
+  void printCalibrationResults();
+
 protected:
   /*!
    * Converts a 3d pose into a normal tag optimization placeholder

@@ -289,6 +289,7 @@ protected:
   TagParameters waypoint_tag_parameters_;
   TagParameters wheel_tag_parameters_;
   TagParameters ground_tag_parameters_;
+  TagParameters auxiliar_tag_parameters_;
 
   std::unordered_map<std::string, TagType> tag_family_and_id_to_type_map_;
 

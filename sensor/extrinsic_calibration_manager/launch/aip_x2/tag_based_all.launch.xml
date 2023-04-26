@@ -43,6 +43,7 @@
   <!-- External apriltag detector parameters-->
   <let name="apriltag_detector_families" value="[16h5, 36h11]"/>
   <let name="apriltag_detector_sizes" value="[$(var waypoint_tag_size), $(var ground_tag_size)]"/>
+  <let name="min_apriltag_filter_margin" value="30.0"/>
 
   <!-- calibration api -->
   <arg name="base_frame" default="base_link"/>
@@ -200,7 +201,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -233,7 +234,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -266,7 +267,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -299,7 +300,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -332,7 +333,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -365,7 +366,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -398,7 +399,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -431,7 +432,7 @@
       <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
       <param name="max_tag_distance" value="30.0"/>
       <param name="max_allowed_homography_error" value="0.5"/>
-      <param name="min_margin" value="50.0"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
       <param name="max_hamming_error" value="0"/>
 
       <param name="max_no_observation_time" value="3.0"/>
@@ -641,9 +642,15 @@
       value="[50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
 "
     />
+
+    <arg name="auxiliar_tag_family" value="tag36h11"/>
+    <arg name="auxiliar_tag_rows" value="1"/>
+    <arg name="auxiliar_tag_cols" value="1"/>
+    <arg name="auxiliar_tag_size" value="$(var ground_tag_size)"/>
+    <arg name="auxiliar_tag_spacing" value="0.2"/>
     <arg
-      name="camera_waypoint_tag_ids"
-      value="[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]"
+      name="auxiliar_tag_ids"
+      value="[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]"
     />
 
     <arg name="wheel_tag_family" value="tag16h5"/>
