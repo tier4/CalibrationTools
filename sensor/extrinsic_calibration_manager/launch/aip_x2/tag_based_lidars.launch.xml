@@ -6,20 +6,20 @@
   <arg name="rviz" default="false"/>
 
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_base_calibrator)/rviz/xx1.rviz"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_base_calibrator)/rviz/x2.rviz"/>
 
   <!-- calibration api -->
   <arg name="base_frame" default="base_link"/>
-  <arg name="sensor_kit_frame" default="sensor_kit_base_link"/>
-  <arg name="lidar_base_frame" default="velodyne_top_base_link"/>
-  <arg name="lidar_frame" default="velodyne_top"/>
+  <arg name="sensor_kit_frame" default="top_unit_base_link"/>
+  <arg name="lidar_base_frame" default="pandar_40p_left_base_link"/>
+  <arg name="lidar_frame" default="pandar_40p_left"/>
 
-  <!-- top: lidartag detector -->
+  <!-- left_upper: lidartag detector -->
   <group>
-    <push-ros-namespace namespace="top"/>
+    <push-ros-namespace namespace="left_upper"/>
 
-    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vls128.launch.xml">
-      <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/left_upper/pointcloud_raw"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
@@ -37,12 +37,12 @@
     </node>
   </group>
 
-  <!-- left: lidartag detector -->
+  <!-- right_upper: lidartag detector -->
   <group>
-    <push-ros-namespace namespace="left"/>
+    <push-ros-namespace namespace="right_upper"/>
 
-    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vlp16.launch.xml">
-      <arg name="pointcloud_topic" value="/sensing/lidar/left/pointcloud_raw"/>
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/right_upper/pointcloud_raw"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
@@ -60,12 +60,12 @@
     </node>
   </group>
 
-  <!-- right: lidartag detector -->
+  <!-- front_lower: lidartag detector -->
   <group>
-    <push-ros-namespace namespace="right"/>
+    <push-ros-namespace namespace="front_lower"/>
 
-    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vlp16.launch.xml">
-      <arg name="pointcloud_topic" value="/sensing/lidar/right/pointcloud_raw"/>
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/front_lower/pointcloud_raw"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
@@ -83,12 +83,12 @@
     </node>
   </group>
 
-  <!-- rear: lidartag detector -->
+  <!-- rear_lower: lidartag detector -->
   <group>
-    <push-ros-namespace namespace="rear"/>
+    <push-ros-namespace namespace="rear_lower"/>
 
-    <include file="$(find-pkg-share lidartag)/launch/lidartag_velodyne_vlp16.launch.xml">
-      <arg name="pointcloud_topic" value="/sensing/lidar/rear/pointcloud_raw"/>
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/rear_lower/pointcloud_raw"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
@@ -130,26 +130,26 @@
 
     <!--TODO: the need to know lidar_sensor_kit_frames should be removed after the redesign. So no need to match it corectly for any other than the main lidar. These are used to create the calibration services -->
     <arg name="lidar_sensor_kit_frames" value="[
-      sensor_kit_base_link,
-      sensor_kit_base_link,
-      sensor_kit_base_link,
-      base_link
+      top_unit_base_link,
+      top_unit_base_link,
+      front_unit_base_link,
+      rear_unit_base_link
     ]"/>
 
     <arg name="calibration_lidar_parent_frames" value="[
-      velodyne_top_base_link,
-      velodyne_left_base_link,
-      velodyne_right_base_link,
-      velodyne_rear_base_link
+      pandar_40p_left_base_link,
+      pandar_40p_right_base_link,
+      pandar_40p_front_base_link,
+      pandar_40p_rear_base_link
     ]"/>
 
     <arg
       name="lidar_calibration_service_names"
       value="[
-      base_link/sensor_kit_base_link,
-      sensor_kit_base_link/velodyne_left_base_link,
-      sensor_kit_base_link/velodyne_right_base_link,
-      base_link/velodyne_rear_base_link,
+      base_link/top_unit_base_link,
+      top_unit_base_link/pandar_40p_right_base_link,
+      base_link/front_unit_base_link,
+      base_link/rear_unit_base_link,
     ]"
     />
 
@@ -159,10 +159,10 @@
 
     <arg name="main_calibration_sensor_frame" value="$(var lidar_frame)"/>
     <arg name="calibration_lidar_frames" value="[
-      velodyne_top,
-      velodyne_left,
-      velodyne_right,
-      velodyne_rear
+      pandar_40p_left,
+      pandar_40p_right,
+      pandar_40p_front,
+      pandar_40p_rear
     ]"/>
     <arg name="calibration_camera_frames" value="['']"/>
 
@@ -170,10 +170,10 @@
     <arg
       name="calibration_lidar_detections_topics"
       value="[
-      /top/lidartag/filtered/detections_array,
-      /left/lidartag/filtered/detections_array,
-      /right/lidartag/filtered/detections_array,
-      /rear/lidartag/filtered/detections_array
+      /left_upper/lidartag/filtered/detections_array,
+      /right_upper/lidartag/filtered/detections_array,
+      /front_lower/lidartag/filtered/detections_array,
+      /rear_lower/lidartag/filtered/detections_array
     ]"
     />
     <arg name="calibration_image_detections_topics" value="['']"/>
@@ -190,7 +190,7 @@
     <arg name="ground_tag_size" value="0.163"/-->
 
     <!--Tag configuration - 2023/03/23 - Omiya -->
-    <arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
+    <!--arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
     <arg name="ground_tag_size" value="0.79987"/>
 
     <arg name="ground_tag_family" value="tag36h11"/>
@@ -200,6 +200,25 @@
     <arg name="ground_tag_spacing" value="0.2"/>
     <arg
       name="ground_tag_ids"
+      value="[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]"
+    /-->
+
+    <!--Tag configuration - 2023/04/21 - Omiya -->
+    <arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
+    <arg name="waypoint_tag_size" value="0.6"/>
+
+    <arg name="ground_tag_family" value="tag36h11"/>
+    <arg name="ground_tag_rows" value="1"/>
+    <arg name="ground_tag_cols" value="1"/>
+    <arg name="ground_tag_size" value="0.22"/>
+    <arg name="ground_tag_spacing" value="0.2"/>
+    <arg
+      name="ground_tag_ids"
+      value="[50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+"
+    />
+    <arg
+      name="camera_waypoint_tag_ids"
       value="[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]"
     />
 

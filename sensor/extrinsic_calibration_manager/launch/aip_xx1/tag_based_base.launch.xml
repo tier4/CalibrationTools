@@ -6,26 +6,13 @@
   <arg name="rviz" default="false"/>
 
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
-  <let name="calibration_sensor_frame" value="velodyne_top"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_base_calibrator)/rviz/xx1.rviz"/>
-
-  <let name="image_decompressed_topic" value="/sensing/camera/camera0/image_rect_color/decompressed"/>
-  <let name="image_compressed_topic" value="/sensing/camera/camera0/image_rect_color/compressed"/>
-  <let name="camera_info_topic" value="/sensing/camera/camera0/camera_info"/>
-
-  <let name="camera_frame" value="camera0/camera_link"/>
 
   <!-- calibration api -->
   <arg name="base_frame" default="base_link"/>
   <arg name="sensor_kit_frame" default="sensor_kit_base_link"/>
   <arg name="lidar_base_frame" default="velodyne_top_base_link"/>
   <arg name="lidar_frame" default="velodyne_top"/>
-
-  <!-- image decompressor -->
-  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
-    <remap from="decompressor/input/compressed_image" to="$(var image_compressed_topic)"/>
-    <remap from="decompressor/output/raw_image" to="$(var image_decompressed_topic)"/>
-  </node>
 
   <!-- top: lidartag detector -->
   <group>

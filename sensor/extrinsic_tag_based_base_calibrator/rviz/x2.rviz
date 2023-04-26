@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /calibration markers1/Namespaces1
+        - /calibration markers1
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz_common/Selection
@@ -53,7 +53,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 96
+      Max Intensity: 255
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: pandar_40p_left_pc
@@ -178,7 +178,61 @@ Visualization Manager:
       Enabled: true
       Name: calibration markers
       Namespaces:
-        {}
+        initial_base_link: true
+        initial_connections: true
+        initial_estimations: true
+        initial_ground_plane: true
+        optimized_base_link: true
+        optimized_connections: true
+        optimized_estimations: true
+        optimized_ground_plane: true
+        raw_detections: true
+        raw_detections_s0_e0: false
+        raw_detections_s0_e1: false
+        raw_detections_s0_e10: false
+        raw_detections_s0_e11: false
+        raw_detections_s0_e12: false
+        raw_detections_s0_e13: false
+        raw_detections_s0_e14: false
+        raw_detections_s0_e15: false
+        raw_detections_s0_e16: false
+        raw_detections_s0_e17: false
+        raw_detections_s0_e18: false
+        raw_detections_s0_e19: false
+        raw_detections_s0_e2: false
+        raw_detections_s0_e20: false
+        raw_detections_s0_e21: false
+        raw_detections_s0_e22: false
+        raw_detections_s0_e23: false
+        raw_detections_s0_e24: false
+        raw_detections_s0_e25: false
+        raw_detections_s0_e26: false
+        raw_detections_s0_e27: false
+        raw_detections_s0_e28: false
+        raw_detections_s0_e29: false
+        raw_detections_s0_e3: false
+        raw_detections_s0_e30: false
+        raw_detections_s0_e31: false
+        raw_detections_s0_e32: false
+        raw_detections_s0_e33: false
+        raw_detections_s0_e34: false
+        raw_detections_s0_e35: false
+        raw_detections_s0_e36: false
+        raw_detections_s0_e37: false
+        raw_detections_s0_e38: false
+        raw_detections_s0_e39: false
+        raw_detections_s0_e4: false
+        raw_detections_s0_e40: false
+        raw_detections_s0_e41: false
+        raw_detections_s0_e42: false
+        raw_detections_s0_e43: false
+        raw_detections_s0_e44: false
+        raw_detections_s0_e45: false
+        raw_detections_s0_e5: false
+        raw_detections_s0_e6: false
+        raw_detections_s0_e7: false
+        raw_detections_s0_e8: false
+        raw_detections_s0_e9: false
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -260,7 +314,7 @@ Visualization Manager:
       Enabled: true
       Name: pandar_40p_right_detections
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -286,7 +340,7 @@ Visualization Manager:
       Enabled: true
       Name: pandar_40p_rear_detections
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -349,14 +403,14 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.36999982595443726
+      Pitch: 0.6699997186660767
       Position:
-        X: -5.187960624694824
-        Y: 0.5303747057914734
-        Z: 1.8321043252944946
+        X: 16.678211212158203
+        Y: -0.6151992082595825
+        Z: 8.096335411071777
       Target Frame: <Fixed Frame>
       Value: FPS (rviz_default_plugins)
-      Yaw: 0.032146718353033066
+      Yaw: 3.100316286087036
     Saved: ~
 Window Geometry:
   Displays:

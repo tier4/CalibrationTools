@@ -592,7 +592,13 @@ void ExtrinsicTagBasedBaseCalibrator::apriltagDetectionsCallback(
 
   for (const auto & detection_msg : detections_msg->detections) {
     const std::string family_and_id = detection_msg.family + std::to_string(detection_msg.id);
-    assert(tag_family_and_id_to_type_map_.count(family_and_id) == 1);
+
+    if (tag_family_and_id_to_type_map_.count(family_and_id) != 1) {
+      RCLCPP_WARN(
+        get_logger(), "Received detections from an unexpected family/id:  %s!. Ignoring.",
+        family_and_id.c_str());
+      continue;
+    }
 
     const TagType tag_type = tag_family_and_id_to_type_map_[family_and_id];
     const TagParameters tag_parameters = tag_parameters_map_[tag_type];
