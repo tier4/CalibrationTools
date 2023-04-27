@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /calibration markers1
+        - /calibration markers1/Namespaces1
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz_common/Selection
@@ -181,11 +181,11 @@ Visualization Manager:
         initial_base_link: true
         initial_connections: true
         initial_estimations: true
-        initial_ground_plane: true
+        initial_ground_plane: false
         optimized_base_link: true
         optimized_connections: true
         optimized_estimations: true
-        optimized_ground_plane: true
+        optimized_ground_plane: false
         raw_detections: true
         raw_detections_s0_e0: false
         raw_detections_s0_e1: false
@@ -228,11 +228,122 @@ Visualization Manager:
         raw_detections_s0_e43: false
         raw_detections_s0_e44: false
         raw_detections_s0_e45: false
+        raw_detections_s0_e46: false
+        raw_detections_s0_e47: false
+        raw_detections_s0_e48: false
+        raw_detections_s0_e49: false
         raw_detections_s0_e5: false
+        raw_detections_s0_e50: false
+        raw_detections_s0_e51: false
+        raw_detections_s0_e52: false
+        raw_detections_s0_e53: false
+        raw_detections_s0_e54: false
+        raw_detections_s0_e55: false
+        raw_detections_s0_e56: false
+        raw_detections_s0_e57: false
+        raw_detections_s0_e58: false
+        raw_detections_s0_e59: false
         raw_detections_s0_e6: false
         raw_detections_s0_e7: false
         raw_detections_s0_e8: false
         raw_detections_s0_e9: false
+        raw_detections_s1_e0: false
+        raw_detections_s1_e1: false
+        raw_detections_s1_e10: false
+        raw_detections_s1_e11: false
+        raw_detections_s1_e12: false
+        raw_detections_s1_e13: false
+        raw_detections_s1_e14: false
+        raw_detections_s1_e15: false
+        raw_detections_s1_e2: false
+        raw_detections_s1_e3: false
+        raw_detections_s1_e4: false
+        raw_detections_s1_e5: false
+        raw_detections_s1_e6: false
+        raw_detections_s1_e7: false
+        raw_detections_s1_e8: false
+        raw_detections_s1_e9: false
+        raw_detections_s2_e0: false
+        raw_detections_s2_e1: false
+        raw_detections_s2_e10: false
+        raw_detections_s2_e11: false
+        raw_detections_s2_e12: false
+        raw_detections_s2_e13: false
+        raw_detections_s2_e14: false
+        raw_detections_s2_e2: false
+        raw_detections_s2_e3: false
+        raw_detections_s2_e4: false
+        raw_detections_s2_e5: false
+        raw_detections_s2_e6: false
+        raw_detections_s2_e7: false
+        raw_detections_s2_e8: false
+        raw_detections_s2_e9: false
+        raw_detections_s3_e0: false
+        raw_detections_s3_e1: false
+        raw_detections_s3_e10: false
+        raw_detections_s3_e2: false
+        raw_detections_s3_e3: false
+        raw_detections_s3_e4: false
+        raw_detections_s3_e5: false
+        raw_detections_s3_e6: false
+        raw_detections_s3_e7: false
+        raw_detections_s3_e8: false
+        raw_detections_s3_e9: false
+        raw_detections_s4_e0: false
+        raw_detections_s4_e1: false
+        raw_detections_s4_e2: false
+        raw_detections_s4_e3: false
+        raw_detections_s4_e4: false
+        raw_detections_s4_e5: false
+        raw_detections_s4_e6: false
+        raw_detections_s4_e7: false
+        raw_detections_s5_e0: false
+        raw_detections_s5_e1: false
+        raw_detections_s5_e10: false
+        raw_detections_s5_e11: false
+        raw_detections_s5_e12: false
+        raw_detections_s5_e2: false
+        raw_detections_s5_e3: false
+        raw_detections_s5_e4: false
+        raw_detections_s5_e5: false
+        raw_detections_s5_e6: false
+        raw_detections_s5_e7: false
+        raw_detections_s5_e8: false
+        raw_detections_s5_e9: false
+        raw_detections_s6_e0: false
+        raw_detections_s6_e1: false
+        raw_detections_s6_e10: false
+        raw_detections_s6_e11: false
+        raw_detections_s6_e12: false
+        raw_detections_s6_e13: false
+        raw_detections_s6_e14: false
+        raw_detections_s6_e2: false
+        raw_detections_s6_e3: false
+        raw_detections_s6_e4: false
+        raw_detections_s6_e5: false
+        raw_detections_s6_e6: false
+        raw_detections_s6_e7: false
+        raw_detections_s6_e8: false
+        raw_detections_s6_e9: false
+        raw_detections_s7_e0: false
+        raw_detections_s7_e1: false
+        raw_detections_s7_e10: false
+        raw_detections_s7_e11: false
+        raw_detections_s7_e12: false
+        raw_detections_s7_e13: false
+        raw_detections_s7_e14: false
+        raw_detections_s7_e15: false
+        raw_detections_s7_e16: false
+        raw_detections_s7_e17: false
+        raw_detections_s7_e18: false
+        raw_detections_s7_e2: false
+        raw_detections_s7_e3: false
+        raw_detections_s7_e4: false
+        raw_detections_s7_e5: false
+        raw_detections_s7_e6: false
+        raw_detections_s7_e7: false
+        raw_detections_s7_e8: false
+        raw_detections_s7_e9: false
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -314,7 +425,7 @@ Visualization Manager:
       Enabled: true
       Name: pandar_40p_right_detections
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -403,14 +514,14 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6699997186660767
+      Pitch: 0.5849998593330383
       Position:
-        X: 16.678211212158203
-        Y: -0.6151992082595825
-        Z: 8.096335411071777
+        X: 18.28022003173828
+        Y: 0.13030028343200684
+        Z: 7.865233898162842
       Target Frame: <Fixed Frame>
       Value: FPS (rviz_default_plugins)
-      Yaw: 3.100316286087036
+      Yaw: 3.065324306488037
     Saved: ~
 Window Geometry:
   Displays:
