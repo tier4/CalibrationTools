@@ -2,7 +2,7 @@
 <launch>
 
   <arg name="vehicle_id" default="default" />
-  <let name="sensor_model" value="aip_x1" />
+  <let name="sensor_model" value="aip_x1_1" />
   <let name="base_frame" value="base_link" />
   <let name="parent_frame" value="sensor_kit_base_link" />
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" />
