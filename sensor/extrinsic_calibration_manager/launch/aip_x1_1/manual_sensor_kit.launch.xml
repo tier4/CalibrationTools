@@ -3,7 +3,7 @@
 
   <arg name="vehicle_id" default="default" />
 
-  <let name="sensor_model" value="aip_x1" />
+  <let name="sensor_model" value="aip_x1_1" />
   <let name="parent_frame" value="sensor_kit_base_link" />
 
   <!-- extrinsic_calibration_client -->
@@ -20,9 +20,7 @@
     <param name="parent_frame" value="$(var parent_frame)" />
     <param name="child_frames" value="
     [velodyne_top_base_link,
-    livox_front_left_base_link,
-    livox_front_center_base_link,
-    livox_front_right_base_link]" />
+    pandar_xt32_front_center_base_link]" />
   </node>
 
   <!-- extrinsic_manual_calibrator -->
@@ -33,21 +31,9 @@
   </include>
 
   <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
-    <arg name="ns" value="$(var parent_frame)/livox_front_left_base_link" />
+    <arg name="ns" value="$(var parent_frame)/pandar_xt32_front_center_base_link" />
     <arg name="parent_frame" value="$(var parent_frame)" />
-    <arg name="child_frame" value="livox_front_left_base_link" />
-  </include>
-
-  <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
-    <arg name="ns" value="$(var parent_frame)/livox_front_center_base_link" />
-    <arg name="parent_frame" value="$(var parent_frame)" />
-    <arg name="child_frame" value="livox_front_center_base_link" />
-  </include>
-
-  <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
-    <arg name="ns" value="$(var parent_frame)/livox_front_right_base_link" />
-    <arg name="parent_frame" value="$(var parent_frame)" />
-    <arg name="child_frame" value="livox_front_right_base_link" />
+    <arg name="child_frame" value="pandar_xt32_front_center_base_link" />
   </include>
 
 </launch>
