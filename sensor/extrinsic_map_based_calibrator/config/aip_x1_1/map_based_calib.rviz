@@ -10,9 +10,8 @@ Panels:
         - /Sensing1/LiDAR1
         - /Sensing1/LiDAR1/ConcatenatePointCloud1/Autocompute Value Bounds1
         - /Center1
-        - /Left1
-        - /Right1
-      Splitter Ratio: 0.5829145908355713
+        - /Top Velodyne1
+      Splitter Ratio: 0.6652806401252747
     Tree Height: 796
   - Class: rviz_common/Selection
     Name: Selection
@@ -44,27 +43,17 @@ Visualization Manager:
             All Enabled: true
             base_link:
               Value: true
-            ground_plane:
-              Value: true
-            ground_plane_raw:
-              Value: true
-            livox_front_center:
-              Value: true
-            livox_front_center_base_link:
-              Value: true
-            livox_front_left:
-              Value: true
-            livox_front_left_base_link:
-              Value: true
-            livox_front_right:
-              Value: true
-            livox_front_right_base_link:
-              Value: true
             map:
               Value: true
             ndt_base_link:
               Value: true
+            pandar_xt32_front_center:
+              Value: true
+            pandar_xt32_front_center_base_link:
+              Value: true
             sensor_kit_base_link:
+              Value: true
+            tamagawa/imu_link:
               Value: true
             velodyne_top:
               Value: true
@@ -81,21 +70,14 @@ Visualization Manager:
             map:
               base_link:
                 sensor_kit_base_link:
-                  livox_front_center_base_link:
-                    livox_front_center:
+                  pandar_xt32_front_center_base_link:
+                    pandar_xt32_front_center:
                       {}
-                  livox_front_left_base_link:
-                    livox_front_left:
-                      {}
-                  livox_front_right_base_link:
-                    livox_front_right:
-                      {}
+                  tamagawa/imu_link:
+                    {}
                   velodyne_top_base_link:
                     velodyne_top:
-                      ground_plane:
-                        {}
-                      ground_plane_raw:
-                        {}
+                      {}
               ndt_base_link:
                 {}
               viewer:
@@ -195,29 +177,11 @@ Visualization Manager:
                   Show Axes: false
                   Show Trail: false
                   Value: true
-                livox_front_center:
+                pandar_xt32_front_center:
                   Alpha: 1
                   Show Axes: false
                   Show Trail: false
-                livox_front_center_base_link:
-                  Alpha: 1
-                  Show Axes: false
-                  Show Trail: false
-                  Value: true
-                livox_front_left:
-                  Alpha: 1
-                  Show Axes: false
-                  Show Trail: false
-                livox_front_left_base_link:
-                  Alpha: 1
-                  Show Axes: false
-                  Show Trail: false
-                  Value: true
-                livox_front_right:
-                  Alpha: 1
-                  Show Axes: false
-                  Show Trail: false
-                livox_front_right_base_link:
+                pandar_xt32_front_center_base_link:
                   Alpha: 1
                   Show Axes: false
                   Show Trail: false
@@ -226,6 +190,11 @@ Visualization Manager:
                   Alpha: 1
                   Show Axes: false
                   Show Trail: false
+                tamagawa/imu_link:
+                  Alpha: 1
+                  Show Axes: false
+                  Show Trail: false
+                  Value: true
                 velodyne_top:
                   Alpha: 1
                   Show Axes: false
@@ -644,7 +613,12 @@ Visualization Manager:
               Enabled: true
               Name: MonteCarloInitialPose
               Namespaces:
-                {}
+                initial_pose_index_color_marker: true
+                initial_pose_iteration_color_marker: true
+                initial_pose_transform_probability_color_marker: true
+                result_pose_index_color_marker: true
+                result_pose_iteration_color_marker: true
+                result_pose_transform_probability_color_marker: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1215,7 +1189,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_center_base_link/debug/map_pointcloud
+            Value: /sensor_kit/sensor_kit_base_link/pandar_xt32_front_center_base_link/debug/map_pointcloud
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
@@ -1249,41 +1223,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_center_base_link/debug/map_without_wall_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: center_accumulated
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.009999999776482582
-          Style: Flat Squares
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensing/lidar/front_center/livox/accumulated_pointcloud
+            Value: /sensor_kit/sensor_kit_base_link/pandar_xt32_front_center_base_link/debug/map_without_wall_pointcloud
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
@@ -1296,10 +1236,10 @@ Visualization Manager:
           Axis: Z
           Channel Name: intensity
           Class: rviz_default_plugins/PointCloud2
-          Color: 114; 159; 207
+          Color: 78; 154; 6
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -1317,10 +1257,10 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_center_base_link/debug/sensor_pointcloud
+            Value: /sensor_kit/sensor_kit_base_link/pandar_xt32_front_center_base_link/debug/sensor_pointcloud
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1351,7 +1291,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_center_base_link/debug/inliers_pointcloud
+            Value: /sensor_kit/sensor_kit_base_link/pandar_xt32_front_center_base_link/debug/inliers_pointcloud
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
@@ -1385,7 +1325,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_center_base_link/debug/sensor_pointcloud_without_wall
+            Value: /sensor_kit/sensor_kit_base_link/pandar_xt32_front_center_base_link/debug/sensor_pointcloud_without_wall
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
@@ -1411,7 +1351,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Selectable: true
           Size (Pixels): 1
-          Size (m): 0.019999999552965164
+          Size (m): 0.029999999329447746
           Style: Spheres
           Topic:
             Depth: 5
@@ -1419,428 +1359,12 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_center_base_link/debug/calibrated_pointcloud
+            Value: /sensor_kit/sensor_kit_base_link/pandar_xt32_front_center_base_link/debug/calibrated_pointcloud
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
       Enabled: true
       Name: Center
-    - Class: rviz_common/Group
-      Displays:
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 51.6066780090332
-            Min Value: 36.993988037109375
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: left_map
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.009999999776482582
-          Style: Points
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_left_base_link/debug/map_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: left_accumulated
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.009999999776482582
-          Style: Flat Squares
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensing/lidar/front_left/livox/accumulated_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 0.5
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 114; 159; 207
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: left_sensor
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.019999999552965164
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_left_base_link/debug/sensor_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: inliars
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.029999999329447746
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_left_base_link/debug/inliers_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 0.5
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 138; 226; 52
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: left_sensor_without_wall
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.019999999552965164
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_left_base_link/debug/sensor_pointcloud_without_wall
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 239; 41; 41
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: left_calibrated
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.019999999552965164
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_left_base_link/debug/calibrated_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-      Enabled: true
-      Name: Left
-    - Class: rviz_common/Group
-      Displays:
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: right_map
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.009999999776482582
-          Style: Points
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_right_base_link/debug/map_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: right_accumulated
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.009999999776482582
-          Style: Flat Squares
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensing/lidar/front_right/livox/accumulated_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 0.5
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 114; 159; 207
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: right_sensor
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.019999999552965164
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_right_base_link/debug/sensor_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: inliars
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.029999999329447746
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_right_base_link/debug/inliers_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 0.5
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 138; 226; 52
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: right_sensor_without_wall
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.019999999552965164
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_right_base_link/debug/sensor_pointcloud_without_wall
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz_default_plugins/PointCloud2
-          Color: 239; 41; 41
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: 4096
-          Min Color: 0; 0; 0
-          Min Intensity: 0
-          Name: right_calibrated
-          Position Transformer: XYZ
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.019999999552965164
-          Style: Spheres
-          Topic:
-            Depth: 5
-            Durability Policy: Transient Local
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /sensor_kit/sensor_kit_base_link/livox_front_right_base_link/debug/calibrated_pointcloud
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-      Enabled: true
-      Name: Right
     - Class: rviz_common/Group
       Displays:
         - Alpha: 1
@@ -1945,42 +1469,42 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
-      Enabled: false
-      Name: Top Velodyne
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz_default_plugins/PointCloud2
-      Color: 252; 233; 79
-      Color Transformer: FlatColor
-      Decay Time: 0
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz_default_plugins/PointCloud2
+          Color: 252; 233; 79
+          Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: false
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 190
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: Top velodyne
+          Position Transformer: XYZ
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.019999999552965164
+          Style: Spheres
+          Topic:
+            Depth: 5
+            Durability Policy: System Default
+            Filter size: 10
+            History Policy: Keep Last
+            Reliability Policy: Best Effort
+            Value: /sensing/lidar/top/pointcloud_raw
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: false
       Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 190
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: Top velodyne
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.019999999552965164
-      Style: Spheres
-      Topic:
-        Depth: 5
-        Durability Policy: System Default
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /sensing/lidar/top/pointcloud_raw
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
+      Name: Top Velodyne
   Enabled: true
   Global Options:
     Background Color: 10; 10; 10
@@ -2013,7 +1537,9 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /planning/mission_planning/goal
     - Class: rviz_plugins/PedestrianInitialPoseTool
+      Interactive: false
       Pose Topic: /simulation/dummy_perception_publisher/object_info
+      Target Frame: <Fixed Frame>
       Theta std deviation: 0.0872664600610733
       Velocity: 0
       X std deviation: 0.029999999329447746
@@ -2021,7 +1547,9 @@ Visualization Manager:
       Z position: 1
       Z std deviation: 0.029999999329447746
     - Class: rviz_plugins/CarInitialPoseTool
+      Interactive: false
       Pose Topic: /simulation/dummy_perception_publisher/object_info
+      Target Frame: <Fixed Frame>
       Theta std deviation: 0.0872664600610733
       Velocity: 3
       X std deviation: 0.029999999329447746
@@ -2042,7 +1570,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0.38499966263771057
+      Angle: 0.3150007128715515
       Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -2052,11 +1580,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 30.158784866333008
-      Target Frame: base_link
+      Scale: 43.88800048828125
+      Target Frame: viewer
       Value: TopDownOrtho (rviz_default_plugins)
-      X: -3.8511693477630615
-      Y: 7.5365424156188965
+      X: -2.0753719806671143
+      Y: 1.1363950967788696
     Saved:
       - Class: rviz_default_plugins/ThirdPersonFollower
         Distance: 18
@@ -2095,13 +1623,13 @@ Visualization Manager:
         Y: 0
 Window Geometry:
   Displays:
-    collapsed: true
+    collapsed: false
   Height: 1043
-  Hide Left Dock: true
+  Hide Left Dock: false
   Hide Right Dock: true
   InitialPoseButtonPanel:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000016200000359fc020000000dfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003d00000359000000c900fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000001b9000000c90000005c00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000c00430061006d0065007200610100000682000000eb0000000000000000fb0000000a0049006d0061006700650100000505000002680000000000000000fb0000002c0049006e0069007400690061006c0050006f007300650042007500740074006f006e00500061006e0065006c000000068f000000de0000006e00fffffffb0000002c0049006e0069007400690061006c0050006f007300650042007500740074006f006e00500061006e0065006c000000068f000000de0000000000000000fb00000030005200650063006f0067006e006900740069006f006e0052006500730075006c0074004f006e0049006d0061006700650000000236000001450000002800ffffff000000010000015f00000359fc0200000003fb0000000a00560069006500770073000000003d00000359000000a400fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000e7a0000005afc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000005afc0100000002fb0000000800540069006d0065010000000000000780000002eb00fffffffb0000000800540069006d00650100000000000004500000000000000000000007800000035900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001e300000359fc020000000dfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d00000359000000c900fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000001b9000000c90000005c00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000c00430061006d0065007200610100000682000000eb0000000000000000fb0000000a0049006d0061006700650100000505000002680000000000000000fb0000002c0049006e0069007400690061006c0050006f007300650042007500740074006f006e00500061006e0065006c000000068f000000de0000007700fffffffb0000002c0049006e0069007400690061006c0050006f007300650042007500740074006f006e00500061006e0065006c000000068f000000de0000000000000000fb00000030005200650063006f0067006e006900740069006f006e0052006500730075006c0074004f006e0049006d0061006700650000000236000001450000002800ffffff000000010000015f00000359fc0200000003fb0000000a00560069006500770073000000003d00000359000000a400fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000e7a0000005afc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000005afc0100000002fb0000000800540069006d0065010000000000000780000002eb00fffffffb0000000800540069006d00650100000000000004500000000000000000000005970000035900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   RecognitionResultOnImage:
     collapsed: false
   Selection:
