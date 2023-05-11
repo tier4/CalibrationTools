@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_TYPES_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_TYPES_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__TYPES_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__TYPES_HPP_
 
 #include <Eigen/Dense>
 
@@ -28,7 +28,10 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <mutex>
+#include <string>
+#include <vector>
 
 using PointType = pcl::PointXYZ;
 using PointcloudType = pcl::PointCloud<PointType>;
@@ -138,7 +141,8 @@ struct MappingParameters
   int mapping_max_frames_;
   int local_map_num_keyframes_;
   double mapping_max_range_;
-  int min_pointcloud_size_;
+  int min_mapping_pointcloud_size_;
+  int min_calibration_pointcloud_size_;
   double mapping_lost_timeout_;
   double viz_max_range_;
   double mapping_viz_leaf_size_;
@@ -212,4 +216,4 @@ struct CalibrationParameters
   int camera_calibration_max_frames_;
 };
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_TYPES_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__TYPES_HPP_

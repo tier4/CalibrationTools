@@ -135,8 +135,10 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<int>("dense_pointcloud_num_keyframes", 10);
   mapping_parameters_->mapping_max_range_ =
     this->declare_parameter<double>("mapping_max_range", 60.0);
-  mapping_parameters_->min_pointcloud_size_ =
-    this->declare_parameter<int>("min_pointcloud_size", 10000);
+  mapping_parameters_->min_mapping_pointcloud_size_ =
+    this->declare_parameter<int>("min_mapping_pointcloud_size", 10000);
+  mapping_parameters_->min_calibration_pointcloud_size_ =
+    this->declare_parameter<int>("min_calibration_pointcloud_size", 1000);
   mapping_parameters_->mapping_lost_timeout_ =
     this->declare_parameter<double>("mapping_lost_timeout", 1.0);
 
@@ -449,7 +451,8 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_PARAM(mapping_parameters, mapping_max_frames);
     UPDATE_PARAM(mapping_parameters, local_map_num_keyframes);
     UPDATE_PARAM(mapping_parameters, mapping_max_range);
-    UPDATE_PARAM(mapping_parameters, min_pointcloud_size);
+    UPDATE_PARAM(mapping_parameters, min_mapping_pointcloud_size);
+    UPDATE_PARAM(mapping_parameters, min_calibration_pointcloud_size);
     UPDATE_PARAM(mapping_parameters, mapping_lost_timeout);
     UPDATE_PARAM(mapping_parameters, ndt_resolution);
     UPDATE_PARAM(mapping_parameters, ndt_step_size);

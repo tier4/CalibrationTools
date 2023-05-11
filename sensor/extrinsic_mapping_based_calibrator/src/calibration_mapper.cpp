@@ -25,8 +25,6 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #endif
 
-using namespace std::chrono_literals;
-
 CalibrationMapper::CalibrationMapper(
   MappingParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
   PointPublisher::SharedPtr & map_pub,
@@ -147,7 +145,7 @@ void CalibrationMapper::mappingPointCloudCallback(
   PointcloudType::Ptr pc_ptr(new PointcloudType());
   pcl::fromROSMsg(*msg, *pc_ptr);
 
-  if (static_cast<int>(pc_ptr->size()) < parameters_->min_pointcloud_size_) {
+  if (static_cast<int>(pc_ptr->size()) < parameters_->min_mapping_pointcloud_size_) {
     RCLCPP_WARN(
       rclcpp::get_logger("calibration_mapper"),
       "Received a unusually small  mapping pc (size=%lu). Skipping it", pc_ptr->size());
@@ -196,6 +194,8 @@ void CalibrationMapper::mappingPointCloudCallback(
 
 void CalibrationMapper::mappingThreadWorker()
 {
+  using std::chrono_literals::operator""ms;
+
   Eigen::Matrix4f last_pose =
     Eigen::Matrix4f::Identity();  // not necessarily assciated with a frame
   builtin_interfaces::msg::Time last_stamp;
@@ -890,15 +890,16 @@ bool CalibrationMapper::addNewLidarCalibrationFrame(
 {
   PointcloudType::Ptr pc_ptr(new PointcloudType());
   pcl::fromROSMsg(*msg, *pc_ptr);
+
+  if (static_cast<int>(pc_ptr->size()) >= parameters_->min_calibration_pointcloud_size_) {
+    data_->lidar_calibration_frames_map_[calibration_frame_name].emplace_back(calibration_frame);
+    return true;
+  }
+
   transformPointcloud<PointcloudType>(
     msg->header.frame_id, calibration_frame_name, pc_ptr, *tf_buffer_);
 
   calibration_frame.source_pointcloud_ = pc_ptr;
-
-  if (static_cast<int>(pc_ptr->size()) >= parameters_->min_pointcloud_size_) {
-    data_->lidar_calibration_frames_map_[calibration_frame_name].emplace_back(calibration_frame);
-    return true;
-  }
 
   return false;
 }
