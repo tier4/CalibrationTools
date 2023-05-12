@@ -67,13 +67,13 @@ void ExtrinsicMapBasedPreprocessing::downsamplingOnFloor(
   // voxel grid filtering
   PointCloudT::Ptr cloud_voxel_filtered(new PointCloudT);
   pcl::VoxelGrid<pcl::PointXYZ> vg;
-  vg.setInputCloud(boost::make_shared<PointCloudT>(*inliers_pointcloud_pcl));
+  vg.setInputCloud(std::make_shared<PointCloudT>(*inliers_pointcloud_pcl));
   vg.setLeafSize(config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size, config_.ransac_config.voxel_grid_size);
   vg.filter(*cloud_voxel_filtered);
 
   pcl::VoxelGrid<pcl::PointXYZ> vg_target;
   PointCloudT::Ptr filtered_cloud_target(new PointCloudT);
-  vg_target.setInputCloud(boost::make_shared<PointCloudT>(*cloud_target));
+  vg_target.setInputCloud(std::make_shared<PointCloudT>(*cloud_target));
   vg_target.setLeafSize(config_.ransac_config.voxel_grid_size/2, config_.ransac_config.voxel_grid_size/2, config_.ransac_config.voxel_grid_size/2);
   vg_target.filter(*filtered_cloud_target);
 

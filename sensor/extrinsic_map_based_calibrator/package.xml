@@ -21,6 +21,7 @@
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>eigen</depend>
+  <depend>tf2_eigen</depend>
   <depend>tier4_autoware_utils</depend>
   <depend>tier4_calibration_msgs</depend>
   <depend>message_filters</depend>
