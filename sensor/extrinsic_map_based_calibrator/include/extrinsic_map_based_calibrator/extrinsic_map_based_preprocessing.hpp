@@ -36,7 +36,7 @@
 #include "pcl/ModelCoefficients.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "tf2/utils.h"
-#include "tf2_eigen/tf2_eigen.h"
+#include "tf2_eigen/tf2_eigen.hpp"
 #include "extrinsic_map_based_calibrator/pointcloud_matcher.hpp"
 
 using PointCloudT = pcl::PointCloud<pcl::PointXYZ>;
