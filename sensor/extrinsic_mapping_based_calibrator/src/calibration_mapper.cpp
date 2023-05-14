@@ -891,9 +891,8 @@ bool CalibrationMapper::addNewLidarCalibrationFrame(
   PointcloudType::Ptr pc_ptr(new PointcloudType());
   pcl::fromROSMsg(*msg, *pc_ptr);
 
-  if (static_cast<int>(pc_ptr->size()) >= parameters_->min_calibration_pointcloud_size_) {
-    data_->lidar_calibration_frames_map_[calibration_frame_name].emplace_back(calibration_frame);
-    return true;
+  if (static_cast<int>(pc_ptr->size()) < parameters_->min_calibration_pointcloud_size_) {
+    return false;
   }
 
   transformPointcloud<PointcloudType>(
@@ -901,7 +900,9 @@ bool CalibrationMapper::addNewLidarCalibrationFrame(
 
   calibration_frame.source_pointcloud_ = pc_ptr;
 
-  return false;
+  data_->lidar_calibration_frames_map_[calibration_frame_name].emplace_back(calibration_frame);
+
+  return true;
 }
 
 template void CalibrationMapper::mappingCalibrationDatamatching<sensor_msgs::msg::CompressedImage>(
