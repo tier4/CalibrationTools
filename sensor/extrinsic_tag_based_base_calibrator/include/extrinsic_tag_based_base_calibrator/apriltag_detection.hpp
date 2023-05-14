@@ -53,6 +53,7 @@ struct ApriltagDetection : public LidartagDetection
   double computePose(const IntrinsicParameters & intrinsics);
   double computeReprojError(const IntrinsicParameters & intrinsics) const;
   double computeReprojError(double cx, double cy, double fx, double fy) const;
+  double detectionDiagonalRatio() const;
 
   std::vector<cv::Point2d> image_corners;
 
@@ -85,6 +86,7 @@ struct ApriltagGridDetection : public ApriltagDetection
   void computeObjectCorners();
   void computeTemplateCorners(const TagParameters & tag_parameters);
   double recomputeFromSubDetections(const TagParameters & tag_parameters);
+  double detectionDiagonalRatio() const;
 
   std::vector<ApriltagDetection> sub_detections;
   int rows;

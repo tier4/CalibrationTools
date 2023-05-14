@@ -1035,7 +1035,8 @@ void CalibrationProblem::printCalibrationResults()
 
     RCLCPP_INFO(
       rclcpp::get_logger("calibration_problem"),
-      "sensor_uid=%s\toptimized pose: translation=[%.5f, %.5f, %.5f] quat=[%.5f, %.5f, %.5f, %.5f]",
+      "sensor_uid=%s\toptimized pose:\n\ttranslation: [%.5f, %.5f, %.5f]\n\tquaternion: [%.5f, "
+      "%.5f, %.5f, %.5f]",
       sensor_uid.toString().c_str(), translation.x(), translation.y(), translation.z(), quat.x(),
       quat.y(), quat.z(), quat.w());
   }

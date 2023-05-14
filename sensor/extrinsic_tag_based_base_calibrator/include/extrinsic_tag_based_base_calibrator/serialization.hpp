@@ -281,6 +281,7 @@ void serialize(
   ar & data.main_calibration_sensor_uid;
   ar & data.uid_connections_map;
   ar & data.detections_relative_poses_map;
+  ar & data.detection_diagonal_ratio_map;
   ar & data.calibration_camera_intrinsics_map_;
 
   ar & data.initial_sensor_poses_map;

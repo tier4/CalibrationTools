@@ -237,7 +237,8 @@ cv::Point2d projectPoint(const cv::Vec3d & p, const std::array<double, 6> & intr
 
 cv::Affine3d estimateInitialPosesFilterOutliers(
   UID uid, const std::vector<std::pair<UID, cv::Affine3d>> & parent_uid_and_poses,
-  std::set<std::pair<UID, UID>> & outliers, double threshold = 3.0)
+  std::set<std::pair<UID, UID>> & outliers,
+  std::map<std::pair<UID, UID>, double> & detection_diagonal_ratio_map, double threshold = 3.0)
 {
   std::vector<std::pair<UID, cv::Affine3d>> best_model_inliers;
   std::set<UID> best_model_outliers;
@@ -316,9 +317,11 @@ cv::Affine3d estimateInitialPosesFilterOutliers(
       Eigen::Quaterniond quat(rotation);
       RCLCPP_WARN(
         rclcpp::get_logger("pose_estimation"),
-        "parent_uid=%s\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f]",
+        "parent_uid=%s\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f] "
+        "diagonal_ratio=%.2f",
         parent_uid.toString().c_str(), translation.x(), translation.y(), translation.z(), quat.x(),
-        quat.y(), quat.z(), quat.w());
+        quat.y(), quat.z(), quat.w(),
+        detection_diagonal_ratio_map[std::make_pair(parent_uid, uid)]);
     }
   }
 
@@ -336,9 +339,11 @@ cv::Affine3d estimateInitialPosesFilterOutliers(
 
     RCLCPP_INFO(
       rclcpp::get_logger("pose_estimation"),
-      "uid=%s\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f] parent_uid=[%s]",
+      "uid=%s\ttranslation=[%.2f, %.2f, %.2f] quat=[%.2f, %.2f, %.2f, %.2f] parent_uid=[%s] "
+      "diagonal_ratio=%.2f",
       uid.toString().c_str(), translation.x(), translation.y(), translation.z(), quat.x(), quat.y(),
-      quat.z(), quat.w(), parent_uid.toString().c_str());
+      quat.z(), quat.w(), parent_uid.toString().c_str(),
+      detection_diagonal_ratio_map[std::make_pair(parent_uid, uid)]);
 
     avg_translation += translation;
   }
@@ -365,8 +370,8 @@ void estimateInitialPosesAveragePoses(
   for (const auto & [uid, parent_uid_and_pose_pair] : raw_poses_map) {
     assert(parent_uid_and_pose_pair.size() > 0);
 
-    auto initial_pose =
-      estimateInitialPosesFilterOutliers(uid, parent_uid_and_pose_pair, data.invalid_pairs_set);
+    auto initial_pose = estimateInitialPosesFilterOutliers(
+      uid, parent_uid_and_pose_pair, data.invalid_pairs_set, data.detection_diagonal_ratio_map);
     auto initial_pose_ptr = std::make_shared<cv::Affine3d>(initial_pose);
 
     if (uid.tag_type != TagType::Unknown) {
@@ -395,7 +400,7 @@ void estimateInitialPosesAveragePoses(
 
 void estimateInitialPoses(
   CalibrationData & data, const UID & main_sensor_uid, UID & left_wheel_uid, UID & right_wheel_uid,
-  int max_depth)
+  int max_depth, double min_allowed_diagonal_ratio)
 {
   std::map<UID, cv::Affine3d> estimated_poses;
   std::set<UID> iteration_uids;
@@ -420,7 +425,9 @@ void estimateInitialPoses(
       for (const UID & next_uid : data.uid_connections_map[uid]) {
         if (
           estimated_poses.count(next_uid) > 0 ||
-          data.invalid_pairs_set.count(std::make_pair(uid, next_uid)) > 0) {
+          data.invalid_pairs_set.count(std::make_pair(uid, next_uid)) > 0 ||
+          data.detection_diagonal_ratio_map[std::make_pair(uid, next_uid)] <
+            min_allowed_diagonal_ratio) {
           continue;
         }
 

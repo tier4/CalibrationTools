@@ -176,6 +176,14 @@ double ApriltagDetection::computeReprojError(double cx, double cy, double fx, do
   return error / object_corners.size();
 }
 
+double ApriltagDetection::detectionDiagonalRatio() const
+{
+  assert(image_corners.size() == 4);
+  cv::Point2d ac = image_corners[3] - image_corners[1];
+  cv::Point2d bd = image_corners[2] - image_corners[0];
+  return std::min(cv::norm(ac), cv::norm(bd)) / std::max(cv::norm(ac), cv::norm(bd));
+}
+
 void ApriltagGridDetection::computeTemplateCorners(const TagParameters & tag_parameters)
 {
   template_corners.clear();
@@ -350,6 +358,14 @@ GroupedApriltagGridDetections ApriltagGridDetection::fromGroupedApriltagDetectio
   }
 
   return grouped_grid_detections;
+}
+
+double ApriltagGridDetection::detectionDiagonalRatio() const
+{
+  return std::transform_reduce(
+           sub_detections.cbegin(), sub_detections.cend(), 0.0, std::plus{},
+           [](const auto & detection) { return detection.detectionDiagonalRatio(); }) /
+         (rows * cols);
 }
 
 }  // namespace extrinsic_tag_based_base_calibrator

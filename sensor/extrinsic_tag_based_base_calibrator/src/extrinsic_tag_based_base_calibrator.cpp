@@ -1250,6 +1250,11 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
             grid_detection.pose;
           data_->detections_relative_poses_map[std::make_pair(tag_uid, camera_uid)] =
             grid_detection.pose.inv();
+
+          data_->detection_diagonal_ratio_map[std::make_pair(camera_uid, tag_uid)] =
+            grid_detection.detectionDiagonalRatio();
+          data_->detection_diagonal_ratio_map[std::make_pair(tag_uid, camera_uid)] =
+            grid_detection.detectionDiagonalRatio();
         }
       }
     }
@@ -1276,6 +1281,9 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
           lidartag_detection.pose;
         data_->detections_relative_poses_map[std::make_pair(tag_uid, lidar_uid)] =
           lidartag_detection.pose.inv();
+
+        data_->detection_diagonal_ratio_map[std::make_pair(lidar_uid, tag_uid)] = 1.0;
+        data_->detection_diagonal_ratio_map[std::make_pair(tag_uid, lidar_uid)] = 1.0;
       }
     }
 
@@ -1300,6 +1308,11 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
             grid_detection.pose;
           data_->detections_relative_poses_map[std::make_pair(tag_uid, external_camera_uid)] =
             grid_detection.pose.inv();
+
+          data_->detection_diagonal_ratio_map[std::make_pair(external_camera_uid, tag_uid)] =
+            grid_detection.detectionDiagonalRatio();
+          data_->detection_diagonal_ratio_map[std::make_pair(tag_uid, external_camera_uid)] =
+            grid_detection.detectionDiagonalRatio();
         }
       }
     }
