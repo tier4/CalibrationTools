@@ -51,6 +51,49 @@ void CalibrationProblem::setForceSharedGroundPlane(bool ba_force_shared_ground_p
   force_shared_ground_plane_ = ba_force_shared_ground_plane;
 }
 
+void CalibrationProblem::setFixedSharedGroundPlane(
+  bool ba_fixed_ground_plane_model, Eigen::Vector4d ground_model)
+{
+  force_fixed_ground_plane_ = ba_fixed_ground_plane_model;
+
+  Eigen::Vector3d n(ground_model(0), ground_model(1), ground_model(2));
+  n.normalize();
+
+  Eigen::Vector3d x0 = -n * ground_model(3);
+
+  // To create a real pose we need to invent a basis
+  Eigen::Vector3d base_x, base_y, base_z;
+  base_z = -n;
+
+  Eigen::Vector3d c1 = Eigen::Vector3d(1.0, 0.0, 0.0).cross(n);
+  Eigen::Vector3d c2 = Eigen::Vector3d(0.0, 1.0, 0.0).cross(n);
+  Eigen::Vector3d c3 = Eigen::Vector3d(0.0, 0.0, 1.0).cross(n);
+
+  // Any non-zero would work but we use the one with the highest norm (there has to be a non zero)
+  if (c1.norm() > c2.norm() && c1.norm() > c3.norm()) {
+    base_x = c1;
+  } else if (c2.norm() > c3.norm()) {
+    base_x = c2;
+  } else {
+    base_x = c3;
+  }
+
+  base_y = base_z.cross(base_x);
+
+  Eigen::Matrix3d rot;
+  rot.col(0) = base_x.normalized();
+  rot.col(1) = base_y.normalized();
+  rot.col(2) = base_z.normalized();
+
+  cv::Matx33d cv_rot;
+  cv::Vec3d cv_transl;
+
+  cv::eigen2cv(x0, cv_transl);
+  cv::eigen2cv(rot, cv_rot);
+
+  fixed_ground_pose_ = cv::Affine3d(cv_rot, cv_transl);
+}
+
 void CalibrationProblem::setExternalCameraIntrinsics(IntrinsicParameters & intrinsics)
 {
   external_camera_intrinsics_ = intrinsics;
@@ -74,6 +117,12 @@ void CalibrationProblem::dataToPlaceholders()
   // Compute the initial ground plane !
   cv::Affine3d ground_pose;
   computeGroundPlane(data_->initial_ground_tag_poses_map, 0.0, ground_pose);
+
+  if (force_fixed_ground_plane_) {
+    ground_pose = fixed_ground_pose_;
+  } else {
+    computeGroundPlane(data_->initial_ground_tag_poses_map, 0.0, ground_pose);
+  }
 
   // Prepare the placeholders
 
@@ -239,7 +288,9 @@ void CalibrationProblem::evaluate()
               auto f = CameraResidual(
                 calibration_camera_uid,
                 data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
-                pose_opt_map.at(calibration_camera_uid), false, false, false);
+                pose_opt_map.at(calibration_camera_uid),
+                std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM>(), false, false,
+                false, false);
 
               f(calibration_camera_pose_op, pose_opt_map.at(detection_uid).data(),
                 residuals.data());
@@ -252,7 +303,9 @@ void CalibrationProblem::evaluate()
               auto f = CameraResidual(
                 calibration_camera_uid,
                 data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
-                pose_opt_map.at(calibration_camera_uid), false, false, true);
+                pose_opt_map.at(calibration_camera_uid),
+                std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM>(), false, false,
+                false, true);
 
               f(calibration_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op,
                 residuals.data());
@@ -379,7 +432,9 @@ void CalibrationProblem::evaluate()
               if (optimize_intrinsics_) {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map.at(external_camera_uid), false, true, false);
+                  pose_opt_map.at(external_camera_uid),
+                  std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM>(), false, false,
+                  true, false);
 
                 f(external_camera_pose_op, external_camera_intrinsics_op,
                   pose_opt_map.at(detection_uid).data(), residuals.data());
@@ -387,7 +442,9 @@ void CalibrationProblem::evaluate()
               } else {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map.at(external_camera_uid), false, false, false);
+                  pose_opt_map.at(external_camera_uid),
+                  std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM>(), false, false,
+                  false, false);
 
                 f(external_camera_pose_op, pose_opt_map.at(detection_uid).data(), residuals.data());
               }
@@ -403,7 +460,9 @@ void CalibrationProblem::evaluate()
               if (optimize_intrinsics_) {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map.at(external_camera_uid), false, true, true);
+                  pose_opt_map.at(external_camera_uid),
+                  std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM>(), false, false,
+                  true, true);
 
                 f(external_camera_pose_op, external_camera_intrinsics_op, shrd_ground_pose_op,
                   indep_ground_pose_op, residuals.data());
@@ -411,7 +470,9 @@ void CalibrationProblem::evaluate()
               } else {
                 auto f = CameraResidual(
                   external_camera_uid, external_camera_intrinsics_, detection,
-                  pose_opt_map.at(external_camera_uid), false, false, true);
+                  pose_opt_map.at(external_camera_uid),
+                  std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM>(), false, false,
+                  false, true);
 
                 f(external_camera_pose_op, shrd_ground_pose_op, indep_ground_pose_op,
                   residuals.data());
@@ -559,19 +620,30 @@ void CalibrationProblem::solve()
               ceres::CostFunction * res = CameraResidual::createGroundTagResidual(
                 calibration_camera_uid,
                 data_->calibration_camera_intrinsics_map_.at(calibration_camera_uid), detection,
-                pose_opt_map.at(calibration_camera_uid), fix_sensor_pose, false);
+                pose_opt_map.at(calibration_camera_uid), shrd_ground_tag_pose_opt, fix_sensor_pose,
+                force_fixed_ground_plane_, false);
 
-              if (fix_sensor_pose) {
+              if (fix_sensor_pose && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
                   shrd_ground_pose_op, indep_ground_pose_op);
-              } else {
+              } else if (!fix_sensor_pose && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
                   pose_opt_map.at(calibration_camera_uid).data(), shrd_ground_pose_op,
                   indep_ground_pose_op);
+              } else if (fix_sensor_pose && force_fixed_ground_plane_) {
+                problem.AddResidualBlock(
+                  res,
+                  nullptr,  // L2
+                  indep_ground_pose_op);
+              } else if (!fix_sensor_pose && force_fixed_ground_plane_) {
+                problem.AddResidualBlock(
+                  res,
+                  nullptr,  // L2
+                  pose_opt_map.at(calibration_camera_uid).data(), indep_ground_pose_op);
               }
             } else {
               RCLCPP_ERROR(
@@ -700,21 +772,34 @@ void CalibrationProblem::solve()
 
               ceres::CostFunction * res = CameraResidual::createGroundTagResidual(
                 external_camera_uid, external_camera_intrinsics_, detection,
-                pose_opt_map.at(external_camera_uid), false, optimize_intrinsics_);
+                pose_opt_map.at(external_camera_uid), shrd_ground_tag_pose_opt, false,
+                force_fixed_ground_plane_, optimize_intrinsics_);
 
-              if (optimize_intrinsics_) {
+              if (optimize_intrinsics_ && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
                   pose_opt_map.at(external_camera_uid).data(), external_camera_intrinsics_op,
                   shrd_ground_pose_op, indep_ground_pose_op);
-              } else {
+              } else if (!optimize_intrinsics_ && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
                   nullptr,  // L2
                   pose_opt_map.at(external_camera_uid).data(), shrd_ground_pose_op,
                   indep_ground_pose_op);
+              } else if (optimize_intrinsics_ && force_fixed_ground_plane_) {
+                problem.AddResidualBlock(
+                  res,
+                  nullptr,  // L2
+                  pose_opt_map.at(external_camera_uid).data(), external_camera_intrinsics_op,
+                  indep_ground_pose_op);
+              } else if (!optimize_intrinsics_ && force_fixed_ground_plane_) {
+                problem.AddResidualBlock(
+                  res,
+                  nullptr,  // L2
+                  pose_opt_map.at(external_camera_uid).data(), indep_ground_pose_op);
               }
+
             } else {
               RCLCPP_ERROR(
                 rclcpp::get_logger("calibration_problem"), "%s <-> %s error",

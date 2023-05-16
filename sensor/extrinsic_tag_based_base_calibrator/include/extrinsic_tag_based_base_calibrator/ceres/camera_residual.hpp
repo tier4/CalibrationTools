@@ -36,11 +36,14 @@ struct CameraResidual : public SensorResidual
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection,
     const std::array<double, CalibrationData::POSE_OPT_DIM> & fixed_camera_pose_inv,
-    bool fix_camera_pose, bool optimize_intrinsics, bool is_ground_tag)
+    const std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> & fixed_tag_rot_z,
+    bool fix_camera_pose, bool fix_tag_rot_z, bool optimize_intrinsics, bool is_ground_tag)
   : camera_uid_(camera_uid),
     intrinsics_(intrinsics),
     detection_(detection),
+    fixed_tag_rot_z_(fixed_tag_rot_z),
     fix_camera_pose_(fix_camera_pose),
+    fix_tag_rot_z_(fix_tag_rot_z),
     optimize_intrinsics_(optimize_intrinsics),
     is_ground_tag_(is_ground_tag)
   {
@@ -249,6 +252,8 @@ struct CameraResidual : public SensorResidual
   /*!
    * The cost function wrapper for the following casesL
    *     - the tag is in the ground and the intrinsics are not optimized
+   *     -the tag is in the ground and the intrinsics are optimized, but the rot_z component is
+   * fixed
    *     - the camera is not fixed and the intrinsics are optimized
    * @param[in] arg1 The pose from the camera to the origin
    * @param[in] arg2 The camera intrinsics
@@ -260,7 +265,7 @@ struct CameraResidual : public SensorResidual
   bool operator()(
     const T * const arg1, const T * const arg2, const T * const arg3, T * residuals) const
   {
-    if (is_ground_tag_) {
+    if (is_ground_tag_ && !fix_tag_rot_z_) {
       // Case where the tag is in the ground and the intrinsics are not optimized
       assert(fix_camera_pose_ == false);
       assert(optimize_intrinsics_ == false);
@@ -269,7 +274,16 @@ struct CameraResidual : public SensorResidual
                                                T(1.0) * fy_, T(0.0),       T(0.0)};
 
       return impl(arg1, intrinsics.data(), static_cast<T *>(nullptr), arg2, arg3, residuals);
+    } else if (is_ground_tag_ && fix_tag_rot_z_) {
+      // Case where the tag is in the ground and the intrinsics are not optimized
+      assert(fix_camera_pose_ == false);
+      assert(optimize_intrinsics_ == true);
 
+      std::array<T, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> fixed_tag_rot_z{
+        T(1.0) * fixed_tag_rot_z_[0], T(1.0) * fixed_tag_rot_z_[1], T(1.0) * fixed_tag_rot_z_[2],
+        T(1.0) * fixed_tag_rot_z_[3], T(1.0) * fixed_tag_rot_z_[4]};
+
+      return impl(arg1, arg2, static_cast<T *>(nullptr), fixed_tag_rot_z.data(), arg3, residuals);
     } else {
       // Case where the camera is not fixed and the intrinsics are optimized
       assert(fix_camera_pose_ == false);
@@ -283,28 +297,47 @@ struct CameraResidual : public SensorResidual
   /*!
    * The cost function wrapper for one of the following cases:
    *   - the basic case of a normal tag with the intrinsics not being optimized
-   *   - the case of a fixed tag with intrinsics being optimized
+   *   - the ground case case with a fixed shared component and the intrinsics not being optimized
    * @param[in] camera_pose_inv The pose from the camera to the origin
-   * @param[in] tag_pose The pose of the tag
+   * @param[in] tag_pose The pose of the tag. in the case of a ground tag, it refers to the 2d pose
    * @param[in] residuals The residual error of projecting the tag into the camera
    * @returns success status
    */
   template <typename T>
   bool operator()(const T * const arg1, const T * const arg2, T * residuals) const
   {
-    assert(fix_camera_pose_ == false);
-    assert(is_ground_tag_ == false);
-    assert(optimize_intrinsics_ == false);
+    if (!is_ground_tag_) {
+      assert(fix_camera_pose_ == false);
+      assert(optimize_intrinsics_ == false);
 
-    const T * const camera_pose_inv = arg1;
-    const T * const tag_pose = arg2;
+      const T * const camera_pose_inv = arg1;
+      const T * const tag_pose = arg2;
 
-    std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
-                                             T(1.0) * fy_, T(0.0),       T(0.0)};
+      std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                               T(1.0) * fy_, T(0.0),       T(0.0)};
 
-    return impl(
-      camera_pose_inv, intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
-      static_cast<T *>(nullptr), residuals);
+      return impl(
+        camera_pose_inv, intrinsics.data(), tag_pose, static_cast<T *>(nullptr),
+        static_cast<T *>(nullptr), residuals);
+    } else {
+      assert(fix_camera_pose_ == false);
+      assert(optimize_intrinsics_ == false);
+      assert(fix_tag_rot_z_ == true);
+
+      const T * const camera_pose_inv = arg1;
+      const T * const tag_pose = arg2;
+
+      std::array<T, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> fixed_tag_rot_z{
+        T(1.0) * fixed_tag_rot_z_[0], T(1.0) * fixed_tag_rot_z_[1], T(1.0) * fixed_tag_rot_z_[2],
+        T(1.0) * fixed_tag_rot_z_[3], T(1.0) * fixed_tag_rot_z_[4]};
+
+      std::array<T, INTRINSICS_DIM> intrinsics{T(1.0) * cx_, T(1.0) * cy_, T(1.0) * fx_,
+                                               T(1.0) * fy_, T(0.0),       T(0.0)};
+
+      return impl(
+        camera_pose_inv, intrinsics.data(), static_cast<T *>(nullptr), fixed_tag_rot_z.data(),
+        tag_pose, residuals);
+    }
   }
 
   /*!
@@ -344,9 +377,11 @@ struct CameraResidual : public SensorResidual
     std::array<double, CalibrationData::POSE_OPT_DIM> & fixed_camera_pose_inv, bool fix_camera_pose,
     bool optimize_intrinsics)
   {
+    std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> null_tag_rot_z;
+
     auto f = new CameraResidual(
-      camera_uid, intrinsics, detection, fixed_camera_pose_inv, fix_camera_pose,
-      optimize_intrinsics, false);
+      camera_uid, intrinsics, detection, fixed_camera_pose_inv, null_tag_rot_z, fix_camera_pose,
+      false, optimize_intrinsics, false);
 
     if (fix_camera_pose && !optimize_intrinsics) {
       return (new ceres::AutoDiffCostFunction<
@@ -392,30 +427,50 @@ struct CameraResidual : public SensorResidual
   static ceres::CostFunction * createGroundTagResidual(
     const UID & camera_uid, const IntrinsicParameters & intrinsics,
     const ApriltagDetection & detection,
-    std::array<double, CalibrationData::POSE_OPT_DIM> & fixed_camera_pose_inv, bool fix_camera_pose,
-    bool optimize_intrinsics)
+    std::array<double, CalibrationData::POSE_OPT_DIM> & fixed_camera_pose_inv,
+    const std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> & fixed_tag_rot_z,
+    bool fix_camera_pose, bool fix_tag_rot_z, bool optimize_intrinsics)
   {
     auto f = new CameraResidual(
-      camera_uid, intrinsics, detection, fixed_camera_pose_inv, fix_camera_pose,
-      optimize_intrinsics, true);
+      camera_uid, intrinsics, detection, fixed_camera_pose_inv, fixed_tag_rot_z, fix_camera_pose,
+      fix_tag_rot_z, optimize_intrinsics, true);
 
-    if (optimize_intrinsics) {
-      return (new ceres::AutoDiffCostFunction<
-              CameraResidual,
-              RESIDUAL_DIM,                // 4 corners x 2 residuals
-              POSE_OPT_DIM,                // 7 camera pose parameters
-              INTRINSICS_DIM,              // 6 camera intrinsic parameters
-              SHRD_GROUND_TAG_POSE_DIM,    // 5 shared ground pose parameters (quat/z) parameters
-              INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
-        f));
+    if (!fix_tag_rot_z) {
+      if (optimize_intrinsics) {
+        return (new ceres::AutoDiffCostFunction<
+                CameraResidual,
+                RESIDUAL_DIM,                // 4 corners x 2 residuals
+                POSE_OPT_DIM,                // 7 camera pose parameters
+                INTRINSICS_DIM,              // 6 camera intrinsic parameters
+                SHRD_GROUND_TAG_POSE_DIM,    // 5 shared ground pose parameters (quat/z) parameters
+                INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+          f));
+      } else {
+        return (new ceres::AutoDiffCostFunction<
+                CameraResidual,
+                RESIDUAL_DIM,                // 4 corners x 2 residuals
+                POSE_OPT_DIM,                // 7 camera pose parameters
+                SHRD_GROUND_TAG_POSE_DIM,    // 5 shared ground pose parameters (quat/z) parameters
+                INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+          f));
+      }
     } else {
-      return (new ceres::AutoDiffCostFunction<
-              CameraResidual,
-              RESIDUAL_DIM,                // 4 corners x 2 residuals
-              POSE_OPT_DIM,                // 7 camera pose parameters
-              SHRD_GROUND_TAG_POSE_DIM,    // 5 shared ground pose parameters (quat/z) parameters
-              INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
-        f));
+      if (optimize_intrinsics) {
+        return (new ceres::AutoDiffCostFunction<
+                CameraResidual,
+                RESIDUAL_DIM,                // 4 corners x 2 residuals
+                POSE_OPT_DIM,                // 7 camera pose parameters
+                INTRINSICS_DIM,              // 6 camera intrinsic parameters
+                INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+          f));
+      } else {
+        return (new ceres::AutoDiffCostFunction<
+                CameraResidual,
+                RESIDUAL_DIM,                // 4 corners x 2 residuals
+                POSE_OPT_DIM,                // 7 camera pose parameters
+                INDEP_GROUND_TAG_POSE_DIM>(  // 3 2D-ground tag pose (yaw/x/y)  parameters
+          f));
+      }
     }
   }
 
@@ -432,7 +487,9 @@ struct CameraResidual : public SensorResidual
   ApriltagDetection detection_;
   Eigen::Vector4d fixed_camera_rotation_inv_;
   Eigen::Vector3d fixed_camera_translation_inv_;
+  std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> fixed_tag_rot_z_;
   bool fix_camera_pose_;
+  bool fix_tag_rot_z_;
   bool optimize_intrinsics_;
   bool is_ground_tag_;
 };

@@ -15,6 +15,7 @@
 #ifndef EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__CALIBRATION_PROBLEM_HPP_
 #define EXTRINSIC_TAG_BASED_BASE_CALIBRATOR__CERES__CALIBRATION_PROBLEM_HPP_
 
+#include <Eigen/Dense>
 #include <extrinsic_tag_based_base_calibrator/calibration_types.hpp>
 #include <extrinsic_tag_based_base_calibrator/types.hpp>
 
@@ -78,6 +79,14 @@ public:
    * single plane
    */
   void setForceSharedGroundPlane(bool ba_force_shared_ground_plane);
+
+  /*!
+   * Sets whether or not to use a fixed ground plane and its value
+   * @param[in] ba_fixed_ground_plane_model whether or not the ground tags are forced to lie on a
+   * fixed single plane
+   * @param[in] ground_model the ground model
+   */
+  void setFixedSharedGroundPlane(bool ba_fixed_ground_plane_model, Eigen::Vector4d ground_model);
 
   /*!
    * Sets the external camera intrinsics
@@ -210,6 +219,8 @@ protected:
   bool optimize_intrinsics_;
   bool share_intrinsics_;
   bool force_shared_ground_plane_;
+  bool force_fixed_ground_plane_;
+  cv::Affine3d fixed_ground_pose_;
 
   double calibration_lidar_intrinsics_;
   IntrinsicParameters external_camera_intrinsics_;

@@ -226,6 +226,17 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<bool>("ba_force_shared_ground_plane", false);
   virtual_lidar_f_ = this->declare_parameter<double>("virtual_lidar_f", 10000.0);
 
+  ba_fixed_ground_plane_model_ =
+    this->declare_parameter<bool>("ba_fixed_ground_plane_model", false);
+  ba_fixed_ground_plane_model_a_ =
+    this->declare_parameter<double>("ba_fixed_ground_plane_model_a", 0.0);
+  ba_fixed_ground_plane_model_b_ =
+    this->declare_parameter<double>("ba_fixed_ground_plane_model_b", 0.0);
+  ba_fixed_ground_plane_model_c_ =
+    this->declare_parameter<double>("ba_fixed_ground_plane_model_c", 1.0);
+  ba_fixed_ground_plane_model_d_ =
+    this->declare_parameter<double>("ba_fixed_ground_plane_model_d", 0.0);
+
   // Initial intrinsic calibration parameters
   initial_intrinsic_calibration_board_type_ =
     this->declare_parameter<std::string>("initial_intrinsic_calibration_board_type", "apriltag");
@@ -1390,6 +1401,11 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
   calibration_problem_.setOptimizeIntrinsics(ba_optimize_intrinsics_);
   calibration_problem_.setShareIntrinsics(ba_share_intrinsics_);
   calibration_problem_.setForceSharedGroundPlane(ba_force_shared_ground_plane_);
+  calibration_problem_.setFixedSharedGroundPlane(
+    ba_fixed_ground_plane_model_,
+    Eigen::Vector4d(
+      ba_fixed_ground_plane_model_a_, ba_fixed_ground_plane_model_b_,
+      ba_fixed_ground_plane_model_c_, ba_fixed_ground_plane_model_d_));
   calibration_problem_.setCalibrationLidarIntrinsics(virtual_lidar_f_);
   calibration_problem_.setWheelTagUIDs(
     UID::makeTagUID(TagType::WheelTag, -1, left_wheel_tag_id),

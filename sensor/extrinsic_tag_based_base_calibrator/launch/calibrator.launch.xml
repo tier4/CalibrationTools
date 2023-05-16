@@ -75,6 +75,11 @@
   <arg name="ba_optimize_intrinsics" default="true"/>
   <arg name="ba_share_intrinsics" default="true"/>
   <arg name="ba_force_shared_ground_plane" default="true"/>
+  <arg name="ba_fixed_ground_plane_model" default="true"/>
+  <arg name="ba_fixed_ground_plane_model_a" default="-0.015014"/>
+  <arg name="ba_fixed_ground_plane_model_b" default="0.028632"/>
+  <arg name="ba_fixed_ground_plane_model_c" default="0.999477"/>
+  <arg name="ba_fixed_ground_plane_model_d" default="2.849738"/>
 
   <!-- Apriltag detector configuration -->
   <arg name="apriltag_max_hamming" default="0"/>
@@ -164,6 +169,11 @@
       <param name="ba_optimize_intrinsics" value="$(var ba_optimize_intrinsics)"/>
       <param name="ba_share_intrinsics" value="$(var ba_share_intrinsics)"/>
       <param name="ba_force_shared_ground_plane" value="$(var ba_force_shared_ground_plane)"/>
+      <param name="ba_fixed_ground_plane_model" value="$(var ba_fixed_ground_plane_model)"/>
+      <param name="ba_fixed_ground_plane_model_a" value="$(var ba_fixed_ground_plane_model_a)"/>
+      <param name="ba_fixed_ground_plane_model_b" value="$(var ba_fixed_ground_plane_model_b)"/>
+      <param name="ba_fixed_ground_plane_model_c" value="$(var ba_fixed_ground_plane_model_c)"/>
+      <param name="ba_fixed_ground_plane_model_d" value="$(var ba_fixed_ground_plane_model_d)"/>
 
       <!-- Apriltag detector configuration -->
       <param name="apriltag_max_hamming" value="$(var apriltag_max_hamming)"/>
