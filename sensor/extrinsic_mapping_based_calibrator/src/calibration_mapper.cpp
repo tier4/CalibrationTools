@@ -16,6 +16,7 @@
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <extrinsic_mapping_based_calibrator/voxel_grid_filter_wrapper.hpp>
 
+#include <pcl/filters/crop_box.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2/utils.h>
 
@@ -53,14 +54,20 @@ CalibrationMapper::CalibrationMapper(
   published_map_pointcloud_ptr_.reset(new PointcloudType());
 
   assert(parameters_);
-  ndt_.setResolution(parameters_->ndt_resolution_);
-  ndt_.setStepSize(parameters_->ndt_step_size_);
-  ndt_.setMaximumIterations(parameters_->ndt_max_iterations_);
-  ndt_.setTransformationEpsilon(parameters_->ndt_epsilon_);
+  ndt_.setResolution(parameters_->mapper_resolution_);
+  ndt_.setStepSize(parameters_->mapper_step_size_);
+  ndt_.setMaximumIterations(parameters_->mapper_max_iterations_);
+  ndt_.setTransformationEpsilon(parameters_->mapper_epsilon_);
   ndt_.setNeighborhoodSearchMethod(pclomp::DIRECT7);
 
-  if (parameters_->ndt_num_threads_ > 0) {
-    ndt_.setNumThreads(parameters_->ndt_num_threads_);
+  gicp_.setMaximumIterations(
+    parameters_->mapper_max_iterations_);  // The maximum number of iterations
+  gicp_.setMaxCorrespondenceDistance(parameters_->mapper_max_correspondence_distance_);
+  gicp_.setTransformationEpsilon(parameters_->mapper_epsilon_);
+  gicp_.setEuclideanFitnessEpsilon(parameters_->mapper_epsilon_);
+
+  if (parameters_->mapper_num_threads_ > 0) {
+    ndt_.setNumThreads(parameters_->mapper_num_threads_);
   }
 
   for (auto & calibration_frame_name : data_->calibration_lidar_frame_names_) {
@@ -266,8 +273,8 @@ void CalibrationMapper::mappingThreadWorker()
     voxel_grid.filter(*frame->pointcloud_subsampled_);
 
     // Register the frame to the map
-    ndt_.setInputTarget(data_->local_map_ptr_);
-    ndt_.setInputSource(frame->pointcloud_subsampled_);
+    gicp_.setInputTarget(data_->local_map_ptr_);
+    gicp_.setInputSource(frame->pointcloud_subsampled_);
 
     Eigen::Matrix4f guess = last_pose;
     double dt_since_last =
@@ -299,11 +306,11 @@ void CalibrationMapper::mappingThreadWorker()
         guess = prev_frame_not_last->pose_ * interpolated_pose;
       }
 
-      ndt_.align(*aligned_cloud_ptr, guess);
-      last_pose = ndt_.getFinalTransformation();
+      gicp_.align(*aligned_cloud_ptr, guess);
+      last_pose = gicp_.getFinalTransformation();
 
       float innovation = Eigen::Affine3f(guess.inverse() * last_pose).translation().norm();
-      float score = ndt_.getFitnessScore();
+      float score = gicp_.getFitnessScore();
 
       RCLCPP_INFO(
         rclcpp::get_logger("calibration_mapper"), "NDT Innovation=%.2f. Score=%.2f", innovation,
@@ -891,7 +898,24 @@ bool CalibrationMapper::addNewLidarCalibrationFrame(
   PointcloudType::Ptr pc_ptr(new PointcloudType());
   pcl::fromROSMsg(*msg, *pc_ptr);
 
+  if (parameters_->crop_z_calibration_pointclouds_) {
+    pcl::CropBox<PointType> box_filter;
+
+    box_filter.setMin(Eigen::Vector4f(
+      -parameters_->mapping_max_range_, -parameters_->mapping_max_range_,
+      -parameters_->mapping_max_range_, 1.0));
+    box_filter.setMax(Eigen::Vector4f(
+      parameters_->mapping_max_range_, parameters_->mapping_max_range_,
+      parameters_->crop_z_calibration_pointclouds_value_, 1.0));
+    box_filter.setInputCloud(pc_ptr);
+    box_filter.filter(*pc_ptr);
+  }
+
   if (static_cast<int>(pc_ptr->size()) < parameters_->min_calibration_pointcloud_size_) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"),
+      "Dropping calibration frame due to insufficient size. lidar=%s size=%lu\n",
+      calibration_frame_name.c_str(), pc_ptr->size());
     return false;
   }
 

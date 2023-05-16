@@ -23,11 +23,12 @@
   <arg name="mapping_max_frames" default="5000"/>
   <arg name="mapping_max_range" default="100.0"/>
   <arg name="marker_size" default="10.0"/>
-  <arg name="ndt_resolution" default="1.0"/>
-  <arg name="ndt_step_size" default="0.1"/>
-  <arg name="ndt_max_iterations" default="100"/>
-  <arg name="ndt_epsilon" default="0.005"/>
-  <arg name="ndt_num_threads" default="12"/>
+  <arg name="mapper_resolution" default="1.0"/>
+  <arg name="mapper_step_size" default="0.05"/>
+  <arg name="mapper_max_iterations" default="500"/>
+  <arg name="mapper_epsilon" default="0.001"/>
+  <arg name="mapper_num_threads" default="12"/>
+  <arg name="mapper_max_correspondence_distance" default="0.1"/>
 
   <arg name="lidar_calibration_max_frames" default="7"/>
   <arg name="camera_calibration_max_frames" default="1"/>
@@ -66,11 +67,12 @@
       <param name="mapping_max_frames" value="$(var mapping_max_frames)"/>
       <param name="mapping_max_range" value="$(var mapping_max_range)"/>
       <param name="marker_size" value="$(var marker_size)"/>
-      <param name="ndt_resolution" value="$(var ndt_resolution)"/>
-      <param name="ndt_step_size" value="$(var ndt_step_size)"/>
-      <param name="ndt_max_iterations" value="$(var ndt_max_iterations)"/>
-      <param name="ndt_epsilon" value="$(var ndt_epsilon)"/>
-      <param name="ndt_num_threads" value="$(var ndt_num_threads)"/>
+      <param name="mapper_resolution" value="$(var mapper_resolution)"/>
+      <param name="mapper_step_size" value="$(var mapper_step_size)"/>
+      <param name="mapper_max_iterations" value="$(var mapper_max_iterations)"/>
+      <param name="mapper_epsilon" value="$(var mapper_epsilon)"/>
+      <param name="mapper_num_threads" value="$(var mapper_num_threads)"/>
+      <param name="mapper_max_correspondence_distance" value="$(var mapper_max_correspondence_distance)"/>
 
       <param name="lidar_calibration_max_frames" value="$(var lidar_calibration_max_frames)"/>
       <param name="camera_calibration_max_frames" value="$(var camera_calibration_max_frames)"/>
@@ -83,6 +85,22 @@
       <param name="calibration_eval_max_corr_distance" value="$(var calibration_eval_max_corr_distance)"/>
       <param name="solver_iterations" value="$(var solver_iterations)"/>
       <param name="calibration_skip_keyframes" value="$(var calibration_skip_keyframes)"/>
+
+      <param name="lidar_calibration_min_frames" value="1"/>
+      <param name="calibration_use_only_last_frames" value="true"/>
+      <param name="crop_z_calibration_pointclouds_value" value="3.0"/>
+
+      <param name="base_lidar_crop_box_min_x" value="-5.0"/>
+      <param name="base_lidar_crop_box_min_y" value="-5.0"/>
+      <param name="base_lidar_crop_box_min_z" value="-5.0"/>
+      <param name="base_lidar_crop_box_max_x" value="10.0"/>
+      <param name="base_lidar_crop_box_max_y" value="5.0"/>
+      <param name="base_lidar_crop_box_max_z" value="5.0"/>
+      <param name="base_lidar_min_plane_points_percentage" value="10.0"/>
+      <param name="base_lidar_max_inlier_distance" value="0.03"/>
+      <param name="base_lidar_min_plane_points" value="500"/>
+      <param name="base_lidar_max_cos_distance" value="0.2"/>
+      <param name="base_lidar_max_iterations" value="500"/>
 
       <param name="use_rosbag" value="true"/>
     </node>

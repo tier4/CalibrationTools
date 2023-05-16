@@ -147,11 +147,12 @@ struct MappingParameters
   double viz_max_range_;
   double mapping_viz_leaf_size_;
 
-  double ndt_resolution_;
-  double ndt_step_size_;
-  int ndt_max_iterations_;
-  double ndt_epsilon_;
-  int ndt_num_threads_;
+  double mapper_resolution_;
+  double mapper_step_size_;
+  int mapper_max_iterations_;
+  double mapper_epsilon_;
+  double mapper_max_correspondence_distance_;
+  int mapper_num_threads_;
 
   double leaf_size_input_;
   double leaf_size_local_map_;
@@ -165,6 +166,9 @@ struct MappingParameters
   double lost_frame_max_angle_diff_;
   double lost_frame_interpolation_error_;
   double lost_frame_max_acceleration_;
+
+  bool crop_z_calibration_pointclouds_;
+  double crop_z_calibration_pointclouds_value_;
 };
 
 struct CalibrationParameters
@@ -200,6 +204,7 @@ struct CalibrationParameters
   double max_corr_dist_ultrafine_;
 
   bool calibration_use_only_stopped_;
+  bool calibration_use_only_last_frames_;
   double max_calibration_range_;
   double calibration_min_pca_eigenvalue_;
   double calibration_min_distance_between_frames_;
@@ -214,6 +219,20 @@ struct CalibrationParameters
   double pc_features_max_distance_;
   int camera_calibration_min_frames_;
   int camera_calibration_max_frames_;
+
+  // Base lidar calibration parameters;
+  double base_lidar_crop_box_min_x_;
+  double base_lidar_crop_box_min_y_;
+  double base_lidar_crop_box_min_z_;
+  double base_lidar_crop_box_max_x_;
+  double base_lidar_crop_box_max_y_;
+  double base_lidar_crop_box_max_z_;
+
+  double base_lidar_max_inlier_distance_;
+  int base_lidar_max_iterations_;
+  int base_lidar_min_plane_points_;
+  double base_lidar_min_plane_points_percentage_;
+  double base_lidar_max_cos_distance_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__TYPES_HPP_

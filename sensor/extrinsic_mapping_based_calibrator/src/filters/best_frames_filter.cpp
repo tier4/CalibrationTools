@@ -22,9 +22,40 @@
 void BestFramesFilter::setName(const std::string & name) { name_ = name + " (BestFramesFilter)"; }
 
 std::vector<CalibrationFrame> BestFramesFilter::filter(
-  const std::vector<CalibrationFrame> & calibration_frames, MappingData::Ptr & mapping_data)
+  const std::vector<CalibrationFrame> & input_calibration_frames, MappingData::Ptr & mapping_data)
 {
   UNUSED(mapping_data);
+
+  int max_keyframe = -1;
+  int use_last_frames_only_min_frame = -1;
+
+  // Find the frame of the last keyframe
+  for (auto it = mapping_data->keyframes_and_stopped_.rbegin();
+       it != mapping_data->keyframes_and_stopped_.rend(); ++it) {
+    if ((*it)->is_key_frame_ && max_keyframe == -1) {
+      max_keyframe = (*it)->keyframe_id_;
+    }
+    if (
+      (*it)->is_key_frame_ && max_keyframe != -1 &&
+      (*it)->keyframe_id_ < max_keyframe - parameters_->lidar_calibration_max_frames_) {
+      use_last_frames_only_min_frame = (*it)->frame_id_;
+      break;
+    }
+  }
+
+  std::vector<CalibrationFrame> calibration_frames;
+
+  if (parameters_->calibration_use_only_last_frames_) {
+    RCLCPP_INFO(rclcpp::get_logger(name_), "Only choosing the last ones\n");
+    std::copy_if(
+      input_calibration_frames.begin(), input_calibration_frames.end(),
+      std::back_inserter(calibration_frames),
+      [&use_last_frames_only_min_frame](const auto & calibration_frame) {
+        return calibration_frame.target_frame_->frame_id_ >= use_last_frames_only_min_frame;
+      });
+  } else {
+    calibration_frames = input_calibration_frames;
+  }
 
   std::vector<CalibrationFrame> filtered_frames;
   const int & calibration_max_frames = filter_type_ == Filter::FilterType::CameraFilter
@@ -37,7 +68,7 @@ std::vector<CalibrationFrame> BestFramesFilter::filter(
     auto & frame = calibration_frames[i];
 
     if (!frame.source_pointcloud_) {
-      pca_coeff_calibration_id_pairs.push_back(std::make_pair<>(0.f, i));
+      pca_coeff_calibration_id_pairs.push_back(std::make_pair(0.f, i));
       continue;
     }
 
@@ -51,7 +82,7 @@ std::vector<CalibrationFrame> BestFramesFilter::filter(
       pca_coefficient >= parameters_->calibration_min_pca_eigenvalue_ ? "accepted" : "rejected");
 
     if (pca_coefficient >= parameters_->calibration_min_pca_eigenvalue_) {
-      pca_coeff_calibration_id_pairs.push_back(std::make_pair<>(pca_coefficient, i));
+      pca_coeff_calibration_id_pairs.push_back(std::make_pair(pca_coefficient, i));
     }
   }
 

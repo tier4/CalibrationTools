@@ -59,7 +59,7 @@ void update_param(
 ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   const rclcpp::NodeOptions & options)
 : Node("extrinsic_mapping_based_calibrator_node", options),
-  tf_broascaster_(this),
+  tf_broadcaster_(this),
   tf_buffer_(std::make_shared<tf2_ros::Buffer>(this->get_clock())),
   transform_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_)),
   mapping_parameters_(std::make_shared<MappingParameters>()),
@@ -138,16 +138,20 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   mapping_parameters_->min_mapping_pointcloud_size_ =
     this->declare_parameter<int>("min_mapping_pointcloud_size", 10000);
   mapping_parameters_->min_calibration_pointcloud_size_ =
-    this->declare_parameter<int>("min_calibration_pointcloud_size", 1000);
+    this->declare_parameter<int>("min_calibration_pointcloud_size", 500);
   mapping_parameters_->mapping_lost_timeout_ =
     this->declare_parameter<double>("mapping_lost_timeout", 1.0);
 
   // Mapping parameters
-  mapping_parameters_->ndt_resolution_ = this->declare_parameter<double>("ndt_resolution", 5.0);
-  mapping_parameters_->ndt_step_size_ = this->declare_parameter<double>("ndt_step_size", 0.1);
-  mapping_parameters_->ndt_max_iterations_ = this->declare_parameter<int>("ndt_max_iterations", 35);
-  mapping_parameters_->ndt_epsilon_ = this->declare_parameter<double>("ndt_epsilon", 0.01);
-  mapping_parameters_->ndt_num_threads_ = this->declare_parameter<int>("ndt_num_threads", 8);
+  mapping_parameters_->mapper_resolution_ =
+    this->declare_parameter<double>("mapper_resolution", 5.0);
+  mapping_parameters_->mapper_step_size_ = this->declare_parameter<double>("mapper_step_size", 0.1);
+  mapping_parameters_->mapper_max_iterations_ =
+    this->declare_parameter<int>("mapper_max_iterations", 35);
+  mapping_parameters_->mapper_epsilon_ = this->declare_parameter<double>("mapper_epsilon", 0.01);
+  mapping_parameters_->mapper_num_threads_ = this->declare_parameter<int>("mapper_num_threads", 8);
+  mapping_parameters_->mapper_max_correspondence_distance_ =
+    this->declare_parameter<double>("mapper_max_correspondence_distance", 0.1);
 
   mapping_parameters_->mapping_viz_leaf_size_ =
     this->declare_parameter<double>("mapping_viz_leaf_size", 0.15);
@@ -204,8 +208,15 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   mapping_parameters_->lost_frame_max_acceleration_ =
     this->declare_parameter<double>("lost_frame_max_acceleration", 8.0);
   mapping_parameters_->viz_max_range_ = this->declare_parameter<double>("viz_max_range", 80.0);
+  mapping_parameters_->crop_z_calibration_pointclouds_ =
+    this->declare_parameter<bool>("crop_z_calibration_pointclouds", true);
+  mapping_parameters_->crop_z_calibration_pointclouds_value_ =
+    this->declare_parameter<double>("crop_z_calibration_pointclouds_value", 2.0);
+
   calibration_parameters_->calibration_use_only_stopped_ =
     this->declare_parameter<bool>("calibration_use_only_stopped", false);
+  calibration_parameters_->calibration_use_only_last_frames_ =
+    this->declare_parameter<bool>("calibration_use_only_last_frames", false);
   calibration_parameters_->max_calibration_range_ =
     this->declare_parameter<double>("max_calibration_range", 80.0);
   calibration_parameters_->calibration_min_pca_eigenvalue_ =
@@ -240,6 +251,30 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<double>("pc_features_min_distance", 0.2);
   calibration_parameters_->pc_features_max_distance_ =
     this->declare_parameter<double>("pc_features_max_distance", 40.0);
+
+  // Base lidar calibration parameters
+  calibration_parameters_->base_lidar_crop_box_min_x_ =
+    this->declare_parameter<double>("base_lidar_crop_box_min_x", -20.0);
+  calibration_parameters_->base_lidar_crop_box_min_y_ =
+    this->declare_parameter<double>("base_lidar_crop_box_min_y", -20.0);
+  calibration_parameters_->base_lidar_crop_box_min_z_ =
+    this->declare_parameter<double>("base_lidar_crop_box_min_z", -20.0);
+  calibration_parameters_->base_lidar_crop_box_max_x_ =
+    this->declare_parameter<double>("base_lidar_crop_box_max_x", 20.0);
+  calibration_parameters_->base_lidar_crop_box_max_y_ =
+    this->declare_parameter<double>("base_lidar_crop_box_max_y", 20.0);
+  calibration_parameters_->base_lidar_crop_box_max_z_ =
+    this->declare_parameter<double>("base_lidar_crop_box_max_z", 20.0);
+  calibration_parameters_->base_lidar_max_inlier_distance_ =
+    this->declare_parameter<double>("base_lidar_max_inlier_distance", 0.01);
+  calibration_parameters_->base_lidar_max_iterations_ =
+    this->declare_parameter<int>("base_lidar_max_iterations", 1000);
+  calibration_parameters_->base_lidar_min_plane_points_ =
+    this->declare_parameter<int>("base_lidar_min_plane_points", 1000);
+  calibration_parameters_->base_lidar_min_plane_points_percentage_ =
+    this->declare_parameter<double>("base_lidar_min_plane_points_percentage", 10.0);
+  calibration_parameters_->base_lidar_max_cos_distance_ =
+    this->declare_parameter<double>("base_lidar_max_cos_distance", 0.5);
 
   auto map_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("output_map", 10);
 
@@ -285,6 +320,15 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       frame_name, calibration_parameters_, mapping_data_, tf_buffer_,
       initial_source_aligned_map_pub, calibrated_source_aligned_map_pub, target_map_pub);
   }
+
+  auto base_lidar_augmented_pointcloud_pub =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("base_lidar_augmented_pointcloud", 10);
+  auto base_lidar_augmented_pub =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("ground_pointcloud", 10);
+
+  base_lidar_calibrator_ = std::make_shared<BaseLidarCalibrator>(
+    calibration_parameters_, mapping_data_, tf_buffer_, tf_broadcaster_,
+    base_lidar_augmented_pointcloud_pub, base_lidar_augmented_pub);
 
   // Set up sensor callbacks
   assert(
@@ -401,6 +445,21 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
         rmw_qos_profile_services_default);
   }
 
+  base_link_calibration_server_ = this->create_service<std_srvs::srv::Empty>(
+    "base_link_calibration",
+    [&](
+      const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+      const std::shared_ptr<std_srvs::srv::Empty::Response> response) {
+      UNUSED(request);
+      UNUSED(response);
+      Eigen::Matrix4f transform;
+      float score;
+      std::unique_lock<std::mutex> data_lock(mapping_data_->mutex_);
+      RCLCPP_INFO_STREAM(this->get_logger(), "Starting base lidar calibration");
+      base_lidar_calibrator_->calibrate(transform, score);
+    },
+    rmw_qos_profile_services_default);
+
   stop_mapping_server_ = this->create_service<std_srvs::srv::Empty>(
     "stop_mapping",
     [&](
@@ -454,10 +513,10 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_PARAM(mapping_parameters, min_mapping_pointcloud_size);
     UPDATE_PARAM(mapping_parameters, min_calibration_pointcloud_size);
     UPDATE_PARAM(mapping_parameters, mapping_lost_timeout);
-    UPDATE_PARAM(mapping_parameters, ndt_resolution);
-    UPDATE_PARAM(mapping_parameters, ndt_step_size);
-    UPDATE_PARAM(mapping_parameters, ndt_max_iterations);
-    UPDATE_PARAM(mapping_parameters, ndt_num_threads);
+    UPDATE_PARAM(mapping_parameters, mapper_resolution);
+    UPDATE_PARAM(mapping_parameters, mapper_step_size);
+    UPDATE_PARAM(mapping_parameters, mapper_max_iterations);
+    UPDATE_PARAM(mapping_parameters, mapper_num_threads);
     UPDATE_PARAM(mapping_parameters, mapping_viz_leaf_size);
     UPDATE_PARAM(calibration_parameters, calibration_viz_leaf_size);
     UPDATE_PARAM(mapping_parameters, leaf_size_input);
@@ -774,6 +833,7 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
   mapping_data_->lidar_calibration_frames_map_.clear();
   mapping_data_->processed_frames_.clear();
   mapping_data_->keyframes_.clear();
+  mapping_data_->keyframes_and_stopped_.clear();
 
   ia >> mapping_data_->camera_calibration_frames_map_;
   for (auto it = mapping_data_->camera_calibration_frames_map_.begin();
@@ -795,6 +855,7 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
   RCLCPP_INFO(this->get_logger(), "Loaded %ld frames...", mapping_data_->processed_frames_.size());
 
   ia >> mapping_data_->keyframes_;
+  ia >> mapping_data_->keyframes_and_stopped_;
   RCLCPP_INFO(this->get_logger(), "Loaded %ld keyframes...", mapping_data_->keyframes_.size());
 
   ia >> mapping_data_->detected_objects_;
@@ -837,6 +898,7 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
 
   RCLCPP_INFO(this->get_logger(), "Saving %ld keyframes...", mapping_data_->keyframes_.size());
   oa << mapping_data_->keyframes_;
+  oa << mapping_data_->keyframes_and_stopped_;
 
   RCLCPP_INFO(this->get_logger(), "Saving %ld objects...", mapping_data_->detected_objects_.size());
   oa << mapping_data_->detected_objects_;

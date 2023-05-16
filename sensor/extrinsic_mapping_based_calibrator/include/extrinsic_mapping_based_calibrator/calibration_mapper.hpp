@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_CALIBRATION_MAPPER_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_CALIBRATION_MAPPER_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__CALIBRATION_MAPPER_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__CALIBRATION_MAPPER_HPP_
 
 #include <Eigen/Dense>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
@@ -29,11 +29,16 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/point_types.h>
+#include <pcl/registration/gicp.h>
 #include <pclomp/ndt_omp.h>
 #include <pclomp/voxel_grid_covariance_omp.h>
 #include <tf2_ros/buffer.h>
 
 #include <functional>
+#include <list>
+#include <map>
+#include <memory>
+#include <string>
 
 class CalibrationMapper
 {
@@ -193,6 +198,7 @@ protected:
   rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedPtr rosbag2_resume_client_;
 
   pclomp::NormalDistributionsTransform<PointType, PointType> ndt_;
+  pcl::GeneralizedIterativeClosestPoint<PointType, PointType> gicp_;
 
   // ROS Data
   std_msgs::msg::Header::SharedPtr mapping_lidar_header_;
@@ -221,4 +227,4 @@ protected:
   bool stopped_;
 };
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_CALIBRATION_MAPPER_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__CALIBRATION_MAPPER_HPP_

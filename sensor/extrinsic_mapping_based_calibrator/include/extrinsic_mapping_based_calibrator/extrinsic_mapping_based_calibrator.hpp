@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
 
 #include <Eigen/Dense>
+#include <extrinsic_mapping_based_calibrator/base_lidar_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/calibration_mapper.hpp>
 #include <extrinsic_mapping_based_calibrator/camera_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/lidar_calibrator.hpp>
@@ -41,6 +42,7 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -54,7 +56,7 @@ public:
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
   using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
 
-  ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options);
+  explicit ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
   void cameraCalibrationRequestReceivedCallback(
@@ -98,7 +100,7 @@ protected:
     const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response);
 
   // ROS Interface
-  tf2_ros::StaticTransformBroadcaster tf_broascaster_;
+  tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
@@ -122,6 +124,7 @@ protected:
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   std::map<std::string, FrameService::SharedPtr> single_lidar_calibration_server_map_;
   std::map<std::string, FrameService::SharedPtr> multiple_lidar_calibration_server_map_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr base_link_calibration_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stop_mapping_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
     load_database_server_;
@@ -152,6 +155,7 @@ protected:
   // Calibrators
   std::map<std::string, CameraCalibrator::Ptr> camera_calibrators_;
   std::map<std::string, LidarCalibrator::Ptr> lidar_calibrators_;
+  BaseLidarCalibrator::Ptr base_lidar_calibrator_;
 };
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__EXTRINSIC_MAPPING_BASED_CALIBRATOR_HPP_

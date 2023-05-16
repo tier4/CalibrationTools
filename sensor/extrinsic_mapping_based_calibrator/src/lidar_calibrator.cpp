@@ -453,6 +453,36 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
     rclcpp::get_logger(calibrator_name_), "Best calibration matrix =\n"
                                             << best_multi_frame_calibration_transform);
 
+  auto best_multi_frame_calibration_tf =
+    tf2::eigenToTransform(Eigen::Affine3d(best_multi_frame_calibration_transform.cast<double>()));
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "Calibration result as a tf main lidar -> %s",
+    calibrator_name_.c_str());
+  RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "\ttranslation:");
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "\t\tx: %f",
+    best_multi_frame_calibration_tf.transform.translation.x);
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "\t\ty: %f",
+    best_multi_frame_calibration_tf.transform.translation.y);
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "\t\tz: %f",
+    best_multi_frame_calibration_tf.transform.translation.z);
+  RCLCPP_INFO(rclcpp::get_logger(calibrator_name_), "\trotation:");
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "\t\tx: %f",
+    best_multi_frame_calibration_tf.transform.rotation.x);
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "\t\ty: %f",
+    best_multi_frame_calibration_tf.transform.rotation.y);
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "\t\tz: %f",
+    best_multi_frame_calibration_tf.transform.rotation.z);
+  RCLCPP_INFO(
+    rclcpp::get_logger(calibrator_name_), "\t\tw: %f",
+    best_multi_frame_calibration_tf.transform.rotation.w);
+
   // Publish the calbiraton resullts
   publishResults(
     calibration_frames, sources, targets_thin, initial_calibration_transform,
