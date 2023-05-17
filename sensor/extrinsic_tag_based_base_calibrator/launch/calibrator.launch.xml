@@ -75,7 +75,7 @@
   <arg name="ba_optimize_intrinsics" default="true"/>
   <arg name="ba_share_intrinsics" default="true"/>
   <arg name="ba_force_shared_ground_plane" default="true"/>
-  <arg name="ba_fixed_ground_plane_model" default="true"/>
+  <arg name="ba_fixed_ground_plane_model" default="false"/>
   <arg name="ba_fixed_ground_plane_model_a" default="-0.015014"/>
   <arg name="ba_fixed_ground_plane_model_b" default="0.028632"/>
   <arg name="ba_fixed_ground_plane_model_c" default="0.999477"/>

@@ -312,6 +312,9 @@ protected:
   bool ba_share_intrinsics_;
   bool ba_force_shared_ground_plane_;
   bool ba_fixed_ground_plane_model_;
+  double calibration_camera_optimization_weight_;
+  double calibration_lidar_optimization_weight_;
+  double external_camera_optimization_weight_;
   double ba_fixed_ground_plane_model_a_;
   double ba_fixed_ground_plane_model_b_;
   double ba_fixed_ground_plane_model_c_;

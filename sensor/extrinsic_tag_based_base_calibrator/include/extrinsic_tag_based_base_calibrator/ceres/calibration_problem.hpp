@@ -89,6 +89,19 @@ public:
   void setFixedSharedGroundPlane(bool ba_fixed_ground_plane_model, Eigen::Vector4d ground_model);
 
   /*!
+   * Sets the optimization weights for each kind of detection
+   * @param[in] calibration_camera_weight the weight assigned to calibration camera detections
+   * during optimization
+   * @param[in] calibration_lidar_weight the weight assigned to calibration lidar detections during
+   * optimization
+   * @param[in] external_camera_weight the weight assigned to external camera detections during
+   * optimization
+   */
+  void setOptimizationWeights(
+    double calibration_camera_weight, double calibration_lidar_weight,
+    double external_camera_weight);
+
+  /*!
    * Sets the external camera intrinsics
    * @param[in] intrinsics the camera intrinsics
    */
@@ -221,6 +234,10 @@ protected:
   bool force_shared_ground_plane_;
   bool force_fixed_ground_plane_;
   cv::Affine3d fixed_ground_pose_;
+
+  double calibration_camera_optimization_weight_;
+  double calibration_lidar_optimization_weight_;
+  double external_camera_optimization_weight_;
 
   double calibration_lidar_intrinsics_;
   IntrinsicParameters external_camera_intrinsics_;

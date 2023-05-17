@@ -226,6 +226,13 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<bool>("ba_force_shared_ground_plane", false);
   virtual_lidar_f_ = this->declare_parameter<double>("virtual_lidar_f", 10000.0);
 
+  calibration_camera_optimization_weight_ =
+    this->declare_parameter<double>("calibration_camera_optimization_weight", 0.2);
+  calibration_lidar_optimization_weight_ =
+    this->declare_parameter<double>("calibration_lidar_optimization_weight", 0.2);
+  external_camera_optimization_weight_ =
+    this->declare_parameter<double>("external_camera_optimization_weight", 0.6);
+
   ba_fixed_ground_plane_model_ =
     this->declare_parameter<bool>("ba_fixed_ground_plane_model", false);
   ba_fixed_ground_plane_model_a_ =
@@ -1407,6 +1414,10 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
       ba_fixed_ground_plane_model_a_, ba_fixed_ground_plane_model_b_,
       ba_fixed_ground_plane_model_c_, ba_fixed_ground_plane_model_d_));
   calibration_problem_.setCalibrationLidarIntrinsics(virtual_lidar_f_);
+  calibration_problem_.setOptimizationWeights(
+    calibration_camera_optimization_weight_, calibration_lidar_optimization_weight_,
+    external_camera_optimization_weight_);
+
   calibration_problem_.setWheelTagUIDs(
     UID::makeTagUID(TagType::WheelTag, -1, left_wheel_tag_id),
     UID::makeTagUID(TagType::WheelTag, -1, right_wheel_tag_id));

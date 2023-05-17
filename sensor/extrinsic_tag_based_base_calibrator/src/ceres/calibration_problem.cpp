@@ -28,6 +28,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <ceres/ceres.h>
+#include <ceres/loss_function.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include <algorithm>
@@ -56,9 +57,11 @@ void CalibrationProblem::setFixedSharedGroundPlane(
 {
   force_fixed_ground_plane_ = ba_fixed_ground_plane_model;
 
+  // This normal points "upwards" or facing the lidar
   Eigen::Vector3d n(ground_model(0), ground_model(1), ground_model(2));
   n.normalize();
 
+  // Our coordinate system, like the apriltag detections, points "inside" the ground
   Eigen::Vector3d x0 = -n * ground_model(3);
 
   // To create a real pose we need to invent a basis
@@ -92,6 +95,15 @@ void CalibrationProblem::setFixedSharedGroundPlane(
   cv::eigen2cv(rot, cv_rot);
 
   fixed_ground_pose_ = cv::Affine3d(cv_rot, cv_transl);
+}
+
+void CalibrationProblem::setOptimizationWeights(
+  double calibration_camera_weight, double calibration_lidar_weight, double external_camera_weight)
+{
+  double scale = calibration_camera_weight + calibration_lidar_weight + external_camera_weight;
+  calibration_camera_optimization_weight_ = calibration_camera_weight / scale;
+  calibration_lidar_optimization_weight_ = calibration_lidar_weight / scale;
+  external_camera_optimization_weight_ = external_camera_weight / scale;
 }
 
 void CalibrationProblem::setExternalCameraIntrinsics(IntrinsicParameters & intrinsics)
@@ -557,6 +569,63 @@ void CalibrationProblem::solve()
 {
   ceres::Problem problem;
 
+  // Compute the optimization weights
+  std::size_t num_calibration_camera_detections = 0;
+  std::size_t num_calibration_lidar_detections = 0;
+  std::size_t num_external_camera_detections = 0;
+
+  for (const auto & scene : data_->scenes) {
+    // Calibration camera residuals
+    for (const auto & single_camera_detections : scene.calibration_cameras_detections) {
+      for (const auto & group_detections : single_camera_detections.grouped_detections) {
+        for (auto & grid_detection : group_detections.second) {
+          num_calibration_camera_detections += grid_detection.sub_detections.size();
+        }
+      }
+    }
+
+    // Calibration lidar residuals
+    for (const auto & single_lidar_detections : scene.calibration_lidars_detections) {
+      num_calibration_lidar_detections += single_lidar_detections.detections.size();
+    }
+
+    // External camera-related residuals
+    for (const auto & external_camera_frame : scene.external_camera_frames) {
+      for (const auto & group_detections : external_camera_frame.detections) {
+        for (auto & grid_detection : group_detections.second) {
+          num_external_camera_detections += grid_detection.sub_detections.size();
+        }
+      }
+    }
+  }
+
+  std::size_t num_total_detections = num_calibration_camera_detections +
+                                     num_calibration_lidar_detections +
+                                     num_external_camera_detections;
+  double calibration_camera_residual_weight = calibration_camera_optimization_weight_ *
+                                              num_total_detections /
+                                              num_calibration_camera_detections;
+  double calibration_lidar_residual_weight = calibration_lidar_optimization_weight_ *
+                                             num_total_detections /
+                                             num_calibration_lidar_detections;
+  double external_camera_residual_weight =
+    external_camera_optimization_weight_ * num_total_detections / num_external_camera_detections;
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"), "Total observations: %lu", num_total_detections);
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"),
+    "\t - calibration camera: weight=%.2f observations=%lu", calibration_camera_residual_weight,
+    num_calibration_camera_detections);
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"),
+    "\t - calibration lidar: weight=%.2f observations=%lu", calibration_lidar_residual_weight,
+    num_calibration_lidar_detections);
+  RCLCPP_INFO(
+    rclcpp::get_logger("calibration_problem"),
+    "\t - external; camera: weight=%.2f observations=%lu", external_camera_residual_weight,
+    num_external_camera_detections);
+
   // Build the optimization problem
   for (std::size_t scene_index = 0; scene_index < data_->scenes.size(); scene_index++) {
     CalibrationScene & scene = data_->scenes[scene_index];
@@ -603,12 +672,14 @@ void CalibrationProblem::solve()
               if (fix_sensor_pose) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, calibration_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(detection_uid).data());
               } else {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, calibration_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(calibration_camera_uid).data(),
                   pose_opt_map.at(detection_uid).data());
               }
@@ -626,23 +697,27 @@ void CalibrationProblem::solve()
               if (fix_sensor_pose && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, calibration_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   shrd_ground_pose_op, indep_ground_pose_op);
               } else if (!fix_sensor_pose && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, calibration_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(calibration_camera_uid).data(), shrd_ground_pose_op,
                   indep_ground_pose_op);
               } else if (fix_sensor_pose && force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, calibration_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   indep_ground_pose_op);
               } else if (!fix_sensor_pose && force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, calibration_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(calibration_camera_uid).data(), indep_ground_pose_op);
               }
             } else {
@@ -689,12 +764,14 @@ void CalibrationProblem::solve()
         if (fix_sensor_pose) {
           problem.AddResidualBlock(
             res,
-            nullptr,  // L2
+            new ceres::ScaledLoss(
+              nullptr, calibration_lidar_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
             pose_opt_map.at(detection_uid).data());
         } else {
           problem.AddResidualBlock(
             res,
-            nullptr,  // L2
+            new ceres::ScaledLoss(
+              nullptr, calibration_lidar_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
             pose_opt_map.at(calibration_lidar_uid).data(), pose_opt_map.at(detection_uid).data());
         }
       }
@@ -748,7 +825,8 @@ void CalibrationProblem::solve()
 
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, external_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(external_camera_uid).data(), external_camera_intrinsics_op,
                   pose_opt_map.at(detection_uid).data());
               } else {
@@ -758,7 +836,8 @@ void CalibrationProblem::solve()
 
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, external_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(external_camera_uid).data(),
                   pose_opt_map.at(detection_uid).data());
               }
@@ -778,25 +857,29 @@ void CalibrationProblem::solve()
               if (optimize_intrinsics_ && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, external_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(external_camera_uid).data(), external_camera_intrinsics_op,
                   shrd_ground_pose_op, indep_ground_pose_op);
               } else if (!optimize_intrinsics_ && !force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, external_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(external_camera_uid).data(), shrd_ground_pose_op,
                   indep_ground_pose_op);
               } else if (optimize_intrinsics_ && force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, external_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(external_camera_uid).data(), external_camera_intrinsics_op,
                   indep_ground_pose_op);
               } else if (!optimize_intrinsics_ && force_fixed_ground_plane_) {
                 problem.AddResidualBlock(
                   res,
-                  nullptr,  // L2
+                  new ceres::ScaledLoss(
+                    nullptr, external_camera_residual_weight, ceres::TAKE_OWNERSHIP),  // L2
                   pose_opt_map.at(external_camera_uid).data(), indep_ground_pose_op);
               }
 
