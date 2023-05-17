@@ -231,13 +231,17 @@
     <arg name="mapper_max_iterations" value="500"/>
     <arg name="mapper_epsilon" value="0.001"/>
     <arg name="mapper_max_correspondence_distance" value="0.1"/>
-    <arg name="lidar_calibration_max_frames" value="10"/>
+    <arg name="lidar_calibration_max_frames" value="20"/>
     <arg name="calibration_eval_max_corr_distance" value="0.2"/>
     <arg name="solver_iterations" value="100"/>
-    <arg name="calibration_skip_keyframes" value="15"/>
+    <arg name="calibration_skip_keyframes" value="10"/>
 
     <arg name="mapping_max_range" value="50.0"/>
     <arg name="max_calibration_range" value="40.0"/>
+
+    <arg name="calibration_use_only_last_frames" value="true"/>
+    <arg name="crop_z_calibration_pointclouds" value="true"/>
+    <arg name="crop_z_calibration_pointclouds_value" value="4.0"/>
   </include>
 
   <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
