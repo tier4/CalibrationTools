@@ -31,3 +31,7 @@ repositories:
     type: git
     url: git@github.com:christianrauch/apriltag_msgs.git
     version: master
+  vendor/ndt_omp:
+    type: git
+    url: https://github.com/tier4/ndt_omp.git
+    version: tier4/main
