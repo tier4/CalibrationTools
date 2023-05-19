@@ -77,7 +77,6 @@ def _plot_data_collection(data_collector: DataCollector, camera_model: CameraMod
     fig, axes = plt.subplots(2, 4, figsize=(16, 8))
 
     if len(data_collector.get_training_data().get_detections()) > 0:
-
         training_rotation_heatmap = _create_rotation_heatmap(
             data_collector.get_training_data(),
             camera_model,
@@ -102,6 +101,7 @@ def _plot_data_collection(data_collector: DataCollector, camera_model: CameraMod
         h = data_collector.get_training_data().get_detections()[0].get_image_height()
         w = data_collector.get_training_data().get_detections()[0].get_image_width()
 
+        # cSpell:enableCompoundWords
         axes[0, 1].set_title("Training points 2d(x) histogram")
         axes[0, 1].hist(
             training_points_2d[:, 0],
@@ -183,7 +183,6 @@ def _plot_data_collection(data_collector: DataCollector, camera_model: CameraMod
 
 
 class DataCollectorView(QObject):
-
     failed = Signal()
     closed = Signal()
     plot_request = Signal()

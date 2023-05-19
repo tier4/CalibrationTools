@@ -25,8 +25,8 @@ from intrinsic_camera_calibrator.parameter import ParameterizedClass
 def make_board_parameters(board_type: BoardEnum, **kwargs) -> ParameterizedClass:
     """Create a board detector using a factory design pattern. Currently we accept a single detector per type of board."""
     classes_dic = {
-        BoardEnum.CHESSBOARD: BoardParameters,
-        BoardEnum.DOTBOARD: BoardParameters,
-        BoardEnum.APRILTAGGRID: ApriltagGridParameters,
+        BoardEnum.CHESS_BOARD: BoardParameters,
+        BoardEnum.DOT_BOARD: BoardParameters,
+        BoardEnum.APRILTAG_GRID: ApriltagGridParameters,
     }
     return classes_dic[board_type](**kwargs)

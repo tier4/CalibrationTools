@@ -71,7 +71,6 @@ import yaml
 
 
 class CameraIntrinsicsCalibratorUI(QMainWindow):
-
     produced_data_signal = Signal()
     consumed_data_signal = Signal()
     should_process_image = Signal()
@@ -110,7 +109,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         # General Configuration
         self.operation_mode = OperationMode.IDLE
-        self.board_type = BoardEnum.CHESSBOARD
+        self.board_type = BoardEnum.CHESS_BOARD
         self.board_parameters: ParameterizedClass = None
         self.detector: BoardDetector = None
         self.data_collector = DataCollector(self.cfg["data_collector"])
@@ -200,7 +199,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.initialization_view = InitializationView(self, cfg)
 
     def make_image_view(self):
-
         self.image_view = ImageView()
 
         # We need the view to control the zoom
@@ -254,7 +252,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             image_view_type = self.image_view_type_combobox.itemData(index)
 
             def delayed_change():
-
                 if self.pending_detection_result:
                     QTimer.singleShot(1000, delayed_change)
                     return
@@ -315,7 +312,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.mode_options_group.setLayout(mode_options_layout)
 
     def make_calibration_group(self):
-
         self.calibration_group = QGroupBox("Calibration control")
         self.calibration_group.setFlat(True)
 
@@ -450,7 +446,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.detector_options_group.setLayout(detector_options_layout)
 
     def make_detection_group(self):
-
         self.raw_detection_results_group = QGroupBox("Detection results")
         self.raw_detection_results_group.setFlat(True)
 
@@ -467,9 +462,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.skew_label = QLabel("Skew:")
         self.relative_area_label = QLabel("Relative area:")
 
-        self.single_shot_reproj_error_max_label = QLabel("Reproj error (max):")
-        self.single_shot_reproj_error_avg_label = QLabel("Reproj error (avg):")
-        self.single_shot_reproj_error_rms_label = QLabel("Reproj error (rms):")
+        self.single_shot_reprojection_error_max_label = QLabel("Reprojection error (max):")
+        self.single_shot_reprojection_error_avg_label = QLabel("Reprojection error (avg):")
+        self.single_shot_reprojection_error_rms_label = QLabel("Reprojection error (rms):")
 
         raw_detection_results_layout = QVBoxLayout()
         raw_detection_results_layout.setAlignment(Qt.AlignTop)
@@ -485,15 +480,20 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         raw_detection_results_layout.addWidget(self.relative_area_label)
         raw_detection_results_layout.addWidget(self.raw_linear_error_rms_label)
 
-        single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_max_label)
-        single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_avg_label)
-        single_shot_detection_results_layout.addWidget(self.single_shot_reproj_error_rms_label)
+        single_shot_detection_results_layout.addWidget(
+            self.single_shot_reprojection_error_max_label
+        )
+        single_shot_detection_results_layout.addWidget(
+            self.single_shot_reprojection_error_avg_label
+        )
+        single_shot_detection_results_layout.addWidget(
+            self.single_shot_reprojection_error_rms_label
+        )
 
         self.raw_detection_results_group.setLayout(raw_detection_results_layout)
         self.single_shot_detection_results_group.setLayout(single_shot_detection_results_layout)
 
     def make_data_collection_group(self):
-
         self.data_collection_group = QGroupBox("Data collection")
         self.data_collection_group.setFlat(True)
 
@@ -503,7 +503,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.evaluation_occupancy_rate_label = QLabel("Evaluation occupancy:")
 
         def view_data_collection_statistics_callback():
-
             camera_model = (
                 self.current_camera_model
                 if self.calibrated_camera_model is None
@@ -550,7 +549,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.data_collection_group.setLayout(data_collection_layout)
 
     def make_visualization_group(self):
-
         self.visualization_options_group = QGroupBox("Visualization options")
         self.visualization_options_group.setFlat(True)
 
@@ -841,12 +839,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.skew_label.setText("Skew:")
             self.relative_area_label.setText("Relative area:")
 
-            self.single_shot_reproj_error_max_label.setText("Reproj error (max):")
-            self.single_shot_reproj_error_avg_label.setText("Reproj error (avg):")
-            self.single_shot_reproj_error_rms_label.setText("Reproj error (rms):")
+            self.single_shot_reprojection_error_max_label.setText("Reprojection error (max):")
+            self.single_shot_reprojection_error_avg_label.setText("Reprojection error (avg):")
+            self.single_shot_reprojection_error_rms_label.setText("Reprojection error (rms):")
 
         else:
-
             camera_model = (
                 self.current_camera_model
                 if self.calibrated_camera_model is None
@@ -923,14 +920,14 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 f"Relative area: {100.0*detection.get_normalized_size():.2f}"
             )
 
-            self.single_shot_reproj_error_max_label.setText(
-                f"Reproj error (max): {reprojection_error_max:.3f} px ({100.0 * reprojection_error_max_relative:.2f}%)"
+            self.single_shot_reprojection_error_max_label.setText(
+                f"Reprojection error (max): {reprojection_error_max:.3f} px ({100.0 * reprojection_error_max_relative:.2f}%)"
             )
-            self.single_shot_reproj_error_avg_label.setText(
-                f"Reproj error (avg): {reprojection_error_mean:.3f} px ({100.0 * reprojection_error_mean_relative:.2f}%)"
+            self.single_shot_reprojection_error_avg_label.setText(
+                f"Reprojection error (avg): {reprojection_error_mean:.3f} px ({100.0 * reprojection_error_mean_relative:.2f}%)"
             )
-            self.single_shot_reproj_error_rms_label.setText(
-                f"Reproj error (rms): {reprojection_error_rms:.3f} px ({100.0 * reprojection_error_rms_relative:.2f}%)"
+            self.single_shot_reprojection_error_rms_label.setText(
+                f"Reprojection error (rms): {reprojection_error_rms:.3f} px ({100.0 * reprojection_error_rms_relative:.2f}%)"
             )
 
             self.training_occupancy_rate_label.setText(
@@ -1031,7 +1028,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.request_image_detection.emit(img)
 
     def process_db_data(self, img):
-
         assert self.image_view_type_combobox.currentData() in set(
             {ImageViewMode.TRAINING_DB_UNRECTIFIED, ImageViewMode.EVALUATION_DB_UNRECTIFIED}
         )
@@ -1084,7 +1080,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
 
 def main(args=None):
-
     parser = OptionParser()
     parser.add_option("-c", "--config-file", type="string", help="calibration file path")
 
@@ -1092,6 +1087,7 @@ def main(args=None):
     if len(args) != 1:
         parser.error(f"incorrect number of arguments: {len(args)}")
 
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
     app = QApplication(sys.argv)
 
     cfg = {}
@@ -1107,7 +1103,7 @@ def main(args=None):
         ui = CameraIntrinsicsCalibratorUI(cfg)  # noqa: F841
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quiting...")
+        print("Received sigint. Quitting...")
         rclpy.shutdown()
 
 

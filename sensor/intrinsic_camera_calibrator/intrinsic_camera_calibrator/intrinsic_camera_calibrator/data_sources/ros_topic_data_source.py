@@ -73,7 +73,6 @@ class RosTopicDataSource(DataSource, Node):
     ):
         """Set the data source topic and subscribes to it."""
         with self.lock:
-
             topics = self.get_filtered_image_topics_and_types()
             topics_dict = dict(topics)
 
@@ -89,11 +88,11 @@ class RosTopicDataSource(DataSource, Node):
             self.qos_profile = rclpy.qos.QoSProfile(
                 reliability=reliability,
                 durability=durability,
-                history=rclpy.qos.HistoryPolicy.SYSTEM_DEFAULT,
+                history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+                depth=1,
             )
 
             for image_type in topics_dict[image_topic]:
-
                 if image_type == "sensor_msgs/msg/CompressedImage":
                     self.compressed_image_sub = self.create_subscription(
                         CompressedImage,
@@ -113,6 +112,7 @@ class RosTopicDataSource(DataSource, Node):
         if self.paused:
             return
 
+        # cSpell:enableCompoundWords
         with self.lock:
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
@@ -122,7 +122,7 @@ class RosTopicDataSource(DataSource, Node):
         """Process a raw image."""
         if self.paused:
             return
-
+        # cSpell:ignore imgmsg
         with self.lock:
             image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.data_callback(image_data)

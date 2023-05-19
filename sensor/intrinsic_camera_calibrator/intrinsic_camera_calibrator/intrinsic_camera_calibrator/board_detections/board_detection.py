@@ -34,7 +34,6 @@ class BoardDetection:
         rows: Optional[int] = None,
         cols: Optional[int] = None,
     ):
-
         self.height = height
         self.width = width
         self.rows = rows
@@ -134,6 +133,7 @@ class BoardDetection:
         if model == self._cached_camera_model and self._cached_tilt is not None:
             return self._cached_tilt
 
+        # cSpell:enableCompoundWords
         rvec, _ = self.get_pose()
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
@@ -227,7 +227,6 @@ class BoardDetection:
         return self._cached_normalized_skew
 
     def get_normalized_size(self) -> float:
-
         if self._cached_normalized_size is not None:
             return self._cached_normalized_size
 

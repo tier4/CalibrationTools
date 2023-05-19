@@ -29,7 +29,6 @@ from intrinsic_camera_calibrator.utils import to_grayscale
 class Detector(_Detector):
     def __del__(self):
         if self.tag_detector_ptr is not None:
-
             # destroy the detector
             self.libc.apriltag_detector_destroy.restype = None
             self.libc.apriltag_detector_destroy(self.tag_detector_ptr)
@@ -66,6 +65,7 @@ class ApriltagGridDetector(BoardDetector):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # cSpell:ignore nthreads
         self.nthreads = Parameter(int, value=8, min_value=1, max_value=16)
         self.quad_decimate = Parameter(int, value=1, min_value=0, max_value=8)
         self.quad_sigma = Parameter(float, value=1.5, min_value=0.0, max_value=10.0)
@@ -93,11 +93,11 @@ class ApriltagGridDetector(BoardDetector):
             return
 
         with self.lock:
-
             min_margin = self.min_margin.value
             max_hamming = self.max_hamming_error.value
             min_detection_ratio = self.min_detection_ratio.value
             (cols, rows) = (self.board_parameters.cols.value, self.board_parameters.rows.value)
+            min_index = self.board_parameters.min_index.value
             tag_size = self.board_parameters.tag_size.value
             tag_spacing = self.board_parameters.tag_spacing.value
             h, w = img.shape[0:2]
@@ -136,7 +136,8 @@ class ApriltagGridDetector(BoardDetector):
             for tag in tags
             if tag.decision_margin > min_margin
             and tag.hamming <= max_hamming
-            and tag.tag_id < rows * cols
+            and tag.tag_id < min_index + rows * cols
+            and tag.tag_id >= min_index
         ]
 
         id_dict = defaultdict(int)
@@ -158,6 +159,7 @@ class ApriltagGridDetector(BoardDetector):
             cols=cols,
             tag_size=tag_size,
             tag_spacing=tag_spacing,
+            min_index=min_index,
             tags=tags,
         )
 

@@ -33,7 +33,6 @@ class CameraModel:
         height: Optional[int] = None,
         width: Optional[int] = None,
     ):
-
         self.k = k
         self.d = d
         self.height = height
@@ -170,18 +169,17 @@ class CameraModel:
             self._cached_undistortion_alpha = alpha
             self._cached_undistorted_model = self.get_undistorted_camera_model(alpha=alpha)
             (
-                self._cached_undistortion_mapx,
-                self._cached_undistortion_mapy,
+                self._cached_undistortion_map_x,
+                self._cached_undistortion_map_y,
             ) = cv2.initUndistortRectifyMap(
                 self.k, self.d, None, self._cached_undistorted_model.k, (self.width, self.height), 5
             )
 
         return cv2.remap(
-            img, self._cached_undistortion_mapx, self._cached_undistortion_mapy, cv2.INTER_LINEAR
+            img, self._cached_undistortion_map_x, self._cached_undistortion_map_y, cv2.INTER_LINEAR
         )
 
     def as_dict(self, alpha: float = 0.0) -> Dict:
-
         undistorted = self.get_undistorted_camera_model(alpha)
         p = np.zeros((3, 4))
         p[0:3, 0:3] = undistorted.k
@@ -195,7 +193,8 @@ class CameraModel:
             "cols": 3,
             "data": [round(e.item(), 5) for e in self.k.flatten()],
         }
-        d["distortion_model"] = {
+        d["distortion_model"] = "plumb_bob"
+        d["distortion_coefficients"] = {
             "rows": 1,
             "cols": 5,
             "data": [round(e.item(), 5) for e in self.d.flatten()],

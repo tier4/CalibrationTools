@@ -21,7 +21,6 @@ import transforms3d
 
 
 def tf_message_to_transform_matrix(msg):
-
     transform_matrix = np.eye(4)
 
     q = msg.transform.rotation
@@ -36,7 +35,6 @@ def tf_message_to_transform_matrix(msg):
 
 
 def transform_matrix_to_tf_message(transform_matrix):
-
     q = transforms3d.quaternions.mat2quat(transform_matrix[0:3, 0:3])
 
     msg = TransformStamped()
@@ -52,7 +50,6 @@ def transform_matrix_to_tf_message(transform_matrix):
 
 
 def transform_matrix_to_cv(transform_matrix):
-
     rotation_matrix = transform_matrix[0:3, 0:3]
     rvec, _ = cv2.Rodrigues(rotation_matrix)
     tvec = transform_matrix[0:3, 3].reshape(3, 1)
@@ -61,7 +58,6 @@ def transform_matrix_to_cv(transform_matrix):
 
 
 def cv_to_transformation_matrix(tvec, rvec):
-
     transform_matrix = np.eye(4)
 
     rotation_matrix, _ = cv2.Rodrigues(rvec)
@@ -79,7 +75,6 @@ def decompose_transformation_matrix(transformation):
 
 
 def transform_points(translation_vector, rotation_matrix, point_array):
-
     num_points, dim = point_array.shape
     assert dim == 3
 

@@ -33,9 +33,9 @@ class ApriltagGridDetection(BoardDetection):
         cols: int,
         tag_size: float,
         tag_spacing: float,
+        min_index: int,
         tags,
     ):
-
         super().__init__(height=height, width=width, rows=rows, cols=cols)
 
         # Compute the object points
@@ -49,12 +49,12 @@ class ApriltagGridDetection(BoardDetection):
         self.ordered_object_points = []
         self.ordered_image_points = []
 
-        scanlines_dict = defaultdict(list)
+        scan_lines_dict = defaultdict(list)
         factor = tag_size * (1.0 + tag_spacing)
 
         for tag in self.tags:
-            row = tag.tag_id // cols
-            col = tag.tag_id % cols
+            row = (tag.tag_id - min_index) // cols
+            col = (tag.tag_id - min_index) % cols
             x = (col - 0.5 * (cols - 1)) * factor
             y = (row - 0.5 * (rows - 1)) * factor
             object_points = single_object_points + np.array([[x, y, 0.0]])
@@ -62,12 +62,12 @@ class ApriltagGridDetection(BoardDetection):
             self.ordered_object_points.append(object_points)
             self.ordered_image_points.append(tag.corners)
 
-            scanlines_dict[row].append(tag.corners[0])
-            scanlines_dict[row].append(tag.corners[1])
-            scanlines_dict[rows + row].append(tag.corners[2])
-            scanlines_dict[rows + row].append(tag.corners[3])
+            scan_lines_dict[row].append(tag.corners[0])
+            scan_lines_dict[row].append(tag.corners[1])
+            scan_lines_dict[rows + row].append(tag.corners[2])
+            scan_lines_dict[rows + row].append(tag.corners[3])
 
-        self.scanlines = list(scanlines_dict.values())
+        self.scan_lines = list(scan_lines_dict.values())
 
         homography, _ = cv2.findHomography(
             self.get_flattened_object_points()[:, 0:2], self.get_flattened_image_points()
@@ -112,20 +112,19 @@ class ApriltagGridDetection(BoardDetection):
         error = 0
         n = 0
 
-        if self.scanlines is None or len(self.scanlines) == 0:
+        if self.scan_lines is None or len(self.scan_lines) == 0:
             return np.inf
 
-        for scanline in self.scanlines:
+        for scan_line in self.scan_lines:
+            p1 = scan_line[0]
+            p2 = scan_line[-1]
 
-            p1 = scanline[0]
-            p2 = scanline[-1]
-
-            for i in range(1, len(scanline) - 1):
-                p = scanline[i]
+            for i in range(1, len(scan_line) - 1):
+                p = scan_line[i]
                 error += squared_error(p, p1, p2)
                 n += 1
 
-        # There are cases where the linear error can not be computed due to having only 2 points per scanline
+        # There are cases where the linear error can not be computed due to having only 2 points per scan line
         return np.sqrt(error / n) if n > 0 else np.inf
 
     def _get_border_image_points(self) -> Tuple[np.array, np.array, np.array, np.array]:
@@ -137,7 +136,6 @@ class ApriltagGridDetection(BoardDetection):
         )
 
     def get_flattened_cell_sizes(self):
-
         if self._cached_flattened_cell_sizes is not None:
             return self._cached_flattened_cell_sizes
 
