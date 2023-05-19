@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_UTILS_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_UTILS_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__UTILS_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__UTILS_HPP_
 
 #include <Eigen/Core>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
@@ -139,4 +139,4 @@ void cropTargetPointcloud(
   const typename pcl::PointCloud<PointType>::Ptr & initial_source_aligned_pc_ptr,
   typename pcl::PointCloud<PointType>::Ptr & target_dense_pc_ptr, float margin);
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_UTILS_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__UTILS_HPP_

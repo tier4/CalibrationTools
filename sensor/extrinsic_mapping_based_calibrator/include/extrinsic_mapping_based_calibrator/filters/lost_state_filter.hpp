@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__FILTERS__LOST_SATE_FILTER_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__FILTERS__LOST_SATE_FILTER_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__FILTERS__LOST_STATE_FILTER_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__FILTERS__LOST_STATE_FILTER_HPP_
 
 #include <extrinsic_mapping_based_calibrator/filters/filter.hpp>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
@@ -47,4 +47,4 @@ public:
 private:
 };
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__FILTERS__LOST_SATE_FILTER_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__FILTERS__LOST_STATE_FILTER_HPP_
