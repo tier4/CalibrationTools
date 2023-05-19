@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_SERIALIZATION_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_SERIALIZATION_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__SERIALIZATION_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__SERIALIZATION_HPP_
 
 #include <Eigen/Core>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
@@ -203,4 +203,4 @@ void serialize(Archive & ar, sensor_msgs::msg::CompressedImage & image, const un
 }  // namespace serialization
 }  // namespace boost
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_SERIALIZATION_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__SERIALIZATION_HPP_

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR_CAMERA_CALIBRATOR_HPP_
-#define EXTRINSIC_MAPPING_BASED_CALIBRATOR_CAMERA_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_MAPPING_BASED_CALIBRATOR__CAMERA_CALIBRATOR_HPP_
+#define EXTRINSIC_MAPPING_BASED_CALIBRATOR__CAMERA_CALIBRATOR_HPP_
 
 #include <extrinsic_mapping_based_calibrator/filters/filter.hpp>
 #include <extrinsic_mapping_based_calibrator/sensor_calibrator.hpp>
@@ -89,4 +89,4 @@ protected:
   Filter::Ptr filter_;
 };
 
-#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR_LIDAR_CALIBRATOR_HPP_
+#endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__CAMERA_CALIBRATOR_HPP_
