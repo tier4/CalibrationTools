@@ -23,6 +23,9 @@
 
 #include <tf2_ros/buffer.h>
 
+#include <memory>
+#include <string>
+
 class SensorCalibrator
 {
 public:

@@ -20,6 +20,8 @@
 
 #include <tf2_ros/buffer.h>
 
+#include <memory>
+#include <string>
 #include <vector>
 
 class ObjectDetectionFilter : public Filter
@@ -42,10 +44,10 @@ public:
   }
   virtual ~ObjectDetectionFilter() {}
 
-  virtual std::vector<CalibrationFrame> filter(
+  std::vector<CalibrationFrame> filter(
     const std::vector<CalibrationFrame> & calibration_frames,
     MappingData::Ptr & mapping_data) override;
-  virtual void setName(const std::string & name) override;
+  void setName(const std::string & name) override;
 
 protected:
   void filter(

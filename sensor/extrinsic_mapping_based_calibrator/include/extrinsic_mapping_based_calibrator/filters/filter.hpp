@@ -17,6 +17,8 @@
 
 #include <extrinsic_mapping_based_calibrator/types.hpp>
 
+#include <memory>
+#include <string>
 #include <vector>
 
 class Filter

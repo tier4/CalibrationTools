@@ -18,6 +18,8 @@
 #include <extrinsic_mapping_based_calibrator/filters/filter.hpp>
 #include <extrinsic_mapping_based_calibrator/types.hpp>
 
+#include <memory>
+#include <string>
 #include <vector>
 
 class LostStateFilter : public Filter
@@ -39,10 +41,10 @@ public:
   }
   virtual ~LostStateFilter() {}
 
-  virtual std::vector<CalibrationFrame> filter(
+  std::vector<CalibrationFrame> filter(
     const std::vector<CalibrationFrame> & calibration_frames,
     MappingData::Ptr & mapping_data) override;
-  virtual void setName(const std::string & name) override;
+  void setName(const std::string & name) override;
 
 private:
 };
