@@ -535,7 +535,7 @@ bool CalibrationMapper::shouldDropFrame(const Frame::Ptr & prev_frame, Frame::Pt
       RCLCPP_WARN(rclcpp::get_logger("calibration_mapper"), "Added a keyframe_and_stopped frame");
       data_->keyframes_and_stopped_.push_back(frame);
       return false;
-    } else if (
+    } else if (  // NOLINT
       prev_frame->stopped_ &&
       std::abs(prev_frame->frames_since_stop_ - parameters_->frames_since_stop_force_frame_) > 1) {
       RCLCPP_INFO(rclcpp::get_logger("calibration_mapper"), "Dropped stopped frame");
@@ -602,7 +602,8 @@ void CalibrationMapper::publisherTimerCallback()
     *tmp_mcs_ptr += *published_map_pointcloud_ptr_;
 
     for (int i = 0; i < 100;
-         i++) {  // arbitrary number since large unprocessed frames lead to gigantic memory usages
+         i++)  // arbitrary number since large unprocessed frames lead to gigantic memory usages
+    {
       Frame::Ptr frame = *processed_frames_it;
       PointcloudType::Ptr frame_mcs_ptr(new PointcloudType());
       pcl::transformPointCloud(*frame->pointcloud_subsampled_, *frame_mcs_ptr, frame->pose_);

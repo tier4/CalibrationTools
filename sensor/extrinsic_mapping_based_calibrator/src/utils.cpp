@@ -81,7 +81,9 @@ Eigen::Matrix4f poseInterpolationBase(
   assert(t >= t1 && t <= t2);
 
   float alpha = 0.0;
-  if (t2 != t1) alpha = (t - t1) / (t2 - t1);
+  if (t2 != t1) {
+    alpha = (t - t1) / (t2 - t1);
+  }
 
   Eigen::Affine3f aff1(m1);
   Eigen::Affine3f aff2(m2);
