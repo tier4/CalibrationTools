@@ -12,10 +12,7 @@
 
   <build_depend>autoware_cmake</build_depend>
 
-  <depend>ament_lint_auto</depend>
-  <depend>ament_lint_common</depend>
   <depend>autoware_auto_perception_msgs</depend>
-  <depend>backward_ros</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>image_geometry</depend>
