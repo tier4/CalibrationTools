@@ -45,7 +45,7 @@ ros2 launch extrinsic_calibration_manager calibration.launch.xml \
   mode:=ground_plane sensor_model:=aip_x1 vehicle_model:=lexus vehicle_id:=my_awesome_vehicle
 ```
 
-The, play the recorded calibration rosbag (on terminal 2).
+Then, play the recorded calibration rosbag (on terminal 2).
 
 ```sh
 ros2 bag play <rosbag_path> --clock -l -r 0.2 \

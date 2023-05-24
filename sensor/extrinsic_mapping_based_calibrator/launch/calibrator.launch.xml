@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="ns"/>
+  <arg name="mapping_pointcloud"/>
+  <arg name="detected_objects" default="detected_objects"/>
+  <arg name="predicted_objects" default="predicted_objects"/>
+  <arg name="calibration_camera_info_topics"/>
+  <arg name="calibration_image_topics"/>
+  <arg name="calibration_pointcloud_topics"/>
+  <arg name="camera_calibration_service_names"/>
+  <arg name="lidar_calibration_service_names"/>
+  <arg name="camera_calibration_sensor_kit_frames"/>
+  <arg name="lidar_calibration_sensor_kit_frames"/>
+  <arg name="calibration_camera_frames"/>
+  <arg name="calibration_camera_optical_link_frames"/>
+
+  <arg name="calibration_lidar_base_frames"/>
+  <arg name="calibration_lidar_frames"/>
+  <arg name="mapping_lidar_frame"/>
+
+  <arg name="local_map_num_keyframes" default="15"/>
+  <arg name="dense_pointcloud_num_keyframes" default="10"/>
+  <arg name="mapping_max_frames" default="5000"/>
+  <arg name="mapping_max_range" default="100.0"/>
+  <arg name="marker_size" default="10.0"/>
+  <arg name="mapper_resolution" default="1.0"/>
+  <arg name="mapper_step_size" default="0.05"/>
+  <arg name="mapper_max_iterations" default="500"/>
+  <arg name="mapper_epsilon" default="0.001"/>
+  <arg name="mapper_num_threads" default="12"/>
+  <arg name="mapper_max_correspondence_distance" default="0.1"/>
+
+  <arg name="lidar_calibration_max_frames" default="7"/>
+  <arg name="camera_calibration_max_frames" default="1"/>
+  <arg name="lost_frame_max_angle_diff" default="25.0"/>
+  <arg name="lost_frame_interpolation_error" default="0.05"/>
+  <arg name="lost_frame_max_acceleration" default="8.0"/>
+  <arg name="max_calibration_range" default="80.0"/>
+  <arg name="calibration_min_pca_eigenvalue" default="0.02"/>
+  <arg name="calibration_eval_max_corr_distance" default="0.2"/>
+  <arg name="solver_iterations" default="100"/>
+  <arg name="calibration_skip_keyframes" default="3"/>
+
+  <arg name="lidar_calibration_min_frames" default="1"/>
+  <arg name="calibration_use_only_last_frames" default="false"/>
+  <arg name="crop_z_calibration_pointclouds" default="false"/>
+  <arg name="crop_z_calibration_pointclouds_value" default="4.0"/>
+
+  <arg name="base_lidar_crop_box_min_x" default="-5.0"/>
+  <arg name="base_lidar_crop_box_min_y" default="-5.0"/>
+  <arg name="base_lidar_crop_box_min_z" default="-5.0"/>
+  <arg name="base_lidar_crop_box_max_x" default="10.0"/>
+  <arg name="base_lidar_crop_box_max_y" default="5.0"/>
+  <arg name="base_lidar_crop_box_max_z" default="5.0"/>
+  <arg name="base_lidar_min_plane_points_percentage" default="10.0"/>
+  <arg name="base_lidar_max_inlier_distance" default="0.03"/>
+  <arg name="base_lidar_min_plane_points" default="500"/>
+  <arg name="base_lidar_max_cos_distance" default="0.2"/>
+  <arg name="base_lidar_max_iterations" default="500"/>
+  <arg name="calibration_min_distance_between_frames" default="1.5"/>
+  <arg name="use_rosbag" default="true"/>
+
+  <group>
+    <push-ros-namespace namespace="$(var ns)"/>
+    <node pkg="extrinsic_mapping_based_calibrator" exec="extrinsic_mapping_based_calibrator" name="extrinsic_mapping_based_calibrator_node" output="screen">
+      <param name="map_frame" value="calibration_map"/>
+
+      <param name="camera_calibration_service_names" value="$(var camera_calibration_service_names)"/>
+      <param name="lidar_calibration_service_names" value="$(var lidar_calibration_service_names)"/>
+      <param name="camera_calibration_sensor_kit_frames" value="$(var camera_calibration_sensor_kit_frames)"/>
+      <param name="lidar_calibration_sensor_kit_frames" value="$(var lidar_calibration_sensor_kit_frames)"/>
+      <param name="calibration_camera_frames" value="$(var calibration_camera_frames)"/>
+      <param name="calibration_camera_optical_link_frames" value="$(var calibration_camera_optical_link_frames)"/>
+      <param name="calibration_lidar_base_frames" value="$(var calibration_lidar_base_frames)"/>
+      <param name="calibration_lidar_frames" value="$(var calibration_lidar_frames)"/>
+      <param name="mapping_lidar_frame" value="$(var mapping_lidar_frame)"/>
+      <param name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
+      <param name="calibration_image_topics" value="$(var calibration_image_topics)"/>
+      <param name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
+      <remap from="mapping_pointcloud" to="$(var mapping_pointcloud)"/>
+      <remap from="detected_objects" to="$(var detected_objects)"/>
+      <remap from="predicted_objects" to="$(var predicted_objects)"/>
+
+      <param name="local_map_num_keyframes" value="$(var local_map_num_keyframes)"/>
+      <param name="dense_pointcloud_num_keyframes" value="$(var dense_pointcloud_num_keyframes)"/>
+      <param name="mapping_max_frames" value="$(var mapping_max_frames)"/>
+      <param name="mapping_max_range" value="$(var mapping_max_range)"/>
+      <param name="marker_size" value="$(var marker_size)"/>
+      <param name="mapper_resolution" value="$(var mapper_resolution)"/>
+      <param name="mapper_step_size" value="$(var mapper_step_size)"/>
+      <param name="mapper_max_iterations" value="$(var mapper_max_iterations)"/>
+      <param name="mapper_epsilon" value="$(var mapper_epsilon)"/>
+      <param name="mapper_num_threads" value="$(var mapper_num_threads)"/>
+      <param name="mapper_max_correspondence_distance" value="$(var mapper_max_correspondence_distance)"/>
+
+      <param name="lidar_calibration_max_frames" value="$(var lidar_calibration_max_frames)"/>
+      <param name="camera_calibration_max_frames" value="$(var camera_calibration_max_frames)"/>
+
+      <param name="lost_frame_max_angle_diff" value="$(var lost_frame_max_angle_diff)"/>
+      <param name="lost_frame_interpolation_error" value="$(var lost_frame_interpolation_error)"/>
+      <param name="lost_frame_max_acceleration" value="$(var lost_frame_max_acceleration)"/>
+      <param name="max_calibration_range" value="$(var max_calibration_range)"/>
+      <param name="calibration_min_pca_eigenvalue" value="$(var calibration_min_pca_eigenvalue)"/>
+      <param name="calibration_eval_max_corr_distance" value="$(var calibration_eval_max_corr_distance)"/>
+      <param name="solver_iterations" value="$(var solver_iterations)"/>
+      <param name="calibration_skip_keyframes" value="$(var calibration_skip_keyframes)"/>
+
+      <param name="lidar_calibration_min_frames" value="$(var lidar_calibration_min_frames)"/>
+      <param name="calibration_use_only_last_frames" value="$(var calibration_use_only_last_frames)"/>
+      <param name="crop_z_calibration_pointclouds" value="$(var crop_z_calibration_pointclouds)"/>
+      <param name="crop_z_calibration_pointclouds_value" value="$(var crop_z_calibration_pointclouds_value)"/>
+
+      <param name="base_lidar_crop_box_min_x" value="$(var base_lidar_crop_box_min_x)"/>
+      <param name="base_lidar_crop_box_min_y" value="$(var base_lidar_crop_box_min_y)"/>
+      <param name="base_lidar_crop_box_min_z" value="$(var base_lidar_crop_box_min_z)"/>
+      <param name="base_lidar_crop_box_max_x" value="$(var base_lidar_crop_box_max_x)"/>
+      <param name="base_lidar_crop_box_max_y" value="$(var base_lidar_crop_box_max_y)"/>
+      <param name="base_lidar_crop_box_max_z" value="$(var base_lidar_crop_box_max_z)"/>
+      <param name="base_lidar_min_plane_points_percentage" value="$(var base_lidar_min_plane_points_percentage)"/>
+      <param name="base_lidar_max_inlier_distance" value="$(var base_lidar_max_inlier_distance)"/>
+      <param name="base_lidar_min_plane_points" value="$(var base_lidar_min_plane_points)"/>
+      <param name="base_lidar_max_cos_distance" value="$(var base_lidar_max_cos_distance)"/>
+      <param name="base_lidar_max_iterations" value="$(var base_lidar_max_iterations)"/>
+
+      <param name="calibration_min_distance_between_frames" value="$(var calibration_min_distance_between_frames)"/>
+
+      <param name="use_rosbag" value="true"/>
+    </node>
+  </group>
+</launch>

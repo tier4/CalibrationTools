@@ -7,7 +7,6 @@
     <push-ros-namespace namespace="sensor_kit"/>
     <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/ground_plane_sensor_kit.launch.xml">
       <arg name="vehicle_id" value="$(var vehicle_id)"/>
-      <arg name="pointcloud_map_file" value="$(var pointcloud_map_file)"/>
     </include>
   </group>
 </launch>

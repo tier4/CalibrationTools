@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>extrinsic_mapping_based_calibrator</name>
+  <version>0.0.1</version>
+  <description>The extrinsic_mapping_based_calibrator package</description>
+  <maintainer email="kenzo.lobos@tier4.jp">Kenzo Lobos Tsunekawa</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <build_depend>autoware_cmake</build_depend>
+
+  <depend>autoware_auto_perception_msgs</depend>
+  <depend>eigen</depend>
+  <depend>geometry_msgs</depend>
+  <depend>image_geometry</depend>
+  <depend>image_transport</depend>
+  <depend>kalman_filter</depend>
+  <depend>libboost-filesystem</depend>
+  <depend>libboost-serialization</depend>
+  <depend>libg2o</depend>
+  <depend>libpcl-all-dev</depend>
+  <depend>nav_msgs</depend>
+  <depend>ndt_omp</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
+  <depend>rclcpp</depend>
+  <depend>rosbag2_interfaces</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_sensor_msgs</depend>
+  <depend>tier4_autoware_utils</depend>
+  <depend>tier4_calibration_msgs</depend>
+  <depend>tier4_calibration_pcl_extensions</depend>
+  <depend>visualization_msgs</depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
