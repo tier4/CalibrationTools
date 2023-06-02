@@ -219,6 +219,8 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<bool>("calibration_use_only_last_frames", false);
   calibration_parameters_->max_calibration_range_ =
     this->declare_parameter<double>("max_calibration_range", 80.0);
+  calibration_parameters_->min_calibration_range_ =
+    this->declare_parameter<double>("min_calibration_range", 1.5);
   calibration_parameters_->calibration_min_pca_eigenvalue_ =
     this->declare_parameter<double>("calibration_min_pca_eigenvalue", 0.25);
   calibration_parameters_->calibration_min_distance_between_frames_ =
@@ -542,6 +544,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
     UPDATE_PARAM(mapping_parameters, lost_frame_max_angle_diff);
     UPDATE_PARAM(mapping_parameters, lost_frame_interpolation_error);
     UPDATE_PARAM(mapping_parameters, lost_frame_max_acceleration);
+    UPDATE_PARAM(calibration_parameters, min_calibration_range);
     UPDATE_PARAM(calibration_parameters, max_calibration_range);
     UPDATE_PARAM(calibration_parameters, calibration_min_pca_eigenvalue);
     UPDATE_PARAM(calibration_parameters, calibration_min_distance_between_frames);
@@ -916,7 +919,7 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
   }
 
   PointcloudType::Ptr map_cropped_cloud_ptr =
-    cropPointCloud<PointcloudType>(map_cloud_ptr, mapping_parameters_->mapping_max_range_);
+    cropPointCloud<PointcloudType>(map_cloud_ptr, 0.0, mapping_parameters_->mapping_max_range_);
 
   pcl::VoxelGridTriplets<PointType> voxel_grid;
   voxel_grid.setLeafSize(

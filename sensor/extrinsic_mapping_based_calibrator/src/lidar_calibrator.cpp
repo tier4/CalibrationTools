@@ -163,14 +163,16 @@ void LidarCalibrator::singleSensorCalibrationCallback(
 
   CalibrationFrame & calibration_frame = filtered_calibration_frames[request->id];
   PointcloudType::Ptr source_pc_ptr = cropPointCloud<PointcloudType>(
-    calibration_frame.source_pointcloud_, parameters_->max_calibration_range_);
+    calibration_frame.source_pointcloud_, parameters_->min_calibration_range_,
+    parameters_->max_calibration_range_);
 
   PointcloudType::Ptr target_dense_pc_ptr = getDensePointcloudFromMap(
     calibration_frame.local_map_pose_, calibration_frame.target_frame_,
-    parameters_->leaf_size_dense_map_, parameters_->max_calibration_range_ + initial_distance);
+    parameters_->leaf_size_dense_map_, parameters_->min_calibration_range_,
+    parameters_->max_calibration_range_ + initial_distance);
   PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(
     calibration_frame.local_map_pose_, calibration_frame.target_frame_,
-    parameters_->calibration_viz_leaf_size_,
+    parameters_->calibration_viz_leaf_size_, parameters_->min_calibration_range_,
     parameters_->max_calibration_range_ + initial_distance);
 
   PointcloudType::Ptr initial_source_aligned_pc_ptr(new PointcloudType());
@@ -508,15 +510,17 @@ void LidarCalibrator::prepareCalibrationData(
   // Prepare pointclouds for calibration
   for (auto & calibration_frame : calibration_frames) {
     PointcloudType::Ptr source_pc_ptr = cropPointCloud<PointcloudType>(
-      calibration_frame.source_pointcloud_, parameters_->max_calibration_range_);
+      calibration_frame.source_pointcloud_, parameters_->min_calibration_range_,
+      parameters_->max_calibration_range_);
 
     PointcloudType::Ptr target_pc_ptr = getDensePointcloudFromMap(
       calibration_frame.local_map_pose_, calibration_frame.target_frame_,
-      parameters_->leaf_size_dense_map_, parameters_->max_calibration_range_ + initial_distance);
+      parameters_->leaf_size_dense_map_, parameters_->min_calibration_range_,
+      parameters_->max_calibration_range_ + initial_distance);
 
     PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(
       calibration_frame.local_map_pose_, calibration_frame.target_frame_,
-      parameters_->calibration_viz_leaf_size_,
+      parameters_->calibration_viz_leaf_size_, parameters_->min_calibration_range_,
       parameters_->max_calibration_range_ + initial_distance);
 
     // Transfor the source to target frame to crop it later

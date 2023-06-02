@@ -205,6 +205,7 @@ struct CalibrationParameters
 
   bool calibration_use_only_stopped_;
   bool calibration_use_only_last_frames_;
+  double min_calibration_range_;
   double max_calibration_range_;
   double calibration_min_pca_eigenvalue_;
   double calibration_min_distance_between_frames_;
