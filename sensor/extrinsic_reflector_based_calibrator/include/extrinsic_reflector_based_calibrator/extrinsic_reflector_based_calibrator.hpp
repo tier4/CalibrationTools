@@ -16,13 +16,15 @@
 #define EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_
 
 #include <Eigen/Dense>
+#include <extrinsic_reflector_based_calibrator/track.hpp>
 #include <extrinsic_reflector_based_calibrator/types.hpp>
-#include <kalman_filter/kalman_filter.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/timer.hpp>
 #include <std_srvs/srv/empty.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <radar_msgs/msg/radar_tracks.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
@@ -44,13 +46,13 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
 public:
   using PointType = pcl::PointXYZ;
-  using TreeType = pcl::octree::OctreePointCloudSearch<PointType>;
   using index_t = std::uint32_t;
 
   explicit ExtrinsicReflectorBasedCalibrator(const rclcpp::NodeOptions & options);
@@ -60,54 +62,108 @@ protected:
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
+  void timerCallback();
+
   void backgroundModelRequestCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     const std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
-  void lidarCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
-  void radarCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc);
+  void trackingRequestCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    const std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+  void sendCalibrationCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    const std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+  void lidarCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void radarCallback(const radar_msgs::msg::RadarTracks::SharedPtr msg);
+
+  std::vector<Eigen::Vector3d> extractReflectors(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  std::vector<Eigen::Vector3d> extractReflectors(const radar_msgs::msg::RadarTracks::SharedPtr msg);
 
   void extractBackgroundModel(
     const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
     const std_msgs::msg::Header & current_header, std_msgs::msg::Header & last_updated_header,
-    BackgroundModel & background_model);
+    std_msgs::msg::Header & first_header, BackgroundModel & background_model);
 
-  pcl::PointCloud<PointType>::Ptr extractForegroundPoints(
+  void extractForegroundPoints(
     const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
-    const BackgroundModel & background_model);
+    const BackgroundModel & background_model, bool use_ransac,
+    pcl::PointCloud<PointType>::Ptr & foreground_points, Eigen::Vector4f & ground_model);
+
+  std::vector<pcl::PointCloud<PointType>::Ptr> extractClusters(
+    const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud);
+
+  std::vector<Eigen::Vector3d> findReflectorsFromClusters(
+    const std::vector<pcl::PointCloud<PointType>::Ptr> & clusters,
+    const Eigen::Vector4f & ground_model);
+
+  bool checkInitialTransforms();
+
+  std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> matchDetections(
+    const std::vector<Eigen::Vector3d> & lidar_detections,
+    const std::vector<Eigen::Vector3d> & radar_detections);
+
+  void trackMatches(
+    const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
+    builtin_interfaces::msg::Time & time);
+  void calibrateSensors();
+  void visualizationMarkers(
+    const std::vector<Eigen::Vector3d> & lidar_detections,
+    const std::vector<Eigen::Vector3d> & radar_detections,
+    const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections);
 
   // Parameters
-  std::string base_frame_;
-  std::string sensor_kit_frame_;  // the parent for this calibration method must be a sensor kit
-  std::string lidar_base_frame_;  // the child for this calibration method must be a the base of a
-                                  // lidar (probably different from the actual lidar tf)
+  std::string parent_frame_;
   double lidar_background_model_leaf_size_;
   double radar_background_model_leaf_size_;
-  double background_model_margin_;
+  double max_calibration_range_;
   double background_model_timeout_;
   double max_match_yaw_distance_;
   double min_foreground_distance_;  // needs to be about at least double the leaf size
+  double background_extraction_timeout_;
+  double ransc_threshold_;
+  int rasac_max_iterations_;
+  double cluster_max_tolerance_;
+  int cluster_min_points_;
+  int cluster_max_points_;
+
+  double reflector_radius_;
+  double reflector_max_height_;
+  double max_matching_distance_;
+  double max_initial_calibration_translation_error_;
+  double max_initial_calibration_rotation_error_;
 
   // ROS Interface
+  rclcpp::TimerBase::SharedPtr timer_;
   tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
-  rclcpp::CallbackGroup::SharedPtr subs_callback_group_;
-  rclcpp::CallbackGroup::SharedPtr srv_callback_group_;
+  rclcpp::CallbackGroup::SharedPtr calibration_api_srv_callback_group_;
+  rclcpp::CallbackGroup::SharedPtr calibration_ui_srv_callback_group_;
 
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_background_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_foreground_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_colored_clusters_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr lidar_detections_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr radar_background_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr radar_foreground_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr radar_detections_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr matches_markers_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr tracking_markers_pub_;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr radar_sub_;
+  rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
 
   rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
     calibration_request_server_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr background_model_server_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr background_model_service_server_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr tracking_service_server_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr send_calibration_service_server_;
 
   // Threading, sync, and result
   std::mutex mutex_;
@@ -117,44 +173,39 @@ protected:
   std::string lidar_frame_, radar_frame_;
 
   // Initial tfs comparable with the one with our method
-  geometry_msgs::msg::Transform initial_base_to_lidar_msg_;
-  tf2::Transform initial_base_to_lidar_tf2_;
-  Eigen::Isometry3d initial_base_to_lidar_eigen_;
+  geometry_msgs::msg::Transform initial_radar_to_lidar_msg_;
+  tf2::Transform initial_radar_to_lidar_tf2_;
+  Eigen::Isometry3d initial_radar_to_lidar_eigen_;
+  Eigen::Isometry3d calibrated_radar_to_lidar_eigen_;
 
-  // Other tfs to calculate the complete chain. There are constant for our purposes
-  geometry_msgs::msg::Transform base_to_sensor_kit_msg_;
-  tf2::Transform base_to_sensor_kit_tf2_;
-  Eigen::Isometry3d base_to_sensor_kit_eigen_;
-
-  geometry_msgs::msg::Transform lidar_base_to_lidar_msg_;
-  tf2::Transform lidar_base_to_lidar_tf2_;
-  Eigen::Isometry3d lidar_base_to_lidar_eigen_;
-
-  geometry_msgs::msg::Pose output_calibration_msg_;
+  geometry_msgs::msg::Transform parent_to_lidar_msg_;
+  tf2::Transform parent_to_lidar_tf2_;
+  Eigen::Isometry3d parent_to_lidar_eigen_;
 
   bool got_initial_transform_;
   bool broadcast_tf_;
-  bool calibration_done_;
-
-  // Filtering
-  KalmanFilter lidar_filter_, radar_filter_;
-  bool first_observation_;
-  double initial_lidar_cov_;
-  double initial_radar_cov_;
-  double lidar_measurement_cov_;
-  double lidar_process_cov_;
-  double radar_measurement_cov_;
-  double radar_process_cov_;
-  double lidar_convergence_threshold_;
-  double radar_convergence_threshold_;
+  bool calibration_valid_;
+  bool send_calibration_;
 
   // Background model
   bool extract_lidar_background_model_;
   bool extract_radar_background_model_;
-  std_msgs::msg::Header latest_updated_lidar_frame_;
+  std_msgs::msg::Header latest_updated_lidar_header_;
+  std_msgs::msg::Header latest_updated_radar_header_;
+  std_msgs::msg::Header first_lidar_header_;
+  std_msgs::msg::Header first_radar_header_;
   std_msgs::msg::Header latest_updated_radar_frame_;
   BackgroundModel lidar_background_model_;
   BackgroundModel radar_background_model_;
+
+  radar_msgs::msg::RadarTracks::SharedPtr latest_radar_msgs_;
+
+  // Tracking
+  bool tracking_active_;
+  int current_new_tracks_;
+  TrackFactory::Ptr factory_ptr_;
+  std::vector<Track> active_tracks_;
+  std::vector<Track> converged_tracks_;
 };
 
 #endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_

@@ -7,13 +7,15 @@
   <arg name="map_path" default="$(env HOME)/map/"/>
   <arg name="lanelet2_map_file" default="lanelet2_map.osm"/>
   <arg name="pointcloud_map_file" default="pointcloud_map.pcd"/>
-  <arg name="logging_simulator" default="true"/>
+  <arg name="logging_simulator" default="false"/>
   <arg name="map_calibration_area_file" default="map_calibration_area.pcd"/>
   <arg name="use_calibration_area_map" default="true"/>
 
   <!-- tag_based & interactive only -->
   <arg name="camera_name" default=""/>
   <!--e.g, camera6-->
+  <!-- reflector_based only -->
+  <arg name="radar_name" default=""/>
   <arg name="calibration_rviz" default="true"/>
 
   <!-- interactive only -->
@@ -104,6 +106,14 @@
     <group if="$(eval &quot;'$(var mode)' == 'mapping_based' &quot;)">
       <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/mapping_based.launch.xml">
         <arg name="vehicle_id" value="$(var vehicle_id)"/>
+        <arg name="rviz" value="$(var calibration_rviz)"/>
+      </include>
+    </group>
+
+    <group if="$(eval &quot;'$(var mode)' == 'reflector_based' &quot;)">
+      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/reflector_based.launch.xml">
+        <arg name="vehicle_id" value="$(var vehicle_id)"/>
+        <arg name="radar_name" value="$(var radar_name)"/>
         <arg name="rviz" value="$(var calibration_rviz)"/>
       </include>
     </group>

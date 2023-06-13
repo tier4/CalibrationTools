@@ -17,7 +17,7 @@
 
 #include <Eigen/Dense>
 
-#include <pcl/octree/octree_search.h>
+#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 
@@ -29,7 +29,7 @@ struct BackgroundModel
 {
 public:
   using PointType = pcl::PointXYZ;
-  using TreeType = pcl::octree::OctreePointCloudSearch<PointType>;
+  using TreeType = pcl::KdTreeFLANN<PointType>;
   using index_t = std::uint32_t;
 
   BackgroundModel()
@@ -40,7 +40,8 @@ public:
       std::numeric_limits<float>::max(), 1.f),
     max_point_(
       -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(),
-      -std::numeric_limits<float>::max(), 1.f)
+      -std::numeric_limits<float>::max(), 1.f),
+    pointcloud_(new pcl::PointCloud<PointType>)
   {
   }
 
@@ -50,7 +51,7 @@ public:
   Eigen::Vector4f max_point_;
   std::unordered_set<index_t> set_;
   pcl::PointCloud<PointType>::Ptr pointcloud_;
-  TreeType::Ptr tree_;
+  TreeType tree_;
 };
 
 #endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__TYPES_HPP_
