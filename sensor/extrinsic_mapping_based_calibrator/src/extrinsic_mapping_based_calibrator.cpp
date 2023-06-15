@@ -133,6 +133,8 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->declare_parameter<int>("local_map_num_keyframes", 15);
   calibration_parameters_->dense_pointcloud_num_keyframes_ =
     this->declare_parameter<int>("dense_pointcloud_num_keyframes", 10);
+  mapping_parameters_->mapping_min_range_ =
+    this->declare_parameter<double>("mapping_min_range", 0.5);
   mapping_parameters_->mapping_max_range_ =
     this->declare_parameter<double>("mapping_max_range", 60.0);
   mapping_parameters_->min_mapping_pointcloud_size_ =
@@ -918,8 +920,9 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
     *map_cloud_ptr += *tmp_cloud_ptr;
   }
 
-  PointcloudType::Ptr map_cropped_cloud_ptr =
-    cropPointCloud<PointcloudType>(map_cloud_ptr, 0.0, mapping_parameters_->mapping_max_range_);
+  PointcloudType::Ptr map_cropped_cloud_ptr = cropPointCloud<PointcloudType>(
+    map_cloud_ptr, mapping_parameters_->mapping_min_range_,
+    mapping_parameters_->mapping_max_range_);
 
   pcl::VoxelGridTriplets<PointType> voxel_grid;
   voxel_grid.setLeafSize(

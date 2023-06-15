@@ -140,6 +140,7 @@ struct MappingParameters
   bool use_rosbag_;
   int mapping_max_frames_;
   int local_map_num_keyframes_;
+  double mapping_min_range_;
   double mapping_max_range_;
   int min_mapping_pointcloud_size_;
   int min_calibration_pointcloud_size_;
