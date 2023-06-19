@@ -85,6 +85,7 @@ class RosInterface(Node):
         self.can_publish_tf = self.get_parameter("can_publish_tf").get_parameter_value().bool_value
 
         self.image_frame = None
+        self.lidar_frame = None
 
         self.ros_context = None
         self.ros_executor = None
