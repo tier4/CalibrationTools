@@ -171,12 +171,16 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
     if (!preprocessing(pcl_map, pcl_map_without_wall, pcl_sensor, tf_initial_pose)) {
       return false;
     }
-    grid_search_matching_.executeGridSearchMatching(pcl_map_without_wall, pcl_sensor);
+    if(grid_search_matching_.executeGridSearchMatching(pcl_map_without_wall, pcl_sensor)){
+      return false;
+    }
   } else {
     if (!preprocessing(pcl_map, pcl_sensor, tf_initial_pose)) {
       return false;
     }
-    grid_search_matching_.executeGridSearchMatching(pcl_map, pcl_sensor);
+    if(grid_search_matching_.executeGridSearchMatching(pcl_map, pcl_sensor)){
+      return false;
+    }
   }
 
   calibrated_sensor_result_ = grid_search_matching_.getRematchedResult();
