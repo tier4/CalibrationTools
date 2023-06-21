@@ -87,10 +87,15 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
         auto res = response_client.get();
         target_client.response = *res;
         target_client.estimated = true;
+        if(res->success){
         RCLCPP_INFO_STREAM(
           this->get_logger(), "Received service message: " << target_client.child_frame <<
             "(success = " << res->success <<
             " score = " << res->score << ")");
+        }else{
+        RCLCPP_ERROR_STREAM(
+          this->get_logger(), "calibration_failed: " << target_client.child_frame);
+        }
       };
 
     RCLCPP_INFO_STREAM(this->get_logger(), "Call service: " << target_client.child_frame);
