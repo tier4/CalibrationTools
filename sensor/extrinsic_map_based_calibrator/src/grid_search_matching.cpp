@@ -24,10 +24,10 @@ GridSearchMatching::GridSearchMatching() {}
 bool GridSearchMatching::executeGridSearchMatching(
   const PointCloudT::Ptr & map_pointcloud, const PointCloudT::Ptr & sensor_pointcloud)
 {
-  if (map_pointcloud == 0 || map_pointcloud->height == 0) {
+  if (map_pointcloud == 0 || map_pointcloud->height == 0|| map_pointcloud->width == 0) {
     std::cerr << "Map point cloud is empty" << std::endl;
     return false;
-  } else if (sensor_pointcloud == 0 || sensor_pointcloud->height == 0) {
+  } else if (sensor_pointcloud == 0 || sensor_pointcloud->height == 0||sensor_pointcloud->width == 0) {
     std::cerr << "Sensor point cloud is empty" << std::endl;
     return false;
   }
