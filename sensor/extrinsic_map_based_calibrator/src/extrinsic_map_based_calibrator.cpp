@@ -141,7 +141,7 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
     return false;
   }
   if (!sensor_pointcloud_msg_) {
-    RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
+    RCLCPP_ERROR(this->get_logger(), "Can not received sensor point cloud topic");
     return false;
   }
 
@@ -156,7 +156,11 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
     }
   }
   if (sensor_pointcloud_msg_->height == 0) {
-    RCLCPP_ERROR(this->get_logger(), "Can not received pandar left upper point cloud topic");
+    RCLCPP_ERROR(this->get_logger(), "Can not received sensor point cloud topic height = 0");
+    return false;
+  }
+  if (sensor_pointcloud_msg_->width == 0) {
+    RCLCPP_ERROR(this->get_logger(), "Can not received sensor point cloud topic width = 0");
     return false;
   }
 
@@ -167,12 +171,16 @@ bool ExtrinsicMapBasedCalibrator::mapBasedCalibration(const tf2::Transform & tf_
     if (!preprocessing(pcl_map, pcl_map_without_wall, pcl_sensor, tf_initial_pose)) {
       return false;
     }
-    grid_search_matching_.executeGridSearchMatching(pcl_map_without_wall, pcl_sensor);
+    if(!grid_search_matching_.executeGridSearchMatching(pcl_map_without_wall, pcl_sensor)){
+      return false;
+    }
   } else {
     if (!preprocessing(pcl_map, pcl_sensor, tf_initial_pose)) {
       return false;
     }
-    grid_search_matching_.executeGridSearchMatching(pcl_map, pcl_sensor);
+    if(!grid_search_matching_.executeGridSearchMatching(pcl_map, pcl_sensor)){
+      return false;
+    }
   }
 
   calibrated_sensor_result_ = grid_search_matching_.getRematchedResult();

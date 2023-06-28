@@ -90,6 +90,9 @@ bool ExtrinsicMapBasedPreprocessing::extractGroundPlane(
 
   // Obtain an idea of the ground plane using PCA
   // under the asumption that the axis with less variance will be the ground plane normal
+  if(pointcloud->size() < 3){
+    return false;
+  }
   pcl::PCA<pcl::PointXYZ> pca;
   pca.setInputCloud(pointcloud);
   Eigen::MatrixXf vectors = pca.getEigenVectors();
