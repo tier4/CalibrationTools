@@ -35,6 +35,7 @@
   <arg name="lost_frame_max_angle_diff" default="25.0"/>
   <arg name="lost_frame_interpolation_error" default="0.05"/>
   <arg name="lost_frame_max_acceleration" default="8.0"/>
+  <arg name="min_calibration_range" default="1.5"/>
   <arg name="max_calibration_range" default="80.0"/>
   <arg name="calibration_min_pca_eigenvalue" default="0.02"/>
   <arg name="calibration_eval_max_corr_distance" default="0.2"/>
@@ -99,6 +100,7 @@
       <param name="lost_frame_max_angle_diff" value="$(var lost_frame_max_angle_diff)"/>
       <param name="lost_frame_interpolation_error" value="$(var lost_frame_interpolation_error)"/>
       <param name="lost_frame_max_acceleration" value="$(var lost_frame_max_acceleration)"/>
+      <param name="min_calibration_range" value="$(var min_calibration_range)"/>
       <param name="max_calibration_range" value="$(var max_calibration_range)"/>
       <param name="calibration_min_pca_eigenvalue" value="$(var calibration_min_pca_eigenvalue)"/>
       <param name="calibration_eval_max_corr_distance" value="$(var calibration_eval_max_corr_distance)"/>
