@@ -115,28 +115,48 @@ protected:
     const std::vector<Eigen::Vector3d> & radar_detections,
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections);
 
-  // Parameters
-  std::string parent_frame_;
-  double lidar_background_model_leaf_size_;
-  double radar_background_model_leaf_size_;
-  double max_calibration_range_;
-  double background_model_timeout_;
-  double max_match_yaw_distance_;
-  double min_foreground_distance_;  // needs to be about at least double the leaf size
-  double background_extraction_timeout_;
-  double ransc_threshold_;
-  int rasac_max_iterations_;
-  double cluster_max_tolerance_;
-  int cluster_min_points_;
-  int cluster_max_points_;
+  rcl_interfaces::msg::SetParametersResult paramCallback(
+    const std::vector<rclcpp::Parameter> & parameters);
 
-  double reflector_radius_;
-  double reflector_max_height_;
-  double max_matching_distance_;
-  double max_initial_calibration_translation_error_;
-  double max_initial_calibration_rotation_error_;
+  struct Parameters
+  {
+    std::string parent_frame;
+    bool use_lidar_initial_crop_box_filter;
+    double lidar_initial_crop_box_min_x;
+    double lidar_initial_crop_box_min_y;
+    double lidar_initial_crop_box_min_z;
+    double lidar_initial_crop_box_max_x;
+    double lidar_initial_crop_box_max_y;
+    double lidar_initial_crop_box_max_z;
+    bool use_radar_initial_crop_box_filter;
+    double radar_initial_crop_box_min_x;
+    double radar_initial_crop_box_min_y;
+    double radar_initial_crop_box_min_z;
+    double radar_initial_crop_box_max_x;
+    double radar_initial_crop_box_max_y;
+    double radar_initial_crop_box_max_z;
+    double lidar_background_model_leaf_size;
+    double radar_background_model_leaf_size;
+    double max_calibration_range;
+    double background_model_timeout;
+    double max_match_yaw_distance;
+    double min_foreground_distance;  // needs to be about at least double the leaf size
+    double background_extraction_timeout;
+    double ransac_threshold;
+    int ransac_max_iterations;
+    double cluster_max_tolerance;
+    int cluster_min_points;
+    int cluster_max_points;
+
+    double reflector_radius;
+    double reflector_max_height;
+    double max_matching_distance;
+    double max_initial_calibration_translation_error;
+    double max_initial_calibration_rotation_error;
+  } parameters_;
 
   // ROS Interface
+  OnSetParametersCallbackHandle::SharedPtr set_param_res_;
   rclcpp::TimerBase::SharedPtr timer_;
   tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

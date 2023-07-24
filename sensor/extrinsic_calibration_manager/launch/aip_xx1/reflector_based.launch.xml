@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="vehicle_id" default="default"/>
-  <let name="sensor_model" value="aip_x1"/>
+  <let name="sensor_model" value="aip_xx1"/>
   <let name="parent_frame" value="base_link"/>
   <arg name="rviz"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_reflector_based_calibrator)/rviz/xx1.rviz"/>
@@ -9,7 +9,7 @@
   <let name="calibrate_sensor" value="true"/>
 
   <let name="input_lidar_pointcloud" value="/sensing/lidar/concatenated/pointcloud"/>
-  <let name="input_radar_objects" value="/objects"/>
+  <let name="input_radar_objects" value="/sensing/radar/front_center/objects_raw"/>
   <let name="radar_frame" value="ars408"/>
 
   <arg name="src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensors_calibration.yaml"/>
