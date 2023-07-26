@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="vehicle_id" default="default"/>
-  <let name="sensor_model" value="aip_xx1"/>
+  <let name="sensor_model" value="aip_x2"/>
   <arg name="camera_name" default=""/>
   <arg name="rviz" default="false"/>
 
