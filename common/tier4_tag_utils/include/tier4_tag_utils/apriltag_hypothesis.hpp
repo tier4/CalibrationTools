@@ -12,22 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__APRILTAG_HYPOTHESIS_HPP_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR__APRILTAG_HYPOTHESIS_HPP_
+#ifndef TIER4_TAG_UTILS__APRILTAG_HYPOTHESIS_HPP_
+#define TIER4_TAG_UTILS__APRILTAG_HYPOTHESIS_HPP_
 
-#include <extrinsic_tag_based_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
+#include <tier4_tag_utils/types.hpp>
 
 #include <image_geometry/pinhole_camera_model.h>
+
+#include <vector>
+
+namespace tier4_tag_utils
+{
 
 class ApriltagHypothesis
 {
 public:
+  ApriltagHypothesis() = default;
   ApriltagHypothesis(int id, image_geometry::PinholeCameraModel & pinhole_camera_model);
   ~ApriltagHypothesis();
+
+  ApriltagHypothesis(const ApriltagHypothesis &) = default;
+  ApriltagHypothesis(ApriltagHypothesis &&) = default;
+  ApriltagHypothesis & operator=(const ApriltagHypothesis &) = default;
+  ApriltagHypothesis & operator=(ApriltagHypothesis &&) = default;
 
   bool update(const std::vector<cv::Point2d> & corners, const rclcpp::Time & stamp);
   bool update(const rclcpp::Time & stamp);
@@ -82,9 +93,11 @@ protected:
   int id_;
   rclcpp::Time first_observation_timestamp_;
   rclcpp::Time last_observation_timestamp_;
-  image_geometry::PinholeCameraModel & pinhole_camera_model_;
+  image_geometry::PinholeCameraModel pinhole_camera_model_;
 
   std::vector<cv::Point2d> latest_corner_points_2d_, filtered_corner_points_2d_;
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__APRILTAG_HYPOTHESIS_HPP_
+}  // namespace tier4_tag_utils
+
+#endif  // TIER4_TAG_UTILS__APRILTAG_HYPOTHESIS_HPP_

@@ -12,19 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__LIDARTAG_HYPOTHESIS_HPP_
-#define EXTRINSIC_TAG_BASED_CALIBRATOR__LIDARTAG_HYPOTHESIS_HPP_
+#ifndef TIER4_TAG_UTILS__LIDARTAG_HYPOTHESIS_HPP_
+#define TIER4_TAG_UTILS__LIDARTAG_HYPOTHESIS_HPP_
 
-#include <extrinsic_tag_based_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
+#include <tier4_tag_utils/types.hpp>
+
+#include <vector>
+
+namespace tier4_tag_utils
+{
 
 class LidartagHypothesis
 {
 public:
-  LidartagHypothesis(int id);
+  LidartagHypothesis() = default;
+  explicit LidartagHypothesis(int id);
 
   bool update(
     const cv::Matx31d & pose_translation, const cv::Matx33d & pose_rotation, double tag_size,
@@ -117,4 +123,6 @@ protected:
   double estimated_speed_;
 };
 
-#endif  // EXTRINSIC_TAG_BASED_CALIBRATOR__LIDARTAG_HYPOTHESIS_HPP_
+}  // namespace tier4_tag_utils
+
+#endif  // TIER4_TAG_UTILS__LIDARTAG_HYPOTHESIS_HPP_

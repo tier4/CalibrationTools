@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 // #include "cv/precomp.hpp"
-#include "cv/sqpnp.hpp"
+#include "tier4_tag_utils/cv/sqpnp.hpp"
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/matx.hpp>

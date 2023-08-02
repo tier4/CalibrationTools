@@ -15,10 +15,7 @@ ament_export_include_directories(
   # COMPILE THE SOURCE
 #========================================================================
 ament_auto_add_executable(extrinsic_tag_based_calibrator
-  src/cv/sqpnp.cpp
   src/brute_force_matcher.cpp
-  src/lidartag_hypothesis.cpp
-  src/apriltag_hypothesis.cpp
   src/calibration_estimator.cpp
   src/extrinsic_tag_based_calibrator.cpp
   src/tag_calibrator_visualizer.cpp
