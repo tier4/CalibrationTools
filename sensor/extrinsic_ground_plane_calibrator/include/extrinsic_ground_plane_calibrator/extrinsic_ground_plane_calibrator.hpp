@@ -41,6 +41,7 @@
 #endif
 
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -50,7 +51,7 @@ using PointType = pcl::PointXYZ;
 class ExtrinsicGroundPlaneCalibrator : public rclcpp::Node
 {
 public:
-  ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options);
+  explicit ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
   void requestReceivedCallback(
@@ -86,6 +87,14 @@ protected:
   std::string lidar_base_frame_;  // the child for this calibration method must be a the base of a
                                   // lidar (probably different from the actual lidar tf)
   double marker_size_;
+  bool use_crop_box_filter_;
+  double crop_box_min_x_;
+  double crop_box_min_y_;
+  double crop_box_min_z_;
+  double crop_box_max_x_;
+  double crop_box_max_y_;
+  double crop_box_max_z_;
+  bool use_pca_rough_normal_;
   double max_inlier_distance_;
   int min_plane_points_;
   int min_plane_points_percentage_;

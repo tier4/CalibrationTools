@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_xx1"/>
+  <let name="base_frame" value="base_link"/>
+  <let name="parent_frame" value="sensor_kit_base_link"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_ground_plane_calibrator)/rviz/velodyne_top.rviz"/>
+  <arg name="rviz" default="true"/>
+
+  <!-- extrinsic_calibration_client -->
+  <arg name="src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensor_kit_calibration.yaml"/>
+  <arg name="dst_yaml" default="$(env HOME)/sensor_kit_calibration.yaml"/>
+
+  <log message="$(var src_yaml)"/>
+  <log message="$(var dst_yaml)"/>
+
+  <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="extrinsic_calibration_client" output="screen">
+    <param name="src_path" value="$(var src_yaml)"/>
+    <param name="dst_path" value="$(var dst_yaml)"/>
+  </node>
+
+  <!-- extrinsic_calibration_manager -->
+  <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
+    <param name="parent_frame" value="$(var parent_frame)"/>
+    <param name="child_frames" value="
+    [velodyne_top_base_link,
+    velodyne_left_base_link,
+    velodyne_right_base_link]"/>
+  </node>
+
+  <!-- velodyne_top_base_link: extrinsic_ground_plane_calibrator -->
+  <group>
+    <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
+      <arg name="ns" value="$(var parent_frame)/velodyne_top_base_link"/>
+      <arg name="base_frame" value="$(var base_frame)"/>
+      <arg name="parent_frame" value="$(var parent_frame)"/>
+      <arg name="child_frame" value="velodyne_top_base_link"/>
+      <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
+
+      <!-- The following parameters are only needed when calibrating in a closed space, where the ranges were hardcoded for experiment purposes -->
+      <!--arg name="crop_box_min_x" value="-2.0" />
+      <arg name="crop_box_min_y" value="-10.0" />
+      <arg name="crop_box_min_z" value="-10.0" />
+      <arg name="crop_box_max_x" value="6.0" />
+      <arg name="crop_box_max_y" value="0.0" />
+      <arg name="crop_box_max_z" value="0.0" />
+      <arg name="use_pca_rough_normal" value="false" /-->
+    </include>
+  </group>
+
+  <!-- velodyne_left_base_link: extrinsic_ground_plane_calibrator -->
+  <!--group>
+    <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
+      <arg name="ns" value="$(var parent_frame)/velodyne_left_base_link" />
+      <arg name="base_frame" value="$(var base_frame)" />
+      <arg name="parent_frame" value="$(var parent_frame)" />
+      <arg name="child_frame" value="velodyne_left_base_link" />
+      <arg name="pointcloud_topic" value="/sensing/lidar/left/pointcloud_raw" />
+    </include>
+  </group-->
+
+  <!-- velodyne_right_base_link: extrinsic_ground_plane_calibrator -->
+  <!--group>
+    <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
+      <arg name="ns" value="$(var parent_frame)/velodyne_right_base_link" />
+      <arg name="base_frame" value="$(var base_frame)" />
+      <arg name="parent_frame" value="$(var parent_frame)" />
+      <arg name="child_frame" value="velodyne_right_base_link" />
+      <arg name="pointcloud_topic" value="/sensing/lidar/right/pointcloud_raw" />
+    </include>
+  </group-->
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
+</launch>

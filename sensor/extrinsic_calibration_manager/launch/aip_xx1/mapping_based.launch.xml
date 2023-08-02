@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_xx1"/>
+
+  <let
+    name="camera_calibration_service_names"
+    value="[
+    /sensor_kit/sensor_kit_base_link/camera0/camera_link,
+    /sensor_kit/sensor_kit_base_link/camera1/camera_link,
+    /sensor_kit/sensor_kit_base_link/camera2/camera_link,
+    /sensor_kit/sensor_kit_base_link/camera3/camera_link,
+    /sensor_kit/sensor_kit_base_link/camera4/camera_link,
+    /sensor_kit/sensor_kit_base_link/camera5/camera_link,
+    /sensor_kit/sensor_kit_base_link/traffic_light_left_camera/camera_link]"
+  />
+
+  <let
+    name="lidar_calibration_service_names"
+    value="[
+    /sensor_kit/sensor_kit_base_link/velodyne_left_base_link,
+    /sensor_kit/sensor_kit_base_link/velodyne_right_base_link,
+    /sensors/base_link/velodyne_rear_base_link]"
+  />
+
+  <let
+    name="camera_calibration_sensor_kit_frames"
+    value="[
+    sensor_kit_base_link,
+    sensor_kit_base_link,
+    sensor_kit_base_link,
+    sensor_kit_base_link,
+    sensor_kit_base_link,
+    sensor_kit_base_link,
+    sensor_kit_base_link]"
+  />
+
+  <let name="lidar_calibration_sensor_kit_frames" value="[
+    sensor_kit_base_link,
+    sensor_kit_base_link,
+    base_link]"/>
+
+  <let
+    name="calibration_camera_frames"
+    value="[
+    camera0/camera_link,
+    camera1/camera_link,
+    camera2/camera_link,
+    camera3/camera_link,
+    camera4/camera_link,
+    camera5/camera_link,
+    traffic_light_left_camera/camera_link]"
+  />
+
+  <let
+    name="calibration_camera_optical_link_frames"
+    value="[
+    camera0/camera_optical_link,
+    camera1/camera_optical_link,
+    camera2/camera_optical_link,
+    camera3/camera_optical_link,
+    camera4/camera_optical_link,
+    camera5/camera_optical_link,
+    traffic_light_left_camera/camera_optical_link]"
+  />
+
+  <let name="calibration_lidar_base_frames" value="[
+    velodyne_left_base_link,
+    velodyne_right_base_link,
+    velodyne_rear_base_link]"/>
+
+  <let name="calibration_lidar_frames" value="[
+    velodyne_left,
+    velodyne_right,
+    velodyne_rear]"/>
+
+  <let name="mapping_lidar_frame" value="velodyne_top"/>
+  <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud"/>
+  <!--let name="predicted_objects" value="/perception/object_recognition/objects" /-->
+  <let name="detected_objects" value="/perception/object_recognition/detection/objects"/>
+
+  <let
+    name="calibration_camera_info_topics"
+    value="[
+    /sensing/camera/camera0/camera_info,
+    /sensing/camera/camera1/camera_info,
+    /sensing/camera/camera2/camera_info,
+    /sensing/camera/camera3/camera_info,
+    /sensing/camera/camera4/camera_info,
+    /sensing/camera/camera5/camera_info,
+    /sensing/camera/traffic_light/camera_info]"
+  />
+
+  <let
+    name="calibration_image_topics"
+    value="[
+    /sensing/camera/camera0/image_rect_color/compressed,
+    /sensing/camera/camera1/image_rect_color/compressed,
+    /sensing/camera/camera2/image_rect_color/compressed,
+    /sensing/camera/camera3/image_rect_color/compressed,
+    /sensing/camera/camera4/image_rect_color/compressed,
+    /sensing/camera/camera5/image_rect_color/compressed,
+    /sensing/camera/traffic_light/image_rect_color/compressed]"
+  />
+
+  <let
+    name="calibration_pointcloud_topics"
+    value="[
+    /sensing/lidar/left/outlier_filtered/pointcloud,
+    /sensing/lidar/right/outlier_filtered/pointcloud,
+    /sensing/lidar/rear/outlier_filtered/pointcloud]"
+  />
+
+  <arg name="rviz"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/xx1.rviz"/>
+
+  <arg name="sensors_src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensors_calibration.yaml"/>
+  <arg name="sensors_dst_yaml" default="$(env HOME)/sensors_calibration.yaml"/>
+
+  <arg name="sensor_kit_src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensor_kit_calibration.yaml"/>
+  <arg name="sensor_kit_dst_yaml" default="$(env HOME)/sensor_kit_calibration.yaml"/>
+
+  <group>
+    <!--While we develop the camera-lidar we avoid doing lidar-lidar -->
+    <!-- extrinsic_calibration_client -->
+    <push-ros-namespace namespace="sensors"/>
+    <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="extrinsic_calibration_client" output="screen">
+      <param name="src_path" value="$(var sensors_src_yaml)"/>
+      <param name="dst_path" value="$(var sensors_dst_yaml)"/>
+    </node>
+
+    <!-- extrinsic_calibration_manager -->
+    <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
+      <param name="parent_frame" value="base_link"/>
+      <param name="child_frames" value="[]"/>
+      <param name="child_frames" value="[velodyne_rear_base_link]"/>
+    </node>
+  </group>
+
+  <group>
+    <!-- extrinsic_calibration_client -->
+    <push-ros-namespace namespace="sensor_kit"/>
+    <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="extrinsic_calibration_client" output="screen">
+      <param name="src_path" value="$(var sensor_kit_src_yaml)"/>
+      <param name="dst_path" value="$(var sensor_kit_dst_yaml)"/>
+    </node>
+
+    <!-- extrinsic_calibration_manager -->
+    <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
+      <param name="parent_frame" value="sensor_kit_base_link"/>
+      <param name="child_frames" value="[velodyne_left_base_link, velodyne_right_base_link]"/>
+      <!--param name="child_frames" value="[camera2/camera_link]" /-->
+    </node>
+  </group>
+
+  <!-- mapping based calibrator -->
+  <include file="$(find-pkg-share extrinsic_mapping_based_calibrator)/launch/calibrator.launch.xml">
+    <arg name="ns" value=""/>
+
+    <arg name="camera_calibration_service_names" value="$(var camera_calibration_service_names)"/>
+    <arg name="lidar_calibration_service_names" value="$(var lidar_calibration_service_names)"/>
+    <arg name="camera_calibration_sensor_kit_frames" value="$(var camera_calibration_sensor_kit_frames)"/>
+    <arg name="lidar_calibration_sensor_kit_frames" value="$(var lidar_calibration_sensor_kit_frames)"/>
+    <arg name="calibration_camera_frames" value="$(var calibration_camera_frames)"/>
+    <arg name="calibration_camera_optical_link_frames" value="$(var calibration_camera_optical_link_frames)"/>
+    <arg name="calibration_lidar_base_frames" value="$(var calibration_lidar_base_frames)"/>
+    <arg name="calibration_lidar_frames" value="$(var calibration_lidar_frames)"/>
+    <arg name="mapping_lidar_frame" value="$(var mapping_lidar_frame)"/>
+
+    <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)"/>
+    <!--arg name="predicted_objects" value="$(var predicted_objects)" /-->
+    <arg name="detected_objects" value="$(var detected_objects)"/>
+
+    <arg name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
+    <arg name="calibration_image_topics" value="$(var calibration_image_topics)"/>
+    <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
+
+    <arg name="lost_frame_max_acceleration" value="10.0"/>
+    <arg name="calibration_skip_keyframes" value="7"/>
+  </include>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
+</launch>

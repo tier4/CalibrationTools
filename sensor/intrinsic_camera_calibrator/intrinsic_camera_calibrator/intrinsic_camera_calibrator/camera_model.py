@@ -193,7 +193,8 @@ class CameraModel:
             "cols": 3,
             "data": [round(e.item(), 5) for e in self.k.flatten()],
         }
-        d["distortion_model"] = {
+        d["distortion_model"] = "plumb_bob"
+        d["distortion_coefficients"] = {
             "rows": 1,
             "cols": 5,
             "data": [round(e.item(), 5) for e in self.d.flatten()],

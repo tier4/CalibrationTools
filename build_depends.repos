@@ -1,4 +1,8 @@
 repositories:
+  autoware/autoware_msgs:
+    type: git
+    url: https://github.com/autowarefoundation/autoware_msgs.git
+    version: main
   autoware/universe:
     type: git
     url: https://github.com/tier4/autoware.universe.git
@@ -27,3 +31,7 @@ repositories:
     type: git
     url: git@github.com:christianrauch/apriltag_msgs.git
     version: master
+  vendor/ndt_omp:
+    type: git
+    url: https://github.com/tier4/ndt_omp.git
+    version: tier4/main

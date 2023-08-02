@@ -60,7 +60,7 @@ Topic information: Topic: /localization/pose_estimator/pose_with_covariance | Ty
                    Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 57309 | Serialization Format: cdr
                    Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 2 | Serialization Format: cdr
                    Topic: /sensing/imu/tamagawa/imu_raw | Type: sensor_msgs/msg/Imu | Count: 8076 | Serialization Format: cdr
-                   Topic: /sensing/vehicle_velocity_converter/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 8275 | Serialization Format: cdr
+                   Topic: /vehicle/status/velocity_status | Type: autoware_auto_vehicle_msgs/msg/VelocityReport | Count: 8275 | Serialization Format: cdr
 
 ```
 
@@ -143,7 +143,16 @@ Done!
 
 ### Overview
 
-The **Deviation Estimator** estimates the standard deviation and bias for velocity and yaw bias.
+The **Deviation Estimator** estimates the standard deviation and bias for velocity and yaw bias, by comparing the velocity and gyro observations with ground truth poses (e.g. from LiDAR-based localization).
+
+Here are some assumptions made for input data:
+
+- The data should have accurate localization results. It doesn't need to be strictly precise, but data that is obviously incorrect should be avoided. In case of NDT in Autoware, it should not have any TP or NVTL warnings from the ndt_scan_matcher.
+- The data should cover a reasonable duration of driving. A few minutes of data is sufficient. It is desirable to have a distance of approximately 500 meters. (For example, around 2 minutes at a speed of 15 km/h).
+- The data should include sections of driving in a straight line. This is necessary for estimating velocity-related parameters. Having at least one minute of straight line driving is enough.
+- The data should cover the expected speed range during operation.
+- [Optional] Ideally, the data should be recorded as recently as possible. Especially in cases where IMU or tire replacement has occurred, data recorded before those changes may not provide accurate estimations.
+- [Optional] The data should cover various driving behaviors expected during operation, such as right turns, left turns, acceleration, and deceleration.
 
 ### Launch
 

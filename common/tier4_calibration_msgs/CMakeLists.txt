@@ -24,8 +24,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/Empty.srv"
   "srv/FilesSrv.srv"
   "srv/FilesListSrv.srv"
+  "srv/CalibrationDatabase.srv"
   "srv/ExtrinsicCalibrationManager.srv"
   "srv/ExtrinsicCalibrator.srv"
+  "srv/Frame.srv"
   "srv/IntrinsicsOptimizer.srv"
   DEPENDENCIES
     std_msgs
