@@ -28,7 +28,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: lidar
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -179,7 +179,7 @@ Visualization Manager:
       Enabled: true
       Name: lidar_detections
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -205,7 +205,7 @@ Visualization Manager:
       Display Twist: true
       Display UUID: true
       Display Velocity: true
-      Enabled: false
+      Enabled: true
       Line Width: 0.029999999329447746
       MOTORCYCLE:
         Alpha: 0.9990000128746033
@@ -216,6 +216,7 @@ Visualization Manager:
       PEDESTRIAN:
         Alpha: 0.9990000128746033
         Color: 255; 192; 203
+      Polygon Type: 3d
       TRAILER:
         Alpha: 0.9990000128746033
         Color: 30; 144; 255
@@ -227,17 +228,17 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /sensing/radar/front_center/debug/detected_objects
+        Value: /sensing/radar/front_center/detected_objects
       UNKNOWN:
         Alpha: 0.9990000128746033
         Color: 255; 255; 255
-      Value: false
+      Value: true
+      Visualization Type: Normal
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: radar_detections
       Namespaces:
-        center: true
-        line: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -283,8 +284,7 @@ Visualization Manager:
       Enabled: true
       Name: tracking_markers
       Namespaces:
-        calibrated: true
-        initial: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -303,6 +303,24 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: " /matches_markers"
+      Value: true
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 40
+      Reference Frame: <Fixed Frame>
       Value: true
   Enabled: true
   Global Options:
