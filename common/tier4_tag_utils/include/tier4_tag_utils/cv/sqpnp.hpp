@@ -36,8 +36,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef CV__SQPNP_HPP_
-#define CV__SQPNP_HPP_
+#ifndef TIER4_TAG_UTILS__CV__SQPNP_HPP_
+#define TIER4_TAG_UTILS__CV__SQPNP_HPP_
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/matx.hpp>
@@ -192,4 +192,4 @@ private:
 }  // namespace sqpnp
 }  // namespace cv
 
-#endif  // CV__SQPNP_HPP_
+#endif  // TIER4_TAG_UTILS__CV__SQPNP_HPP_

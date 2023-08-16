@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="ns" default=""/>
+
+  <!-- Frame configuration -->
+  <arg name="base_frame" default="base_link"/>
+
+  <arg name="lidar_sensor_kit_frames"/>
+  <arg name="calibration_lidar_parent_frames"/>
+  <arg name="lidar_calibration_service_names"/>
+
+  <arg name="camera_sensor_kit_frames"/>
+  <arg name="calibration_camera_parent_frames"/>
+  <arg name="camera_calibration_service_names"/>
+
+  <arg name="main_calibration_sensor_frame"/>
+  <arg name="calibration_lidar_frames"/>
+  <arg name="calibration_camera_frames"/>
+
+  <!-- Topic configuration -->
+  <arg name="calibration_lidar_detections_topics"/>
+  <arg name="calibration_image_detections_topics"/>
+  <arg name="calibration_camera_info_topics"/>
+  <arg name="calibration_image_topics"/>
+
+  <!-- Tag configuration-->
+  <arg name="lidartag_to_apriltag_scale" default="0.75"/>
+
+  <arg name="waypoint_tag_family" default="tag16h5"/>
+  <arg name="waypoint_tag_rows" default="1"/>
+  <arg name="waypoint_tag_cols" default="1"/>
+  <arg name="waypoint_tag_size" default="0.6"/>
+  <arg name="waypoint_tag_spacing" default="0.2"/>
+  <arg name="waypoint_tag_ids"/>
+
+  <arg name="ground_tag_family" default="tag16h5"/>
+  <arg name="ground_tag_rows" default="1"/>
+  <arg name="ground_tag_cols" default="1"/>
+  <arg name="ground_tag_size" default="0.163"/>
+  <arg name="ground_tag_spacing" default="0.2"/>
+  <arg name="ground_tag_ids"/>
+
+  <arg name="wheel_tag_family" default="tag16h5"/>
+  <arg name="wheel_tag_rows" default="1"/>
+  <arg name="wheel_tag_cols" default="1"/>
+  <arg name="wheel_tag_size" default="0.6"/>
+  <arg name="wheel_tag_spacing" default="0.2"/>
+  <arg name="left_wheel_tag_id"/>
+  <arg name="right_wheel_tag_id"/>
+
+  <arg name="auxiliar_tag_family" default="tag16h5"/>
+  <arg name="auxiliar_tag_rows" default="1"/>
+  <arg name="auxiliar_tag_cols" default="1"/>
+  <arg name="auxiliar_tag_size" default="0.2"/>
+  <arg name="auxiliar_tag_spacing" default="0.2"/>
+  <arg name="auxiliar_tag_ids" default="[-1]"/>
+
+  <!-- Initial intrinsics calibration -->
+  <arg name="initial_intrinsic_calibration_board_type" default="apriltag"/>
+  <arg name="initial_intrinsic_calibration_tangent_distortion" default="true"/>
+  <arg name="initial_intrinsic_calibration_radial_distortion_coeffs" default="2"/>
+  <arg name="initial_intrinsic_calibration_debug" default="true"/>
+
+  <arg name="initial_intrinsic_calibration_tag_family" default="tag16h5"/>
+  <arg name="initial_intrinsic_calibration_tag_rows" default="1"/>
+  <arg name="initial_intrinsic_calibration_tag_cols" default="1"/>
+  <arg name="initial_intrinsic_calibration_tag_size" default="0.6"/>
+  <arg name="initial_intrinsic_calibration_tag_spacing" default="0.2"/>
+  <arg name="intrinsic_calibration_tag_ids"/>
+
+  <arg name="initial_intrinsic_calibration_board_cols" default="8"/>
+  <arg name="initial_intrinsic_calibration_board_rows" default="6"/>
+
+  <!-- Optimization configuration -->
+  <arg name="ba_optimize_intrinsics" default="true"/>
+  <arg name="ba_share_intrinsics" default="true"/>
+  <arg name="ba_force_shared_ground_plane" default="true"/>
+  <arg name="ba_fixed_ground_plane_model" default="false"/>
+  <arg name="ba_fixed_ground_plane_model_a" default="-0.015014"/>
+  <arg name="ba_fixed_ground_plane_model_b" default="0.028632"/>
+  <arg name="ba_fixed_ground_plane_model_c" default="0.999477"/>
+  <arg name="ba_fixed_ground_plane_model_d" default="2.849738"/>
+
+  <!-- Apriltag detector configuration -->
+  <arg name="apriltag_max_hamming" default="0"/>
+  <arg name="apriltag_min_margin" default="50.0"/>
+  <arg name="apriltag_max_out_of_plane_angle" default="90.0"/>
+  <arg name="apriltag_max_reproj_error" default="10.0"/>
+  <arg name="apriltag_max_homography_error" default="0.5"/>
+  <arg name="apriltag_quad_decimate" default="1.0"/>
+  <arg name="apriltag_quad_sigma" default="0.0"/>
+  <arg name="apriltag_nthreads" default="12"/>
+  <arg name="apriltag_debug" default="false"/>
+  <arg name="apriltag_refine_edges" default="true"/>
+
+  <group>
+    <push-ros-namespace namespace="$(var ns)"/>
+    <node pkg="extrinsic_tag_based_base_calibrator" exec="extrinsic_tag_based_base_calibrator" name="extrinsic_tag_based_base_calibrator" output="screen">
+      <!-- Frame configuration -->
+      <param name="base_frame" value="$(var base_frame)"/>
+
+      <param name="lidar_sensor_kit_frames" value="$(var lidar_sensor_kit_frames)"/>
+      <param name="calibration_lidar_parent_frames" value="$(var calibration_lidar_parent_frames)"/>
+      <param name="lidar_calibration_service_names" value="$(var lidar_calibration_service_names)"/>
+
+      <param name="camera_sensor_kit_frames" value="$(var camera_sensor_kit_frames)"/>
+      <param name="calibration_camera_parent_frames" value="$(var calibration_camera_parent_frames)"/>
+      <param name="camera_calibration_service_names" value="$(var camera_calibration_service_names)"/>
+
+      <param name="main_calibration_sensor_frame" value="$(var main_calibration_sensor_frame)"/>
+      <param name="calibration_lidar_frames" value="$(var calibration_lidar_frames)"/>
+      <param name="calibration_camera_frames" value="$(var calibration_camera_frames)"/>
+
+      <!-- Topic configuration -->
+      <param name="calibration_lidar_detections_topics" value="$(var calibration_lidar_detections_topics)"/>
+      <param name="calibration_image_detections_topics" value="$(var calibration_image_detections_topics)"/>
+      <param name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
+      <param name="calibration_image_topics" value="$(var calibration_image_topics)"/>
+
+      <!-- Tag configuration-->
+      <param name="lidartag_to_apriltag_scale" value="$(var lidartag_to_apriltag_scale)"/>
+
+      <param name="waypoint_tag_family" value="$(var waypoint_tag_family)"/>
+      <param name="waypoint_tag_rows" value="$(var waypoint_tag_rows)"/>
+      <param name="waypoint_tag_cols" value="$(var waypoint_tag_cols)"/>
+      <param name="waypoint_tag_size" value="$(var waypoint_tag_size)"/>
+      <param name="waypoint_tag_spacing" value="$(var waypoint_tag_spacing)"/>
+      <param name="waypoint_tag_ids" value="$(var waypoint_tag_ids)"/>
+
+      <param name="ground_tag_family" value="$(var ground_tag_family)"/>
+      <param name="ground_tag_rows" value="$(var ground_tag_rows)"/>
+      <param name="ground_tag_cols" value="$(var ground_tag_cols)"/>
+      <param name="ground_tag_size" value="$(var ground_tag_size)"/>
+      <param name="ground_tag_spacing" value="$(var ground_tag_spacing)"/>
+      <param name="ground_tag_ids" value="$(var ground_tag_ids)"/>
+
+      <param name="auxiliar_tag_family" value="$(var auxiliar_tag_family)"/>
+      <param name="auxiliar_tag_rows" value="$(var auxiliar_tag_rows)"/>
+      <param name="auxiliar_tag_cols" value="$(var auxiliar_tag_cols)"/>
+      <param name="auxiliar_tag_size" value="$(var auxiliar_tag_size)"/>
+      <param name="auxiliar_tag_spacing" value="$(var auxiliar_tag_spacing)"/>
+      <param name="auxiliar_tag_ids" value="$(var auxiliar_tag_ids)"/>
+
+      <param name="wheel_tag_family" value="$(var wheel_tag_family)"/>
+      <param name="wheel_tag_rows" value="$(var wheel_tag_rows)"/>
+      <param name="wheel_tag_cols" value="$(var wheel_tag_cols)"/>
+      <param name="wheel_tag_size" value="$(var wheel_tag_size)"/>
+      <param name="wheel_tag_spacing" value="$(var wheel_tag_spacing)"/>
+      <param name="left_wheel_tag_id" value="$(var left_wheel_tag_id)"/>
+      <param name="right_wheel_tag_id" value="$(var right_wheel_tag_id)"/>
+
+      <!-- Initial intrinsics calibration -->
+      <param name="initial_intrinsic_calibration_board_type" value="$(var initial_intrinsic_calibration_board_type)"/>
+      <param name="initial_intrinsic_calibration_tangent_distortion" value="$(var initial_intrinsic_calibration_tangent_distortion)"/>
+      <param name="initial_intrinsic_calibration_radial_distortion_coeffs" value="$(var initial_intrinsic_calibration_radial_distortion_coeffs)"/>
+      <param name="initial_intrinsic_calibration_debug" value="$(var initial_intrinsic_calibration_debug)"/>
+
+      <param name="initial_intrinsic_calibration_tag_family" value="$(var initial_intrinsic_calibration_tag_family)"/>
+      <param name="initial_intrinsic_calibration_tag_rows" value="$(var initial_intrinsic_calibration_tag_rows)"/>
+      <param name="initial_intrinsic_calibration_tag_cols" value="$(var initial_intrinsic_calibration_tag_cols)"/>
+      <param name="initial_intrinsic_calibration_tag_size" value="$(var initial_intrinsic_calibration_tag_size)"/>
+      <param name="initial_intrinsic_calibration_tag_spacing" value="$(var initial_intrinsic_calibration_tag_spacing)"/>
+      <param name="intrinsic_calibration_tag_ids" value="$(var intrinsic_calibration_tag_ids)"/>
+
+      <param name="initial_intrinsic_calibration_board_cols" value="$(var initial_intrinsic_calibration_board_cols)"/>
+      <param name="initial_intrinsic_calibration_board_rows" value="$(var initial_intrinsic_calibration_board_rows)"/>
+
+      <!-- Optimization configuration -->
+      <param name="ba_optimize_intrinsics" value="$(var ba_optimize_intrinsics)"/>
+      <param name="ba_share_intrinsics" value="$(var ba_share_intrinsics)"/>
+      <param name="ba_force_shared_ground_plane" value="$(var ba_force_shared_ground_plane)"/>
+      <param name="ba_fixed_ground_plane_model" value="$(var ba_fixed_ground_plane_model)"/>
+      <param name="ba_fixed_ground_plane_model_a" value="$(var ba_fixed_ground_plane_model_a)"/>
+      <param name="ba_fixed_ground_plane_model_b" value="$(var ba_fixed_ground_plane_model_b)"/>
+      <param name="ba_fixed_ground_plane_model_c" value="$(var ba_fixed_ground_plane_model_c)"/>
+      <param name="ba_fixed_ground_plane_model_d" value="$(var ba_fixed_ground_plane_model_d)"/>
+
+      <!-- Apriltag detector configuration -->
+      <param name="apriltag_max_hamming" value="$(var apriltag_max_hamming)"/>
+      <param name="apriltag_min_margin" value="$(var apriltag_min_margin)"/>
+      <param name="apriltag_max_homography_error" value="$(var apriltag_max_homography_error)"/>
+      <param name="apriltag_quad_decimate" value="$(var apriltag_quad_decimate)"/>
+      <param name="apriltag_quad_sigma" value="$(var apriltag_quad_sigma)"/>
+      <param name="apriltag_nthreads" value="$(var apriltag_nthreads)"/>
+      <param name="apriltag_debug" value="$(var apriltag_debug)"/>
+      <param name="apriltag_refine_edges" value="$(var apriltag_refine_edges)"/>
+    </node>
+
+    <node pkg="extrinsic_tag_based_base_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
+  </group>
+</launch>

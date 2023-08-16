@@ -48,7 +48,7 @@ void transformPointcloud(
  */
 template <typename PointcloudType>
 typename PointcloudType::Ptr cropPointCloud(
-  const typename PointcloudType::Ptr & pointcloud, double max_range);
+  const typename PointcloudType::Ptr & pointcloud, double min_range, double max_range);
 
 /*!
  * Interpolate a transform between two points in time
@@ -137,6 +137,6 @@ void findBestTransform(
 template <class PointType>
 void cropTargetPointcloud(
   const typename pcl::PointCloud<PointType>::Ptr & initial_source_aligned_pc_ptr,
-  typename pcl::PointCloud<PointType>::Ptr & target_dense_pc_ptr, float margin);
+  typename pcl::PointCloud<PointType>::Ptr & target_dense_pc_ptr, float max_radius);
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__UTILS_HPP_

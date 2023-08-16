@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cv/sqpnp.hpp>
 #include <extrinsic_tag_based_calibrator/tag_calibrator_visualizer.hpp>
+#include <tier4_tag_utils/cv/sqpnp.hpp>
 
 #include <limits>
 
@@ -31,7 +31,7 @@ void TagCalibratorVisualizer::setTagSizes(
 {
   assert(tag_ids.size() == tag_sizes.size());
 
-  for (unsigned long i = 0; i < tag_ids.size(); ++i) {
+  for (std::size_t i = 0; i < tag_ids.size(); ++i) {
     tag_sizes_map_[tag_ids[i]] = tag_sizes[i];
   }
 }
@@ -117,8 +117,8 @@ void TagCalibratorVisualizer::drawCalibrationStatus(
 }
 
 void TagCalibratorVisualizer::drawLidartagHypotheses(
-  const std::vector<std::shared_ptr<LidartagHypothesis>> & h_vector, HypothesisType type,
-  rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array)
+  const std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> & h_vector,
+  HypothesisType type, rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array)
 {
   std::string s = type == HypothesisType::Active ? "active" : "converged";
   double alpha = type == HypothesisType::Active ? 0.2 : 1.0;
@@ -126,7 +126,7 @@ void TagCalibratorVisualizer::drawLidartagHypotheses(
   cv::Matx33d base_lidar_rotation_matrix = base_lidar_transform_.rotation();
   cv::Matx31d base_lidar_translation_vector = base_lidar_transform_.translation();
 
-  for (unsigned long i = 0; i < h_vector.size(); i++) {
+  for (std::size_t i = 0; i < h_vector.size(); i++) {
     const auto & h = h_vector[i];
     const auto & corners = h->getFilteredPoints();
     const auto & center = h->getCenter();
@@ -175,7 +175,7 @@ void TagCalibratorVisualizer::drawLidartagHypotheses(
     center_marker_bcs.pose.orientation.w = 1.0;
     marker_array.markers.push_back(center_marker_bcs);
 
-    for (unsigned long i = 0; i < corners.size(); ++i) {
+    for (std::size_t i = 0; i < corners.size(); ++i) {
       geometry_msgs::msg::Point p;
       p.x = corners[i].x;
       p.y = corners[i].y;
@@ -190,8 +190,8 @@ void TagCalibratorVisualizer::drawLidartagHypotheses(
 }
 
 void TagCalibratorVisualizer::drawApriltagHypotheses(
-  const std::vector<std::shared_ptr<ApriltagHypothesis>> & h_vector, HypothesisType type,
-  rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array)
+  const std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> & h_vector,
+  HypothesisType type, rclcpp::Time & stamp, visualization_msgs::msg::MarkerArray & marker_array)
 {
   if (!valid_camera_lidar_transform_) {
     return;
@@ -203,7 +203,7 @@ void TagCalibratorVisualizer::drawApriltagHypotheses(
   cv::Matx33d lidar_camera_rotation_matrix = lidar_camera_transform_.rotation();
   cv::Matx31d lidar_camera_translation_vector = lidar_camera_transform_.translation();
 
-  for (unsigned long i = 0; i < h_vector.size(); i++) {
+  for (std::size_t i = 0; i < h_vector.size(); i++) {
     const auto & h = h_vector[i];
     const auto & corners = h->getFilteredPoints3d();
     const auto & center = h->getCenter3d();
@@ -333,7 +333,7 @@ void TagCalibratorVisualizer::drawCalibrationZone(
   const int num_points = 30;
 
   for (int i = 0; i < num_points; ++i) {
-    angle = min_angle + (i / float(num_points - 1)) * (max_angle - min_angle);
+    angle = min_angle + (i / static_cast<float>(num_points - 1)) * (max_angle - min_angle);
 
     camera_to_base_msg(
       max_calib_dist * std::cos(angle), max_calib_dist * std::sin(angle), base_camera_translation,
@@ -357,7 +357,7 @@ void TagCalibratorVisualizer::drawCalibrationZone(
   line_strip.points.push_back(p_msg_bcs);
 
   for (int i = 0; i < num_points; ++i) {
-    angle = max_angle + (i / float(num_points - 1)) * (min_angle - max_angle);
+    angle = max_angle + (i / static_cast<float>(num_points - 1)) * (min_angle - max_angle);
     camera_to_base_msg(
       min_calib_dist * std::cos(angle), min_calib_dist * std::sin(angle), base_camera_translation,
       base_camera_rotation, p_msg_bcs);
@@ -415,7 +415,7 @@ void TagCalibratorVisualizer::drawCalibrationStatusText(
 
   marker_array.markers.push_back(text_marker);
 
-  for (unsigned long i = 0; i < h_vector.size(); i++) {
+  for (std::size_t i = 0; i < h_vector.size(); i++) {
     const auto & h = h_vector[i];
     const auto & center = h->getCenter();
     int id = h->getId();
@@ -648,7 +648,7 @@ void TagCalibratorVisualizer::drawLidarTagDetections(
     cv::Matx33d camera_lidar_rotation_matrix = camera_lidar_transform_.rotation();
     cv::Matx31d camera_lidar_translation_vector = camera_lidar_transform_.translation();
 
-    for (unsigned long i = 0; i < detection.vertices.size(); i++) {
+    for (std::size_t i = 0; i < detection.vertices.size(); i++) {
       const auto & corner = detection.vertices[i];
 
       cv::Mat p_lcs = (cv::Mat_<double>(3, 1) << corner.x, corner.y, corner.z);
@@ -735,7 +735,7 @@ void TagCalibratorVisualizer::displayImagePoints(
 
   visualization_msgs::msg::MarkerArray marker_array;
 
-  for (unsigned long i = 0; i < points.size(); i++) {
+  for (std::size_t i = 0; i < points.size(); i++) {
     const cv::Point & p_img = points[i];
     cv::Point offset(30, 30);
 
@@ -788,7 +788,7 @@ void TagCalibratorVisualizer::displayObjectPoints(
 {
   visualization_msgs::msg::MarkerArray marker_array;
 
-  for (unsigned long i = 0; i < points.size(); i++) {
+  for (std::size_t i = 0; i < points.size(); i++) {
     const cv::Point3d & p_obj = points[i];
     cv::Point offset(0.05, 0.05);
 

@@ -59,12 +59,16 @@ void transformPointcloud(
 
 template <typename PointcloudType>
 typename PointcloudType::Ptr cropPointCloud(
-  const typename PointcloudType::Ptr & pointcloud, double max_range)
+  const typename PointcloudType::Ptr & pointcloud, double min_range, double max_range)
 {
   typename PointcloudType::Ptr tmp_ptr(new PointcloudType());
   tmp_ptr->reserve(pointcloud->size());
+  const float sqr_min_range = min_range * min_range;
+  const float sqr_max_range = max_range * max_range;
   for (const auto & p : pointcloud->points) {
-    if (std::sqrt(p.x * p.x + p.y * p.y + p.z * p.z) < max_range) {
+    const float sqr_r = p.x * p.x + p.y * p.y + p.z * p.z;
+
+    if (sqr_r >= sqr_min_range && sqr_r < sqr_max_range) {
       tmp_ptr->points.push_back(p);
     }
   }
@@ -294,7 +298,7 @@ template float sourceTargetDistance<PointType>(
   const Eigen::Matrix4f & transform, float max_corr_distance);
 
 template PointcloudType::Ptr cropPointCloud<PointcloudType>(
-  const PointcloudType::Ptr & pointcloud, double max_range);
+  const PointcloudType::Ptr & pointcloud, double min_range, double max_range);
 
 template void findBestTransform<pcl::Registration<PointType, PointType>, PointType>(
   const std::vector<Eigen::Matrix4f> & input_transforms,

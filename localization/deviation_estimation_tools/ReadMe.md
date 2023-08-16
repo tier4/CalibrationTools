@@ -60,7 +60,7 @@ Topic information: Topic: /localization/pose_estimator/pose_with_covariance | Ty
                    Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 57309 | Serialization Format: cdr
                    Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 2 | Serialization Format: cdr
                    Topic: /sensing/imu/tamagawa/imu_raw | Type: sensor_msgs/msg/Imu | Count: 8076 | Serialization Format: cdr
-                   Topic: /sensing/vehicle_velocity_converter/twist_with_covariance | Type: geometry_msgs/msg/TwistWithCovarianceStamped | Count: 8275 | Serialization Format: cdr
+                   Topic: /vehicle/status/velocity_status | Type: autoware_auto_vehicle_msgs/msg/VelocityReport | Count: 8275 | Serialization Format: cdr
 
 ```
 

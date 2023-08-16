@@ -39,8 +39,8 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#ifndef CV___PRECOMP_HPP_
-#define CV___PRECOMP_HPP_
+#ifndef TIER4_TAG_UTILS__CV___PRECOMP_HPP_
+#define TIER4_TAG_UTILS__CV___PRECOMP_HPP_
 
 #include "opencv2/core/utility.hpp"
 
@@ -136,4 +136,4 @@ static inline bool haveCollinearPoints(const Mat & m, int count)
 
 int checkChessboardBinary(const cv::Mat & img, const cv::Size & size);
 
-#endif  // CV___PRECOMP_HPP_
+#endif  // TIER4_TAG_UTILS__CV___PRECOMP_HPP_

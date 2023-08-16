@@ -264,8 +264,8 @@ void CalibrationMapper::mappingThreadWorker()
     VoxelGridWrapper<PointType> voxel_grid;
     frame->pointcloud_subsampled_ = PointcloudType::Ptr(new PointcloudType());
     PointcloudType::Ptr aligned_cloud_ptr(new PointcloudType());
-    PointcloudType::Ptr cropped_cloud_ptr =
-      cropPointCloud<PointcloudType>(frame->pointcloud_raw_, parameters_->mapping_max_range_);
+    PointcloudType::Ptr cropped_cloud_ptr = cropPointCloud<PointcloudType>(
+      frame->pointcloud_raw_, parameters_->mapping_min_range_, parameters_->mapping_max_range_);
 
     voxel_grid.setLeafSize(
       parameters_->leaf_size_input_, parameters_->leaf_size_input_, parameters_->leaf_size_input_);
@@ -365,8 +365,8 @@ void CalibrationMapper::mappingThreadWorker()
 void CalibrationMapper::initLocalMap(Frame::Ptr frame)
 {
   data_->local_map_ptr_.reset(new PointcloudType());
-  PointcloudType::Ptr cropped_cloud_ptr =
-    cropPointCloud<PointcloudType>(frame->pointcloud_raw_, parameters_->mapping_max_range_);
+  PointcloudType::Ptr cropped_cloud_ptr = cropPointCloud<PointcloudType>(
+    frame->pointcloud_raw_, parameters_->mapping_min_range_, parameters_->mapping_max_range_);
   pcl::VoxelGrid<PointType> voxel_grid;
   voxel_grid.setLeafSize(
     parameters_->leaf_size_local_map_, parameters_->leaf_size_local_map_,
@@ -617,7 +617,7 @@ void CalibrationMapper::publisherTimerCallback()
 
     pcl::transformPointCloud(
       *tmp_mcs_ptr, *tmp_mcs_ptr, data_->processed_frames_.back()->pose_.inverse());
-    tmp_mcs_ptr = cropPointCloud<PointcloudType>(tmp_mcs_ptr, parameters_->viz_max_range_);
+    tmp_mcs_ptr = cropPointCloud<PointcloudType>(tmp_mcs_ptr, 0.0, parameters_->viz_max_range_);
     pcl::transformPointCloud(*tmp_mcs_ptr, *tmp_mcs_ptr, data_->processed_frames_.back()->pose_);
 
     pcl::VoxelGrid<PointType> voxel_grid;

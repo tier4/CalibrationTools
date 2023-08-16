@@ -66,7 +66,8 @@ protected:
    * @retval Source to distance pointcloud distance
    */
   PointcloudType::Ptr getDensePointcloudFromMap(
-    const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double max_range);
+    const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double min_range,
+    double max_range);
 
   std::string calibrator_sensor_frame_;
   std::string calibrator_name_;

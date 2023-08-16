@@ -64,7 +64,7 @@ bool BaseLidarCalibrator::calibrate(
   auto & last_keyframe = data_->keyframes_and_stopped_.back();
   PointcloudType::Ptr augmented_pointcloud_ptr = getDensePointcloudFromMap(
     last_keyframe->pose_, last_keyframe, parameters_->leaf_size_dense_map_,
-    parameters_->max_calibration_range_);
+    parameters_->min_calibration_range_, parameters_->max_calibration_range_);
 
   Eigen::Matrix4f initial_lidar_to_base_transform;
   Eigen::Isometry3d initial_lidar_to_base_affine;
