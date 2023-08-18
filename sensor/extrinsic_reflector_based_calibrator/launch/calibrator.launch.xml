@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="ns" default=""/>
+  <arg name="parent_frame" default="front_unit_base_link"/>
+  <arg name="input_lidar_pointcloud" default="/sensing/lidar/front_lower/pointcloud_raw"/>
+  <arg name="input_radar_objects" default="/sensing/radar/front_center/objects_raw"/>
+
+  <arg name="use_lidar_initial_crop_box_filter" default="true"/>
+  <arg name="lidar_initial_crop_box_min_x" default="5.0"/>
+  <arg name="lidar_initial_crop_box_min_y" default="-15.0"/>
+  <arg name="lidar_initial_crop_box_min_z" default="-1.0"/>
+
+  <arg name="lidar_initial_crop_box_max_x" default="40.0"/>
+  <arg name="lidar_initial_crop_box_max_y" default="15.0"/>
+  <arg name="lidar_initial_crop_box_max_z" default="1.2"/>
+
+  <arg name="use_radar_initial_crop_box_filter" default="true"/>
+  <arg name="radar_initial_crop_box_min_x" default="0.0"/>
+  <arg name="radar_initial_crop_box_min_y" default="-20.0"/>
+  <arg name="radar_initial_crop_box_min_z" default="-1.0"/>
+
+  <arg name="radar_initial_crop_box_max_x" default="50.0"/>
+  <arg name="radar_initial_crop_box_max_y" default="20.0"/>
+  <arg name="radar_initial_crop_box_max_z" default="1.2"/>
+
+  <group>
+    <push-ros-namespace namespace="$(var ns)"/>
+    <node pkg="extrinsic_reflector_based_calibrator" exec="extrinsic_reflector_based_calibrator" name="extrinsic_reflector_based_calibrator" output="screen">
+      <param name="parent_frame" value="$(var parent_frame)"/>
+      <remap from="input_lidar_pointcloud" to="$(var input_lidar_pointcloud)"/>
+      <remap from="input_radar_objects" to="$(var input_radar_objects)"/>
+
+      <param name="use_lidar_initial_crop_box_filter" value="$(var use_lidar_initial_crop_box_filter)"/>
+      <param name="lidar_initial_crop_box_min_x" value="$(var lidar_initial_crop_box_min_x)"/>
+      <param name="lidar_initial_crop_box_min_y" value="$(var lidar_initial_crop_box_min_y)"/>
+      <param name="lidar_initial_crop_box_min_z" value="$(var lidar_initial_crop_box_min_z)"/>
+
+      <param name="lidar_initial_crop_box_max_x" value="$(var lidar_initial_crop_box_max_x)"/>
+      <param name="lidar_initial_crop_box_max_y" value="$(var lidar_initial_crop_box_max_y)"/>
+      <param name="lidar_initial_crop_box_max_z" value="$(var lidar_initial_crop_box_max_z)"/>
+
+      <param name="use_radar_initial_crop_box_filter" value="$(var use_radar_initial_crop_box_filter)"/>
+      <param name="radar_initial_crop_box_min_x" value="$(var radar_initial_crop_box_min_x)"/>
+      <param name="radar_initial_crop_box_min_y" value="$(var radar_initial_crop_box_min_y)"/>
+      <param name="radar_initial_crop_box_min_z" value="$(var radar_initial_crop_box_min_z)"/>
+
+      <param name="radar_initial_crop_box_max_x" value="$(var radar_initial_crop_box_max_x)"/>
+      <param name="radar_initial_crop_box_max_y" value="$(var radar_initial_crop_box_max_y)"/>
+      <param name="radar_initial_crop_box_max_z" value="$(var radar_initial_crop_box_max_z)"/>
+    </node>
+
+    <node pkg="extrinsic_reflector_based_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
+  </group>
+</launch>
