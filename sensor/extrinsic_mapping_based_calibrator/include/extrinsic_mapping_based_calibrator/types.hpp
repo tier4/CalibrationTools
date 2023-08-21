@@ -148,6 +148,14 @@ struct MappingParameters
   double viz_max_range_;
   double mapping_viz_leaf_size_;
 
+  bool use_self_crop_box_filter_;
+  double self_crop_box_filter_min_x_;
+  double self_crop_box_filter_max_x_;
+  double self_crop_box_filter_min_y_;
+  double self_crop_box_filter_max_y_;
+  double self_crop_box_filter_min_z_;
+  double self_crop_box_filter_max_z_;
+
   double mapper_resolution_;
   double mapper_step_size_;
   int mapper_max_iterations_;

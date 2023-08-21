@@ -18,6 +18,14 @@
   <arg name="calibration_lidar_frames"/>
   <arg name="mapping_lidar_frame"/>
 
+  <arg name="use_self_crop_box_filter" default="false"/>
+  <arg name="self_crop_box_filter_min_x" default="0.0"/>
+  <arg name="self_crop_box_filter_max_x" default="0.0"/>
+  <arg name="self_crop_box_filter_min_y" default="0.0"/>
+  <arg name="self_crop_box_filter_max_y" default="0.0"/>
+  <arg name="self_crop_box_filter_min_z" default="0.0"/>
+  <arg name="self_crop_box_filter_max_z" default="0.0"/>
+
   <arg name="local_map_num_keyframes" default="15"/>
   <arg name="dense_pointcloud_num_keyframes" default="10"/>
   <arg name="mapping_max_frames" default="5000"/>

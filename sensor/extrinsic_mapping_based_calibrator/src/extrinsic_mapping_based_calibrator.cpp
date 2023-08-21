@@ -144,7 +144,21 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   mapping_parameters_->mapping_lost_timeout_ =
     this->declare_parameter<double>("mapping_lost_timeout", 1.0);
 
-  // Mapping parameters
+  mapping_parameters_->use_self_crop_box_filter_ =
+    this->declare_parameter<bool>("use_self_crop_box_filter", false);
+  mapping_parameters_->self_crop_box_filter_min_x_ =
+    this->declare_parameter<double>("self_crop_box_filter_min_x", 0.0);
+  mapping_parameters_->self_crop_box_filter_max_x_ =
+    this->declare_parameter<double>("self_crop_box_filter_max_x", 0.0);
+  mapping_parameters_->self_crop_box_filter_min_y_ =
+    this->declare_parameter<double>("self_crop_box_filter_min_y", 0.0);
+  mapping_parameters_->self_crop_box_filter_max_y_ =
+    this->declare_parameter<double>("self_crop_box_filter_max_y", 0.0);
+  mapping_parameters_->self_crop_box_filter_min_z_ =
+    this->declare_parameter<double>("self_crop_box_filter_min_z", 0.0);
+  mapping_parameters_->self_crop_box_filter_max_z_ =
+    this->declare_parameter<double>("self_crop_box_filter_max_z", 0.0);
+
   mapping_parameters_->mapper_resolution_ =
     this->declare_parameter<double>("mapper_resolution", 5.0);
   mapping_parameters_->mapper_step_size_ = this->declare_parameter<double>("mapper_step_size", 0.1);

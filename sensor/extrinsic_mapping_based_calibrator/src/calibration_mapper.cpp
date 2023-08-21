@@ -162,6 +162,19 @@ void CalibrationMapper::mappingPointCloudCallback(
   transformPointcloud<PointcloudType>(
     msg->header.frame_id, data_->mapping_lidar_frame_, pc_ptr, *tf_buffer_);
 
+  if (parameters_->use_self_crop_box_filter_) {
+    pcl::CropBox<PointType> box_filter;
+    box_filter.setMin(Eigen::Vector4f(
+      parameters_->self_crop_box_filter_min_x_, parameters_->self_crop_box_filter_min_y_,
+      parameters_->self_crop_box_filter_min_z_, 1.0));
+    box_filter.setMax(Eigen::Vector4f(
+      parameters_->self_crop_box_filter_max_x_, parameters_->self_crop_box_filter_max_y_,
+      parameters_->self_crop_box_filter_max_z_, 1.0));
+    box_filter.setNegative(true);
+    box_filter.setInputCloud(pc_ptr);
+    box_filter.filter(*pc_ptr);
+  }
+
   std::unique_lock<std::mutex> lock(data_->mutex_);
   auto frame = std::make_shared<Frame>();
   frame->header_ = msg->header;
