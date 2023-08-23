@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cv/sqpnp.hpp>
 #include <extrinsic_tag_based_calibrator/extrinsic_tag_based_calibrator.hpp>
-#include <extrinsic_tag_based_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/imgproc.hpp>
 #include <rclcpp/time.hpp>
+#include <tier4_tag_utils/cv/sqpnp.hpp>
+#include <tier4_tag_utils/types.hpp>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_geometry/pinhole_camera_model.h>
@@ -116,8 +116,8 @@ ExtrinsicTagBasedCalibrator::ExtrinsicTagBasedCalibrator(const rclcpp::NodeOptio
     "calibration_points", 10);
 
   estimator_.setDynamicsModel(
-    dynamics_model == "constant_velocity" ? DynamicsModel::ConstantVelocity
-                                          : DynamicsModel::Static);
+    dynamics_model == "constant_velocity" ? tier4_tag_utils::DynamicsModel::ConstantVelocity
+                                          : tier4_tag_utils::DynamicsModel::Static);
 
   estimator_.setCrossvalidationTrainingRatio(calibration_crossvalidation_training_ratio);
   estimator_.setCalibrationConvergenceCriteria(

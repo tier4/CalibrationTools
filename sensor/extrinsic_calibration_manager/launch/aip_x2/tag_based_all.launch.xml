@@ -1,0 +1,690 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_x2"/>
+  <arg name="camera_name" default=""/>
+  <arg name="rviz" default="false"/>
+
+  <!-- we do not use the standard image_raw name to avoid naming conflicts -->
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_base_calibrator)/rviz/x2.rviz"/>
+
+  <let name="image0_decompressed_topic" value="/sensing/camera/camera0/image_rect_color/decompressed"/>
+  <let name="image1_decompressed_topic" value="/sensing/camera/camera1/image_rect_color/decompressed"/>
+  <let name="image2_decompressed_topic" value="/sensing/camera/camera2/image_rect_color/decompressed"/>
+  <let name="image3_decompressed_topic" value="/sensing/camera/camera3/image_rect_color/decompressed"/>
+  <let name="image4_decompressed_topic" value="/sensing/camera/camera4/image_rect_color/decompressed"/>
+  <let name="image5_decompressed_topic" value="/sensing/camera/camera5/image_rect_color/decompressed"/>
+  <let name="image6_decompressed_topic" value="/sensing/camera/camera6/image_rect_color/decompressed"/>
+  <let name="image7_decompressed_topic" value="/sensing/camera/camera7/image_rect_color/decompressed"/>
+
+  <let name="image0_compressed_topic" value="/sensing/camera/camera0/image_rect_color/compressed"/>
+  <let name="image1_compressed_topic" value="/sensing/camera/camera1/image_rect_color/compressed"/>
+  <let name="image2_compressed_topic" value="/sensing/camera/camera2/image_rect_color/compressed"/>
+  <let name="image3_compressed_topic" value="/sensing/camera/camera3/image_rect_color/compressed"/>
+  <let name="image4_compressed_topic" value="/sensing/camera/camera4/image_rect_color/compressed"/>
+  <let name="image5_compressed_topic" value="/sensing/camera/camera5/image_rect_color/compressed"/>
+  <let name="image6_compressed_topic" value="/sensing/camera/camera6/image_rect_color/compressed"/>
+  <let name="image7_compressed_topic" value="/sensing/camera/camera7/image_rect_color/compressed"/>
+
+  <let name="camera0_info_topic" value="/sensing/camera/camera0/camera_info"/>
+  <let name="camera1_info_topic" value="/sensing/camera/camera1/camera_info"/>
+  <let name="camera2_info_topic" value="/sensing/camera/camera2/camera_info"/>
+  <let name="camera3_info_topic" value="/sensing/camera/camera3/camera_info"/>
+  <let name="camera4_info_topic" value="/sensing/camera/camera4/camera_info"/>
+  <let name="camera5_info_topic" value="/sensing/camera/camera5/camera_info"/>
+  <let name="camera6_info_topic" value="/sensing/camera/camera6/camera_info"/>
+  <let name="camera7_info_topic" value="/sensing/camera/camera7/camera_info"/>
+
+  <!-- Common tag parameters -->
+  <let name="waypoint_tag_size" value="0.6"/>
+  <let name="ground_tag_size" value="0.22"/>
+  <let name="wheel_tag_size" value="0.166"/>
+
+  <!-- External apriltag detector parameters-->
+  <let name="apriltag_detector_families" value="[16h5, 36h11]"/>
+  <let name="apriltag_detector_sizes" value="[$(var waypoint_tag_size), $(var ground_tag_size)]"/>
+  <let name="min_apriltag_filter_margin" value="30.0"/>
+
+  <!-- calibration api -->
+  <arg name="base_frame" default="base_link"/>
+  <arg name="sensor_kit_frame" default="top_unit_base_link"/>
+  <arg name="lidar_base_frame" default="pandar_40p_left_base_link"/>
+  <arg name="lidar_frame" default="pandar_40p_left"/>
+
+  <!-- image decompressor -->
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor0" output="screen">
+    <remap from="decompressor0/input/compressed_image" to="$(var image0_compressed_topic)"/>
+    <remap from="decompressor0/output/raw_image" to="$(var image0_decompressed_topic)"/>
+  </node>
+
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor1" output="screen">
+    <remap from="decompressor1/input/compressed_image" to="$(var image1_compressed_topic)"/>
+    <remap from="decompressor1/output/raw_image" to="$(var image1_decompressed_topic)"/>
+  </node>
+
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor2" output="screen">
+    <remap from="decompressor2/input/compressed_image" to="$(var image2_compressed_topic)"/>
+    <remap from="decompressor2/output/raw_image" to="$(var image2_decompressed_topic)"/>
+  </node>
+
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor3" output="screen">
+    <remap from="decompressor3/input/compressed_image" to="$(var image3_compressed_topic)"/>
+    <remap from="decompressor3/output/raw_image" to="$(var image3_decompressed_topic)"/>
+  </node>
+
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor4" output="screen">
+    <remap from="decompressor4/input/compressed_image" to="$(var image4_compressed_topic)"/>
+    <remap from="decompressor4/output/raw_image" to="$(var image4_decompressed_topic)"/>
+  </node>
+
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor5" output="screen">
+    <remap from="decompressor5/input/compressed_image" to="$(var image5_compressed_topic)"/>
+    <remap from="decompressor5/output/raw_image" to="$(var image5_decompressed_topic)"/>
+  </node>
+
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor6" output="screen">
+    <remap from="decompressor6/input/compressed_image" to="$(var image6_compressed_topic)"/>
+    <remap from="decompressor6/output/raw_image" to="$(var image6_decompressed_topic)"/>
+  </node>
+
+  <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor7" output="screen">
+    <remap from="decompressor7/input/compressed_image" to="$(var image7_compressed_topic)"/>
+    <remap from="decompressor7/output/raw_image" to="$(var image7_decompressed_topic)"/>
+  </node>
+
+  <!-- left_upper: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="left_upper"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/left_upper/pointcloud_raw"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
+
+  <!-- right_upper: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="right_upper"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/right_upper/pointcloud_raw"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
+
+  <!-- front_lower: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="front_lower"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/front_lower/pointcloud_raw"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
+
+  <!-- rear_lower: lidartag detector -->
+  <group>
+    <push-ros-namespace namespace="rear_lower"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar_40p.launch.xml">
+      <arg name="pointcloud_topic" value="/sensing/lidar/rear_lower/pointcloud_raw"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_transl" value="0.1"/>
+      <param name="new_hypothesis_rot" value="15.0"/>
+      <param name="measurement_noise_transl" value="0.05"/>
+      <param name="measurement_noise_rot" value="5.0"/>
+      <param name="process_noise_transl" value="0.01"/>
+      <param name="process_noise_transl_dot" value="0.001"/>
+      <param name="process_noise_rot" value="1.0"/>
+      <param name="process_noise_rot_dot" value="0.1"/>
+    </node>
+  </group>
+
+  <!-- camera0: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera0"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image0_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera0_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera0_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- camera1: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera1"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image1_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera1_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera1_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- camera2: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera2"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image2_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera2_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera2_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- camera3: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera3"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image3_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera3_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera3_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- camera4: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera4"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image4_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera4_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera4_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- camera5: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera5"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image5_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera5_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera5_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- camera6: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera6"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image6_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera6_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera6_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- camera7: apriltag detector -->
+  <group>
+    <push-ros-namespace namespace="camera7"/>
+    <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/apriltag_detector.launch.py">
+      <arg name="image_topic" value="$(var image7_decompressed_topic)"/>
+      <arg name="camera_info_topic" value="$(var camera7_info_topic)"/>
+      <arg name="families" value="$(var apriltag_detector_families)"/>
+      <arg name="sizes" value="$(var apriltag_detector_sizes)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="apriltag_filter_node" name="apriltag_filter" output="screen">
+      <remap from="camera_info" to="$(var camera7_info_topic)"/>
+      <!-- filtering parameters -->
+      <param name="min_tag_size" value="0.6"/>
+      <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
+      <param name="max_tag_distance" value="30.0"/>
+      <param name="max_allowed_homography_error" value="0.5"/>
+      <param name="min_margin" value="$(var min_apriltag_filter_margin)"/>
+      <param name="max_hamming_error" value="0"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+      <param name="tag_families" value="$(var apriltag_detector_families)"/>
+      <param name="tag_sizes" value="$(var apriltag_detector_sizes)"/>
+      <!-- the sizes of tag_ids -->
+      <param name="max_convergence_transl" value="2.0"/>
+      <param name="new_hypothesis_transl" value="20.0"/>
+
+      <param name="measurement_noise_transl" value="0.2"/>
+      <param name="process_noise_transl" value="0.02"/>
+    </node>
+  </group>
+
+  <!-- base -> sensor_kit: extrinsic_calibration_client -->
+  <arg name="base_to_sensor_kit_src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensors_calibration.yaml"/>
+  <arg name="base_to_sensor_kit_dst_yaml" default="$(env HOME)/sensors_calibration.yaml"/>
+
+  <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="base_to_sensor_kit_extrinsic_calibration_client" output="screen">
+    <remap from="extrinsic_calibration_manager" to="base_to_sensor_kit_extrinsic_calibration_manager"/>
+    <param name="src_path" value="$(var base_to_sensor_kit_src_yaml)"/>
+    <param name="dst_path" value="$(var base_to_sensor_kit_dst_yaml)"/>
+  </node>
+
+  <!-- base -> sensor_kit: extrinsic_calibration_manager -->
+  <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="base_to_sensor_kit_extrinsic_calibration_manager" output="screen">
+    <remap from="extrinsic_calibration_manager" to="base_to_sensor_kit_extrinsic_calibration_manager"/>
+    <param name="parent_frame" value="$(var base_frame)"/>
+    <param name="child_frames" value="
+    [$(var sensor_kit_frame)]"/>
+  </node>
+
+  <!-- base-lidar calibrator -->
+  <include file="$(find-pkg-share extrinsic_tag_based_base_calibrator)/launch/calibrator.launch.xml">
+    <arg name="base_frame" value="base_link"/>
+
+    <!--TODO: the need to know lidar_sensor_kit_frames should be removed after the redesign. So no need to match it corectly for any other than the main lidar. These are used to create the calibration services -->
+    <arg name="lidar_sensor_kit_frames" value="[
+      top_unit_base_link,
+      top_unit_base_link,
+      front_unit_base_link,
+      rear_unit_base_link
+    ]"/>
+
+    <arg name="calibration_lidar_parent_frames" value="[
+      pandar_40p_left_base_link,
+      pandar_40p_right_base_link,
+      pandar_40p_front_base_link,
+      pandar_40p_rear_base_link
+    ]"/>
+
+    <arg
+      name="lidar_calibration_service_names"
+      value="[
+      base_link/top_unit_base_link,
+      top_unit_base_link/pandar_40p_right_base_link,
+      base_link/front_unit_base_link,
+      base_link/rear_unit_base_link,
+    ]"
+    />
+
+    <arg
+      name="camera_sensor_kit_frames"
+      value="[
+      top_unit_base_link,
+      top_unit_base_link,
+      top_unit_base_link,
+      rear_unit_base_link,
+      top_unit_base_link,
+      top_unit_base_link,
+      front_unit_base_link,
+      top_unit_base_link]"
+    />
+
+    <arg
+      name="calibration_camera_parent_frames"
+      value="[
+      camera0/camera_link,
+      camera1/camera_link,
+      camera2/camera_link,
+      camera3/camera_link,
+      camera4/camera_link,
+      camera5/camera_link,
+      camera6/camera_link,
+      camera7/camera_link]"
+    />
+
+    <arg
+      name="camera_calibration_service_names"
+      value="[
+      top_unit_base_link/camera0/camera_link,
+      top_unit_base_link/camera1/camera_link,
+      top_unit_base_link/camera2/camera_link,
+      rear_unit_base_link/camera3/camera_link,
+      top_unit_base_link/camera4/camera_link,
+      top_unit_base_link/camera5/camera_link,
+      rear_unit_base_link/camera6/camera_link,
+      top_unit_base_link/camera7/camera_link]"
+    />
+
+    <arg name="main_calibration_sensor_frame" value="$(var lidar_frame)"/>
+    <arg name="calibration_lidar_frames" value="[
+      pandar_40p_left,
+      pandar_40p_right,
+      pandar_40p_front,
+      pandar_40p_rear
+    ]"/>
+
+    <arg
+      name="calibration_camera_frames"
+      value="[
+      camera0/camera_optical_link,
+      camera1/camera_optical_link,
+      camera2/camera_optical_link,
+      camera3/camera_optical_link,
+      camera4/camera_optical_link,
+      camera5/camera_optical_link,
+      camera6/camera_optical_link,
+      camera7/camera_optical_link]"
+    />
+
+    <!-- Topic configuration -->
+    <arg
+      name="calibration_lidar_detections_topics"
+      value="[
+      /left_upper/lidartag/filtered/detections_array,
+      /right_upper/lidartag/filtered/detections_array,
+      /front_lower/lidartag/filtered/detections_array,
+      /rear_lower/lidartag/filtered/detections_array
+    ]"
+    />
+
+    <arg
+      name="calibration_image_detections_topics"
+      value="[
+      /camera0/apriltag/filtered/detection_array,
+      /camera1/apriltag/filtered/detection_array,
+      /camera2/apriltag/filtered/detection_array,
+      /camera3/apriltag/filtered/detection_array,
+      /camera4/apriltag/filtered/detection_array,
+      /camera5/apriltag/filtered/detection_array,
+      /camera6/apriltag/filtered/detection_array,
+      /camera7/apriltag/filtered/detection_array]"
+    />
+
+    <arg
+      name="calibration_camera_info_topics"
+      value="[
+      /sensing/camera/camera0/camera_info,
+      /sensing/camera/camera1/camera_info,
+      /sensing/camera/camera2/camera_info,
+      /sensing/camera/camera3/camera_info,
+      /sensing/camera/camera4/camera_info,
+      /sensing/camera/camera5/camera_info,
+      /sensing/camera/camera6/camera_info,
+      /sensing/camera/camera7/camera_info]"
+    />
+
+    <arg
+      name="calibration_image_topics"
+      value="[
+      /sensing/camera/camera0/image_rect_color/compressed,
+      /sensing/camera/camera1/image_rect_color/compressed,
+      /sensing/camera/camera2/image_rect_color/compressed,
+      /sensing/camera/camera3/image_rect_color/compressed,
+      /sensing/camera/camera4/image_rect_color/compressed,
+      /sensing/camera/camera5/image_rect_color/compressed,
+      /sensing/camera/camera6/image_rect_color/compressed,
+      /sensing/camera/camera7/image_rect_color/compressed]"
+    />
+
+    <!-- Tag configuration - 2022 - BS -->
+    <!--arg name="waypoint_tag_ids" value="[0]"/>
+    <arg name="ground_tag_ids" value="[6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]"/>
+
+    <arg name="left_wheel_tag_id" value="4"/>
+    <arg name="right_wheel_tag_id" value="3"/>
+
+    <arg name="ground_tag_size" value="0.163"/-->
+
+    <!--Tag configuration - 2023/03/23 - Omiya -->
+    <!--arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
+    <arg name="ground_tag_size" value="0.79987"/>
+
+    <arg name="ground_tag_family" value="tag36h11"/>
+    <arg name="ground_tag_rows" value="1"/>
+    <arg name="ground_tag_cols" value="1"/>
+    <arg name="ground_tag_size" value="0.2"/>
+    <arg name="ground_tag_spacing" value="0.2"/>
+    <arg
+      name="ground_tag_ids"
+      value="[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]"
+    /-->
+
+    <!--Tag configuration - 2023/04/21 - Omiya -->
+    <arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
+    <arg name="waypoint_tag_size" value="$(var waypoint_tag_size)"/>
+
+    <arg name="ground_tag_family" value="tag36h11"/>
+    <arg name="ground_tag_rows" value="1"/>
+    <arg name="ground_tag_cols" value="1"/>
+    <arg name="ground_tag_size" value="$(var ground_tag_size)"/>
+    <arg name="ground_tag_spacing" value="0.2"/>
+    <arg
+      name="ground_tag_ids"
+      value="[50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+"
+    />
+
+    <arg name="auxiliar_tag_family" value="tag36h11"/>
+    <arg name="auxiliar_tag_rows" value="1"/>
+    <arg name="auxiliar_tag_cols" value="1"/>
+    <arg name="auxiliar_tag_size" value="$(var ground_tag_size)"/>
+    <arg name="auxiliar_tag_spacing" value="0.2"/>
+    <arg
+      name="auxiliar_tag_ids"
+      value="[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]"
+    />
+    <!-- 20230512 - had to take 12 away since it was moved during the experiment -->
+
+    <arg name="wheel_tag_family" value="tag16h5"/>
+    <arg name="wheel_tag_rows" value="2"/>
+    <arg name="wheel_tag_cols" value="2"/>
+    <arg name="wheel_tag_size" value="$(var wheel_tag_size)"/>
+    <arg name="wheel_tag_spacing" value="0.2"/>
+    <arg name="left_wheel_tag_id" value="26"/>
+    <arg name="right_wheel_tag_id" value="22"/>
+
+    <!-- Initial intrinsics calibration -->
+    <arg name="initial_intrinsic_calibration_tag_family" value="tag16h5"/>
+    <arg name="initial_intrinsic_calibration_tag_rows" value="1"/>
+    <arg name="initial_intrinsic_calibration_tag_cols" value="1"/>
+    <arg name="initial_intrinsic_calibration_tag_size" value="0.6"/>
+    <arg name="initial_intrinsic_calibration_tag_spacing" value="0.2"/>
+    <arg name="intrinsic_calibration_tag_ids" value="[5]"/>
+
+    <!-- Optimization configuration -->
+    <arg name="ba_optimize_intrinsics" value="true"/>
+    <arg name="ba_share_intrinsics" value="true"/>
+    <arg name="ba_force_shared_ground_plane" value="true"/>
+
+    <!-- Initial intrinsics calibration -->
+    <arg name="initial_intrinsic_calibration_board_type" value="chessboard"/>
+
+    <!-- Optimization configuration -->
+    <arg name="ba_optimize_intrinsics" value="true"/>
+    <arg name="ba_share_intrinsics" value="true"/>
+    <arg name="ba_force_shared_ground_plane" value="true"/>
+  </include>
+
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="estimated_base_link_broadcaster" output="screen" args="0 0 0 0 0 0 velodyne_top estimated_base_link"/>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="log" args="-d $(var rviz_profile)" if="$(var rviz)"/>
+</launch>

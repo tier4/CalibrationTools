@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(deviation_evaluator)
 
+find_package(autoware_cmake REQUIRED)
+autoware_package()
+
 ### Compile options
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)

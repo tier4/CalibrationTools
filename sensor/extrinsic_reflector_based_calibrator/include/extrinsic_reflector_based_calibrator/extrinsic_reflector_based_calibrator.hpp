@@ -94,7 +94,8 @@ protected:
     pcl::PointCloud<PointType>::Ptr & foreground_points, Eigen::Vector4f & ground_model);
 
   std::vector<pcl::PointCloud<PointType>::Ptr> extractClusters(
-    const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud);
+    const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud,
+    const double cluster_max_tolerance, const int cluster_min_points, const int cluster_max_points);
 
   std::vector<Eigen::Vector3d> findReflectorsFromClusters(
     const std::vector<pcl::PointCloud<PointType>::Ptr> & clusters,
@@ -144,9 +145,12 @@ protected:
     double background_extraction_timeout;
     double ransac_threshold;
     int ransac_max_iterations;
-    double cluster_max_tolerance;
-    int cluster_min_points;
-    int cluster_max_points;
+    double lidar_cluster_max_tolerance;
+    int lidar_cluster_min_points;
+    int lidar_cluster_max_points;
+    double radar_cluster_max_tolerance;
+    int radar_cluster_min_points;
+    int radar_cluster_max_points;
 
     double reflector_radius;
     double reflector_max_height;

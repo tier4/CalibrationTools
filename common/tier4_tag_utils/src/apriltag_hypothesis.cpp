@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cv/sqpnp.hpp>
-#include <extrinsic_tag_based_calibrator/apriltag_hypothesis.hpp>
+#include <tier4_tag_utils/apriltag_hypothesis.hpp>
+#include <tier4_tag_utils/cv/sqpnp.hpp>
+
+namespace tier4_tag_utils
+{
 
 ApriltagHypothesis::ApriltagHypothesis(
   int id, image_geometry::PinholeCameraModel & pinhole_camera_model)
 : first_observation_(true),
-  dynamics_model_(DynamicsModel::Static),
+  dynamics_model_(tier4_tag_utils::DynamicsModel::Static),
   id_(id),
   pinhole_camera_model_(pinhole_camera_model)
 {
@@ -301,3 +304,5 @@ cv::Mat ApriltagHypothesis::toState(const cv::Point2d & corner)
     return kalman_state;
   }
 }
+
+}  // namespace tier4_tag_utils

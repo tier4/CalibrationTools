@@ -161,7 +161,8 @@ void CameraCalibrator::prepareCalibrationData(
   for (auto & calibration_frame : calibration_frames) {
     PointcloudType::Ptr target_pc_ptr = getDensePointcloudFromMap(
       calibration_frame.local_map_pose_, calibration_frame.target_frame_,
-      parameters_->leaf_size_dense_map_, parameters_->max_calibration_range_ + initial_distance);
+      parameters_->leaf_size_dense_map_, parameters_->min_calibration_range_,
+      parameters_->max_calibration_range_ + initial_distance);
 
     filter.setCameraPose(initial_calibration_transform * adapter_matrix);
     filter.setInputCloud(target_pc_ptr);

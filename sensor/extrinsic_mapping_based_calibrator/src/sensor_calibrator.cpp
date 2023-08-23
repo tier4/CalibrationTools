@@ -29,7 +29,8 @@ SensorCalibrator::SensorCalibrator(
 }
 
 PointcloudType::Ptr SensorCalibrator::getDensePointcloudFromMap(
-  const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double max_range)
+  const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double min_range,
+  double max_range)
 {
   int frame_id = frame->frame_id_;
 
@@ -87,11 +88,14 @@ PointcloudType::Ptr SensorCalibrator::getDensePointcloudFromMap(
     auto map_frame_pose = frame->pose_;
     auto target_frame_pose = target_map_pose * map_frame_pose;
 
-    pcl::transformPointCloud(*frame->pointcloud_raw_, *frame_tcs_ptr, target_frame_pose);
+    PointcloudType::Ptr cropped_ptr =
+      cropPointCloud<PointcloudType>(frame->pointcloud_raw_, min_range, max_range);
+    pcl::transformPointCloud(*cropped_ptr, *frame_tcs_ptr, target_frame_pose);
     *tmp_tcs_ptr += *frame_tcs_ptr;
   }
 
-  PointcloudType::Ptr cropped_tcd_ptr = cropPointCloud<PointcloudType>(tmp_tcs_ptr, max_range);
+  PointcloudType::Ptr cropped_tcd_ptr =
+    cropPointCloud<PointcloudType>(tmp_tcs_ptr, min_range, max_range);
 
   pcl::VoxelGridTriplets<PointType> voxel_grid;
   voxel_grid.setLeafSize(resolution, resolution, resolution);

@@ -7,7 +7,7 @@
   <arg name="rviz"/>
   <let name="camera_frame" value="$(var camera_name)/camera_link"/>
   <let name="lidar_model" value="pandar_40p"/>
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera6_pandar_40p_rear.rviz"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera3_pandar_40p_rear.rviz"/>
 
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera3' &quot;)"/>

@@ -94,9 +94,12 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicReflectorBasedCalibrator::para
     UPDATE_PARAM(p, background_extraction_timeout);
     UPDATE_PARAM(p, ransac_threshold);
     UPDATE_PARAM(p, ransac_max_iterations);
-    UPDATE_PARAM(p, cluster_max_tolerance);
-    UPDATE_PARAM(p, cluster_min_points);
-    UPDATE_PARAM(p, cluster_max_points);
+    UPDATE_PARAM(p, lidar_cluster_max_tolerance);
+    UPDATE_PARAM(p, lidar_cluster_min_points);
+    UPDATE_PARAM(p, lidar_cluster_max_points);
+    UPDATE_PARAM(p, radar_cluster_max_tolerance);
+    UPDATE_PARAM(p, radar_cluster_min_points);
+    UPDATE_PARAM(p, radar_cluster_max_points);
     UPDATE_PARAM(p, reflector_radius);
     UPDATE_PARAM(p, reflector_max_height);
     UPDATE_PARAM(p, max_matching_distance);
@@ -183,9 +186,18 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     this->declare_parameter<double>("background_extraction_timeout", 15.0);
   parameters_.ransac_threshold = this->declare_parameter<double>("ransac_threshold", 0.2);
   parameters_.ransac_max_iterations = this->declare_parameter<int>("ransac_max_iterations", 100);
-  parameters_.cluster_max_tolerance = this->declare_parameter<double>("cluster_max_tolerance", 0.5);
-  parameters_.cluster_min_points = this->declare_parameter<int>("cluster_min_points", 3);
-  parameters_.cluster_max_points = this->declare_parameter<int>("cluster_max_points", 2000);
+  parameters_.lidar_cluster_max_tolerance =
+    this->declare_parameter<double>("lidar_cluster_max_tolerance", 0.5);
+  parameters_.lidar_cluster_min_points =
+    this->declare_parameter<int>("lidar_cluster_min_points", 3);
+  parameters_.lidar_cluster_max_points =
+    this->declare_parameter<int>("lidar_cluster_max_points", 2000);
+  parameters_.radar_cluster_max_tolerance =
+    this->declare_parameter<double>("radar_cluster_max_tolerance", 0.5);
+  parameters_.radar_cluster_min_points =
+    this->declare_parameter<int>("radar_cluster_min_points", 1);
+  parameters_.radar_cluster_max_points =
+    this->declare_parameter<int>("radar_cluster_max_points", 10);
   parameters_.reflector_radius = this->declare_parameter<double>("reflector_radius", 0.1);
   parameters_.reflector_max_height = this->declare_parameter<double>("reflector_max_height", 1.2);
   parameters_.max_matching_distance = this->declare_parameter<double>("max_matching_distance", 1.0);
@@ -483,7 +495,9 @@ std::vector<Eigen::Vector3d> ExtrinsicReflectorBasedCalibrator::extractReflector
   extractForegroundPoints(
     lidar_pointcloud_ptr, lidar_background_model_, true, foreground_pointcloud_ptr, ground_model);
 
-  auto clusters = extractClusters(foreground_pointcloud_ptr);
+  auto clusters = extractClusters(
+    foreground_pointcloud_ptr, parameters_.lidar_cluster_max_tolerance,
+    parameters_.lidar_cluster_min_points, parameters_.lidar_cluster_max_points);
   detections = findReflectorsFromClusters(clusters, ground_model);
 
   // Visualization
@@ -590,7 +604,9 @@ std::vector<Eigen::Vector3d> ExtrinsicReflectorBasedCalibrator::extractReflector
   Eigen::Vector4f ground_model;
   extractForegroundPoints(
     radar_pointcloud_ptr, radar_background_model_, false, foreground_pointcloud_ptr, ground_model);
-  auto clusters = extractClusters(foreground_pointcloud_ptr);
+  auto clusters = extractClusters(
+    foreground_pointcloud_ptr, parameters_.radar_cluster_max_tolerance,
+    parameters_.radar_cluster_min_points, parameters_.radar_cluster_max_points);
 
   detections.reserve(clusters.size());
 
@@ -814,16 +830,17 @@ void ExtrinsicReflectorBasedCalibrator::extractForegroundPoints(
 
 std::vector<pcl::PointCloud<ExtrinsicReflectorBasedCalibrator::PointType>::Ptr>
 ExtrinsicReflectorBasedCalibrator::extractClusters(
-  const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud_ptr)
+  const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud_ptr,
+  const double cluster_max_tolerance, const int cluster_min_points, const int cluster_max_points)
 {
   pcl::search::KdTree<PointType>::Ptr tree_ptr(new pcl::search::KdTree<PointType>);
   tree_ptr->setInputCloud(foreground_pointcloud_ptr);
 
   std::vector<pcl::PointIndices> cluster_indices;
   pcl::EuclideanClusterExtraction<PointType> cluster_extractor;
-  cluster_extractor.setClusterTolerance(parameters_.cluster_max_tolerance);
-  cluster_extractor.setMinClusterSize(parameters_.cluster_min_points);
-  cluster_extractor.setMaxClusterSize(parameters_.cluster_max_points);
+  cluster_extractor.setClusterTolerance(cluster_max_tolerance);
+  cluster_extractor.setMinClusterSize(cluster_min_points);
+  cluster_extractor.setMaxClusterSize(cluster_max_points);
   cluster_extractor.setSearchMethod(tree_ptr);
   cluster_extractor.setInputCloud(foreground_pointcloud_ptr);
   cluster_extractor.extract(cluster_indices);

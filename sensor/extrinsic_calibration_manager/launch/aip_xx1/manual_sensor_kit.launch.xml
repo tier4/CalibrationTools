@@ -26,8 +26,7 @@
     camera3/camera_link,
     camera4/camera_link,
     camera5/camera_link,
-    traffic_light_right_camera/camera_link,
-    traffic_light_left_camera/camera_link,
+    camera6/camera_link,
     velodyne_top_base_link,
     velodyne_left_base_link,
     velodyne_right_base_link,
@@ -75,15 +74,9 @@
   </include>
 
   <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
-    <arg name="ns" value="$(var parent_frame)/traffic_light_right_camera/camera_link"/>
+    <arg name="ns" value="$(var parent_frame)/camera6/camera_link"/>
     <arg name="parent_frame" value="$(var parent_frame)"/>
-    <arg name="child_frame" value="traffic_light_right_camera/camera_link"/>
-  </include>
-
-  <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
-    <arg name="ns" value="$(var parent_frame)/traffic_light_left_camera/camera_link"/>
-    <arg name="parent_frame" value="$(var parent_frame)"/>
-    <arg name="child_frame" value="traffic_light_left_camera/camera_link"/>
+    <arg name="child_frame" value="camera6/camera_link"/>
   </include>
 
   <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
