@@ -38,7 +38,7 @@
     pandar_front]"/>
 
   <let name="mapping_lidar_frame" value="pandar_top"/>
-  <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud"/>
+  <let name="mapping_pointcloud" value="/sensing/lidar/top/pointcloud_raw"/>
   <!--let name="predicted_objects" value="/perception/object_recognition/objects" /-->
   <let name="detected_objects" value="/perception/object_recognition/detection/objects"/>
 
@@ -46,13 +46,10 @@
 
   <let name="calibration_image_topics" value="[/sensing/camera/camera0/image_rect_color/compressed]"/>
 
-  <let
-    name="calibration_pointcloud_topics"
-    value="[
-    /sensing/lidar/left/outlier_filtered/pointcloud,
-    /sensing/lidar/right/outlier_filtered/pointcloud,
-    /sensing/lidar/rear/outlier_filtered/pointcloud]"
-  />
+  <let name="calibration_pointcloud_topics" value="[
+    /sensing/lidar/left/pointcloud_raw,
+    /sensing/lidar/right/pointcloud_raw,
+    /sensing/lidar/front/pointcloud_raw]"/>
 
   <arg name="rviz"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/rdv.rviz"/>
@@ -90,13 +87,13 @@
     <arg name="calibration_lidar_frames" value="$(var calibration_lidar_frames)"/>
     <arg name="mapping_lidar_frame" value="$(var mapping_lidar_frame)"/>
 
-    <arg name="use_self_crop_box_filter" value="false"/>
-    <arg name="self_crop_box_filter_min_x" value="0.0"/>
-    <arg name="self_crop_box_filter_max_x" value="0.0"/>
-    <arg name="self_crop_box_filter_min_y" value="0.0"/>
-    <arg name="self_crop_box_filter_max_y" value="0.0"/>
-    <arg name="self_crop_box_filter_min_z" value="0.0"/>
-    <arg name="self_crop_box_filter_max_z" value="0.0"/>
+    <arg name="use_self_crop_box_filter" value="true"/>
+    <arg name="self_crop_box_filter_min_x" value="-2.7"/>
+    <arg name="self_crop_box_filter_max_x" value="1.5"/>
+    <arg name="self_crop_box_filter_min_y" value="-1.2"/>
+    <arg name="self_crop_box_filter_max_y" value="1.2"/>
+    <arg name="self_crop_box_filter_min_z" value="-2.0"/>
+    <arg name="self_crop_box_filter_max_z" value="0.5"/>
 
     <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)"/>
     <!--arg name="predicted_objects" value="$(var predicted_objects)" /-->
@@ -107,7 +104,7 @@
     <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
 
     <arg name="lost_frame_max_acceleration" value="10.0"/>
-    <arg name="calibration_skip_keyframes" value="7"/>
+    <arg name="calibration_skip_keyframes" value="20"/>
   </include>
 
   <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>

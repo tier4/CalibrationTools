@@ -5,7 +5,7 @@
   <let name="parent_frame" value="base_link"/>
   <arg name="radar_name"/>
   <arg name="rviz"/>
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_reflector_based_calibrator)/rviz/customized_$(var radar_name).rviz"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_reflector_based_calibrator)/rviz/rdv_$(var radar_name).rviz"/>
 
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>
@@ -15,9 +15,9 @@
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var radar_name)' == 'rear_left' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var radar_name)' == 'rear_right' &quot;)"/>
 
-  <let name="input_lidar_pointcloud" value="/sensing/lidar/top/pandar_points"/>
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/top/pointcloud_raw"/>
   <let name="input_radar_objects" value="/sensing/radar/$(var radar_name)/objects_raw"/>
-  <let name="radar_frame" value="ars408_$(var radar_name)"/>
+  <let name="radar_frame" value="$(var radar_name)/radar_link"/>
 
   <arg name="src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/sensors_calibration.yaml"/>
   <arg name="dst_yaml" default="$(env HOME)/sensors_calibration.yaml"/>

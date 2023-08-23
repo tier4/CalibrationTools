@@ -1105,10 +1105,10 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
   }
 
   // Define two sets of 2D points (just 3D points with z=0)
-  pcl::PointCloud<PointType>::Ptr lidar_points(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr radar_points(new pcl::PointCloud<PointType>);
-  lidar_points->reserve(converged_tracks_.size());
-  radar_points->reserve(converged_tracks_.size());
+  pcl::PointCloud<PointType>::Ptr lidar_points_pcs(new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr radar_points_rcs(new pcl::PointCloud<PointType>);
+  lidar_points_pcs->reserve(converged_tracks_.size());
+  radar_points_rcs->reserve(converged_tracks_.size());
 
   double delta_cos_sum = 0.0;
   double delta_sin_sum = 0.0;
@@ -1118,18 +1118,19 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
   for (std::size_t track_index = 0; track_index < converged_tracks_.size(); track_index++) {
     auto track = converged_tracks_[track_index];
     const auto & lidar_estimation = track.getLidarEstimation();
+    const auto & lidar_estimation_pcs = parent_to_lidar_eigen_ * lidar_estimation;
     const auto & lidar_transformed_estimation = initial_radar_to_lidar_eigen_ * lidar_estimation;
-    const auto & radar_estimation = track.getRadarEstimation();
-    lidar_points->emplace_back(eigen_to_pcl_2d(lidar_estimation));
-    radar_points->emplace_back(eigen_to_pcl_2d(radar_estimation));
+    const auto & radar_estimation_rcs = track.getRadarEstimation();
+    lidar_points_pcs->emplace_back(eigen_to_pcl_2d(lidar_estimation_pcs));
+    radar_points_rcs->emplace_back(eigen_to_pcl_2d(radar_estimation_rcs));
 
     const double lidar_transformed_norm = lidar_transformed_estimation.norm();
     const double lidar_transformed_cos = lidar_transformed_estimation.x() / lidar_transformed_norm;
     const double lidar_transformed_sin = lidar_transformed_estimation.y() / lidar_transformed_norm;
 
-    const double radar_norm = radar_estimation.norm();
-    const double radar_cos = radar_estimation.x() / radar_norm;
-    const double radar_sin = radar_estimation.y() / radar_norm;
+    const double radar_norm = radar_estimation_rcs.norm();
+    const double radar_cos = radar_estimation_rcs.x() / radar_norm;
+    const double radar_sin = radar_estimation_rcs.y() / radar_norm;
 
     // sin(a-b) = sin(a)*cos(b) - cos(a)*sin(b)
     // cos(a-b) = cos(a)*cos(b) + sin(a)*sin(b)
@@ -1143,10 +1144,16 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
 
   // Estimate full transformation using SVD
   pcl::registration::TransformationEstimationSVD<PointType, PointType> estimator;
-  Eigen::Matrix4f full_transformation;
-  estimator.estimateRigidTransformation(*lidar_points, *radar_points, full_transformation);
-  Eigen::Isometry3d calibrated_2d_transformation(full_transformation.cast<double>());
-  calibrated_2d_transformation.translation().z() = initial_radar_to_lidar_eigen_.translation().z();
+  Eigen::Matrix4f full_radar_to_parent_transformation;
+  estimator.estimateRigidTransformation(
+    *lidar_points_pcs, *radar_points_rcs, full_radar_to_parent_transformation);
+  Eigen::Isometry3d calibrated_2d_radar_to_parent_transformation(
+    full_radar_to_parent_transformation.cast<double>());
+
+  calibrated_2d_radar_to_parent_transformation.translation().z() =
+    (initial_radar_to_lidar_eigen_ * parent_to_lidar_eigen_.inverse()).translation().z();
+  Eigen::Isometry3d calibrated_2d_radar_to_lidar_transformation =
+    calibrated_2d_radar_to_parent_transformation * parent_to_lidar_eigen_;
 
   // Estimate the 2D transformation estimating only yaw
   double delta_cos = delta_cos_sum / converged_tracks_.size();
@@ -1156,7 +1163,7 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
   delta_rotation << delta_cos, -delta_sin, 0.0, delta_sin, delta_cos, 0.0, 0.0, 0.0, 1.0;
   Eigen::Isometry3d delta_transformation = Eigen::Isometry3d::Identity();
   delta_transformation.linear() = delta_rotation;
-  Eigen::Isometry3d calibrated_rotation_transformation =
+  Eigen::Isometry3d calibrated_rotation_radar_to_lidar_transformation =
     delta_transformation * initial_radar_to_lidar_eigen_;
 
   // Estimate the pre & post calibration error
@@ -1189,19 +1196,19 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
   auto [initial_distance_error, initial_yaw_error] =
     compute_calibration_error(initial_radar_to_lidar_eigen_);
   auto [calibrated_2d_distance_error, calibrated_2d_yaw_error] =
-    compute_calibration_error(calibrated_2d_transformation);
+    compute_calibration_error(calibrated_2d_radar_to_lidar_transformation);
   auto [calibrated_rotation_distance_error, calibrated_rotation_yaw_error] =
-    compute_calibration_error(calibrated_rotation_transformation);
+    compute_calibration_error(calibrated_rotation_radar_to_lidar_transformation);
 
   RCLCPP_INFO_STREAM(
     this->get_logger(), "Initial radar->lidar transform:\n"
                           << initial_radar_to_lidar_eigen_.matrix());
   RCLCPP_INFO_STREAM(
     this->get_logger(), "2D calibration radar->lidar transform:\n"
-                          << calibrated_2d_transformation.matrix());
+                          << calibrated_2d_radar_to_lidar_transformation.matrix());
   RCLCPP_INFO_STREAM(
     this->get_logger(), "Pure rotation calibration radar->lidar transform:\n"
-                          << calibrated_rotation_transformation.matrix());
+                          << calibrated_rotation_radar_to_lidar_transformation.matrix());
 
   // Evaluate the different calibrations and decide on an output
   auto compute_transformation_difference =
@@ -1227,10 +1234,11 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
     calibrated_rotation_distance_error, calibrated_rotation_yaw_error);
 
   auto [calibrated_2d_translation_difference, calibrated_2d_rotation_difference] =
-    compute_transformation_difference(initial_radar_to_lidar_eigen_, calibrated_2d_transformation);
+    compute_transformation_difference(
+      initial_radar_to_lidar_eigen_, calibrated_2d_radar_to_lidar_transformation);
   auto [calibrated_rotation_translation_difference, calibrated_rotation_rotation_difference] =
     compute_transformation_difference(
-      initial_radar_to_lidar_eigen_, calibrated_rotation_transformation);
+      initial_radar_to_lidar_eigen_, calibrated_rotation_radar_to_lidar_transformation);
 
   std::unique_lock<std::mutex> lock(mutex_);
   if (
@@ -1238,7 +1246,7 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
     calibrated_2d_rotation_difference < parameters_.max_initial_calibration_rotation_error) {
     RCLCPP_INFO(
       this->get_logger(), "The 2D calibration pose was chosen as the output calibration pose");
-    calibrated_radar_to_lidar_eigen_ = calibrated_2d_transformation;
+    calibrated_radar_to_lidar_eigen_ = calibrated_2d_radar_to_lidar_transformation;
     calibration_valid_ = true;
   } else if (
     calibrated_rotation_translation_difference <
@@ -1248,7 +1256,7 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
       this->get_logger(),
       "The pure rotation calibration pose was chosen as the output calibration pose. This may mean "
       "you need to collect more points");
-    calibrated_radar_to_lidar_eigen_ = calibrated_rotation_transformation;
+    calibrated_radar_to_lidar_eigen_ = calibrated_rotation_radar_to_lidar_transformation;
     calibration_valid_ = true;
   } else {
     RCLCPP_WARN(

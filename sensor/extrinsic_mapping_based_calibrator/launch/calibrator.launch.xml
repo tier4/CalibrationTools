@@ -38,7 +38,7 @@
   <arg name="mapper_num_threads" default="12"/>
   <arg name="mapper_max_correspondence_distance" default="0.1"/>
 
-  <arg name="lidar_calibration_max_frames" default="7"/>
+  <arg name="lidar_calibration_max_frames" default="5"/>
   <arg name="camera_calibration_max_frames" default="1"/>
   <arg name="lost_frame_max_angle_diff" default="25.0"/>
   <arg name="lost_frame_interpolation_error" default="0.05"/>
@@ -89,6 +89,14 @@
       <remap from="mapping_pointcloud" to="$(var mapping_pointcloud)"/>
       <remap from="detected_objects" to="$(var detected_objects)"/>
       <remap from="predicted_objects" to="$(var predicted_objects)"/>
+
+      <param name="use_self_crop_box_filter" value="$(var use_self_crop_box_filter)"/>
+      <param name="self_crop_box_filter_min_x" value="$(var self_crop_box_filter_min_x)"/>
+      <param name="self_crop_box_filter_max_x" value="$(var self_crop_box_filter_max_x)"/>
+      <param name="self_crop_box_filter_min_y" value="$(var self_crop_box_filter_min_y)"/>
+      <param name="self_crop_box_filter_max_y" value="$(var self_crop_box_filter_max_y)"/>
+      <param name="self_crop_box_filter_min_z" value="$(var self_crop_box_filter_min_z)"/>
+      <param name="self_crop_box_filter_max_z" value="$(var self_crop_box_filter_max_z)"/>
 
       <param name="local_map_num_keyframes" value="$(var local_map_num_keyframes)"/>
       <param name="dense_pointcloud_num_keyframes" value="$(var dense_pointcloud_num_keyframes)"/>

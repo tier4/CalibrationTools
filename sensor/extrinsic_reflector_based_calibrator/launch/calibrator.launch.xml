@@ -6,20 +6,20 @@
   <arg name="input_radar_objects" default="/sensing/radar/front_center/objects_raw"/>
 
   <arg name="use_lidar_initial_crop_box_filter" default="true"/>
-  <arg name="lidar_initial_crop_box_min_x" default="5.0"/>
-  <arg name="lidar_initial_crop_box_min_y" default="-15.0"/>
-  <arg name="lidar_initial_crop_box_min_z" default="-1.0"/>
+  <arg name="lidar_initial_crop_box_min_x" default="-35.0"/>
+  <arg name="lidar_initial_crop_box_min_y" default="-35.0"/>
+  <arg name="lidar_initial_crop_box_min_z" default="-5.0"/>
 
-  <arg name="lidar_initial_crop_box_max_x" default="40.0"/>
-  <arg name="lidar_initial_crop_box_max_y" default="15.0"/>
-  <arg name="lidar_initial_crop_box_max_z" default="1.2"/>
+  <arg name="lidar_initial_crop_box_max_x" default="35.0"/>
+  <arg name="lidar_initial_crop_box_max_y" default="35.0"/>
+  <arg name="lidar_initial_crop_box_max_z" default="5.2"/>
 
   <arg name="use_radar_initial_crop_box_filter" default="true"/>
   <arg name="radar_initial_crop_box_min_x" default="0.0"/>
   <arg name="radar_initial_crop_box_min_y" default="-20.0"/>
   <arg name="radar_initial_crop_box_min_z" default="-1.0"/>
 
-  <arg name="radar_initial_crop_box_max_x" default="50.0"/>
+  <arg name="radar_initial_crop_box_max_x" default="30.0"/>
   <arg name="radar_initial_crop_box_max_y" default="20.0"/>
   <arg name="radar_initial_crop_box_max_z" default="1.2"/>
 

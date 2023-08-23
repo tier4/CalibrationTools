@@ -14,7 +14,7 @@
 
   <let name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
 
-  <let name="pointcloud_topic" value="/sensing/lidar/top/pandar_points"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
 
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>

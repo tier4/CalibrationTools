@@ -24,7 +24,7 @@
     <push-ros-namespace namespace="top"/>
 
     <include file="$(find-pkg-share lidartag)/launch/lidartag_pandar64.launch.xml">
-      <arg name="pointcloud_topic" value="/sensing/lidar/top/pandar_points"/>
+      <arg name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
     </include>
 
     <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
