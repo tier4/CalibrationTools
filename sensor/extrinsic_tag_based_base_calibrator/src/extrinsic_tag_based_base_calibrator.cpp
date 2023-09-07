@@ -773,6 +773,10 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
     // Iterate over all the detections of said camera
     for (const UID & tag_uid : data_->uid_connections_map[sensor_uid]) {
+      if (data_->initial_tag_poses_map.count(tag_uid) == 0) {
+        continue;
+      }
+
       addLineMarker(
         markers, initial_connections_color, sensor_pose, *data_->initial_tag_poses_map[tag_uid],
         initial_connections_base_marker);
@@ -818,6 +822,10 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 
     // Iterate over all the detections of said camera
     for (const UID & tag_uid : data_->uid_connections_map[sensor_uid]) {
+      if (data_->optimized_tag_poses_map.count(tag_uid) == 0) {
+        continue;
+      }
+
       addLineMarker(
         markers, optimized_connections_color, sensor_pose, *data_->optimized_tag_poses_map[tag_uid],
         optimized_connections_base_marker);
