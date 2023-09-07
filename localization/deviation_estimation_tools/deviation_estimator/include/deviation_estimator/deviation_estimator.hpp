@@ -90,7 +90,7 @@ private:
   double estimation_freq_;
   double time_window_;
   bool add_bias_uncertainty_;
-  
+
   bool gyro_only_use_straight_;
   bool gyro_only_use_moving_;
   bool gyro_only_use_constant_velocity_;

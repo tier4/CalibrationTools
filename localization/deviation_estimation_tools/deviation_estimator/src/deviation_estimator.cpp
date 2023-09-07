@@ -269,8 +269,12 @@ void DeviationEstimator::timer_callback()
   bool is_moving = get_mean_abs_vx(traj_data.vx_list) > vx_threshold_;
   bool is_constant_velocity = std::abs(get_mean_accel(traj_data.vx_list)) < accel_threshold_;
 
-  const bool use_gyro = whether_to_use_data(is_straight, is_moving, is_constant_velocity, gyro_only_use_straight_, gyro_only_use_moving_, gyro_only_use_constant_velocity_);
-  const bool use_velocity = whether_to_use_data(is_straight, is_moving, is_constant_velocity, velocity_only_use_straight_, velocity_only_use_moving_, velocity_only_use_constant_velocity_);
+  const bool use_gyro = whether_to_use_data(
+    is_straight, is_moving, is_constant_velocity, gyro_only_use_straight_, gyro_only_use_moving_,
+    gyro_only_use_constant_velocity_);
+  const bool use_velocity = whether_to_use_data(
+    is_straight, is_moving, is_constant_velocity, velocity_only_use_straight_,
+    velocity_only_use_moving_, velocity_only_use_constant_velocity_);
   if (use_velocity) {
     vel_coef_module_->update_coef(traj_data);
     traj_data_list_for_velocity_.push_back(traj_data);

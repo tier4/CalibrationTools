@@ -39,12 +39,12 @@ double clip_radian(const double rad)
   }
 }
 
-bool whether_to_use_data(const bool is_straight, const bool is_moving, const bool is_constant_velocity,
+bool whether_to_use_data(
+  const bool is_straight, const bool is_moving, const bool is_constant_velocity,
   const bool only_use_straight, const bool only_use_moving, const bool only_use_constant_velocity)
 {
-  return (is_straight || !only_use_straight) && 
-    (is_moving || !only_use_moving) &&
-    (is_constant_velocity || !only_use_constant_velocity);
+  return (is_straight || !only_use_straight) && (is_moving || !only_use_moving) &&
+         (is_constant_velocity || !only_use_constant_velocity);
 }
 
 /**
