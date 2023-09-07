@@ -36,7 +36,8 @@ if(BUILD_TESTING)
 
   set(TEST_FILES
     test/test_gyro_stddev.cpp
-    test/test_gyro_bias.cpp)
+    test/test_gyro_bias.cpp
+    test/test_utils.cpp)
 
   foreach(filepath ${TEST_FILES})
     add_testcase(${filepath})
