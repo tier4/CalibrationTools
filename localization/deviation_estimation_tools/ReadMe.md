@@ -187,13 +187,19 @@ The parameters and input topic names can be seen in the `deviation_estimator.lau
 
 ### Parameters for deviation estimator
 
-| Name            | Type   | Description                                              | Default value |
-| --------------- | ------ | -------------------------------------------------------- | ------------- |
-| show_debug_info | bool   | Flag to display debug info                               | true          |
-| t_design        | double | Maximum expected duration of dead-reckoning [s]          | 10.0          |
-| x_design        | double | Maximum expected trajectory length of dead-reckoning [m] | 30.0          |
-| time_window     | double | Estimation period [s]                                    | 4.0           |
-| results_dir     | string | Text path where the estimated results will be stored     | "$(env HOME)" |
+| Name                                           | Type   | Description                                                         | Default value |
+| ---------------------------------------------- | ------ | ------------------------------------------------------------------- | ------------- |
+| show_debug_info                                | bool   | Flag to display debug info                                          | true          |
+| t_design                                       | double | Maximum expected duration of dead-reckoning [s]                     | 10.0          |
+| x_design                                       | double | Maximum expected trajectory length of dead-reckoning [m]            | 30.0          |
+| time_window                                    | double | Estimation period [s]                                               | 4.0           |
+| results_dir                                    | string | Text path where the estimated results will be stored                | "$(env HOME)" |
+| gyro_estimation.only_use_straight              | bool   | Flag to use only straight sections for gyro estimation              | true          |
+| gyro_estimation.only_use_moving                | bool   | Flag to use only moving sections for gyro estimation                | true          |
+| gyro_estimation.only_use_constant_velocity     | bool   | Flag to use only constant velocity sections for gyro estimation     | true          |
+| velocity_estimation.only_use_straight          | bool   | Flag to use only straight sections for velocity estimation          | true          |
+| velocity_estimation.only_use_moving            | bool   | Flag to use only moving sections for velocity estimation            | true          |
+| velocity_estimation.only_use_constant_velocity | bool   | Flag to use only constant velocity sections for velocity estimation | true          |
 
 ### Functions
 

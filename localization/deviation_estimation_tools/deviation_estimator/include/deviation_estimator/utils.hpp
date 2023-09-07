@@ -45,6 +45,10 @@ struct TrajectoryData
 
 double double_round(const double x, const int n);
 
+bool whether_to_use_data(
+  const bool is_straight, const bool is_moving, const bool is_constant_velocity,
+  const bool only_use_straight, const bool only_use_moving, const bool only_use_constant_velocity);
+
 template <typename T>
 double calculate_mean(const std::vector<T> & v)
 {

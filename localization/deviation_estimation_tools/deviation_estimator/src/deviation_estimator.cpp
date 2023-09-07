@@ -144,6 +144,16 @@ DeviationEstimator::DeviationEstimator(
   time_window_ = declare_parameter("time_window", 4.0);
   add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
 
+  // flags for deciding which trajectory to use
+  gyro_only_use_straight_ = declare_parameter<bool>("gyro_estimation.only_use_straight");
+  gyro_only_use_moving_ = declare_parameter<bool>("gyro_estimation.only_use_moving");
+  gyro_only_use_constant_velocity_ =
+    declare_parameter<bool>("gyro_estimation.only_use_constant_velocity");
+  velocity_only_use_straight_ = declare_parameter<bool>("velocity_estimation.only_use_straight");
+  velocity_only_use_moving_ = declare_parameter<bool>("velocity_estimation.only_use_moving");
+  velocity_only_use_constant_velocity_ =
+    declare_parameter<bool>("velocity_estimation.only_use_constant_velocity");
+
   auto timer_callback = std::bind(&DeviationEstimator::timer_callback, this);
   auto period_control = std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::duration<double>(time_window_));
@@ -255,16 +265,24 @@ void DeviationEstimator::timer_callback()
   traj_data.pose_list = pose_buf_;
   traj_data.vx_list = extract_sub_trajectory(vx_all_, t0_rclcpp_time, t1_rclcpp_time);
   traj_data.gyro_list = extract_sub_trajectory(gyro_all_, t0_rclcpp_time, t1_rclcpp_time);
-  bool is_straight = get_mean_abs_wz(traj_data.gyro_list) > wz_threshold_;
-  bool is_stopped = get_mean_abs_vx(traj_data.vx_list) < vx_threshold_;
+  bool is_straight = get_mean_abs_wz(traj_data.gyro_list) < wz_threshold_;
+  bool is_moving = get_mean_abs_vx(traj_data.vx_list) > vx_threshold_;
   bool is_constant_velocity = std::abs(get_mean_accel(traj_data.vx_list)) < accel_threshold_;
 
-  if (is_straight & !is_stopped & is_constant_velocity) {
+  const bool use_gyro = whether_to_use_data(
+    is_straight, is_moving, is_constant_velocity, gyro_only_use_straight_, gyro_only_use_moving_,
+    gyro_only_use_constant_velocity_);
+  const bool use_velocity = whether_to_use_data(
+    is_straight, is_moving, is_constant_velocity, velocity_only_use_straight_,
+    velocity_only_use_moving_, velocity_only_use_constant_velocity_);
+  if (use_velocity) {
     vel_coef_module_->update_coef(traj_data);
     traj_data_list_for_velocity_.push_back(traj_data);
   }
-  gyro_bias_module_->update_bias(traj_data);
-  traj_data_list_for_gyro_.push_back(traj_data);
+  if (use_gyro) {
+    gyro_bias_module_->update_bias(traj_data);
+    traj_data_list_for_gyro_.push_back(traj_data);
+  }
 
   pose_buf_.clear();
 
