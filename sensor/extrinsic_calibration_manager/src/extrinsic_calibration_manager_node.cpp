@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "extrinsic_calibration_manager/extrinsic_calibration_manager_node.hpp"
+#include <extrinsic_calibration_manager/extrinsic_calibration_manager_node.hpp>
+#include <tier4_autoware_utils/geometry/geometry.hpp>
 
 #include <iomanip>
 #include <memory>
@@ -20,17 +21,14 @@
 #include <string>
 #include <vector>
 
-using namespace std::chrono_literals;
-
 ExtrinsicCalibrationManagerNode::ExtrinsicCalibrationManagerNode(
   const rclcpp::NodeOptions & node_options)
 : Node("extrinsic_calibration_manager_node", node_options)
 {
-  using namespace std::placeholders;
-
   server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager>(
-    "extrinsic_calibration_manager",
-    std::bind(&ExtrinsicCalibrationManagerNode::calibrationRequestCallback, this, _1, _2));
+    "extrinsic_calibration_manager", std::bind(
+                                       &ExtrinsicCalibrationManagerNode::calibrationRequestCallback,
+                                       this, std::placeholders::_1, std::placeholders::_2));
 
   callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -45,6 +43,8 @@ void ExtrinsicCalibrationManagerNode::calibrationRequestCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrationManager::Response>
     response)
 {
+  using std::chrono_literals::operator""s;
+
   // open yaml file
   auto yaml_node = YAML::LoadFile(request->src_path);
   if (yaml_node.IsNull()) {

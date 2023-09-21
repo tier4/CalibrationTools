@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ bool bruteForceMatcher(
 
   if (debug) {
     pcl::console::print_info("RANSAC correspondences\n");
-    for (int i = 0; i < int(ransac_correspondences->size()); ++i) {
+    for (std::size_t i = 0; i < ransac_correspondences->size(); ++i) {
       int source_id = (*ransac_correspondences)[i].index_query;
       int target_id = (*ransac_correspondences)[i].index_match;
       double distance = std::sqrt((*ransac_correspondences)[i].distance);
@@ -122,7 +122,7 @@ bool bruteForceMatcher(
 
   if (debug) {
     pcl::console::print_info("ICP correspondences\n");
-    for (int i = 0; i < int(icp_correspondences->size()); ++i) {
+    for (std::size_t i = 0; i < icp_correspondences->size(); ++i) {
       int source_id = (*icp_correspondences)[i].index_query;
       int target_id = (*icp_correspondences)[i].index_match;
       double distance = std::sqrt((*icp_correspondences)[i].distance);
@@ -184,7 +184,7 @@ bool bruteForceMatcher(
 
   // Check if the ICP aligning satisties the convergence criteria
 
-  for (int i = 0; i < int(icp_correspondences->size()); ++i) {
+  for (std::size_t i = 0; i < icp_correspondences->size(); ++i) {
     int source_id = (*icp_correspondences)[i].index_query;
     int target_id = (*icp_correspondences)[i].index_match;
     double distance = std::sqrt((*icp_correspondences)[i].distance);
@@ -205,7 +205,7 @@ bool bruteForceMatcher(
   source_indexes.clear();
   target_indexes.clear();
 
-  for (int i = 0; i < int(icp_correspondences->size()); ++i) {
+  for (std::size_t i = 0; i < icp_correspondences->size(); ++i) {
     int source_id = (*icp_correspondences)[i].index_query;
     int target_id = (*icp_correspondences)[i].index_match;
 
