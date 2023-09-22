@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 #include <limits>
 #include <memory>
 
-using namespace std::chrono_literals;
-
 namespace extrinsic_map_base_calibrator
 {
 ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptions & node_options)
@@ -26,6 +24,8 @@ ExtrinsicMapBasedCalibrator::ExtrinsicMapBasedCalibrator(const rclcpp::NodeOptio
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_)
 {
+  using std::chrono_literals::operator""s;
+
   // set launch param
   parent_frame_ = this->declare_parameter("parent_frame", "");
   child_frame_ = this->declare_parameter("child_frame", "");
@@ -309,6 +309,8 @@ void ExtrinsicMapBasedCalibrator::requestReceivedCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
+  using std::chrono_literals::operator""s;
+
   // Wait for subscription topic
   while (rclcpp::ok() && (!sensor_pointcloud_msg_ || !map_with_wall_pointcloud_msg_ ||
                           (!map_without_wall_pointcloud_msg_ && is_calibration_area_map_))) {

@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "extrinsic_manual_calibrator/extrinsic_manual_calibrator_node.hpp"
+#include <extrinsic_manual_calibrator/extrinsic_manual_calibrator_node.hpp>
+#include <tier4_autoware_utils/geometry/geometry.hpp>
 
 #include <memory>
-
-using namespace std::chrono_literals;
 
 ExtrinsicManualCalibratorNode::ExtrinsicManualCalibratorNode(
   const rclcpp::NodeOptions & node_options)
 : Node("extrinsic_manual_calibrator_node", node_options), done_(false)
 {
-  using namespace std::placeholders;
+  using std::placeholders::_1;
+  using std::placeholders::_2;
 
   // rosparam
   tf_parameter_ns_ = this->declare_parameter("tf_parameter_ns", "tf_broadcaster");
@@ -51,6 +51,8 @@ void ExtrinsicManualCalibratorNode::calibrationRequestCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
+  using std::chrono_literals::operator""s;
+
   while (!parameters_client_->wait_for_service(1s)) {
     if (!rclcpp::ok()) {
       RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for service.");

@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@
 #endif
 
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -52,7 +53,7 @@
 class ExtrinsicTagBasedCalibrator : public rclcpp::Node
 {
 public:
-  ExtrinsicTagBasedCalibrator(const rclcpp::NodeOptions & options);
+  explicit ExtrinsicTagBasedCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
   void cameraImageCallback(

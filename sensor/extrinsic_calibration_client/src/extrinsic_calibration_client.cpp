@@ -1,4 +1,4 @@
-// Copyright 2020 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@
 #include <chrono>
 #include <memory>
 
-using namespace std::chrono_literals;
-
 int main(int argc, char * argv[])
 {
+  using std::chrono_literals::operator""s;
+
   rclcpp::init(argc, argv);
   auto node = rclcpp::Node::make_shared("extrinsic_calibration_client");
 

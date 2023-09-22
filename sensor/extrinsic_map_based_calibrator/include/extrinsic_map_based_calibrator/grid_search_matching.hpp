@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,12 +58,12 @@ struct GridSearchConfig
 class GridSearchMatching
 {
 public:
-  explicit GridSearchMatching();
-  void setParameter(GridSearchConfig & config) { config_ = config; };
+  GridSearchMatching();
+  void setParameter(GridSearchConfig & config) { config_ = config; }
   bool executeGridSearchMatching(
     const PointCloudT::Ptr & map_pointCloud, const PointCloudT::Ptr & sensor_pointCloud);
-  matchingResult getRematchedResult() { return rematched_result_; };
-  matchingResult getSearchedResult() { return searched_result_; };
+  matchingResult getRematchedResult() { return rematched_result_; }
+  matchingResult getSearchedResult() { return searched_result_; }
 
 private:
   matchingResult rematched_result_;

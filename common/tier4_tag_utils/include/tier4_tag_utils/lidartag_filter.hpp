@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ namespace tier4_tag_utils
 class LidartagFilter : public rclcpp::Node
 {
 public:
-  LidartagFilter(const rclcpp::NodeOptions & options);
+  explicit LidartagFilter(const rclcpp::NodeOptions & options);
 
 protected:
   void lidarTagDetectionsCallback(

@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@
 #endif
 #include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/transform_broadcaster.h"
-#include "tier4_autoware_utils/tier4_autoware_utils.hpp"
 
 #include "tier4_calibration_msgs/srv/extrinsic_calibration_manager.hpp"
 #include "tier4_calibration_msgs/srv/extrinsic_calibrator.hpp"

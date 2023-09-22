@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ private:
   matchingResult prematched_result_;
 
 public:
-  explicit ExtrinsicMapBasedPreprocessing();
+  ExtrinsicMapBasedPreprocessing();
   PointCloudT::Ptr preprocessing(
     const PointCloudT::Ptr & map_pointcloud_with_wall_pcl,
     const PointCloudT::Ptr & map_pointcloud_without_wall_pcl,
@@ -75,8 +75,8 @@ public:
   PointCloudT::Ptr removeWallPointcloud(
     const PointCloudT::Ptr & sensor_point_cloud, const PointCloudT::Ptr & map_point_cloud_with_wall,
     const PointCloudT::Ptr & map_point_cloud_without_wall);
-  void setConfig(PreprocessingConfig & config) { config_ = config; };
-  matchingResult getPrematchedResult() { return prematched_result_; };
+  void setConfig(PreprocessingConfig & config) { config_ = config; }
+  matchingResult getPrematchedResult() { return prematched_result_; }
 };
 
 }  // namespace extrinsic_map_base_calibrator

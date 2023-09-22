@@ -1,4 +1,4 @@
-// Copyright 2022 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ struct MatchingConfig
 class PointCloudMatcher
 {
 public:
-  explicit PointCloudMatcher(){};
+  PointCloudMatcher() {}
 
-  void setParameter(MatchingConfig & config) { config_ = config; };
+  void setParameter(MatchingConfig & config) { config_ = config; }
 
   matchingResult ICPMatching(
     const PointCloudT::Ptr & map_pointCloud, const PointCloudT::Ptr & sensor_pointCloud)
@@ -81,7 +81,7 @@ public:
     result.transformation_matrix = icp.getFinalTransformation().cast<double>();
     result.score = icp.getFitnessScore();
     return result;
-  };
+  }
 
   matchingResult ICPMatching(
     const PointCloudT::Ptr & map_pointCloud, const PointCloudT::Ptr & sensor_pointCloud,
@@ -109,7 +109,7 @@ public:
     result.transformation_matrix = icp.getFinalTransformation().cast<double>();
     result.score = icp.getFitnessScore();
     return result;
-  };
+  }
 
   double getFitnessScore(
     const PointCloudT::Ptr & map_pointCloud, const PointCloudT::Ptr & sensor_pointCloud,
@@ -126,7 +126,7 @@ public:
     icp.setTransformationEpsilon(config_.transformation_epsilon);
     icp.setEuclideanFitnessEpsilon(config_.euclidean_fitness_epsilon);
     return icp.getFitnessScore();
-  };
+  }
 
   matchingResult GICPMatching(
     const PointCloudT::Ptr & map_pointCloud, const PointCloudT::Ptr & sensor_pointCloud)
@@ -152,7 +152,7 @@ public:
     result.transformation_matrix = gicp.getFinalTransformation().cast<double>();
     result.score = gicp.getFitnessScore();
     return result;
-  };
+  }
 
 private:
   MatchingConfig config_;
