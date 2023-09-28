@@ -113,9 +113,7 @@
     <group if="$(eval &quot;'$(var mode)' == 'ground_plane' &quot;)">
       <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/ground_plane.launch.xml">
         <arg name="vehicle_id" value="$(var vehicle_id)"/>
-        <arg name="map_path" value="$(var map_path)"/>
-        <arg name="pointcloud_map_file" value="$(var pointcloud_map_file)"/>
-        <arg name="map_calibration_area_file" value="$(var map_calibration_area_file)"/>
+        <arg name="rviz" value="$(var calibration_rviz)"/>
       </include>
     </group>
 
