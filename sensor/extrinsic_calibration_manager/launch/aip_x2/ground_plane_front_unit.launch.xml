@@ -31,7 +31,7 @@
     [$(var child_frame)]"/>
   </node>
 
-  <!-- velodyne_rear_base_link: extrinsic_ground_plane_calibrator -->
+  <!-- front_unit_base_link: extrinsic_ground_plane_calibrator -->
   <group>
     <include file="$(find-pkg-share extrinsic_ground_plane_calibrator)/launch/calibrator.launch.xml">
       <arg name="ns" value="$(var parent_frame)/$(var child_frame)"/>
