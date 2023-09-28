@@ -1,4 +1,4 @@
-// Copyright 2021 Tier IV, Inc.
+// Copyright 2023 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
 #ifndef EXTRINSIC_TAG_BASED_CALIBRATOR__CALIBRATION_ESTIMATOR_HPP_
 #define EXTRINSIC_TAG_BASED_CALIBRATOR__CALIBRATION_ESTIMATOR_HPP_
 
-#include <extrinsic_tag_based_calibrator/apriltag_hypothesis.hpp>
-#include <extrinsic_tag_based_calibrator/lidartag_hypothesis.hpp>
-#include <extrinsic_tag_based_calibrator/types.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
+#include <tier4_tag_utils/apriltag_hypothesis.hpp>
+#include <tier4_tag_utils/lidartag_hypothesis.hpp>
+#include <tier4_tag_utils/types.hpp>
 
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 #include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
@@ -30,6 +30,7 @@
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf2/utils.h>
 
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -57,11 +58,15 @@ public:
   bool converged() const;
   bool valid() const;
 
-  std::vector<std::shared_ptr<LidartagHypothesis>> getActiveLidartagHypotheses() const;
-  std::vector<std::shared_ptr<ApriltagHypothesis>> getActiveApriltagHypotheses() const;
+  std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> getActiveLidartagHypotheses()
+    const;
+  std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> getActiveApriltagHypotheses()
+    const;
 
-  std::vector<std::shared_ptr<LidartagHypothesis>> getConvergedLidartagHypotheses() const;
-  std::vector<std::shared_ptr<ApriltagHypothesis>> getConvergedApriltagHypotheses() const;
+  std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> getConvergedLidartagHypotheses()
+    const;
+  std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> getConvergedApriltagHypotheses()
+    const;
 
   void setCameraModel(const sensor_msgs::msg::CameraInfo & camera_info);
   tf2::Transform getCurrentPose() const;
@@ -70,7 +75,7 @@ public:
   void getFilteredPose(cv::Matx31d & trans_vector, cv::Matx33d & rot_matrix) const;
 
   // Parameters setters
-  void setDynamicsModel(DynamicsModel dynamics_mode);
+  void setDynamicsModel(tier4_tag_utils::DynamicsModel dynamics_mode);
   void setCrossvalidationTrainingRatio(double ratio);
   void setCalibrationConvergenceCriteria(int min_pairs, double min_area_percentage);
   void setMinPnpPairs(int min_pairs);
@@ -115,7 +120,7 @@ private:
     const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points);
 
   // Parameters
-  DynamicsModel dynamics_model_;
+  tier4_tag_utils::DynamicsModel dynamics_model_;
 
   // Calibration convergence criteria
   int convergence_min_pairs_;
@@ -154,11 +159,13 @@ private:
   std::unordered_map<int, double> tag_sizes_map_;
 
   // Hypotheses
-  std::unordered_map<int, std::shared_ptr<LidartagHypothesis>> active_lidartag_hypotheses_;
-  std::unordered_map<int, std::shared_ptr<ApriltagHypothesis>> active_apriltag_hypotheses_;
+  std::unordered_map<int, std::shared_ptr<tier4_tag_utils::LidartagHypothesis>>
+    active_lidartag_hypotheses_;
+  std::unordered_map<int, std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>>
+    active_apriltag_hypotheses_;
 
-  std::vector<std::shared_ptr<LidartagHypothesis>> converged_lidartag_hypotheses_;
-  std::vector<std::shared_ptr<ApriltagHypothesis>> converged_apriltag_hypotheses_;
+  std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>> converged_lidartag_hypotheses_;
+  std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> converged_apriltag_hypotheses_;
 
   // Output
   double crossval_reproj_error_;

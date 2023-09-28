@@ -1087,6 +1087,7 @@ def main(args=None):
     if len(args) != 1:
         parser.error(f"incorrect number of arguments: {len(args)}")
 
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
     app = QApplication(sys.argv)
 
     cfg = {}

@@ -28,7 +28,7 @@
 class Logger
 {
 public:
-  Logger(const std::string & output_dir);
+  explicit Logger(const std::string & output_dir);
   void log_estimated_result_section(
     const double stddev_vx, const double coef_vx,
     const geometry_msgs::msg::Vector3 & angular_velocity_stddev,

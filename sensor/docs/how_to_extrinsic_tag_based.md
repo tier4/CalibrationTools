@@ -96,7 +96,7 @@ ros2 launch extrinsic_calibration_manager calibration.launch.xml \
   mode:=tag_based sensor_model:=aip_x2 vehicle_model:=gsm8 vehicle_id:=ps1 camera_name:=camera1
 ```
 
-The, play the recorded calibration rosbag (on terminal 2).
+Then, play the recorded calibration rosbag (on terminal 2).
 
 ```sh
 ros2 bag play <rosbag_path> --clock -l -r 0.2 \

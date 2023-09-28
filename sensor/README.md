@@ -59,6 +59,15 @@ To calibrate pairs of lidars, this method uses standard point cloud registration
    <figcaption align="center">Figure 4. Map-based calibration</figcaption>
 </figure>
 
+- [Mapping-based lidar-lidar calibration](docs/how_to_extrinsic_mapping_based.md)
+
+Similar to the `map-based` method, the `mapping-based` calibration uses point cloud registration to find the relative poses between lidars. However, instead of relying on a map to circumvent the sparsity and field of view, this method includes a mapping step, which generates a dense local map representation, which is then used for registration.
+
+<figure align="center">
+   <img src="docs/images/mapping-based/top_view_result.png" width="400">
+   <figcaption align="center">Figure 5. Mapping-based calibration</figcaption>
+</figure>
+
 ### Camera-lidar calibration
 
 - [Extrinsic interactive camera-lidar calibration](docs/how_to_extrinsic_interactive.md)
@@ -67,7 +76,7 @@ To calibrate camera-lidar pairs of sensors, a common practice is to compute corr
 
 <figure align="center">
    <img src="docs/images/camera-lidar/interactive_calibration_ui.png" width="400">
-   <figcaption align="center">Fig 5. Interactive camera-lidar calibration UI</figcaption>
+   <figcaption align="center">Fig 6. Interactive camera-lidar calibration UI</figcaption>
 </figure>
 
 - [Tag-based camera-lidar calibration](docs/how_to_extrinsic_tag_based.md)
@@ -76,7 +85,7 @@ This calibration method extends the interactive calibration by performing the co
 
 <figure align="center">
    <img src="docs/images/camera-lidar/correct_calibration.png" width="400">
-   <figcaption align="center">Fig 6. Tag-based camera-lidar calibration</figcaption>
+   <figcaption align="center">Fig 7. Tag-based camera-lidar calibration</figcaption>
 </figure>
 
 ## Intrinsic Calibration

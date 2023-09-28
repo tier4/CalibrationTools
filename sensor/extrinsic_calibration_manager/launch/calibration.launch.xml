@@ -77,6 +77,30 @@
       </include>
     </group>
 
+    <group if="$(eval &quot;'$(var mode)' == 'tag_based_base' &quot;)">
+      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/tag_based_base.launch.xml">
+        <arg name="vehicle_id" value="$(var vehicle_id)"/>
+        <arg name="camera_name" value="$(var camera_name)"/>
+        <arg name="rviz" value="$(var calibration_rviz)"/>
+      </include>
+    </group>
+
+    <group if="$(eval &quot;'$(var mode)' == 'tag_based_lidars' &quot;)">
+      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/tag_based_lidars.launch.xml">
+        <arg name="vehicle_id" value="$(var vehicle_id)"/>
+        <arg name="camera_name" value="$(var camera_name)"/>
+        <arg name="rviz" value="$(var calibration_rviz)"/>
+      </include>
+    </group>
+
+    <group if="$(eval &quot;'$(var mode)' == 'tag_based_all' &quot;)">
+      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/tag_based_all.launch.xml">
+        <arg name="vehicle_id" value="$(var vehicle_id)"/>
+        <arg name="camera_name" value="$(var camera_name)"/>
+        <arg name="rviz" value="$(var calibration_rviz)"/>
+      </include>
+    </group>
+
     <group if="$(eval &quot;'$(var mode)' == 'interactive' &quot;)">
       <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/interactive.launch.xml">
         <arg name="vehicle_id" value="$(var vehicle_id)"/>
@@ -99,9 +123,8 @@
         <arg name="rviz" value="$(var calibration_rviz)"/>
       </include>
     </group>
-
-    <group if="$(eval &quot;'$(var mode)' == 'lidar_to_lidar_2d' &quot;)">
-      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/lidar_to_lidar_2d.launch.xml">
+    <group if="$(eval &quot;'$(var mode)' == 'mapping_based' &quot;)">
+      <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/mapping_based.launch.xml">
         <arg name="vehicle_id" value="$(var vehicle_id)"/>
         <arg name="rviz" value="$(var calibration_rviz)"/>
       </include>

@@ -91,6 +91,13 @@ private:
   double time_window_;
   bool add_bias_uncertainty_;
 
+  bool gyro_only_use_straight_;
+  bool gyro_only_use_moving_;
+  bool gyro_only_use_constant_velocity_;
+  bool velocity_only_use_straight_;
+  bool velocity_only_use_moving_;
+  bool velocity_only_use_constant_velocity_;
+
   std::string imu_frame_;
   const std::string output_frame_;
   const std::string results_dir_;
