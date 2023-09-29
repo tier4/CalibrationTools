@@ -20,9 +20,6 @@
   <!-- interactive only -->
   <arg name="interactive_use_concatenated" default="true"/>
 
-  <!-- map_based only -->
-  <arg name="fitness_score_threshold" />
-
   <!-- logging simulator -->
   <include if="$(var logging_simulator)" file="$(find-pkg-share autoware_launch)/launch/logging_simulator.launch.xml">
     <arg name="sensor_model" value="$(var sensor_model)" />
@@ -57,6 +54,7 @@
     </group>
 
     <group if="$(eval &quot;'$(var mode)' == 'map_based' &quot;)">
+      <arg name="fitness_score_threshold" />
       <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/map_based.launch.xml">
         <arg name="vehicle_id" value="$(var vehicle_id)" />
         <arg name="map_path" value="$(var map_path)" />
