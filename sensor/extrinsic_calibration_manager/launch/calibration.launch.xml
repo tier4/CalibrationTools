@@ -20,6 +20,9 @@
   <!-- interactive only -->
   <arg name="interactive_use_concatenated" default="true"/>
 
+  <!-- map_based only -->
+  <arg name="fitness_score_threshold" />
+
   <!-- logging simulator -->
   <include if="$(var logging_simulator)" file="$(find-pkg-share autoware_launch)/launch/logging_simulator.launch.xml">
     <arg name="sensor_model" value="$(var sensor_model)" />
@@ -60,6 +63,7 @@
         <arg name="map_calibration_area_file" value="$(var map_calibration_area_file)" />
         <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)" />
         <arg name="calibration_rviz" value="$(var calibration_rviz)" />
+        <arg name="fitness_score_threshold" value="$(var fitness_score_threshold)" />
       </include>
     </group>
 
