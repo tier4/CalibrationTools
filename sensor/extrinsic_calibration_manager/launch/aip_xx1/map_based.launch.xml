@@ -6,8 +6,6 @@
   <arg name="map_calibration_area_file" default="map_calibration_area.pcd"/>
   <arg name="use_calibration_area_map" default="true" />
   <arg name="calibration_rviz" default="true"/>
-  <arg name="fitness_score_threshold" />
-
   <let name="sensor_model" value="aip_xx1" />
 
   <!-- rviz -->
