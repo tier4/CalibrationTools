@@ -44,8 +44,8 @@
     <!--6.0-->
     <param name="max_no_observation_time" value="3.0"/>
     <param name="new_hypothesis_distance" value="1.5"/>
-    <param name="tag_ids" value="[0, 3, 4, 5]"/>
-    <param name="tag_sizes" value="[0.6, 0.6, 0.6, 0.6]"/>
+    <param name="tag_ids" value="[0, 1, 2, 3, 4, 5]"/>
+    <param name="tag_sizes" value="[0.6, 0.6, 0.6, 0.6, 0.6, 0.6]"/>
     <!-- the sizes of tag_ids -->
 
     <param name="lidartag_max_convergence_transl" value="0.05"/>
