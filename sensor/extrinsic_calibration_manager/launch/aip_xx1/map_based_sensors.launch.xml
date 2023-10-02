@@ -7,7 +7,7 @@
   <let name="input_map_with_wall_topic_name" value="/map/pointcloud_map" />
   <let name="input_map_without_wall_topic_name" value="/map/pointcloud_map_without_wall" />
   <arg name="accumulate_frame_num" default="2" />
-  <arg name="fitness_score_threshold" />
+  <arg name="fitness_score_threshold" default="0.001" />
   <arg name="config_file_name" default="extrinsic_map_based_calib.yaml" />
   <arg name="use_calibration_area_map" default="true" />
 
