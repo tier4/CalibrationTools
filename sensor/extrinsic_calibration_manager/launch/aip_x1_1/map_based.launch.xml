@@ -6,6 +6,7 @@
   <arg name="map_calibration_area_file" default="map_calibration_area.pcd"/>
   <arg name="use_calibration_area_map" default="true" />
   <arg name="calibration_rviz" default="true"/>
+  <arg name="fitness_score_threshold" />
 
   <let name="sensor_model" value="aip_x1_1" />
 
@@ -18,6 +19,7 @@
     <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/map_based_sensor_kit.launch.xml">
       <arg name="vehicle_id" value="$(var vehicle_id)" />
       <arg name="use_calibration_area_map" value="$(var use_calibration_area_map)" />
+      <arg name="fitness_score_threshold" value="$(var fitness_score_threshold)" />
     </include>
   </group>
 
