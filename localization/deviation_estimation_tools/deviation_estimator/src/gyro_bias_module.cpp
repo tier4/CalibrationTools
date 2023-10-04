@@ -58,7 +58,7 @@ void GyroBiasModule::update_bias(const TrajectoryData & traj_data)
 geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_base_link() const
 {
   geometry_msgs::msg::Vector3 gyro_bias_base;
-  gyro_bias_base.x = gyro_bias_pair_.first.x / gyro_bias_pair_.second.z;
+  gyro_bias_base.x = gyro_bias_pair_.first.x / gyro_bias_pair_.second.x;
   gyro_bias_base.y = gyro_bias_pair_.first.y / gyro_bias_pair_.second.y;
   gyro_bias_base.z = gyro_bias_pair_.first.z / gyro_bias_pair_.second.z;
   return gyro_bias_base;
@@ -79,9 +79,9 @@ geometry_msgs::msg::Vector3 GyroBiasModule::get_bias_std() const
   stddev_bias.x = calculate_std_mean_const(
     stddev_bias_list_x, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
   stddev_bias.y = calculate_std_mean_const(
-    stddev_bias_list_y, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+    stddev_bias_list_y, gyro_bias_pair_.first.y / gyro_bias_pair_.second.y);
   stddev_bias.z = calculate_std_mean_const(
-    stddev_bias_list_z, gyro_bias_pair_.first.x / gyro_bias_pair_.second.x);
+    stddev_bias_list_z, gyro_bias_pair_.first.z / gyro_bias_pair_.second.z);
   return stddev_bias;
 }
 
