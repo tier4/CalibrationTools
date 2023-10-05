@@ -70,9 +70,14 @@ class LauncherConfigurationView(QWidget):
             + calibrator_name
             + ".launch.xml"
         )
-        xml_doc = xml.dom.minidom.parse(path)
 
         print(f"Reading xml from: {path}")
+
+        try:
+            xml_doc = xml.dom.minidom.parse(path)
+        except Exception as e:
+            print("Failed reading xml file. Either not-existent or invalid")
+            raise e
 
         arg_nodes = [
             node

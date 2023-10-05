@@ -8,7 +8,7 @@
   <arg name="lidar_model" default="velodyne_vls128" description="this lidar must be supported by the lidartag package"/>
 
   <let name="rviz_profile" value=""/>
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_pnp_calibrator)/rviz/tag_calib_camera0_velodyne_top.rviz"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
 
   <!-- image decompressor -->
   <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
@@ -39,5 +39,12 @@
   </node>
 
   <include file="$(find-pkg-share intrinsic_camera_calibration)/launch/optimizer.launch.xml"/>
-  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)"/>
+
+  <!-- create a placeholder lidar frame to make the rviz profile generic -->
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="estimated_base_link_broadcaster" output="screen" args="0 0 0 0 0 0 $(var lidar_frame) lidar_frame"/>
+
+  <!-- remap the pointcloud topic to make the rviz profile generic -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)">
+    <remap from="pointcloud_topic_placeholder" to="$(var pointcloud_topic)"/>
+  </node>
 </launch>

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <rclcpp/rclcpp.hpp>
 #include <tier4_tag_utils/apriltag_hypothesis.hpp>
-#include <tier4_tag_utils/cv/sqpnp.hpp>
 
 namespace tier4_tag_utils
 {
@@ -118,7 +118,6 @@ std::vector<cv::Point3d> ApriltagHypothesis::getFilteredPoints3d() const
 std::vector<cv::Point3d> ApriltagHypothesis::getPoints3d(
   const std::vector<cv::Point2d> & image_points) const
 {
-  std::vector<cv::Point2d> undistorted_points;
   std::vector<cv::Point3d> object_points;
 
   std::vector<cv::Point3d> apriltag_template_points = {
@@ -127,22 +126,16 @@ std::vector<cv::Point3d> ApriltagHypothesis::getPoints3d(
     cv::Point3d(0.5 * tag_size_, -0.5 * tag_size_, 0.0),
     cv::Point3d(-0.5 * tag_size_, -0.5 * tag_size_, 0.0)};
 
-  cv::undistortPoints(
-    image_points, undistorted_points, pinhole_camera_model_.intrinsicMatrix(),
-    pinhole_camera_model_.distortionCoeffs());
+  cv::Mat rvec, tvec;
 
-  cv::sqpnp::PoseSolver solver;
-  std::vector<cv::Mat> rvec_vec, tvec_vec;
-  solver.solve(apriltag_template_points, undistorted_points, rvec_vec, tvec_vec);
+  bool success = cv::solvePnP(
+    apriltag_template_points, image_points, pinhole_camera_model_.intrinsicMatrix(),
+    pinhole_camera_model_.distortionCoeffs(), rvec, tvec, false, cv::SOLVEPNP_SQPNP);
 
-  if (tvec_vec.size() == 0) {
-    assert(false);
+  if (!success) {
+    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
     return object_points;
   }
-
-  assert(rvec_vec.size() == 1);
-  cv::Mat rvec = rvec_vec[0];
-  cv::Mat tvec = tvec_vec[0];
 
   cv::Matx31d translation_vector = tvec;
   cv::Matx33d rotation_matrix;

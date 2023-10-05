@@ -4,18 +4,24 @@
   <arg name="pointcloud_topic"/>
   <arg name="base_frame" default="base_link"/>
   <arg name="lidar_model" description="For supported lidar models check the lidartag repository"/>
+  <arg name="use_receive_time" default="false" description="If sensor synchronization does not work, we can force the use of system time"/>
+  <arg name="calibration_pairs" default="9" description="Number of lidar-image pairs for the calibration to converge"/>
+  <arg name="calibration_pairs_min_distance" default="1.5" description="Minimum allowed between a new detection and current pairs"/>
 
   <arg name="calibration_service_name" default="extrinsic_calibration"/>
 
+  <!-- lidartag detector -->
   <include file="$(find-pkg-share lidartag)/launch/lidartag_$(var lidar_model).launch.xml">
     <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
   </include>
 
+  <!-- apriltag detector -->
   <include file="$(find-pkg-share extrinsic_tag_based_pnp_calibrator)/launch/apriltag_16h5.launch.py">
     <arg name="image_topic" value="$(var image_topic)"/>
     <arg name="camera_info_topic" value="$(var camera_info_topic)"/>
   </include>
 
+  <!-- calibrator -->
   <node pkg="extrinsic_tag_based_pnp_calibrator" exec="extrinsic_tag_based_pnp_calibrator" name="extrinsic_tag_based_pnp_calibrator_node" output="screen">
     <param name="calib_rate" value="10.0"/>
     <param name="base_frame" value="$(var base_frame)"/>
@@ -25,16 +31,17 @@
     <!--0.6 = 0.8 * 0.75 the apriltag size, not the lidartag-->
     <param name="max_tag_distance" value="20.0"/>
     <param name="max_allowed_homography_error" value="0.5"/>
+    <param name="use_receive_time" value="$(var use_receive_time)"/>
 
     <param name="calibration_crossvalidation_training_ratio" value="0.7"/>
-    <param name="calibration_convergence_min_pairs" value="3"/>
+    <param name="calibration_convergence_min_pairs" value="$(var calibration_pairs)"/>
     <!-- the calibration finishes only after enough calibration pairs have been collected -->
     <param name="calibration_convergence_min_area_percentage" value="0.05"/>
     <param name="min_pnp_points" value="8"/>
     <param name="min_convergence_time" value="6.0"/>
     <param name="max_no_observation_time" value="3.0"/>
-    <param name="new_hypothesis_distance" value="1.5"/>
-    <param name="tag_ids" value="[0, 3, 4, 5]"/>
+    <param name="new_hypothesis_distance" value="$(var calibration_pairs_min_distance)"/>
+    <param name="tag_ids" value="[0, 1, 2, 3, 4, 5]"/>
     <param name="tag_sizes" value="[0.6, 0.6, 0.6, 0.6]"/>
     <!-- the sizes of the corresponding tag_ids - size of the black frame only  -->
 

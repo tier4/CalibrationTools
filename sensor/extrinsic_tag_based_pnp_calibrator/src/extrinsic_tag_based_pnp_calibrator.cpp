@@ -16,7 +16,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <rclcpp/time.hpp>
-#include <tier4_tag_utils/cv/sqpnp.hpp>
 
 #include <tier4_calibration_msgs/msg/calibration_result.hpp>
 
@@ -43,6 +42,8 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   min_tag_size_ = this->declare_parameter<double>("min_tag_size");
   max_tag_distance_ = this->declare_parameter<double>("max_tag_distance");
   max_allowed_homography_error_ = this->declare_parameter<double>("max_allowed_homography_error");
+  use_receive_time_ = this->declare_parameter<bool>("use_receive_time");
+  use_rectified_image_ = this->declare_parameter<bool>("use_rectified_image");
 
   double calibration_crossvalidation_training_ratio =
     this->declare_parameter<double>("calibration_crossvalidation_training_ratio");
@@ -137,24 +138,13 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   estimator_.setApriltagMeasurementNoise(apriltag_measurement_noise_transl);
   estimator_.setApriltagProcessNoise(apriltag_process_noise_transl);
 
-  const auto period_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-    std::chrono::duration<double>(1.0 / calib_rate_));
+  tf_timer_ = rclcpp::create_timer(
+    this, get_clock(), std::chrono::duration<double>(1.0 / calib_rate_),
+    std::bind(&ExtrinsicTagBasedPNPCalibrator::tfTimerCallback, this));
 
-  auto tf_timer_callback = std::bind(&ExtrinsicTagBasedPNPCalibrator::tfTimerCallback, this);
-
-  tf_timer_ = std::make_shared<rclcpp::GenericTimer<decltype(tf_timer_callback)>>(
-    this->get_clock(), period_ns, std::move(tf_timer_callback),
-    this->get_node_base_interface()->get_context());
-
-  auto calib_timer_callback =
-    std::bind(&ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback, this);
-
-  calib_timer_ = std::make_shared<rclcpp::GenericTimer<decltype(calib_timer_callback)>>(
-    this->get_clock(), period_ns, std::move(calib_timer_callback),
-    this->get_node_base_interface()->get_context());
-
-  this->get_node_timers_interface()->add_timer(tf_timer_, nullptr);
-  this->get_node_timers_interface()->add_timer(calib_timer_, nullptr);
+  calib_timer_ = rclcpp::create_timer(
+    this, get_clock(), std::chrono::duration<double>(1.0 / calib_rate_),
+    std::bind(&ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback, this));
 
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -180,29 +170,32 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
 }
 
 void ExtrinsicTagBasedPNPCalibrator::lidarTagDetectionsCallback(
-  const lidartag_msgs::msg::LidarTagDetectionArray::SharedPtr detections_msg)
+  const lidartag_msgs::msg::LidarTagDetectionArray::SharedPtr detections_msg_ptr)
 {
-  latest_timestamp_ = rclcpp::Time(detections_msg->header.stamp);
-  lidar_frame_ = detections_msg->header.frame_id;
-  lidartag_detections_array_ = detections_msg;
+  lidartag_detections_array_ = detections_msg_ptr;
 
-  estimator_.update(*detections_msg);
+  if (use_receive_time_) {
+    lidartag_detections_array_->header.stamp = this->now();
+  }
+
+  latest_timestamp_ = rclcpp::Time(lidartag_detections_array_->header.stamp);
+  lidar_frame_ = lidartag_detections_array_->header.frame_id;
+
+  estimator_.update(*lidartag_detections_array_);
 
   visualizer_->setLidarFrame(lidar_frame_);
 }
 
 void ExtrinsicTagBasedPNPCalibrator::aprilTagDetectionsCallback(
-  const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr detections_msg)
+  const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr detections_msg_ptr)
 {
-  latest_timestamp_ = rclcpp::Time(detections_msg->header.stamp);
-
   // Filter apriltag detections that are too far away from the sensor
   double max_distance_px = min_tag_size_ * pinhole_camera_model_.fx() / max_tag_distance_;
 
   auto filtered_detections = std::make_shared<apriltag_msgs::msg::AprilTagDetectionArray>();
-  filtered_detections->header = detections_msg->header;
+  filtered_detections->header = detections_msg_ptr->header;
 
-  for (auto & detection : detections_msg->detections) {
+  for (auto & detection : detections_msg_ptr->detections) {
     const int & corners_size = detection.corners.size();
     double max_side_distance = 0.0;
     double max_homography_error = 0.0;
@@ -222,7 +215,6 @@ void ExtrinsicTagBasedPNPCalibrator::aprilTagDetectionsCallback(
 
       cv::Mat p_corner2 = H_inv * p_corner;
 
-      // According to the equation (x2, y2, 1) = H *(x1, y1, 1) the third component should be 1.0
       double h_error = std::abs(p_corner2.at<double>(2, 0) - 1.0);
       max_homography_error = std::max(max_homography_error, h_error);
 
@@ -251,19 +243,36 @@ void ExtrinsicTagBasedPNPCalibrator::aprilTagDetectionsCallback(
 
   apriltag_detections_array_ = filtered_detections;
 
+  if (use_receive_time_) {
+    apriltag_detections_array_->header.stamp = this->now();
+  }
+
+  latest_timestamp_ = rclcpp::Time(apriltag_detections_array_->header.stamp);
   estimator_.update(*apriltag_detections_array_);
 }
 
 void ExtrinsicTagBasedPNPCalibrator::cameraInfoCallback(
   const sensor_msgs::msg::CameraInfo::SharedPtr camera_info_msg)
 {
-  latest_timestamp_ = rclcpp::Time(camera_info_msg->header.stamp);
-  header_ = camera_info_msg->header;
   optical_frame_ = camera_info_msg->header.frame_id;
   camera_info_ = *camera_info_msg;
 
-  visualizer_->setCameraFrame(optical_frame_);
+  if (use_receive_time_) {
+    camera_info_.header.stamp = this->now();
+  }
 
+  if (use_rectified_image_) {
+    camera_info_.k[0] = camera_info_.p[0];
+    camera_info_.k[2] = camera_info_.p[2];
+    camera_info_.k[4] = camera_info_.p[5];
+    camera_info_.k[5] = camera_info_.p[6];
+    std::fill(camera_info_.d.begin(), camera_info_.d.end(), 0.0);
+  }
+
+  header_ = camera_info_.header;
+  latest_timestamp_ = rclcpp::Time(header_.stamp);
+
+  visualizer_->setCameraFrame(optical_frame_);
   pinhole_camera_model_.fromCameraInfo(camera_info_);
   visualizer_->setCameraModel(camera_info_);
   estimator_.setCameraModel(camera_info_);

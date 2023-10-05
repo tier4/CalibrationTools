@@ -26,8 +26,6 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #endif
 
-#include <tier4_tag_utils/cv/sqpnp.hpp>
-
 #include <limits>
 
 namespace extrinsic_tag_based_base_calibrator
@@ -126,24 +124,16 @@ double ApriltagDetection::computePose(const IntrinsicParameters & intrinsics)
   assert(template_corners.size() > 0);
   assert(template_corners.size() == undistorted_points.size());
 
-  cv::sqpnp::PoseSolver solver;
-  std::vector<cv::Mat> rvec_vec, tvec_vec;
-  solver.solve(template_corners, undistorted_points, rvec_vec, tvec_vec);
+  cv::Mat rvec, tvec;
 
-  if (tvec_vec.size() == 0) {
-    assert(false);
-    return std::numeric_limits<double>::infinity();
+  bool success = cv::solvePnP(
+    template_corners, image_corners, intrinsics.camera_matrix, intrinsics.dist_coeffs, rvec, tvec,
+    false, cv::SOLVEPNP_SQPNP);
+
+  if (!success) {
+    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
+    return false;
   }
-
-  assert(rvec_vec.size() == 1);
-  cv::Mat rvec = rvec_vec[0];
-  cv::Mat tvec = tvec_vec[0];
-
-  // cv::Matx31d translation_vector = tvec;
-  // cv::Matx33d rotation_matrix;
-
-  // translation_vector = tvec;
-  // cv::Rodrigues(rvec, rotation_matrix);
 
   pose = cv::Affine3d(rvec, tvec);
   computeObjectCorners();

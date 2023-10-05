@@ -12,8 +12,6 @@ ament_export_include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-  # COMPILE THE SOURCE
-#========================================================================
 ament_auto_add_executable(extrinsic_tag_based_pnp_calibrator
   src/brute_force_matcher.cpp
   src/calibration_estimator.cpp

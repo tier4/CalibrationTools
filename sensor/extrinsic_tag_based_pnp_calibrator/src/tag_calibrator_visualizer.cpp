@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include <extrinsic_tag_based_pnp_calibrator/tag_calibrator_visualizer.hpp>
-#include <tier4_tag_utils/cv/sqpnp.hpp>
 
 #include <limits>
 
@@ -837,16 +836,12 @@ void TagCalibratorVisualizer::displayObjectPoints(
 std::vector<cv::Point3d> TagCalibratorVisualizer::get3dpoints(
   apriltag_msgs::msg::AprilTagDetection & detection)
 {
-  std::vector<cv::Point2d> image_points, undistorted_points;
+  std::vector<cv::Point2d> image_points;
   std::vector<cv::Point3d> object_points;
 
   for (auto & corner : detection.corners) {
     image_points.push_back(cv::Point2d(corner.x, corner.y));
   }
-
-  cv::undistortPoints(
-    image_points, undistorted_points, pinhole_camera_model_.intrinsicMatrix(),
-    pinhole_camera_model_.distortionCoeffs());
 
   if (tag_sizes_map_.count(detection.id) == 0) {
     return object_points;
@@ -860,18 +855,16 @@ std::vector<cv::Point3d> TagCalibratorVisualizer::get3dpoints(
     cv::Point3d(0.5 * board_size, -0.5 * board_size, 0.0),
     cv::Point3d(-0.5 * board_size, -0.5 * board_size, 0.0)};
 
-  cv::sqpnp::PoseSolver solver;
-  std::vector<cv::Mat> rvec_vec, tvec_vec;
-  solver.solve(apriltag_template_points, undistorted_points, rvec_vec, tvec_vec);
+  cv::Mat rvec, tvec;
 
-  if (tvec_vec.size() == 0) {
-    assert(false);
+  bool success = cv::solvePnP(
+    apriltag_template_points, image_points, pinhole_camera_model_.intrinsicMatrix(),
+    pinhole_camera_model_.distortionCoeffs(), rvec, tvec, false, cv::SOLVEPNP_SQPNP);
+
+  if (!success) {
+    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
     return object_points;
   }
-
-  assert(rvec_vec.size() == 1);
-  cv::Mat rvec = rvec_vec[0];
-  cv::Mat tvec = tvec_vec[0];
 
   cv::Matx31d translation_vector = tvec;
   cv::Matx33d rotation_matrix;

@@ -89,6 +89,8 @@ protected:
   // Parameters
   std::string base_frame_;
   float calib_rate_;
+  bool use_receive_time_;
+  bool use_rectified_image_;
 
   // Filter parameters
   double min_tag_size_;

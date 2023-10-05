@@ -17,7 +17,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/imgproc.hpp>
-#include <tier4_tag_utils/cv/sqpnp.hpp>
 
 #include <pcl/point_types.h>
 #include <tf2/utils.h>
@@ -478,19 +477,16 @@ bool CalibrationEstimator::calibrate(
   auto camera_intrinsics = pinhole_camera_model_.intrinsicMatrix();
   auto distortion_coeffs = pinhole_camera_model_.distortionCoeffs();
 
-  std::vector<cv::Point2d> undistorted_points;
-  cv::undistortPoints(image_points, undistorted_points, camera_intrinsics, distortion_coeffs);
+  cv::Mat rvec, tvec;
 
-  cv::sqpnp::PoseSolver solver;
-  std::vector<cv::Mat> rvec_vec, tvec_vec;
-  solver.solve(object_points, undistorted_points, rvec_vec, tvec_vec);
+  bool success = cv::solvePnP(
+    object_points, image_points, camera_intrinsics, distortion_coeffs, rvec, tvec, false,
+    cv::SOLVEPNP_SQPNP);
 
-  if (tvec_vec.size() == 0) {
+  if (!success) {
+    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
     return false;
   }
-
-  cv::Mat rvec = rvec_vec[0];
-  cv::Mat tvec = tvec_vec[0];
 
   translation_vector = tvec;
   cv::Rodrigues(rvec, rotation_matrix);
