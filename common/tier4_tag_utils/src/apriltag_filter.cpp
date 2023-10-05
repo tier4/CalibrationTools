@@ -14,7 +14,6 @@
 
 #include <rclcpp/time.hpp>
 #include <tier4_tag_utils/apriltag_filter.hpp>
-#include <tier4_tag_utils/types.hpp>
 
 #include <image_geometry/pinhole_camera_model.h>
 

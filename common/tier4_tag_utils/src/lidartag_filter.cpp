@@ -14,7 +14,6 @@
 
 #include <rclcpp/time.hpp>
 #include <tier4_tag_utils/lidartag_filter.hpp>
-#include <tier4_tag_utils/types.hpp>
 
 #ifdef ROS_DISTRO_GALACTIC
 #include <tf2_eigen/tf2_eigen.h>
@@ -103,7 +102,6 @@ void LidartagFilter::updateHypothesis(
     hypotheses_map_[detection.id] = LidartagHypothesis(detection.id);
     auto & h = hypotheses_map_[detection.id];
 
-    h.setDynamicsModel(DynamicsModel::Static);
     h.setMaxNoObservationTime(max_no_observation_time_);
     h.setMinConvergenceTime(std::numeric_limits<double>::max());
 

@@ -65,53 +65,25 @@ bool LidartagHypothesis::update(
     return false;
   }
 
-  if (dynamics_model_ == tier4_tag_utils::DynamicsModel::Static) {
-    cv::Mat prediction = kalman_filter_.predict();
-    cv::Mat observation = toState(pose_translation, pose_rotation);
-    fixState(prediction, observation);
-    cv::Mat estimated = kalman_filter_.correct(observation);
-    fixState(kalman_filter_.statePost);
+  cv::Mat prediction = kalman_filter_.predict();
+  cv::Mat observation = toState(pose_translation, pose_rotation);
+  fixState(prediction, observation);
+  cv::Mat estimated = kalman_filter_.correct(observation);
+  fixState(kalman_filter_.statePost);
 
-    filtered_translation_vector_(0) = estimated.at<double>(0);
-    filtered_translation_vector_(1) = estimated.at<double>(1);
-    filtered_translation_vector_(2) = estimated.at<double>(2);
+  filtered_translation_vector_(0) = estimated.at<double>(0);
+  filtered_translation_vector_(1) = estimated.at<double>(1);
+  filtered_translation_vector_(2) = estimated.at<double>(2);
 
-    cv::Matx31d eulers_estimated;
-    eulers_estimated(0) = estimated.at<double>(3);
-    eulers_estimated(1) = estimated.at<double>(4);
-    eulers_estimated(2) = estimated.at<double>(5);
+  cv::Matx31d eulers_estimated;
+  eulers_estimated(0) = estimated.at<double>(3);
+  eulers_estimated(1) = estimated.at<double>(4);
+  eulers_estimated(2) = estimated.at<double>(5);
 
-    filtered_rotation_matrix_ = euler2rot(eulers_estimated);
+  filtered_rotation_matrix_ = euler2rot(eulers_estimated);
 
-    double current_speed = cv::norm(pose_translation - filtered_translation_vector_) / dt;
-    estimated_speed_ = dt > 0.0 ? 0.8 * estimated_speed_ + 0.2 * current_speed : 0.0;
-
-  } else {
-    // non-fixed timestep
-    kalman_filter_.transitionMatrix.at<double>(0, 3) = dt;
-    kalman_filter_.transitionMatrix.at<double>(1, 4) = dt;
-    kalman_filter_.transitionMatrix.at<double>(2, 5) = dt;
-    kalman_filter_.transitionMatrix.at<double>(6, 9) = dt;
-    kalman_filter_.transitionMatrix.at<double>(7, 10) = dt;
-    kalman_filter_.transitionMatrix.at<double>(8, 11) = dt;
-
-    cv::Mat prediction = kalman_filter_.predict();
-    cv::Mat observation = toObservation(pose_translation, pose_rotation);
-    fixState(prediction, observation);
-    cv::Mat estimated = kalman_filter_.correct(observation);
-    fixState(kalman_filter_.statePost);
-
-    filtered_translation_vector_(0) = estimated.at<double>(0);
-    filtered_translation_vector_(1) = estimated.at<double>(1);
-    filtered_translation_vector_(2) = estimated.at<double>(2);
-
-    cv::Matx31d eulers_estimated;
-    eulers_estimated(0) = estimated.at<double>(6);
-    eulers_estimated(1) = estimated.at<double>(7);
-    eulers_estimated(2) = estimated.at<double>(8);
-
-    filtered_rotation_matrix_ = euler2rot(eulers_estimated);
-  }
+  double current_speed = cv::norm(pose_translation - filtered_translation_vector_) / dt;
+  estimated_speed_ = dt > 0.0 ? 0.8 * estimated_speed_ + 0.2 * current_speed : 0.0;
 
   return true;
 }
@@ -200,56 +172,14 @@ double LidartagHypothesis::getTransCov() const
   return std::sqrt(max_transl_cov);
 }
 
-double LidartagHypothesis::getTransDotCov() const
-{
-  const cv::Mat & cov = kalman_filter_.errorCovPost;
-
-  double max_transl_dot_cov =
-    dynamics_model_ == tier4_tag_utils::DynamicsModel::Static
-      ? 0.0
-      : std::max({cov.at<double>(3, 3), cov.at<double>(4, 4), cov.at<double>(5, 5)});
-
-  return std::sqrt(max_transl_dot_cov);
-}
-
 double LidartagHypothesis::getRotCov() const
 {
   const cv::Mat & cov = kalman_filter_.errorCovPost;
-
-  double max_rot_cov =
-    dynamics_model_ == tier4_tag_utils::DynamicsModel::Static
-      ? std::max({cov.at<double>(3, 3), cov.at<double>(4, 4), cov.at<double>(5, 5)})
-      : std::max({cov.at<double>(6, 6), cov.at<double>(7, 7), cov.at<double>(8, 8)});
-
+  double max_rot_cov = std::max({cov.at<double>(3, 3), cov.at<double>(4, 4), cov.at<double>(5, 5)});
   return std::sqrt(max_rot_cov);
 }
 
-double LidartagHypothesis::getRotDotCov() const
-{
-  const cv::Mat & cov = kalman_filter_.errorCovPost;
-
-  double max_rot_dot_cov =
-    dynamics_model_ == tier4_tag_utils::DynamicsModel::Static
-      ? 0.0
-      : std::max({cov.at<double>(9, 9), cov.at<double>(10, 10), cov.at<double>(11, 11)});
-
-  return std::sqrt(max_rot_dot_cov);
-}
-
-double LidartagHypothesis::getSpeed() const
-{
-  const cv::Mat & state = kalman_filter_.statePost;
-
-  if (dynamics_model_ == tier4_tag_utils::DynamicsModel::Static) {
-    return estimated_speed_;
-  }
-
-  double vx = state.at<double>(3);
-  double vy = state.at<double>(3);
-  double vz = state.at<double>(3);
-
-  return std::sqrt(vx * vx + vy * vy + vz * vz);
-}
+double LidartagHypothesis::getSpeed() const { return estimated_speed_; }
 
 bool LidartagHypothesis::converged() const
 {
@@ -266,15 +196,9 @@ bool LidartagHypothesis::converged() const
   double max_transl_cov =
     std::max({cov.at<double>(0, 0), cov.at<double>(1, 1), cov.at<double>(2, 2)});
 
-  double max_transl_dot_cov =
-    dynamics_model_ == tier4_tag_utils::DynamicsModel::Static
-      ? 0.0
-      : std::max({cov.at<double>(3, 3), cov.at<double>(4, 4), cov.at<double>(5, 5)});
+  double max_transl_dot_cov = 0.0;
 
-  double max_rot_cov =
-    dynamics_model_ == tier4_tag_utils::DynamicsModel::Static
-      ? std::max({cov.at<double>(3, 3), cov.at<double>(4, 4), cov.at<double>(5, 5)})
-      : std::max({cov.at<double>(6, 6), cov.at<double>(7, 7), cov.at<double>(8, 8)});
+  double max_rot_cov = std::max({cov.at<double>(3, 3), cov.at<double>(4, 4), cov.at<double>(5, 5)});
 
   if (
     std::sqrt(max_transl_cov) > convergence_transl_ ||
@@ -295,11 +219,6 @@ double LidartagHypothesis::timeSinceFirstObservation(const rclcpp::Time & stamp)
 double LidartagHypothesis::timeSinceLastObservation(const rclcpp::Time & stamp) const
 {
   return (stamp - last_observation_timestamp_).seconds();
-}
-
-void LidartagHypothesis::setDynamicsModel(DynamicsModel dynamics_model)
-{
-  dynamics_model_ = dynamics_model;
 }
 
 void LidartagHypothesis::setMinConvergenceTime(double convergence_time)
@@ -340,16 +259,6 @@ void LidartagHypothesis::setProcessNoise(
 }
 
 void LidartagHypothesis::initKalman(
-  const cv::Matx31d & translation_vector, const cv::Matx33d & rotation_matrix)
-{
-  if (dynamics_model_ == tier4_tag_utils::DynamicsModel::Static) {
-    initStaticKalman(translation_vector, rotation_matrix);
-  } else {
-    initConstantVelocityKalman(translation_vector, rotation_matrix);
-  }
-}
-
-void LidartagHypothesis::initStaticKalman(
   const cv::Matx31d & translation_vector, const cv::Matx33d & rotation_matrix)
 {
   kalman_filter_.init(6, 6, 0, CV_64F);
@@ -474,30 +383,16 @@ cv::Mat LidartagHypothesis::toState(
 {
   cv::Matx31d euler_angles = rot2euler(rotation_matrix);
 
-  if (dynamics_model_ == tier4_tag_utils::DynamicsModel::Static) {
-    cv::Mat kalman_state(6, 1, CV_64F);
+  cv::Mat kalman_state(6, 1, CV_64F);
 
-    kalman_state.at<double>(0, 0) = translation_vector(0, 0);
-    kalman_state.at<double>(1, 0) = translation_vector(1, 0);
-    kalman_state.at<double>(2, 0) = translation_vector(2, 0);
-    kalman_state.at<double>(3, 0) = euler_angles(0, 0);
-    kalman_state.at<double>(4, 0) = euler_angles(1, 0);
-    kalman_state.at<double>(5, 0) = euler_angles(2, 0);
+  kalman_state.at<double>(0, 0) = translation_vector(0, 0);
+  kalman_state.at<double>(1, 0) = translation_vector(1, 0);
+  kalman_state.at<double>(2, 0) = translation_vector(2, 0);
+  kalman_state.at<double>(3, 0) = euler_angles(0, 0);
+  kalman_state.at<double>(4, 0) = euler_angles(1, 0);
+  kalman_state.at<double>(5, 0) = euler_angles(2, 0);
 
-    return kalman_state;
-  } else {
-    cv::Mat kalman_state(12, 1, CV_64F);
-    kalman_state.setTo(cv::Scalar(0.0));
-
-    kalman_state.at<double>(0, 0) = translation_vector(0, 0);
-    kalman_state.at<double>(1, 0) = translation_vector(1, 0);
-    kalman_state.at<double>(2, 0) = translation_vector(2, 0);
-    kalman_state.at<double>(6, 0) = euler_angles(0, 0);
-    kalman_state.at<double>(7, 0) = euler_angles(1, 0);
-    kalman_state.at<double>(8, 0) = euler_angles(2, 0);
-
-    return kalman_state;
-  }
+  return kalman_state;
 }
 
 cv::Mat LidartagHypothesis::toObservation(
@@ -519,60 +414,33 @@ cv::Mat LidartagHypothesis::toObservation(
 
 void LidartagHypothesis::fixState(cv::Mat & old_state, cv::Mat & new_prediction)
 {
-  if (dynamics_model_ == tier4_tag_utils::DynamicsModel::Static) {
-    cv::Mat kalman_state(6, 1, CV_64F);
+  cv::Mat kalman_state(6, 1, CV_64F);
 
-    double old_x = old_state.at<double>(3, 0);
-    double old_z = old_state.at<double>(5, 0);
+  double old_x = old_state.at<double>(3, 0);
+  double old_z = old_state.at<double>(5, 0);
 
-    double & new_x = new_prediction.at<double>(3, 0);
-    double & new_z = new_prediction.at<double>(5, 0);
+  double & new_x = new_prediction.at<double>(3, 0);
+  double & new_z = new_prediction.at<double>(5, 0);
 
-    new_x = std::abs(new_x + CV_2PI - old_x) < std::abs(new_x - old_x)   ? new_x + CV_2PI
-            : std::abs(new_x - CV_2PI - old_x) < std::abs(new_x - old_x) ? new_x - CV_2PI
-                                                                         : new_x;
+  new_x = std::abs(new_x + CV_2PI - old_x) < std::abs(new_x - old_x)   ? new_x + CV_2PI
+          : std::abs(new_x - CV_2PI - old_x) < std::abs(new_x - old_x) ? new_x - CV_2PI
+                                                                       : new_x;
 
-    new_z = std::abs(new_z + CV_2PI - old_z) < std::abs(new_z - old_z)   ? new_z + CV_2PI
-            : std::abs(new_z - CV_2PI - old_z) < std::abs(new_z - old_z) ? new_z - CV_2PI
-                                                                         : new_z;
+  new_z = std::abs(new_z + CV_2PI - old_z) < std::abs(new_z - old_z)   ? new_z + CV_2PI
+          : std::abs(new_z - CV_2PI - old_z) < std::abs(new_z - old_z) ? new_z - CV_2PI
+                                                                       : new_z;
 
-    return;
-  } else {
-    double old_x = old_state.at<double>(6, 0);
-    double old_z = old_state.at<double>(8, 0);
-
-    double & new_x = new_prediction.at<double>(3, 0);
-    double & new_z = new_prediction.at<double>(5, 0);
-
-    new_x = std::abs(new_x + CV_2PI - old_x) < std::abs(new_x - old_x)   ? new_x + CV_2PI
-            : std::abs(new_x - CV_2PI - old_x) < std::abs(new_x - old_x) ? new_x - CV_2PI
-                                                                         : new_x;
-
-    new_z = std::abs(new_z + CV_2PI - old_z) < std::abs(new_z - old_z)   ? new_z + CV_2PI
-            : std::abs(new_z - CV_2PI - old_z) < std::abs(new_z - old_z) ? new_z - CV_2PI
-                                                                         : new_z;
-
-    return;
-  }
+  return;
 }
 
 void LidartagHypothesis::fixState(cv::Mat & new_state)
 {
-  if (dynamics_model_ == tier4_tag_utils::DynamicsModel::Static) {
-    double & new_x = new_state.at<double>(3, 0);
-    double & new_z = new_state.at<double>(5, 0);
+  double & new_x = new_state.at<double>(3, 0);
+  double & new_z = new_state.at<double>(5, 0);
 
-    new_x = std::min(std::max(-CV_PI, new_x), CV_PI);
-    new_z = std::min(std::max(-CV_PI, new_z), CV_PI);
-    return;
-  } else {
-    double & new_x = new_state.at<double>(6, 0);
-    double & new_z = new_state.at<double>(8, 0);
-
-    new_x = std::min(std::max(-CV_PI, new_x), CV_PI);
-    new_z = std::min(std::max(-CV_PI, new_z), CV_PI);
-    return;
-  }
+  new_x = std::min(std::max(-CV_PI, new_x), CV_PI);
+  new_z = std::min(std::max(-CV_PI, new_z), CV_PI);
+  return;
 }
 
 // Converts a given Rotation Matrix to Euler angles

@@ -20,10 +20,7 @@ namespace tier4_tag_utils
 
 ApriltagHypothesis::ApriltagHypothesis(
   int id, image_geometry::PinholeCameraModel & pinhole_camera_model)
-: first_observation_(true),
-  dynamics_model_(tier4_tag_utils::DynamicsModel::Static),
-  id_(id),
-  pinhole_camera_model_(pinhole_camera_model)
+: first_observation_(true), id_(id), pinhole_camera_model_(pinhole_camera_model)
 {
 }
 
@@ -58,29 +55,13 @@ bool ApriltagHypothesis::update(
   for (int i = 0; i < 4; ++i) {
     cv::KalmanFilter & kalman_filter = kalman_filters_[i];
 
-    if (dynamics_model_ == DynamicsModel::Static) {
-      cv::Mat prediction = kalman_filter.predict();
-      cv::Mat observation = toState(corners[i]);
+    cv::Mat prediction = kalman_filter.predict();
+    cv::Mat observation = toState(corners[i]);
 
-      cv::Mat estimated = kalman_filter.correct(observation);
+    cv::Mat estimated = kalman_filter.correct(observation);
 
-      filtered_corner_points_2d_[i].x = estimated.at<double>(0);
-      filtered_corner_points_2d_[i].y = estimated.at<double>(1);
-    } else {
-      // non-fixed timestep
-      double dt = (stamp - last_observation_timestamp_).seconds();
-      kalman_filter.transitionMatrix.at<double>(0, 3) = dt;
-      kalman_filter.transitionMatrix.at<double>(1, 4) = dt;
-      kalman_filter.transitionMatrix.at<double>(2, 5) = dt;
-      kalman_filter.transitionMatrix.at<double>(6, 9) = dt;
-
-      cv::Mat prediction = kalman_filter.predict();
-      cv::Mat observation = toState(corners[i]);
-      cv::Mat estimated = kalman_filter.correct(observation);
-
-      filtered_corner_points_2d_[i].x = estimated.at<double>(0);
-      filtered_corner_points_2d_[i].y = estimated.at<double>(1);
-    }
+    filtered_corner_points_2d_[i].x = estimated.at<double>(0);
+    filtered_corner_points_2d_[i].y = estimated.at<double>(1);
   }
 
   return true;
@@ -222,11 +203,6 @@ bool ApriltagHypothesis::converged() const
   return converged;
 }
 
-void ApriltagHypothesis::setDynamicsModel(DynamicsModel dynamics_model)
-{
-  dynamics_model_ = dynamics_model;
-}
-
 void ApriltagHypothesis::setMinConvergenceTime(double convergence_time)
 {
   min_convergence_time_ = convergence_time;
@@ -248,16 +224,6 @@ void ApriltagHypothesis::setProcessNoise(double transl) { process_noise_transl_ 
 void ApriltagHypothesis::setTagSize(double size) { tag_size_ = size; }
 
 void ApriltagHypothesis::initKalman(const std::vector<cv::Point2d> & corners)
-{
-  if (dynamics_model_ == DynamicsModel::Static) {
-    initStaticKalman(corners);
-  } else {
-    assert(false);
-    // initConstantVelocityKalman(corners);
-  }
-}
-
-void ApriltagHypothesis::initStaticKalman(const std::vector<cv::Point2d> & corners)
 {
   for (int i = 0; i < 4; ++i) {
     cv::KalmanFilter & kalman_filter = kalman_filters_[i];
@@ -287,22 +253,12 @@ void ApriltagHypothesis::initStaticKalman(const std::vector<cv::Point2d> & corne
 
 cv::Mat ApriltagHypothesis::toState(const cv::Point2d & corner)
 {
-  if (dynamics_model_ == DynamicsModel::Static) {
-    cv::Mat kalman_state(2, 1, CV_64F);
+  cv::Mat kalman_state(2, 1, CV_64F);
 
-    kalman_state.at<double>(0, 0) = corner.x;
-    kalman_state.at<double>(1, 0) = corner.y;
+  kalman_state.at<double>(0, 0) = corner.x;
+  kalman_state.at<double>(1, 0) = corner.y;
 
-    return kalman_state;
-  } else {
-    cv::Mat kalman_state(2, 1, CV_64F);
-    kalman_state.setTo(cv::Scalar(0.0));
-
-    kalman_state.at<double>(0, 0) = corner.x;
-    kalman_state.at<double>(1, 0) = corner.y;
-
-    return kalman_state;
-  }
+  return kalman_state;
 }
 
 }  // namespace tier4_tag_utils

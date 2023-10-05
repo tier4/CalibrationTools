@@ -19,7 +19,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
-#include <tier4_tag_utils/types.hpp>
 
 #include <image_geometry/pinhole_camera_model.h>
 
@@ -57,7 +56,6 @@ public:
 
   bool converged() const;
 
-  void setDynamicsModel(DynamicsModel dynamics_model);
   void setMinConvergenceTime(double convergence_time);
   void setMaxNoObservationTime(double time);
   void setMaxConvergenceThreshold(double transl);
@@ -68,11 +66,7 @@ public:
 
 protected:
   void reset();
-
   void initKalman(const std::vector<cv::Point2d> & corners);
-
-  void initStaticKalman(const std::vector<cv::Point2d> & corners);
-
   cv::Mat toState(const cv::Point2d & corner);
 
   double convergence_transl_;
@@ -89,7 +83,6 @@ protected:
 
   // General variables
   bool first_observation_;
-  DynamicsModel dynamics_model_;
   int id_;
   rclcpp::Time first_observation_timestamp_;
   rclcpp::Time last_observation_timestamp_;

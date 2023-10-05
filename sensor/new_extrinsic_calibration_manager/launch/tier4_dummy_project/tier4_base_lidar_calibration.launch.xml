@@ -1,0 +1,13 @@
+<launch>
+  <arg name="argument_with_default" default="intrinsics_calibrator.yaml" description="Some argument with default value"/>
+  <arg name="required_argument" description="Some argument without default value"/>
+
+  <log message="argument_with_default : $(var argument_with_default)"/>
+  <log message="required_argument : $(var required_argument)"/>
+
+  <node pkg="extrinsic_dummy_calibrator" exec="extrinsic_dummy_calibrator" name="dummy_calibrator" output="screen">
+    <param name="parent_frames" value="[base_link]"/>
+    <param name="child_frames" value="[velodyne_top]"/>
+    <remap from="extrinsic_calibration" to="calibrate_base_lidar"/>
+  </node>
+</launch>

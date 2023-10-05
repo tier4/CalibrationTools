@@ -60,7 +60,6 @@ class RosInterface(Node):
 
         self.lock = threading.RLock()
 
-        self.declare_parameter("camera_parent_frame", rclpy.Parameter.Type.STRING)
         self.declare_parameter("camera_frame", rclpy.Parameter.Type.STRING)
         self.declare_parameter("use_compressed", True)
         self.declare_parameter("timer_period", 1.0)
@@ -68,9 +67,6 @@ class RosInterface(Node):
         self.declare_parameter("use_calibration_api", True)
         self.declare_parameter("can_publish_tf", True)
 
-        self.camera_parent_frame = (
-            self.get_parameter("camera_parent_frame").get_parameter_value().string_value
-        )
         self.camera_frame = self.get_parameter("camera_frame").get_parameter_value().string_value
         self.use_compressed = self.get_parameter("use_compressed").get_parameter_value().bool_value
         self.timer_period = (
@@ -255,39 +251,12 @@ class RosInterface(Node):
 
     def set_camera_lidar_transform(self, camera_optical_lidar_transform):
         with self.lock:
-            optical_axis_to_camera_transform = np.zeros((4, 4))
-            optical_axis_to_camera_transform[0, 1] = -1
-            optical_axis_to_camera_transform[1, 2] = -1
-            optical_axis_to_camera_transform[2, 0] = 1
-            optical_axis_to_camera_transform[3, 3] = 1
-
-            try:
-                camera_parent_lidar_tf = self.tf_buffer.lookup_transform(
-                    self.camera_parent_frame,
-                    self.lidar_frame,
-                    rclpy.time.Time(),
-                    timeout=Duration(seconds=1.0),
-                )
-                camera_parent_lidar_transform = tf_message_to_transform_matrix(
-                    camera_parent_lidar_tf
-                )
-            except TransformException as ex:
-                self.get_logger().error(
-                    f"Could not transform {self.camera_parent_frame} to {self.lidar_frame}: {ex}"
-                )
-                return
-
-            camera_camera_parent_transform = (
-                np.linalg.inv(optical_axis_to_camera_transform)
-                @ camera_optical_lidar_transform
-                @ np.linalg.inv(camera_parent_lidar_transform)
-            )
-
             self.output_transform_msg = transform_matrix_to_tf_message(
-                np.linalg.inv(camera_camera_parent_transform)
+                camera_optical_lidar_transform
             )
-            self.output_transform_msg.header.frame_id = self.camera_parent_frame
-            self.output_transform_msg.child_frame_id = self.camera_frame
+
+            self.output_transform_msg.header.frame_id = self.camera_frame
+            self.output_transform_msg.child_frame_id = self.lidar_frame
             self.new_output_tf = True
 
     def optimize_camera_intrinsics(self, object_points, image_points):

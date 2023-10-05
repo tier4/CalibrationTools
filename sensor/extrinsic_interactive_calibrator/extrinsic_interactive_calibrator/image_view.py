@@ -682,6 +682,9 @@ class ImageView(QGraphicsItem, QObject):
         # Draw tag borders
         image_points = self.data_renderer.external_image_points
 
+        scaled_pix_size = self.pix.size()
+        scaled_pix_size.scale(self.data_renderer.widget_size, Qt.KeepAspectRatio)
+
         for i1 in range(len(image_points)):
             tag_index = i1 // 4
             i2 = 4 * tag_index + ((i1 + 1) % 4)
@@ -699,6 +702,20 @@ class ImageView(QGraphicsItem, QObject):
                 image_point_2_wcs[0],
                 image_point_2_wcs[1],
             )
+
+            if (
+                np.any(np.isnan(object_point_1_wcs))
+                or np.any(np.isnan(object_point_2_wcs))
+                or object_point_1_wcs[0] < 0
+                or object_point_1_wcs[0] > scaled_pix_size.width()
+                or object_point_1_wcs[1] < 0
+                or object_point_1_wcs[1] > scaled_pix_size.height()
+                or object_point_2_wcs[0] < 0
+                or object_point_2_wcs[0] > scaled_pix_size.width()
+                or object_point_2_wcs[1] < 0
+                or object_point_2_wcs[1] > scaled_pix_size.height()
+            ):
+                continue
 
             painter.setPen(object_line_pen)
             painter.drawLine(
