@@ -33,7 +33,7 @@ struct ApriltagDetectorParameters
 {
   int max_hamming;
   double max_out_of_plane_angle;
-  double max_reproj_error;
+  double max_reprojection_error;
   double min_margin;
   double max_homography_error;
   double quad_decimate;

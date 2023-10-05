@@ -85,7 +85,7 @@
   <arg name="apriltag_max_hamming" default="0"/>
   <arg name="apriltag_min_margin" default="50.0"/>
   <arg name="apriltag_max_out_of_plane_angle" default="90.0"/>
-  <arg name="apriltag_max_reproj_error" default="10.0"/>
+  <arg name="apriltag_max_reprojection_error" default="10.0"/>
   <arg name="apriltag_max_homography_error" default="0.5"/>
   <arg name="apriltag_quad_decimate" default="1.0"/>
   <arg name="apriltag_quad_sigma" default="0.0"/>

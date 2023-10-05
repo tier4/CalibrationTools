@@ -73,7 +73,7 @@ public:
   void setMinConvergenceTime(double convergence_time);
   void setMaxNoObservationTime(double time);
   void setLidartagMaxConvergenceThreshold(
-    double transl, double tansl_dot, double angle, double angle_dot);
+    double transl, double transl_dot, double angle, double angle_dot);
   void setApriltagMaxConvergenceThreshold(double transl);
 
 private:

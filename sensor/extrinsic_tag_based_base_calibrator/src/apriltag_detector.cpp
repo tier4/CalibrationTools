@@ -234,16 +234,16 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
     double rotation_angle = (180.0 / CV_PI) * std::acos(v_front.dot(v_to_tag));
 
     result.computeObjectCorners();
-    double reproj_error = result.computeReprojError(cx_, cy_, fx_, fy_);
+    double reprojection_error = result.computeReprojectionError(cx_, cy_, fx_, fy_);
 
     if (
       fx_ > 0.0 && fy_ > 0.0 && cx_ > 0.0 && cy_ > 0.0 &&
-      reproj_error > detector_parameters_.max_reproj_error) {
+      reprojection_error > detector_parameters_.max_reprojection_error) {
       RCLCPP_WARN(
         rclcpp::get_logger("apriltag_detector"),
         "Detected apriltag: %s but dicarded due to its reprojection error\t margin: %.2f\t "
         "hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
-        tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reproj_error,
+        tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reprojection_error,
         rotation_angle);
       continue;
     }
@@ -255,7 +255,7 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
         rclcpp::get_logger("apriltag_detector"),
         "Detected apriltag: %s but dicarded due to its out-of-plane angle\t margin: %.2f\t "
         "hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
-        tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reproj_error,
+        tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reprojection_error,
         rotation_angle);
       continue;
     }
@@ -263,7 +263,7 @@ GroupedApriltagGridDetections ApriltagDetector::detect(const cv::Mat & cv_img) c
     RCLCPP_INFO(
       rclcpp::get_logger("apriltag_detector"),
       "Detected apriltag: %s \t margin: %.2f\t hom.error=%.2f\t repr.error=%.2f out_angle=%.2f deg",
-      tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reproj_error,
+      tag_family_and_id.c_str(), det->decision_margin, max_homography_error, reprojection_error,
       rotation_angle);
 
     individual_detections_map[tag_type].emplace_back(result);

@@ -69,7 +69,7 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
     flags |= cv::CALIB_FIX_K1;
   }
 
-  double reproj_error = cv::calibrateCamera(
+  double reprojection_error = cv::calibrateCamera(
     object_points_, image_points_, intrinsics.size, intrinsics.camera_matrix,
     intrinsics.dist_coeffs, rvecs_, tvecs_, flags);
 
@@ -79,7 +79,8 @@ bool IntrinsicsCalibrator::calibrate(IntrinsicParameters & intrinsics)
     rclcpp::get_logger("intrinsics_calibrator"), "Radial distortion coeffs: %d",
     num_radial_distortion_coeffs_);
 
-  RCLCPP_INFO(rclcpp::get_logger("intrinsics_calibrator"), "Reproj_error: %.2f", reproj_error);
+  RCLCPP_INFO(
+    rclcpp::get_logger("intrinsics_calibrator"), "reprojection_error: %.2f", reprojection_error);
   RCLCPP_INFO_STREAM(
     rclcpp::get_logger("intrinsics_calibrator"), "Camera matrix:\n"
                                                    << intrinsics.camera_matrix);

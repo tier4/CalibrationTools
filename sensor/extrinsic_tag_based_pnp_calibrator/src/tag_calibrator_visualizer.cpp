@@ -404,8 +404,8 @@ void TagCalibratorVisualizer::drawCalibrationStatusText(
   text_marker.text =
     "pairs=" + std::to_string(estimator.getCurrentCalibrationPairsNumber()) +
     "\ncoverage=" + to_string_with_precision(estimator.getCalibrationCoveragePercentage()) +
-    "\ncrossval_reproj_error=" +
-    to_string_with_precision(estimator.getCrossValidationReprojError());
+    "\ncrossvalidation_reprojection_error=" +
+    to_string_with_precision(estimator.getCrossValidationReprojectionError());
 
   text_marker.pose.position.x = base_lidar_translation_vector(0);
   text_marker.pose.position.y = base_lidar_translation_vector(1);
@@ -862,7 +862,7 @@ std::vector<cv::Point3d> TagCalibratorVisualizer::get3dpoints(
     pinhole_camera_model_.distortionCoeffs(), rvec, tvec, false, cv::SOLVEPNP_SQPNP);
 
   if (!success) {
-    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
+    RCLCPP_ERROR(rclcpp::get_logger("tier4_tag_utils"), "PNP failed");
     return object_points;
   }
 

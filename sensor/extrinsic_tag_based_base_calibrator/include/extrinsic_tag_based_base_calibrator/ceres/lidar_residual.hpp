@@ -190,21 +190,21 @@ struct LidarResidual : public SensorResidual
     rotate_corners(tag_centric_rotation, corners_lcs, corners_lrcs);
 
     // Compute the reprojection error residuals
-    auto compute_reproj_error_point = [&](
-                                        auto & predicted_ccs, auto observed_ics, auto * residuals) {
-      const T f = T(virtual_f_);
+    auto compute_reprojection_error_point =
+      [&](auto & predicted_ccs, auto observed_ics, auto * residuals) {
+        const T f = T(virtual_f_);
 
-      const T xp = predicted_ccs.x() / predicted_ccs.z();
-      const T yp = predicted_ccs.y() / predicted_ccs.z();
-      const T predicted_ics_x = f * xp;
-      const T predicted_ics_y = f * yp;
+        const T xp = predicted_ccs.x() / predicted_ccs.z();
+        const T yp = predicted_ccs.y() / predicted_ccs.z();
+        const T predicted_ics_x = f * xp;
+        const T predicted_ics_y = f * yp;
 
-      residuals[0] = predicted_ics_x - observed_ics.x();
-      residuals[1] = predicted_ics_y - observed_ics.y();
-    };
+        residuals[0] = predicted_ics_x - observed_ics.x();
+        residuals[1] = predicted_ics_y - observed_ics.y();
+      };
 
     for (int i = 0; i < NUM_CORNERS; i++) {
-      compute_reproj_error_point(corners_lrcs[i], observed_corners_[i], residuals + 2 * i);
+      compute_reprojection_error_point(corners_lrcs[i], observed_corners_[i], residuals + 2 * i);
     }
 
     return true;

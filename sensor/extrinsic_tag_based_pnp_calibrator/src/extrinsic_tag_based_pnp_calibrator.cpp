@@ -303,7 +303,7 @@ void ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback(
 
   tier4_calibration_msgs::msg::CalibrationResult result;
   result.success = true;
-  result.score = estimator_.getCrossValidationReprojError();
+  result.score = estimator_.getCrossValidationReprojectionError();
   result.message.data =
     "Calibrated using " + std::to_string(estimator_.getCurrentCalibrationPairsNumber()) + " pairs";
   result.transform_stamped.transform = tf2::toMsg(optical_axis_to_lidar_tf2);
@@ -439,14 +439,18 @@ void ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback()
       return error / points1.size();
     };
 
-    double initial_reproj_error = reprojection_error(image_points, initial_projected_points);
-    double current_reproj_error = reprojection_error(image_points, current_projected_points);
-    double filtered_reproj_error = reprojection_error(image_points, filtered_projected_points);
+    double initial_reprojection_error = reprojection_error(image_points, initial_projected_points);
+    double current_reprojection_error = reprojection_error(image_points, current_projected_points);
+    double filtered_reprojection_error =
+      reprojection_error(image_points, filtered_projected_points);
 
     RCLCPP_INFO(this->get_logger(), "Partial calibration results:");
-    RCLCPP_INFO(this->get_logger(), "\tInitial reprojection error=%.2f", initial_reproj_error);
-    RCLCPP_INFO(this->get_logger(), "\tCurrent reprojection error=%.2f", current_reproj_error);
-    RCLCPP_INFO(this->get_logger(), "\tFiltered reprojection error=%.2f", filtered_reproj_error);
+    RCLCPP_INFO(
+      this->get_logger(), "\tInitial reprojection error=%.2f", initial_reprojection_error);
+    RCLCPP_INFO(
+      this->get_logger(), "\tCurrent reprojection error=%.2f", current_reprojection_error);
+    RCLCPP_INFO(
+      this->get_logger(), "\tFiltered reprojection error=%.2f", filtered_reprojection_error);
 
     // Publish calibration points
     publishCalibrationPoints(object_points, image_points);

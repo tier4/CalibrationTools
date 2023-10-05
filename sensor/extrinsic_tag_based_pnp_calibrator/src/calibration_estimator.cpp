@@ -50,7 +50,7 @@ CalibrationEstimator::CalibrationEstimator()
   apriltag_new_hypothesis_transl_(10.0),
   apriltag_process_noise_transl_(0.5),
   apriltag_measurement_noise_transl_(2.0),
-  crossval_reproj_error_(std::numeric_limits<double>::infinity()),
+  crossvalidation_reprojection_error_(std::numeric_limits<double>::infinity()),
   valid_(false)
 {
 }
@@ -82,7 +82,7 @@ void CalibrationEstimator::update(
     corners.push_back(cv::Point2d(c.x, c.y));
   }
 
-  // 1) Create a new hypothesis for comparison convenienve
+  // 1) Create a new hypothesis for comparison convenience
   auto new_h =
     std::make_shared<tier4_tag_utils::ApriltagHypothesis>(detection.id, pinhole_camera_model_);
   new_h->setMaxConvergenceThreshold(apriltag_convergence_transl_);
@@ -116,7 +116,7 @@ void CalibrationEstimator::update(
     return;
   }
 
-  // 4) Add the new hypotheses to the acive list
+  // 4) Add the new hypotheses to the active list
   active_apriltag_hypotheses_[detection.id] = new_h;
 }
 
@@ -135,7 +135,7 @@ void CalibrationEstimator::update(
   cv::eigen2cv(translation_eigen, translation_cv);
   cv::eigen2cv(rotation_eigen, rotation_cv);
 
-  // 1) Create a new hypothesis for conevnience
+  // 1) Create a new hypothesis for convenience
   int hypothesis_id = detection.id >= 0 ? detection.id : (-active_lidartag_hypotheses_.size() - 1);
   auto new_h = std::make_shared<tier4_tag_utils::LidartagHypothesis>(hypothesis_id);
   new_h->setMaxNoObservationTime(max_no_observation_time_);
@@ -459,7 +459,7 @@ bool CalibrationEstimator::calibrate()
   bool status = observation_status && estimation_status;
   valid_ |= status;
 
-  computeCrossValidationReprojError(estimated_object_points, estimated_image_points);
+  computeCrossValidationReprojectionError(estimated_object_points, estimated_image_points);
 
   return status;
 }
@@ -484,7 +484,7 @@ bool CalibrationEstimator::calibrate(
     cv::SOLVEPNP_SQPNP);
 
   if (!success) {
-    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
+    RCLCPP_ERROR(rclcpp::get_logger("tier4_tag_utils"), "PNP failed");
     return false;
   }
 
@@ -509,11 +509,11 @@ tf2::Transform CalibrationEstimator::toTf2(
   return tf2::Transform(tf2_rot_matrix, tf2_trans);
 }
 
-void CalibrationEstimator::computeCrossValidationReprojError(
+void CalibrationEstimator::computeCrossValidationReprojectionError(
   const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points)
 {
   // Iterate a number of times
-  // Permutate the imageo object
+  // Permutate the image object
   // Separate into train and test
   const int trials = 30;
 
@@ -561,17 +561,17 @@ void CalibrationEstimator::computeCrossValidationReprojError(
       pinhole_camera_model_.intrinsicMatrix(), pinhole_camera_model_.distortionCoeffs(),
       eval_projected_points);
 
-    double reproj_error = 0.0;
+    double reprojection_error = 0.0;
     for (std::size_t i = 0; i < test_image_points.size(); i++) {
       double dist = cv::norm(test_image_points[i] - eval_projected_points[i]);
-      reproj_error += dist;
+      reprojection_error += dist;
     }
 
-    reproj_error /= test_image_points.size();
-    error += reproj_error;
+    reprojection_error /= test_image_points.size();
+    error += reprojection_error;
   }
 
-  crossval_reproj_error_ = error / trials;
+  crossvalidation_reprojection_error_ = error / trials;
 }
 
 bool CalibrationEstimator::converged() const
@@ -763,7 +763,7 @@ int CalibrationEstimator::getCurrentCalibrationPairsNumber() const
   return converged_lidartag_hypotheses_.size();
 }
 
-double CalibrationEstimator::getCrossValidationReprojError() const
+double CalibrationEstimator::getCrossValidationReprojectionError() const
 {
-  return crossval_reproj_error_;
+  return crossvalidation_reprojection_error_;
 }

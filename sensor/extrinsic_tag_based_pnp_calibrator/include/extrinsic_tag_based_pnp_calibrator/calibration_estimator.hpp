@@ -45,7 +45,7 @@ public:
   bool update(const rclcpp::Time & timestamp);
 
   void getCalibrationPoints(
-    std::vector<cv::Point3d> & object_points, std::vector<cv::Point2d> & image_pointsbool,
+    std::vector<cv::Point3d> & object_points, std::vector<cv::Point2d> & image_points,
     bool use_estimated);
 
   bool calibrate();
@@ -79,7 +79,7 @@ public:
   void setTagSizes(std::vector<int64_t> & tag_id, std::vector<double> & tag_sizes);
 
   void setLidartagMaxConvergenceThreshold(
-    double transl, double tansl_dot, double angle, double angle_dot);
+    double transl, double transl_dot, double angle, double angle_dot);
   void setLidartagNewHypothesisThreshold(double transl, double angle);
   void setLidartagMeasurementNoise(double transl, double angle);
   void setLidartagProcessNoise(double transl, double transl_dot, double rot, double rot_dot);
@@ -92,7 +92,7 @@ public:
   double getNewHypothesisDistance() const;
   double getCalibrationCoveragePercentage() const;
   int getCurrentCalibrationPairsNumber() const;
-  double getCrossValidationReprojError() const;
+  double getCrossValidationReprojectionError() const;
 
 private:
   void getCalibrationPointsIdBased(
@@ -110,7 +110,7 @@ private:
   tf2::Transform toTf2(
     const cv::Matx31d & translation_vector, const cv::Matx33d & rotation_matrix) const;
 
-  void computeCrossValidationReprojError(
+  void computeCrossValidationReprojectionError(
     const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points);
 
   // Parameters
@@ -161,7 +161,7 @@ private:
   std::vector<std::shared_ptr<tier4_tag_utils::ApriltagHypothesis>> converged_apriltag_hypotheses_;
 
   // Output
-  double crossval_reproj_error_;
+  double crossvalidation_reprojection_error_;
   bool valid_;
   cv::Matx33d hypothesis_rotation_matrix_, observation_rotation_matrix_;
   cv::Matx31d hypothesis_translation_vector_, observation_translation_vector_;

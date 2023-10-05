@@ -59,7 +59,7 @@ bool bruteForceMatcher(
   ransac_align.setInputTarget(target);
   ransac_align.setTargetFeatures(target_features);
   ransac_align.setMaximumIterations(
-    10000);  // Due to the problem dimensionality, this shold be high
+    10000);  // Due to the problem dimensionality, this should be high
   ransac_align.setNumberOfSamples(4);
   ransac_align.setCorrespondenceRandomness(5);
   ransac_align.setSimilarityThreshold(0.9f);         // This will reject most hypotheses
@@ -182,7 +182,7 @@ bool bruteForceMatcher(
     return false;
   }
 
-  // Check if the ICP aligning satisties the convergence criteria
+  // Check if the ICP aligning satisfies the convergence criteria
 
   for (std::size_t i = 0; i < icp_correspondences->size(); ++i) {
     int source_id = (*icp_correspondences)[i].index_query;

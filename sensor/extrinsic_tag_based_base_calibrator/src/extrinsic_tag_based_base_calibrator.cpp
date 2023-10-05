@@ -285,8 +285,8 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     this->declare_parameter<double>("apriltag_min_margin", 20.0);
   apriltag_detector_parameters_.max_out_of_plane_angle =
     this->declare_parameter<double>("apriltag_max_out_of_plane_angle", 90.0);
-  apriltag_detector_parameters_.max_reproj_error =
-    this->declare_parameter<double>("apriltag_max_reproj_error", 10.0);
+  apriltag_detector_parameters_.max_reprojection_error =
+    this->declare_parameter<double>("apriltag_max_reprojection_error", 10.0);
   apriltag_detector_parameters_.max_homography_error =
     this->declare_parameter<double>("apriltag_max_homography_error", 0.5);
   apriltag_detector_parameters_.quad_decimate =

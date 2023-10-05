@@ -195,28 +195,28 @@ struct CameraResidual : public SensorResidual
     }
 
     // Compute the reprojection error residuals
-    auto compute_reproj_error_point = [&](
-                                        auto & predicted_ccs, auto observed_ics, auto * residuals) {
-      const T & cx = camera_intrinsics_map(INTRINSICS_CX_INDEX);
-      const T & cy = camera_intrinsics_map(INTRINSICS_CY_INDEX);
-      const T & fx = camera_intrinsics_map(INTRINSICS_FX_INDEX);
-      const T & fy = camera_intrinsics_map(INTRINSICS_FY_INDEX);
-      const T & k1 = camera_intrinsics_map(INTRINSICS_K1_INDEX);
-      const T & k2 = camera_intrinsics_map(INTRINSICS_K2_INDEX);
+    auto compute_reprojection_error_point =
+      [&](auto & predicted_ccs, auto observed_ics, auto * residuals) {
+        const T & cx = camera_intrinsics_map(INTRINSICS_CX_INDEX);
+        const T & cy = camera_intrinsics_map(INTRINSICS_CY_INDEX);
+        const T & fx = camera_intrinsics_map(INTRINSICS_FX_INDEX);
+        const T & fy = camera_intrinsics_map(INTRINSICS_FY_INDEX);
+        const T & k1 = camera_intrinsics_map(INTRINSICS_K1_INDEX);
+        const T & k2 = camera_intrinsics_map(INTRINSICS_K2_INDEX);
 
-      const T xp = predicted_ccs.x() / predicted_ccs.z();
-      const T yp = predicted_ccs.y() / predicted_ccs.z();
-      const T r2 = xp * xp + yp * yp;
-      const T d = 1.0 + r2 * (k1 + k2 * r2);
-      const T predicted_ics_x = cx + fx * d * xp;
-      const T predicted_ics_y = cy + fy * d * yp;
+        const T xp = predicted_ccs.x() / predicted_ccs.z();
+        const T yp = predicted_ccs.y() / predicted_ccs.z();
+        const T r2 = xp * xp + yp * yp;
+        const T d = 1.0 + r2 * (k1 + k2 * r2);
+        const T predicted_ics_x = cx + fx * d * xp;
+        const T predicted_ics_y = cy + fy * d * yp;
 
-      residuals[0] = predicted_ics_x - observed_ics.x();
-      residuals[1] = predicted_ics_y - observed_ics.y();
-    };
+        residuals[0] = predicted_ics_x - observed_ics.x();
+        residuals[1] = predicted_ics_y - observed_ics.y();
+      };
 
     for (int i = 0; i < NUM_CORNERS; i++) {
-      compute_reproj_error_point(corners_ccs[i], observed_corners_[i], residuals + 2 * i);
+      compute_reprojection_error_point(corners_ccs[i], observed_corners_[i], residuals + 2 * i);
     }
 
     return true;

@@ -1,6 +1,5 @@
 {
   "words": [
-    "apriltags",
     "Rodrigues",
     "subsampled",
     "undistortion",
@@ -9,6 +8,28 @@
     "rvec",
     "tvec",
     "rvecs",
-    "tvecs"
+    "tvecs",
+    "rclcpp",
+    "ransac",
+    "lidartag",
+    "apriltag",
+    "lidartags",
+    "apriltags",
+    "pnp",
+    "sqpnp",
+    "solvepnp",
+    "eigen",
+    "homography",
+    "reprojection",
+    "permutate",
+    "distro",
+    "matx",
+    "idless",
+    "crossvalidation",
+    "prerejective",
+    "3dpoints",
+    "calib",
+    "coeffs",
+    "rviz"
   ]
 }

@@ -8,7 +8,7 @@ Panels:
         - /(Optimized) Binary Transformed Points1/Topic1
         - "/Cluster info: detail code1/Topic1"
         - "/Cluster info: detail code1/Namespaces1"
-        - /Tag calib markers (filtered)1/Namespaces1
+        - /Tag calibration markers (filtered)1/Namespaces1
       Splitter Ratio: 0.6812933087348938
     Tree Height: 797
   - Class: rviz_common/Selection
@@ -628,7 +628,7 @@ Visualization Manager:
       Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
-      Name: Tag calib markers (unfiltered)
+      Name: Tag calibration markers (unfiltered)
       Namespaces:
         {}
       Topic:
@@ -640,7 +640,7 @@ Visualization Manager:
       Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
-      Name: Tag calib markers (filtered)
+      Name: Tag calibration markers (filtered)
       Namespaces:
         active_center: true
         active_lidartag_frame: true

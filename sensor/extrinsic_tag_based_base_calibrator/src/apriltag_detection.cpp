@@ -131,24 +131,24 @@ double ApriltagDetection::computePose(const IntrinsicParameters & intrinsics)
     false, cv::SOLVEPNP_SQPNP);
 
   if (!success) {
-    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
+    RCLCPP_ERROR(rclcpp::get_logger("tier4_tag_utils"), "PNP failed");
     return false;
   }
 
   pose = cv::Affine3d(rvec, tvec);
   computeObjectCorners();
 
-  return computeReprojError(intrinsics);
+  return computeReprojectionError(intrinsics);
 }
 
-double ApriltagDetection::computeReprojError(const IntrinsicParameters & intrinsics) const
+double ApriltagDetection::computeReprojectionError(const IntrinsicParameters & intrinsics) const
 {
-  return computeReprojError(
+  return computeReprojectionError(
     intrinsics.undistorted_camera_matrix(0, 2), intrinsics.undistorted_camera_matrix(1, 2),
     intrinsics.undistorted_camera_matrix(0, 0), intrinsics.undistorted_camera_matrix(1, 1));
 }
 
-double ApriltagDetection::computeReprojError(double cx, double cy, double fx, double fy) const
+double ApriltagDetection::computeReprojectionError(double cx, double cy, double fx, double fy) const
 {
   assert(object_corners.size() == image_corners.size());
 
