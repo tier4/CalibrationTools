@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include <extrinsic_reflector_based_calibrator/extrinsic_reflector_based_calibrator.hpp>
-#include <tier4_autoware_utils/tier4_autoware_utils.hpp>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/PCLPointCloud2.h>
