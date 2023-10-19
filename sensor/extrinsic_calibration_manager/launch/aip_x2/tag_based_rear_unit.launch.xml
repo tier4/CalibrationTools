@@ -31,8 +31,8 @@
   <!-- image decompressor -->
   <group if="$(var calibrate_sensor)">
     <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
-      <remap from="decompressor/input/compressed_image" to="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
-      <remap from="decompressor/output/raw_image" to="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
+      <remap from="decompressor/input/compressed_image" to="/sensing/camera/$(var camera_name)/image_rect_color/compressed"/>
+      <remap from="decompressor/output/raw_image" to="/sensing/camera/$(var camera_name)/image_rect_color/decompressed"/>
     </node>
   </group>
 
@@ -41,7 +41,7 @@
     <arg name="ns" value="$(var parent_frame)/$(var camera_frame)"/>
     <arg name="parent_frame" value="$(var parent_frame)"/>
     <arg name="child_frame" value="$(var camera_frame)"/>
-    <arg name="image_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
+    <arg name="image_topic" value="/sensing/camera/$(var camera_name)/image_rect_color/decompressed"/>
     <arg name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
     <arg name="pointcloud_topic" value="/sensing/lidar/rear_lower/pointcloud_raw"/>
     <arg name="lidar_model" value="$(var lidar_model)"/>
@@ -53,7 +53,7 @@
 
     <node pkg="extrinsic_interactive_calibrator" exec="interactive_calibrator" name="interactive_calibrator" output="screen">
       <remap from="pointcloud" to="/sensing/lidar/rear_lower/pointcloud_raw"/>
-      <remap from="image" to="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
+      <remap from="image" to="/sensing/camera/$(var camera_name)/image_rect_color/compressed"/>
       <remap from="camera_info" to="/sensing/camera/$(var camera_name)/camera_info"/>
       <remap from="calibration_points_input" to="calibration_points"/>
 
