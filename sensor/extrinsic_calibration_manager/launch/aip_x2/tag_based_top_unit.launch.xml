@@ -29,9 +29,21 @@
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
 
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera1' &quot;)"/>
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera2' &quot;)"/>
+  <let
+    name="rviz_profile"
+    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz"
+    if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"
+  />
+  <let
+    name="rviz_profile"
+    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz"
+    if="$(eval &quot;'$(var camera_name)' == 'camera1' &quot;)"
+  />
+  <let
+    name="rviz_profile"
+    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz"
+    if="$(eval &quot;'$(var camera_name)' == 'camera2' &quot;)"
+  />
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_left.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_left.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_left.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
