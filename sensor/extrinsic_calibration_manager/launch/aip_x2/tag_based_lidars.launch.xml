@@ -204,7 +204,7 @@
     /-->
 
     <!--Tag configuration - 2023/04/21 - Omiya -->
-    <arg name="waypoint_tag_ids" value="[0, 3, 4, 5]"/>
+    <arg name="waypoint_tag_ids" value="[0, 1, 2, 3, 4, 5]"/>
     <arg name="waypoint_tag_size" value="0.6"/>
 
     <arg name="ground_tag_family" value="tag36h11"/>
