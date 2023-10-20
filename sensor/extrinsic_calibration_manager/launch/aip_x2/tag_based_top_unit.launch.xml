@@ -6,8 +6,10 @@
   <arg name="camera_name"/>
   <arg name="rviz"/>
 
-  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
-  <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
+  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_rect_color/decompressed"/>
+  <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_rect_color/compressed"/>
+  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
+  <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/compressed" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
   <let name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
 
   <let name="camera_frame" value="$(var camera_name)/camera_link"/>
@@ -17,6 +19,7 @@
   <let name="pointcloud_topic" value="/sensing/lidar/right_upper/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera2' &quot;)"/>
   <let name="pointcloud_topic" value="/sensing/lidar/left_upper/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="pointcloud_topic" value="/sensing/lidar/left_upper/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/left_upper/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
 
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
@@ -24,8 +27,26 @@
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera2' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
+  <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
 
-  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz"/>
+  <let
+    name="rviz_profile"
+    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz"
+    if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"
+  />
+  <let
+    name="rviz_profile"
+    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz"
+    if="$(eval &quot;'$(var camera_name)' == 'camera1' &quot;)"
+  />
+  <let
+    name="rviz_profile"
+    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_right.rviz"
+    if="$(eval &quot;'$(var camera_name)' == 'camera2' &quot;)"
+  />
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_left.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_left.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_$(var camera_name)_pandar_40p_left.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
 
   <let name="lidar_model" value="pandar_40p"/>
   <!--let name="lidar_model" value="pandar_qt" /-->
