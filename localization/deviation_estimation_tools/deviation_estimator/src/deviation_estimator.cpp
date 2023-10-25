@@ -316,10 +316,12 @@ void DeviationEstimator::timer_callback()
   stddev_vx_msg.data = stddev_vx;
   pub_stddev_vx_->publish(stddev_vx_msg);
 
-  // For IMU link standard deviation, we use the minimum value from the calculated standard deviation in base_link.
-  // This is because the standard deviation estimation of x and y in base_link may not be accurate especially when
-  // the data contains a motion when the people are getting on/off the vehicle, which causes the vehicle to tilt in roll and pitch.
-  // In this case, we would like to use the standard deviation of yaw axis in base_link, which is often the smallest value among the three axes.
+  // For IMU link standard deviation, we use the minimum value from the calculated standard
+  // deviation in base_link. This is because the standard deviation estimation of x and y in
+  // base_link may not be accurate especially when the data contains a motion when the people are
+  // getting on/off the vehicle, which causes the vehicle to tilt in roll and pitch. In this case,
+  // we would like to use the standard deviation of yaw axis in base_link, which is often the
+  // smallest value among the three axes.
   double stddev_angvel_imu = std::numeric_limits<double>::max();
   stddev_angvel_imu = std::min(stddev_angvel_imu, stddev_angvel_base.x);
   stddev_angvel_imu = std::min(stddev_angvel_imu, stddev_angvel_base.y);
