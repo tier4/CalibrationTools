@@ -317,9 +317,10 @@ void DeviationEstimator::timer_callback()
   pub_stddev_vx_->publish(stddev_vx_msg);
 
   // For IMU link standard deviation, we use the yaw standard deviation in base_link.
-  // This is because the standard deviation estimation of x and y in base_link may not be accurate especially when
-  // the data contains a motion when the people are getting on/off the vehicle, which causes the vehicle to tilt in roll and pitch.
-  // In this case, we would like to use the standard deviation of yaw axis in base_link.
+  // This is because the standard deviation estimation of x and y in base_link may not be accurate
+  // especially when the data contains a motion when the people are getting on/off the vehicle,
+  // which causes the vehicle to tilt in roll and pitch. In this case, we would like to use the
+  // standard deviation of yaw axis in base_link.
   double stddev_angvel_imu = stddev_angvel_base.z;
   geometry_msgs::msg::Vector3 stddev_angvel_imu_msg =
     createVector3(stddev_angvel_imu, stddev_angvel_imu, stddev_angvel_imu);
