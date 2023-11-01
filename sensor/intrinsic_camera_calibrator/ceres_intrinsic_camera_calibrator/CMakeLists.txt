@@ -4,7 +4,6 @@ project(ceres_intrinsic_camera_calibrator)
 
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(apriltag REQUIRED)
 find_package(autoware_cmake REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
