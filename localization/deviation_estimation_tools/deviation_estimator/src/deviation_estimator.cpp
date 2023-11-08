@@ -144,7 +144,8 @@ DeviationEstimator::DeviationEstimator(
   velocity_only_use_moving_ = declare_parameter<bool>("velocity_estimation.only_use_moving");
   velocity_only_use_constant_velocity_ =
     declare_parameter<bool>("velocity_estimation.only_use_constant_velocity");
-  velocity_add_bias_uncertainty_ = declare_parameter<bool>("velocity_estimation.add_bias_uncertainty");
+  velocity_add_bias_uncertainty_ =
+    declare_parameter<bool>("velocity_estimation.add_bias_uncertainty");
 
   auto timer_callback = std::bind(&DeviationEstimator::timer_callback, this);
   auto period_control = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -174,10 +175,9 @@ DeviationEstimator::DeviationEstimator(
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
   validation_module_ = std::make_unique<ValidationModule>(
-    declare_parameter<double>("thres_coef_vx"),
-    declare_parameter<double>("thres_stddev_vx"),
-    declare_parameter<double>("thres_bias_gyro"),
-    declare_parameter<double>("thres_stddev_gyro"), 5);
+    declare_parameter<double>("thres_coef_vx"), declare_parameter<double>("thres_stddev_vx"),
+    declare_parameter<double>("thres_bias_gyro"), declare_parameter<double>("thres_stddev_gyro"),
+    5);
   transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
 
   RCLCPP_INFO(this->get_logger(), "[Deviation Estimator] launch success");
