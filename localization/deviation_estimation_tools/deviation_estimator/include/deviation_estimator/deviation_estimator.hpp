@@ -71,9 +71,6 @@ private:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
 
-  bool show_debug_info_;
-  bool use_predefined_coef_vx_;
-  double predefined_coef_vx_;
   std::string imu_link_frame_;
 
   std::vector<tier4_debug_msgs::msg::Float64Stamped> vx_all_;
@@ -89,14 +86,15 @@ private:
   double accel_threshold_;
   double estimation_freq_;
   double time_window_;
-  bool add_bias_uncertainty_;
 
   bool gyro_only_use_straight_;
   bool gyro_only_use_moving_;
   bool gyro_only_use_constant_velocity_;
+  bool gyro_add_bias_uncertainty_;
   bool velocity_only_use_straight_;
   bool velocity_only_use_moving_;
   bool velocity_only_use_constant_velocity_;
+  bool velocity_add_bias_uncertainty_;
 
   std::string imu_frame_;
   const std::string output_frame_;

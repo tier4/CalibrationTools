@@ -26,12 +26,6 @@
 #include <utility>
 #include <vector>
 
-// clang-format off
-#define PRINT_MAT(X) std::cout << #X << ":\n" << X << std::endl << std::endl
-#define DEBUG_INFO(...) {if (show_debug_info_) {RCLCPP_INFO(__VA_ARGS__);}}
-#define DEBUG_PRINT_MAT(X) {if (show_debug_info_) {std::cout << #X << ": " << X << std::endl;}}
-
-// clang-format on
 using std::placeholders::_1;
 
 geometry_msgs::msg::Vector3 estimate_stddev_angular_velocity(
@@ -129,30 +123,28 @@ DeviationEstimator::DeviationEstimator(
 : rclcpp::Node(node_name, node_options),
   tf_buffer_(this->get_clock()),
   tf_listener_(tf_buffer_),
-  output_frame_(declare_parameter<std::string>("base_link", "base_link")),
+  output_frame_(declare_parameter<std::string>("output_frame")),
   results_dir_(declare_parameter<std::string>("results_dir")),
   results_logger_(results_dir_)
 {
-  show_debug_info_ = declare_parameter("show_debug_info", false);
-  dt_design_ = declare_parameter("dt_design", 10.0);
-  dx_design_ = declare_parameter("dx_design", 30.0);
-  vx_threshold_ = declare_parameter("vx_threshold", 1.5);
-  wz_threshold_ = declare_parameter("wz_threshold", 0.01);
-  accel_threshold_ = declare_parameter("accel_threshold", 0.3);
-  use_predefined_coef_vx_ = declare_parameter("use_predefined_coef_vx", false);
-  predefined_coef_vx_ = declare_parameter("predefined_coef_vx", 1.0);
-  time_window_ = declare_parameter("time_window", 4.0);
-  add_bias_uncertainty_ = declare_parameter("add_bias_uncertainty", false);
+  dt_design_ = declare_parameter<double>("dt_design");
+  dx_design_ = declare_parameter<double>("dx_design");
+  vx_threshold_ = declare_parameter<double>("vx_threshold");
+  wz_threshold_ = declare_parameter<double>("wz_threshold");
+  accel_threshold_ = declare_parameter<double>("accel_threshold");
+  time_window_ = declare_parameter<double>("time_window");
 
   // flags for deciding which trajectory to use
   gyro_only_use_straight_ = declare_parameter<bool>("gyro_estimation.only_use_straight");
   gyro_only_use_moving_ = declare_parameter<bool>("gyro_estimation.only_use_moving");
   gyro_only_use_constant_velocity_ =
     declare_parameter<bool>("gyro_estimation.only_use_constant_velocity");
+  gyro_add_bias_uncertainty_ = declare_parameter<bool>("gyro_estimation.add_bias_uncertainty");
   velocity_only_use_straight_ = declare_parameter<bool>("velocity_estimation.only_use_straight");
   velocity_only_use_moving_ = declare_parameter<bool>("velocity_estimation.only_use_moving");
   velocity_only_use_constant_velocity_ =
     declare_parameter<bool>("velocity_estimation.only_use_constant_velocity");
+  velocity_add_bias_uncertainty_ = declare_parameter<bool>("velocity_estimation.add_bias_uncertainty");
 
   auto timer_callback = std::bind(&DeviationEstimator::timer_callback, this);
   auto period_control = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -182,13 +174,13 @@ DeviationEstimator::DeviationEstimator(
   gyro_bias_module_ = std::make_unique<GyroBiasModule>();
   vel_coef_module_ = std::make_unique<VelocityCoefModule>();
   validation_module_ = std::make_unique<ValidationModule>(
-    declare_parameter<double>("thres_coef_vx", 0.01),
-    declare_parameter<double>("thres_stddev_vx", 0.05),
-    declare_parameter<double>("thres_bias_gyro", 0.001),
-    declare_parameter<double>("thres_stddev_gyro", 0.01), 5);
+    declare_parameter<double>("thres_coef_vx"),
+    declare_parameter<double>("thres_stddev_vx"),
+    declare_parameter<double>("thres_bias_gyro"),
+    declare_parameter<double>("thres_stddev_gyro"), 5);
   transform_listener_ = std::make_shared<tier4_autoware_utils::TransformListener>(this);
 
-  DEBUG_INFO(this->get_logger(), "[Deviation Estimator] launch success");
+  RCLCPP_INFO(this->get_logger(), "[Deviation Estimator] launch success");
 }
 
 /**
@@ -213,10 +205,6 @@ void DeviationEstimator::callback_wheel_odometry(
   tier4_debug_msgs::msg::Float64Stamped vx;
   vx.stamp = wheel_odometry_msg_ptr->header.stamp;
   vx.data = wheel_odometry_msg_ptr->longitudinal_velocity;
-
-  if (use_predefined_coef_vx_) {
-    vx.data *= predefined_coef_vx_;
-  }
 
   vx_all_.push_back(vx);
 }
@@ -288,10 +276,13 @@ void DeviationEstimator::timer_callback()
 
   double stddev_vx =
     estimate_stddev_velocity(traj_data_list_for_velocity_, vel_coef_module_->get_coef());
+  if (velocity_add_bias_uncertainty_) {
+    stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
+  }
+
   auto stddev_angvel_base = estimate_stddev_angular_velocity(
     traj_data_list_for_gyro_, gyro_bias_module_->get_bias_base_link());
-  if (add_bias_uncertainty_) {
-    stddev_vx = add_bias_uncertainty_on_velocity(stddev_vx, vel_coef_module_->get_coef_std());
+  if (gyro_add_bias_uncertainty_) {
     stddev_angvel_base = add_bias_uncertainty_on_angular_velocity(
       stddev_angvel_base, gyro_bias_module_->get_bias_std());
   }
