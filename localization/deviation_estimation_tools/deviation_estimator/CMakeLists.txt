@@ -4,8 +4,6 @@ project(deviation_estimator)
 find_package(autoware_cmake REQUIRED)
 autoware_package()
 
-find_package(glog REQUIRED)
-
 ament_auto_add_library(deviation_estimator_lib SHARED
   src/deviation_estimator.cpp
   src/utils.cpp
@@ -19,7 +17,7 @@ ament_auto_add_executable(deviation_estimator src/deviation_estimator_node.cpp)
 
 target_compile_options(deviation_estimator PUBLIC -g -Wall -Wextra -Wpedantic -Werror)
 
-target_link_libraries(deviation_estimator deviation_estimator_lib glog::glog)
+target_link_libraries(deviation_estimator deviation_estimator_lib)
 target_include_directories(deviation_estimator PUBLIC include)
 
 

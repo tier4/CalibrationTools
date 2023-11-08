@@ -13,15 +13,11 @@
 // limitations under the License.
 
 #include "deviation_estimator/deviation_estimator.hpp"
-#include <glog/logging.h>
 
 #include <memory>
 
 int main(int argc, char ** argv)
 {
-  google::InitGoogleLogging(argv[0]);
-  google::InstallFailureSignalHandler();
-
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions node_options;
   auto node = std::make_shared<DeviationEstimator>("deviation_estimator", node_options);
