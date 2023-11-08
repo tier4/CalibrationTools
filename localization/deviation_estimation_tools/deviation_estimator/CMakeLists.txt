@@ -5,7 +5,6 @@ find_package(autoware_cmake REQUIRED)
 autoware_package()
 
 ament_auto_add_library(deviation_estimator_lib SHARED
-  src/deviation_estimator_node.cpp
   src/deviation_estimator.cpp
   src/utils.cpp
   src/gyro_bias_module.cpp
