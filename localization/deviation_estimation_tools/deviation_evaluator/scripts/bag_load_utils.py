@@ -20,6 +20,7 @@ import bisect
 import dataclasses
 import sqlite3
 
+from constants import THRESHOLD_FOR_INITIALIZED_ERROR
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
@@ -29,7 +30,6 @@ from rosidl_runtime_py.utilities import get_message
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
 
-from constants import THRESHOLD_FOR_INITIALIZED_ERROR
 
 @dataclasses.dataclass
 class ErrorResults:
@@ -209,8 +209,7 @@ class BagFileEvaluator:
         stddev_long_2d, stddev_short_2d = calc_long_short_radius(ekf_dr_pose_cov_list)
         stddev_long_2d_gt, stddev_short_2d_gt = calc_long_short_radius(ekf_gt_pose_cov_list)
 
-        ignore_index = np.where(
-            stddev_long_2d_gt < THRESHOLD_FOR_INITIALIZED_ERROR)[0][0]
+        ignore_index = np.where(stddev_long_2d_gt < THRESHOLD_FOR_INITIALIZED_ERROR)[0][0]
 
         long_radius_results = ErrorResults(
             "long_radius",
