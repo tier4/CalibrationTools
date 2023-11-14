@@ -18,6 +18,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from constants import THRESHOLD_FOR_INITIALIZED_ERROR
 
 def plot_thresholds(recall_list, lower_bound, threshold, scale, save_path=None):
     fig = plt.figure(figsize=(8, 6))
@@ -44,10 +45,8 @@ def plot_thresholds(recall_list, lower_bound, threshold, scale, save_path=None):
 
 def plot_bag_compare(save_path, results):
     # Ignore the initial part larger than this value, since the values right after launch may diverge.
-    THRESHOLD_FOR_INITIALIZED_ERROR = 1.0
-    ignore_index = np.where(results.long_radius.expected_error < THRESHOLD_FOR_INITIALIZED_ERROR)[
-        0
-    ][0]
+    ignore_index = np.where(
+        results.long_radius.expected_error < THRESHOLD_FOR_INITIALIZED_ERROR)[0][0]
     error_maximum = np.max(
         np.hstack(
             [
