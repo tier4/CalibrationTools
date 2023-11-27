@@ -28,6 +28,11 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+  scripts/metrics_plotter_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_export_dependencies(ament_cmake_python)
 
 ament_auto_package(

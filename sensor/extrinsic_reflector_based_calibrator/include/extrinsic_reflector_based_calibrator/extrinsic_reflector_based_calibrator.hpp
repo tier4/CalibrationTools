@@ -22,6 +22,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
 #include <std_srvs/srv/empty.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <radar_msgs/msg/radar_tracks.hpp>
@@ -48,6 +49,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
@@ -109,7 +111,7 @@ protected:
 
   void trackMatches(
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
-    builtin_interfaces::msg::Time & time);
+    builtin_interfaces::msg::Time & time, bool & is_converged);
   void calibrateSensors();
   void visualizationMarkers(
     const std::vector<Eigen::Vector3d> & lidar_detections,
@@ -179,6 +181,7 @@ protected:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr radar_detections_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr matches_markers_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr tracking_markers_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr cross_validation_pub_;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
   rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
