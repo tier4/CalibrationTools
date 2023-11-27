@@ -25,40 +25,32 @@ import matplotlib.pyplot as plt
 class Plotter:
     def __init__(self):
         self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 12))
-        self.xlim = 20
-        self.ylim = 2
+
         self.prev_calibration_distance_error = 0
         self.prev_calibration_yaw_error = 0
         self.prev_cv_distance_error = 0
         self.prev_cv_yaw_error = 0
         self.prev_num_of_reflectors = 0
         self.anno0, self.anno1, self.anno2, self.anno3 = None, None, None, None
+        self.max_ylim0, self.max_ylim1, self.max_ylim2, self.max_ylim3 = 0, 0, 0, 0
         #self.anno_list0, self.anno_list1, self.anno_list2, self.anno_list3 = [],[],[],[]
         self.plot_setting()
         plt.pause(0.1)
         
 
     def plot_setting(self):
-        self.axes[0, 0].set_xlim(0, self.xlim)
-        self.axes[0, 0].set_ylim(0, self.ylim)
         self.axes[0, 0].set_title('Cross val error: Distance')
         self.axes[0, 0].set_xlabel('# reflector')
         self.axes[0, 0].set_ylabel('Distance error')
 
-        self.axes[0, 1].set_xlim(0, self.xlim)
-        self.axes[0, 1].set_ylim(0, self.ylim)
         self.axes[0, 1].set_title('Cross val error: Yaw')
         self.axes[0, 1].set_xlabel('# reflector')
         self.axes[0, 1].set_ylabel('Yaw error')
 
-        self.axes[1, 0].set_xlim(0, self.xlim)
-        self.axes[1, 0].set_ylim(0, self.ylim)
         self.axes[1, 0].set_title('Average error: Distance')
         self.axes[1, 0].set_xlabel('# reflector')
         self.axes[1, 0].set_ylabel('Distance error')
 
-        self.axes[1, 1].set_xlim(0, self.xlim)
-        self.axes[1, 1].set_ylim(0, self.ylim)
         self.axes[1, 1].set_title('Average error: Distance')
         self.axes[1, 1].set_xlabel('# reflector')
         self.axes[1, 1].set_ylabel('Yaw error')
@@ -79,12 +71,28 @@ class Plotter:
         calibration_distance_error = msg.data[3]
         calibration_yaw_error = msg.data[4]
 
-  
+        # update the maxium ylim
+        self.max_ylim0 = cv_distance_error if cv_distance_error > self.max_ylim0 else self.max_ylim0
+        self.max_ylim1 = cv_yaw_error if cv_distance_error > self.max_ylim1 else self.max_ylim1
+        self.max_ylim2 = calibration_distance_error if cv_distance_error > self.max_ylim2 else self.max_ylim2
+        self.max_ylim3 = calibration_yaw_error if cv_distance_error > self.max_ylim3 else self.max_ylim3
+
         # remove the previous annotations
         self.remove_anno(self.anno0)
         self.remove_anno(self.anno1)
         self.remove_anno(self.anno2)
         self.remove_anno(self.anno3)
+
+        # make the plot dynamic
+        self.axes[0, 0].set_xlim(0, num_of_reflectors)
+        self.axes[0, 1].set_xlim(0, num_of_reflectors)
+        self.axes[1, 0].set_xlim(0, num_of_reflectors)
+        self.axes[1, 1].set_xlim(0, num_of_reflectors)
+
+        self.axes[0, 0].set_ylim(0, self.max_ylim0 + 0.1)
+        self.axes[0, 1].set_ylim(0, self.max_ylim1 + 0.1)
+        self.axes[1, 0].set_ylim(0, self.max_ylim2 + 0.1)
+        self.axes[1, 1].set_ylim(0, self.max_ylim3 + 0.1)
 
         self.axes[0, 0].plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_cv_distance_error, cv_distance_error], 'bo-')
         self.axes[0, 1].plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_cv_yaw_error, cv_yaw_error], 'go-')
