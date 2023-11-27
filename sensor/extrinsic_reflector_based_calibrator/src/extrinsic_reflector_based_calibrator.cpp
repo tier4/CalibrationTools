@@ -334,6 +334,17 @@ void ExtrinsicReflectorBasedCalibrator::timerCallback()
         std::placeholders::_2),
       rmw_qos_profile_services_default, calibration_ui_srv_callback_group_);
   }
+
+  // TODO: check if there are still pcs 
+  if (converged_tracks_.size() > 0 && !delete_track_service_server_) {
+    delete_track_service_server_ = this->create_service<std_srvs::srv::Empty>(
+      "delete_lidar_radar_pair",
+      std::bind(
+        &ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback, this,
+        std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default, calibration_ui_srv_callback_group_);
+  }
+
 }
 
 void ExtrinsicReflectorBasedCalibrator::backgroundModelRequestCallback(
@@ -392,6 +403,29 @@ void ExtrinsicReflectorBasedCalibrator::trackingRequestCallback(
   RCLCPP_INFO(this->get_logger(), "New converged detections: %d", current_new_tracks_);
 }
 
+void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
+  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+  using std::chrono_literals::operator""s;
+  std::unique_lock<std::mutex> lock(mutex_);
+
+  if (converged_tracks_.size() > 0) {
+    converged_tracks_.pop_back();
+    // TODO
+    deleteMarkers(lidar_detections, radar_detections, matches);
+      if(converged_tracks_.size()) {
+        calibrateSensors();
+        RCLCPP_INFO(this->get_logger(), "You delete one previous track, there are still: %d converged tracks", converged_tracks_.size());
+      }
+      else 
+        RCLCPP_INFO(this->get_logger(), "You delete one previous track, there is no more converged track");
+  }
+  else {
+    RCLCPP_INFO(this->get_logger(), "You cannot delete previous track, because there are no track");
+  }
+}
+
 void ExtrinsicReflectorBasedCalibrator::sendCalibrationCallback(
   __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
   __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
@@ -414,6 +448,7 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
   latest_radar_msgs_->tracks.clear();
 
   auto matches = matchDetections(lidar_detections, radar_detections);
+
   bool is_converged = false;
   trackMatches(matches, msg->header.stamp, is_converged);
   if(is_converged)

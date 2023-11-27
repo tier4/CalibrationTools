@@ -191,6 +191,7 @@ protected:
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr background_model_service_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr tracking_service_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr send_calibration_service_server_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr delete_track_service_server_;
 
   // Threading, sync, and result
   std::mutex mutex_;
