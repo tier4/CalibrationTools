@@ -24,7 +24,22 @@ import matplotlib.pyplot as plt
 class Plotter:
     def __init__(self):
         self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 12))
+        self.subplot0 = self.axes[0, 0]
+        self.subplot1 = self.axes[0, 1]
+        self.subplot2 = self.axes[1, 0]
+        self.subplot3 = self.axes[1, 1]
 
+        self.cv_distance_error_list = [0]
+        self.cv_yaw_error_list = [0]
+        self.calibration_distance_error_list = [0]
+        self.calibration_yaw_error_list = [0]
+        self.num_of_reflectors_list = [0]
+
+        self.color_bo = 'bo-'
+        self.color_go = 'go-'
+        self.color_b = 'b'
+        self.color_g = 'g'
+        
         self.prev_calibration_distance_error = 0
         self.prev_calibration_yaw_error = 0
         self.prev_cv_distance_error = 0
@@ -32,32 +47,56 @@ class Plotter:
         self.prev_num_of_reflectors = 0
         self.anno0, self.anno1, self.anno2, self.anno3 = None, None, None, None
         self.max_ylim0, self.max_ylim1, self.max_ylim2, self.max_ylim3 = 0, 0, 0, 0
-        #self.anno_list0, self.anno_list1, self.anno_list2, self.anno_list3 = [],[],[],[]
+        self.line0, self.line1, self.line2, self.line3 = None, None, None, None
+        
         self.plot_setting()
         plt.pause(0.1)
         
 
     def plot_setting(self):
-        self.axes[0, 0].set_title('Cross val error: Distance')
-        self.axes[0, 0].set_xlabel('# reflector')
-        self.axes[0, 0].set_ylabel('Distance error')
+        self.subplot0.set_title('Cross val error: Distance')
+        self.subplot0.set_xlabel('# reflector')
+        self.subplot0.set_ylabel('Distance error')
 
-        self.axes[0, 1].set_title('Cross val error: Yaw')
-        self.axes[0, 1].set_xlabel('# reflector')
-        self.axes[0, 1].set_ylabel('Yaw error')
+        self.subplot1.set_title('Cross val error: Yaw')
+        self.subplot1.set_xlabel('# reflector')
+        self.subplot1.set_ylabel('Yaw error')
 
-        self.axes[1, 0].set_title('Average error: Distance')
-        self.axes[1, 0].set_xlabel('# reflector')
-        self.axes[1, 0].set_ylabel('Distance error')
+        self.subplot2.set_title('Average error: Distance')
+        self.subplot2.set_xlabel('# reflector')
+        self.subplot2.set_ylabel('Distance error')
 
-        self.axes[1, 1].set_title('Average error: Distance')
-        self.axes[1, 1].set_xlabel('# reflector')
-        self.axes[1, 1].set_ylabel('Yaw error')
+        self.subplot3.set_title('Average error: Distance')
+        self.subplot3.set_xlabel('# reflector')
+        self.subplot3.set_ylabel('Yaw error')
 
 
     def remove_anno(self, anno):
         if(anno is not None):
             anno.remove()
+
+    def remove_line(self, line):
+        if(line is not None):
+            line.remove()
+
+    
+    def redraw_subplot(self, num_of_reflectors, error_list, subplot, color_o):
+        subplot.clear()
+        self.plot_setting()
+        for index, num in enumerate(self.num_of_reflectors_list):
+            if index == 0:
+                continue
+            if num < num_of_reflectors:
+                # redraw the subplot
+                subplot.plot([self.num_of_reflectors_list[index-1], self.num_of_reflectors_list[index]], [error_list[index-1], error_list[index]], color_o)
+                prev_error = error_list[index]
+                prev_num = num
+            else:
+                del error_list[index:len(error_list)-1]
+                del self.num_of_reflectors_list[index:len(self.num_of_reflectors_list)-1]
+                break
+
+        return prev_error, prev_num
 
 
     def draw_graph(self, msg):
@@ -67,11 +106,36 @@ class Plotter:
         calibration_distance_error = msg.data[3]
         calibration_yaw_error = msg.data[4]
 
+        # check  if it is delete operation
+        if num_of_reflectors < self.prev_num_of_reflectors: 
+            self.prev_cv_distance_error, self.prev_num_of_reflectors = self.redraw_subplot(num_of_reflectors, self.cv_distance_error_list ,self.subplot0, self.color_bo)
+            self.prev_cv_yaw_error, _ = self.redraw_subplot(num_of_reflectors, self.cv_yaw_error_list ,self.subplot1, self.color_go)
+            self.prev_calibration_distance_error, _ = self.redraw_subplot(num_of_reflectors, self.calibration_distance_error_list ,self.subplot2, self.color_bo)
+            self.prev_calibration_yaw_error, _ = self.redraw_subplot(num_of_reflectors, self.calibration_yaw_error_list ,self.subplot3, self.color_go)
+
+
+        self.cv_distance_error_list.append(cv_distance_error)
+        self.cv_yaw_error_list.append(cv_yaw_error)
+        self.calibration_distance_error_list.append(calibration_distance_error)
+        self.calibration_yaw_error_list.append(calibration_yaw_error)
+        self.num_of_reflectors_list.append(num_of_reflectors)
+        
         # update the maxium ylim
         self.max_ylim0 = cv_distance_error if cv_distance_error > self.max_ylim0 else self.max_ylim0
         self.max_ylim1 = cv_yaw_error if cv_distance_error > self.max_ylim1 else self.max_ylim1
         self.max_ylim2 = calibration_distance_error if cv_distance_error > self.max_ylim2 else self.max_ylim2
         self.max_ylim3 = calibration_yaw_error if cv_distance_error > self.max_ylim3 else self.max_ylim3
+
+        # make the plot dynamic
+        self.subplot0.set_xlim(0, num_of_reflectors)
+        self.subplot1.set_xlim(0, num_of_reflectors)
+        self.subplot2.set_xlim(0, num_of_reflectors)
+        self.subplot3.set_xlim(0, num_of_reflectors)
+
+        self.subplot0.set_ylim(0, self.max_ylim0 + 0.1)
+        self.subplot1.set_ylim(0, self.max_ylim1 + 0.1)
+        self.subplot2.set_ylim(0, self.max_ylim2 + 0.1)
+        self.subplot3.set_ylim(0, self.max_ylim3 + 0.1)
 
         # remove the previous annotations
         self.remove_anno(self.anno0)
@@ -79,26 +143,17 @@ class Plotter:
         self.remove_anno(self.anno2)
         self.remove_anno(self.anno3)
 
-        # make the plot dynamic
-        self.axes[0, 0].set_xlim(0, num_of_reflectors)
-        self.axes[0, 1].set_xlim(0, num_of_reflectors)
-        self.axes[1, 0].set_xlim(0, num_of_reflectors)
-        self.axes[1, 1].set_xlim(0, num_of_reflectors)
+        # draw the lines
+        self.line0 = self.subplot0.plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_cv_distance_error, cv_distance_error], self.color_bo)
+        self.line1 = self.subplot1.plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_cv_yaw_error, cv_yaw_error], self.color_go)
+        self.line2 = self.subplot2.plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_calibration_distance_error, calibration_distance_error], self.color_bo)
+        self.line3 = self.subplot3.plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_calibration_yaw_error, calibration_yaw_error], self.color_go)
 
-        self.axes[0, 0].set_ylim(0, self.max_ylim0 + 0.1)
-        self.axes[0, 1].set_ylim(0, self.max_ylim1 + 0.1)
-        self.axes[1, 0].set_ylim(0, self.max_ylim2 + 0.1)
-        self.axes[1, 1].set_ylim(0, self.max_ylim3 + 0.1)
-
-        self.axes[0, 0].plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_cv_distance_error, cv_distance_error], 'bo-')
-        self.axes[0, 1].plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_cv_yaw_error, cv_yaw_error], 'go-')
-        self.axes[1, 0].plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_calibration_distance_error, calibration_distance_error], 'bo-')
-        self.axes[1, 1].plot([self.prev_num_of_reflectors, num_of_reflectors], [self.prev_calibration_yaw_error, calibration_yaw_error], 'go-')
-
-        self.anno0 = self.axes[0, 0].annotate('%0.4f' % cv_distance_error, xy=(num_of_reflectors, cv_distance_error), color='b')
-        self.anno1 = self.axes[0, 1].annotate('%0.4f' % cv_yaw_error, xy=(num_of_reflectors, cv_yaw_error), color='g')
-        self.anno2 = self.axes[1, 0].annotate('%0.4f' % calibration_distance_error, xy=(num_of_reflectors, calibration_distance_error), color='b')
-        self.anno3 = self.axes[1, 1].annotate('%0.4f' % calibration_yaw_error, xy=(num_of_reflectors, calibration_yaw_error), color='g')
+        # write the error value on screen
+        self.anno0 = self.subplot0.annotate('%0.4f' % cv_distance_error, xy=(num_of_reflectors, cv_distance_error), color=self.color_b)
+        self.anno1 = self.subplot1.annotate('%0.4f' % cv_yaw_error, xy=(num_of_reflectors, cv_yaw_error), color=self.color_g)
+        self.anno2 = self.subplot2.annotate('%0.4f' % calibration_distance_error, xy=(num_of_reflectors, calibration_distance_error), color=self.color_b)
+        self.anno3 = self.subplot3.annotate('%0.4f' % calibration_yaw_error, xy=(num_of_reflectors, calibration_yaw_error), color=self.color_g)
         plt.pause(0.1)
 
         self.prev_cv_distance_error = cv_distance_error
@@ -106,8 +161,9 @@ class Plotter:
         self.prev_calibration_distance_error = calibration_distance_error
         self.prev_calibration_yaw_error = calibration_yaw_error
         self.prev_num_of_reflectors = num_of_reflectors
-
-
+            
+        
+        
 class MetricsPlotter(Node):
     def __init__(self):
         super().__init__('plot_metric')

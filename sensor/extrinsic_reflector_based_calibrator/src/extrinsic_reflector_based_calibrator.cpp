@@ -335,7 +335,6 @@ void ExtrinsicReflectorBasedCalibrator::timerCallback()
       rmw_qos_profile_services_default, calibration_ui_srv_callback_group_);
   }
 
-  // TODO: check if there are still pcs 
   if (converged_tracks_.size() > 0 && !delete_track_service_server_) {
     delete_track_service_server_ = this->create_service<std_srvs::srv::Empty>(
       "delete_lidar_radar_pair",
@@ -408,15 +407,14 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
   __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
   using std::chrono_literals::operator""s;
-  std::unique_lock<std::mutex> lock(mutex_);
 
   if (converged_tracks_.size() > 0) {
     converged_tracks_.pop_back();
-    // TODO
-    deleteMarkers(lidar_detections, radar_detections, matches);
-      if(converged_tracks_.size()) {
+      if(converged_tracks_.size() > 0) {
         calibrateSensors();
-        RCLCPP_INFO(this->get_logger(), "You delete one previous track, there are still: %d converged tracks", converged_tracks_.size());
+        RCLCPP_INFO(this->get_logger(), "You delete one previous track, there are still: %d converged tracks", 
+          static_cast<int>(converged_tracks_.size()));
+        visualizeTrackMarkers();
       }
       else 
         RCLCPP_INFO(this->get_logger(), "You delete one previous track, there is no more converged track");
@@ -454,6 +452,7 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
   if(is_converged)
     calibrateSensors();
   visualizationMarkers(lidar_detections, radar_detections, matches);
+  visualizeTrackMarkers();
 
   RCLCPP_INFO(
     this->get_logger(),
@@ -1509,7 +1508,17 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
   }
 
   matches_markers_pub_->publish(matches_marker_array);
+}
 
+
+void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers() {
+  auto eigen_to_point_msg = [](const Eigen::Vector3d & p_eigen) {
+    geometry_msgs::msg::Point p;
+    p.x = p_eigen.x();
+    p.y = p_eigen.y();
+    p.z = p_eigen.z();
+    return p;
+  };
   auto add_track_markers = [&](
                              const Eigen::Vector3d & lidar_estimation,
                              const Eigen::Vector3d & radar_estimation_transformed,
@@ -1594,3 +1603,5 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
 
   tracking_markers_pub_->publish(tracking_marker_array);
 }
+
+

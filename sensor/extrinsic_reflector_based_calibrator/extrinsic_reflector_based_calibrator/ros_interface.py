@@ -106,6 +106,9 @@ class RosInterface(Node):
     def add_lidar_radar_pair(self):
         self.add_lidar_radar_pair_client()
 
+    def delete_lidar_radar_pair(self):
+        self.delete_lidar_radar_pair_client()
+
     def send_calibration(self):
         self.send_calibration_client()
 

@@ -78,6 +78,10 @@ protected:
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     const std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
+  void deleteTrackRequestCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    const std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
   void lidarCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void radarCallback(const radar_msgs::msg::RadarTracks::SharedPtr msg);
 
@@ -117,7 +121,8 @@ protected:
     const std::vector<Eigen::Vector3d> & lidar_detections,
     const std::vector<Eigen::Vector3d> & radar_detections,
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections);
-
+  void visualizeTrackMarkers();
+  
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
 
@@ -231,6 +236,7 @@ protected:
   // Tracking
   bool tracking_active_;
   int current_new_tracks_;
+  bool deletion_active_;
   TrackFactory::Ptr factory_ptr_;
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
