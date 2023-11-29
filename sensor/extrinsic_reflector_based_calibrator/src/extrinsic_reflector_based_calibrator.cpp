@@ -410,14 +410,10 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
 
   if (converged_tracks_.size() > 0) {
     converged_tracks_.pop_back();
-      if(converged_tracks_.size() > 0) {
-        calibrateSensors();
-        RCLCPP_INFO(this->get_logger(), "You delete one previous track, there are still: %d converged tracks", 
-          static_cast<int>(converged_tracks_.size()));
-        visualizeTrackMarkers();
-      }
-      else 
-        RCLCPP_INFO(this->get_logger(), "You delete one previous track, there is no more converged track");
+    calibrateSensors();
+    visualizeTrackMarkers();
+      RCLCPP_INFO(this->get_logger(), "You delete one previous track, there are %d converged tracks remain", 
+        static_cast<int>(converged_tracks_.size()));
   }
   else {
     RCLCPP_INFO(this->get_logger(), "You cannot delete previous track, because there are no track");
@@ -1159,6 +1155,11 @@ void ExtrinsicReflectorBasedCalibrator::trackMatches(
 void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
 {
   if (!checkInitialTransforms() || converged_tracks_.size() == 0) {
+    if(converged_tracks_.size() == 0) {
+      std_msgs::msg::Float32MultiArray cv_metrics_msg = std_msgs::msg::Float32MultiArray();
+      cv_metrics_msg.data = {0, 0, 0, 0, 0}; 
+      cross_validation_pub_->publish(cv_metrics_msg);
+    }
     return;
   }
 
@@ -1332,17 +1333,16 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
     }
     cv_distance_error /= static_cast<double>(converged_tracks_.size());
     cv_yaw_error *= 180.0 / (M_PI * static_cast<double>(converged_tracks_.size()));
-
-    float track_size = static_cast<float>(converged_tracks_.size());
-    RCLCPP_INFO(
-      this->get_logger(),
-      "track size=%f, cross validation calibration error: detection2detection.distance=%.4fm, yaw=%.4f degrees",
-      track_size, cv_distance_error, cv_yaw_error);
-    // publish metrics
-    std_msgs::msg::Float32MultiArray cv_metrics_msg = std_msgs::msg::Float32MultiArray();
-    cv_metrics_msg.data = {track_size, static_cast<float>(cv_distance_error), static_cast<float>(cv_yaw_error), static_cast<float>(calibrated_2d_distance_error), static_cast<float>(calibrated_2d_yaw_error)}; 
-    cross_validation_pub_->publish(cv_metrics_msg);
   }
+  float track_size = static_cast<float>(converged_tracks_.size());
+  RCLCPP_INFO(
+    this->get_logger(),
+    "track size=%f, cross validation calibration error: detection2detection.distance=%.4fm, yaw=%.4f degrees",
+    track_size, cv_distance_error, cv_yaw_error);
+  // publish metrics
+  std_msgs::msg::Float32MultiArray cv_metrics_msg = std_msgs::msg::Float32MultiArray();
+  cv_metrics_msg.data = {track_size, static_cast<float>(cv_distance_error), static_cast<float>(cv_yaw_error), static_cast<float>(calibrated_2d_distance_error), static_cast<float>(calibrated_2d_yaw_error)}; 
+  cross_validation_pub_->publish(cv_metrics_msg);
 
 
   // Evaluate the different calibrations and decide on an output
@@ -1354,7 +1354,6 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
 
     return std::make_pair(translation_difference, rotation_difference);
   };
-
   RCLCPP_INFO(
     this->get_logger(),
     "Initial calibration error: detection2detection.distance=%.4fm yaw=%.4f degrees",

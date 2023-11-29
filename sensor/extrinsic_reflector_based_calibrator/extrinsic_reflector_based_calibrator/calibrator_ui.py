@@ -18,6 +18,7 @@ from PySide2.QtWidgets import QMainWindow
 from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
+import time
 
 
 class CalibratorUI(QMainWindow):
@@ -123,6 +124,7 @@ class CalibratorUI(QMainWindow):
 
     def delete_lidar_radar_pair_result_callback(self, result):
         self.pending_service = False
+        time.sleep(1)
         self.check_status()
 
     def delete_lidar_radar_pair_status_callback(self, status):
