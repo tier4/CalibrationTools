@@ -244,7 +244,9 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     this->create_publisher<visualization_msgs::msg::MarkerArray>("matches_markers", 10);
   tracking_markers_pub_ =
     this->create_publisher<visualization_msgs::msg::MarkerArray>("tracking_markers", 10);
-  cross_validation_pub_ =
+  text_markers_pub_ =
+    this->create_publisher<visualization_msgs::msg::Marker>("text_markers", 10);
+  metrics_pub_ =
     this->create_publisher<std_msgs::msg::Float32MultiArray>("cross_validation_metrics", 10);
 
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -412,6 +414,7 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
     converged_tracks_.pop_back();
     calibrateSensors();
     visualizeTrackMarkers();
+    drawCalibrationStatusText();
       RCLCPP_INFO(this->get_logger(), "You delete one previous track, there are %d converged tracks remain", 
         static_cast<int>(converged_tracks_.size()));
   }
@@ -449,6 +452,8 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
     calibrateSensors();
   visualizationMarkers(lidar_detections, radar_detections, matches);
   visualizeTrackMarkers();
+  drawCalibrationStatusText();
+  
 
   RCLCPP_INFO(
     this->get_logger(),
@@ -1158,7 +1163,7 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
     if(converged_tracks_.size() == 0) {
       std_msgs::msg::Float32MultiArray cv_metrics_msg = std_msgs::msg::Float32MultiArray();
       cv_metrics_msg.data = {0, 0, 0, 0, 0}; 
-      cross_validation_pub_->publish(cv_metrics_msg);
+      metrics_pub_->publish(cv_metrics_msg);
     }
     return;
   }
@@ -1169,8 +1174,8 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
   lidar_points_pcs->reserve(converged_tracks_.size());
   radar_points_rcs->reserve(converged_tracks_.size());
 
-  float delta_cos_sum = 0.0;
-  float delta_sin_sum = 0.0;
+  double delta_cos_sum = 0.0;
+  double delta_sin_sum = 0.0;
 
   auto eigen_to_pcl_2d = [](const auto & p) { return PointType(p.x(), p.y(), 0.0); };
 
@@ -1334,15 +1339,22 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
     cv_distance_error /= static_cast<double>(converged_tracks_.size());
     cv_yaw_error *= 180.0 / (M_PI * static_cast<double>(converged_tracks_.size()));
   }
-  float track_size = static_cast<float>(converged_tracks_.size());
+
   RCLCPP_INFO(
     this->get_logger(),
     "track size=%f, cross validation calibration error: detection2detection.distance=%.4fm, yaw=%.4f degrees",
-    track_size, cv_distance_error, cv_yaw_error);
+    static_cast<float>(converged_tracks_.size()), cv_distance_error, cv_yaw_error);
+  output_cv_distance_error = static_cast<float>(cv_distance_error);
+  output_cv_yaw_error = static_cast<float>(cv_yaw_error);
+  output_calibration_distance_error = static_cast<float>(calibrated_2d_distance_error);
+  output_calibration_yaw_error = static_cast<float>(calibrated_2d_yaw_error);
+
+  
   // publish metrics
   std_msgs::msg::Float32MultiArray cv_metrics_msg = std_msgs::msg::Float32MultiArray();
-  cv_metrics_msg.data = {track_size, static_cast<float>(cv_distance_error), static_cast<float>(cv_yaw_error), static_cast<float>(calibrated_2d_distance_error), static_cast<float>(calibrated_2d_yaw_error)}; 
-  cross_validation_pub_->publish(cv_metrics_msg);
+  cv_metrics_msg.data = {static_cast<float>(converged_tracks_.size()), output_cv_distance_error,
+                          output_cv_yaw_error, output_calibration_distance_error, output_calibration_yaw_error}; 
+  metrics_pub_->publish(cv_metrics_msg);
 
 
   // Evaluate the different calibrations and decide on an output
@@ -1510,7 +1522,8 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
 }
 
 
-void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers() {
+void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers() 
+{
   auto eigen_to_point_msg = [](const Eigen::Vector3d & p_eigen) {
     geometry_msgs::msg::Point p;
     p.x = p_eigen.x();
@@ -1604,3 +1617,42 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers() {
 }
 
 
+void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
+{
+  auto to_string_with_precision = [](const double value, const int n = 3) -> std::string {
+    std::ostringstream out;
+    out.precision(n);
+    out << std::fixed << value;
+    return out.str();
+  };
+  
+  visualization_msgs::msg::Marker text_marker;
+
+  text_marker.id = 0;
+  text_marker.header = lidar_header_;
+  text_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+  text_marker.lifetime = rclcpp::Duration::from_seconds(0.5);
+  text_marker.color.r = 1.0;
+  text_marker.color.g = 1.0;
+  text_marker.color.b = 1.0;
+  text_marker.color.a = 1.0;
+  text_marker.ns = "calibration_status";
+  text_marker.scale.z = 0.3;
+
+  text_marker.text =
+    "pairs=" + std::to_string(converged_tracks_.size()) +
+    "\ncrossval_distance_error(m)=" + to_string_with_precision(output_cv_distance_error) +
+    "\ncrossval_yaw_error(deg)=" + to_string_with_precision(output_cv_yaw_error) +
+    "\n2d_distance_error(m)=" + to_string_with_precision(output_calibration_distance_error) +
+    "\n2d_yaw_error(deg)=" + to_string_with_precision(output_calibration_yaw_error);
+
+  text_marker.pose.position.x = 1;
+  text_marker.pose.position.y = 1;
+  text_marker.pose.position.z = 1;
+  text_marker.pose.orientation.x = 0.0;
+  text_marker.pose.orientation.y = 0.0;
+  text_marker.pose.orientation.z = 0.0;
+  text_marker.pose.orientation.w = 1.0;  
+
+  text_markers_pub_->publish(text_marker);
+}

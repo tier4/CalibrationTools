@@ -122,6 +122,7 @@ protected:
     const std::vector<Eigen::Vector3d> & radar_detections,
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections);
   void visualizeTrackMarkers();
+  void drawCalibrationStatusText();
   
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
@@ -186,7 +187,8 @@ protected:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr radar_detections_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr matches_markers_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr tracking_markers_pub_;
-  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr cross_validation_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr text_markers_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr metrics_pub_;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
   rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
@@ -240,6 +242,10 @@ protected:
   TrackFactory::Ptr factory_ptr_;
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
+
+  // Metrics
+  float output_cv_distance_error = 0, output_cv_yaw_error = 0;
+  float output_calibration_distance_error = 0, output_calibration_yaw_error = 0;
 };
 
 #endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_
