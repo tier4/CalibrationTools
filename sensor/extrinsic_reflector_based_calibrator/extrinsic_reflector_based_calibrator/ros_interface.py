@@ -69,7 +69,6 @@ class RosInterface(Node):
         self.add_lidar_radar_pair_client = EmptyServiceWrapper(self, "add_lidar_radar_pair")
         self.delete_lidar_radar_pair_client = EmptyServiceWrapper(self, "delete_lidar_radar_pair")
         self.send_calibration_client = EmptyServiceWrapper(self, "send_calibration")
-  
 
         self.client_list = [
             self.extract_background_model_client,

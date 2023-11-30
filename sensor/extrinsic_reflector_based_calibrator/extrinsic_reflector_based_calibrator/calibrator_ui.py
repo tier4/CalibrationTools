@@ -14,11 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 from PySide2.QtWidgets import QMainWindow
 from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
-import time
 
 
 class CalibratorUI(QMainWindow):
@@ -78,7 +79,9 @@ class CalibratorUI(QMainWindow):
 
         self.delete_lidar_radar_pair_button = QPushButton("Delete previous lidar-radar pair")
         self.delete_lidar_radar_pair_button.setEnabled(False)
-        self.delete_lidar_radar_pair_button.clicked.connect(self.delete_lidar_radar_pair_button_callback)
+        self.delete_lidar_radar_pair_button.clicked.connect(
+            self.delete_lidar_radar_pair_button_callback
+        )
         self.layout.addWidget(self.delete_lidar_radar_pair_button)
 
         self.send_calibration_button = QPushButton("Send calibration")
@@ -129,7 +132,7 @@ class CalibratorUI(QMainWindow):
 
     def delete_lidar_radar_pair_status_callback(self, status):
         self.delete_lidar_radar_pair_status = status
-        self.check_status()        
+        self.check_status()
 
     def send_calibration_result_callback(self, result):
         self.pending_service = False

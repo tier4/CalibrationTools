@@ -22,10 +22,10 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
 #include <std_srvs/srv/empty.hpp>
-#include <std_msgs/msg/float32_multi_array.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <radar_msgs/msg/radar_tracks.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
 #include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
@@ -42,6 +42,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -49,7 +50,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <algorithm>
 
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
@@ -116,6 +116,17 @@ protected:
   void trackMatches(
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
     builtin_interfaces::msg::Time & time, bool & is_converged);
+  void getPointsSetAndDelta(
+    pcl::PointCloud<PointType>::Ptr & lidar_points_pcs,
+    pcl::PointCloud<PointType>::Ptr & radar_points_rcs, double & delta_cos_sum,
+    double & delta_sin_sum);
+  void estimateTransformationSVD(
+    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
+    pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
+  void crossValEvalution(
+    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
+    pcl::PointCloud<PointType>::Ptr radar_points_rcs);
+  void publish_metrics();
   void calibrateSensors();
   void visualizationMarkers(
     const std::vector<Eigen::Vector3d> & lidar_detections,
@@ -123,7 +134,7 @@ protected:
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections);
   void visualizeTrackMarkers();
   void drawCalibrationStatusText();
-  
+
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
 
