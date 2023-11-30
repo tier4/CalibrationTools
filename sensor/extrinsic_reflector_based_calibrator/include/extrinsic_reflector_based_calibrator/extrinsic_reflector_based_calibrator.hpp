@@ -123,7 +123,7 @@ protected:
   void estimateTransformationSVD(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
-  void crossValEvalution(
+  void crossValEvaluation(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs);
   void publish_metrics();

@@ -1004,13 +1004,13 @@ ExtrinsicReflectorBasedCalibrator::matchDetections(
 
   // Lidar transformed detections
   std::vector<Eigen::Vector3d> lidar_detections_transformed;
-  const auto radar_to_lidar_transorm = initial_radar_to_lidar_eigen_;
+  const auto radar_to_lidar_transform = initial_radar_to_lidar_eigen_;
 
   std::transform(
     lidar_detections.cbegin(), lidar_detections.cend(),
     std::back_inserter(lidar_detections_transformed),
-    [&radar_to_lidar_transorm](const auto & lidar_detection) {
-      auto transformed_point = radar_to_lidar_transorm * lidar_detection;
+    [&radar_to_lidar_transform](const auto & lidar_detection) {
+      auto transformed_point = radar_to_lidar_transform * lidar_detection;
       transformed_point.z() = 0.f;
       return transformed_point;
     });
@@ -1329,7 +1329,7 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformationSVD(
   output_calibration_yaw_error = static_cast<float>(calibrated_2d_yaw_error);
 }
 
-void ExtrinsicReflectorBasedCalibrator::crossValEvalution(
+void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
   pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
   pcl::PointCloud<PointType>::Ptr radar_points_rcs)
 {
@@ -1357,7 +1357,6 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvalution(
         cv_radar_points_rcs->emplace_back(radar_points_rcs->points[indices_vec[i]]);
       }
       // random select n-1 points to compute new calibration matrix and 1 to evaluate.
-      // Estimate parital transformation using SVD
       pcl::registration::TransformationEstimationSVD<PointType, PointType> cv_estimator;
       Eigen::Matrix4f cv_radar_to_parent_transformation;
       cv_estimator.estimateRigidTransformation(
@@ -1368,7 +1367,6 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvalution(
         (initial_radar_to_lidar_eigen_ * parent_to_lidar_eigen_.inverse()).translation().z();
       Eigen::Isometry3d cv_calibrated_2d_radar_to_lidar_transformation =
         cv_calibrated_2d_radar_to_parent_transformation * parent_to_lidar_eigen_;
-      // Estimate the pre & post calibration error
 
       auto compute_calibration_error_with_one_validation =
         [&](const Eigen::Isometry3d & radar_to_lidar_isometry) -> void {
@@ -1429,7 +1427,7 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
   double delta_sin_sum = 0.0;
   getPointsSetAndDelta(lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum);
   estimateTransformationSVD(lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum);
-  crossValEvalution(lidar_points_pcs, radar_points_rcs);
+  crossValEvaluation(lidar_points_pcs, radar_points_rcs);
   publish_metrics();
 }
 
