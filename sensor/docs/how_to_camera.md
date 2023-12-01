@@ -13,8 +13,6 @@
    - FLIR Blackfly S BFS-PGE-16S2C-CS
    - Leopard Imaging LI-USB30-IMX490
 
-   To use the Blackfly S, install the [Spinnaker SDK](https://www.flir.jp/support-center/iis/machine-vision/downloads/spinnaker-sdk-flycapture-and-firmware-download/) and build Autoware.
-
 ## 2. Launch Calibration Tools
 
 Launch camera calibration with the following command.
