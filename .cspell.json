@@ -9,6 +9,8 @@
     "rvec",
     "tvec",
     "rvecs",
-    "tvecs"
+    "tvecs",
+    "nrows",
+    "ncols"
   ]
 }

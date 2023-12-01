@@ -79,16 +79,16 @@ class Plotter:
         self.subplot3.set_xlabel("# reflector")
         self.subplot3.set_ylabel("Yaw error (deg)")
 
-    def remove_anno(self, anno):
-        if anno is not None:
-            anno.remove()
+    def remove_annotation(self, annotaion):
+        if annotaion is not None:
+            annotaion.remove()
 
-    def remove_annos(self):
+    def remove_annotations(self):
         # remove the previous annotations
-        self.remove_anno(self.anno0)
-        self.remove_anno(self.anno1)
-        self.remove_anno(self.anno2)
-        self.remove_anno(self.anno3)
+        self.remove_annotation(self.anno0)
+        self.remove_annotation(self.anno1)
+        self.remove_annotation(self.anno2)
+        self.remove_annotation(self.anno3)
 
     def redraw_subplot(self, num_of_reflectors, error_list, subplot, color_o):
         subplot.clear()

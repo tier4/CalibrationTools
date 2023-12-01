@@ -1657,11 +1657,11 @@ void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
   text_marker.scale.z = 0.3;
 
   text_marker.text =
-    "pairs=" + std::to_string(converged_tracks_.size()) +
-    "\ncrossval_distance_error(m)=" + to_string_with_precision(output_cv_distance_error) +
-    "\ncrossval_yaw_error(deg)=" + to_string_with_precision(output_cv_yaw_error) +
-    "\naverage_distance_error(m)=" + to_string_with_precision(output_calibration_distance_error) +
-    "\naverage_yaw_error(deg)=" + to_string_with_precision(output_calibration_yaw_error);
+    " pairs=" + std::to_string(converged_tracks_.size()) +
+    "\n crossval_distance_error(m)=" + to_string_with_precision(output_cv_distance_error) +
+    "\n crossval_yaw_error(deg)=" + to_string_with_precision(output_cv_yaw_error) +
+    "\n average_distance_error(m)=" + to_string_with_precision(output_calibration_distance_error) +
+    "\n average_yaw_error(deg)=" + to_string_with_precision(output_calibration_yaw_error);
 
   text_marker.pose.position.x = 1;
   text_marker.pose.position.y = 1;
