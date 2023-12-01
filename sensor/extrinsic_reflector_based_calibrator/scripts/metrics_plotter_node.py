@@ -79,9 +79,9 @@ class Plotter:
         self.subplot3.set_xlabel("# reflector")
         self.subplot3.set_ylabel("Yaw error (deg)")
 
-    def remove_annotation(self, annotaion):
-        if annotaion is not None:
-            annotaion.remove()
+    def remove_annotation(self, annotation):
+        if annotation is not None:
+            annotation.remove()
 
     def remove_annotations(self):
         # remove the previous annotations
@@ -224,7 +224,7 @@ class Plotter:
 
         self.check_if_deleted()
         self.update_xy_lim()
-        self.remove_annos()
+        self.remove_annotations()
         self.draw_lines()
 
         self.prev_cv_distance_error = self.cv_distance_error
