@@ -1558,6 +1558,7 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
 
     marker.header = lidar_header_;
     marker.id = markers.size();
+    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
     marker.action = visualization_msgs::msg::Marker::ADD;
     marker.ns = ns;
@@ -1571,6 +1572,7 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     markers.push_back(marker);
 
     marker.id = markers.size();
+    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.pose.position = eigen_to_point_msg(radar_estimation_transformed);
     marker.pose.orientation.w = 1.0;
@@ -1581,6 +1583,7 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     markers.push_back(marker);
 
     marker.id = markers.size();
+    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
     marker.scale.x = 0.2 * parameters_.reflector_radius;
     marker.scale.y = 0.2 * parameters_.reflector_radius;
@@ -1590,6 +1593,7 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     markers.push_back(marker);
 
     marker.id = markers.size();
+    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.pose.position = eigen_to_point_msg(lidar_estimation);
     marker.pose.orientation.w = 1.0;
