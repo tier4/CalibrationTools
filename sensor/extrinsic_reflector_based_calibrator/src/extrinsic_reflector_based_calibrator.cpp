@@ -412,12 +412,13 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
     converged_tracks_.pop_back();
     calibrateSensors();
     visualizeTrackMarkers();
+    deleteTrackMarkers();
     drawCalibrationStatusText();
     RCLCPP_INFO(
-      this->get_logger(), "You delete one previous track, there are %d converged tracks remain",
+      this->get_logger(), "The last track was successfully deleted. Remaining converged tracks: %d",
       static_cast<int>(converged_tracks_.size()));
   } else {
-    RCLCPP_INFO(this->get_logger(), "You cannot delete previous track, because there are no track");
+    RCLCPP_WARN(this->get_logger(), "There are no converged tracks available");
   }
 }
 
@@ -1558,7 +1559,6 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
 
     marker.header = lidar_header_;
     marker.id = markers.size();
-    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
     marker.action = visualization_msgs::msg::Marker::ADD;
     marker.ns = ns;
@@ -1572,7 +1572,6 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     markers.push_back(marker);
 
     marker.id = markers.size();
-    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.pose.position = eigen_to_point_msg(radar_estimation_transformed);
     marker.pose.orientation.w = 1.0;
@@ -1583,7 +1582,6 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     markers.push_back(marker);
 
     marker.id = markers.size();
-    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
     marker.scale.x = 0.2 * parameters_.reflector_radius;
     marker.scale.y = 0.2 * parameters_.reflector_radius;
@@ -1593,7 +1591,6 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     markers.push_back(marker);
 
     marker.id = markers.size();
-    marker.lifetime = rclcpp::Duration::from_seconds(0.5);
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.pose.position = eigen_to_point_msg(lidar_estimation);
     marker.pose.orientation.w = 1.0;
@@ -1638,9 +1635,34 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
   tracking_markers_pub_->publish(tracking_marker_array);
 }
 
+void ExtrinsicReflectorBasedCalibrator::deleteTrackMarkers()
+{
+  visualization_msgs::msg::MarkerArray tracking_marker_array;
+  visualization_msgs::msg::Marker marker;
+  auto deleted_id_start = converged_tracks_.size() * 8;
+  std::string ns = "initial";
+  for (int i = 0; i < 4; i++) {
+    marker.id = deleted_id_start + i;
+    marker.ns = ns;
+    marker.action = visualization_msgs::msg::Marker::DELETE;
+    tracking_marker_array.markers.push_back(marker);
+  }
+
+  ns = "calibrated";
+  for (int i = 4; i < 8; i++) {
+    marker.id = deleted_id_start + i;
+    marker.ns = ns;
+    marker.action = visualization_msgs::msg::Marker::DELETE;
+    tracking_marker_array.markers.push_back(marker);
+  }
+  
+  tracking_markers_pub_->publish(tracking_marker_array);
+}
+
+
 void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
 {
-  auto to_string_with_precision = [](const double value, const int n = 3) -> std::string {
+  auto to_string_with_precision = [](const double value, const int n = 2) -> std::string {
     std::ostringstream out;
     out.precision(n);
     out << std::fixed << value;
@@ -1652,7 +1674,6 @@ void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
   text_marker.id = 0;
   text_marker.header = lidar_header_;
   text_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-  text_marker.lifetime = rclcpp::Duration::from_seconds(0.5);
   text_marker.color.r = 1.0;
   text_marker.color.g = 1.0;
   text_marker.color.b = 1.0;
@@ -1662,9 +1683,9 @@ void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
 
   text_marker.text =
     " pairs=" + std::to_string(converged_tracks_.size()) +
-    "\n crossval_distance_error(m)=" + to_string_with_precision(output_cv_distance_error) +
+    "\n crossval_distance_error(cm)=" + to_string_with_precision(output_cv_distance_error*100) +
     "\n crossval_yaw_error(deg)=" + to_string_with_precision(output_cv_yaw_error) +
-    "\n average_distance_error(m)=" + to_string_with_precision(output_calibration_distance_error) +
+    "\n average_distance_error(cm)=" + to_string_with_precision(output_calibration_distance_error*100) +
     "\n average_yaw_error(deg)=" + to_string_with_precision(output_calibration_yaw_error);
 
   text_marker.pose.position.x = 1;

@@ -17,6 +17,7 @@
 import math
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
@@ -24,11 +25,12 @@ from std_msgs.msg import Float32MultiArray
 
 class Plotter:
     def __init__(self):
-        self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 12))
+        self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(8, 6))
         self.subplot0 = self.axes[0, 0]
         self.subplot1 = self.axes[0, 1]
         self.subplot2 = self.axes[1, 0]
         self.subplot3 = self.axes[1, 1]
+        plt.gcf().canvas.set_window_title("Metrics plotter")
 
         self.color_bo = "bo-"
         self.color_go = "go-"
@@ -60,24 +62,28 @@ class Plotter:
         self.max_ylim0, self.max_ylim1, self.max_ylim2, self.max_ylim3 = 0, 0, 0, 0
 
         self.init_plot()
+        plt.tight_layout()
         plt.pause(0.1)
 
     def init_plot(self):
-        self.subplot0.set_title("Cross val error: Distance")
-        self.subplot0.set_xlabel("# reflector")
-        self.subplot0.set_ylabel("Distance error (m)")
+        self.subplot0.set_title("Cross-validation error: distance")
+        self.subplot0.set_xlabel("numbers of track")
+        self.subplot0.set_ylabel("Distance error (cm)")
 
-        self.subplot1.set_title("Cross val error: Yaw")
-        self.subplot1.set_xlabel("# reflector")
+        self.subplot1.set_title("Cross-validation error: yaw")
+        self.subplot1.set_xlabel("numbers of track")
         self.subplot1.set_ylabel("Yaw error (deg)")
 
-        self.subplot2.set_title("Average error: Distance")
-        self.subplot2.set_xlabel("# reflector")
-        self.subplot2.set_ylabel("Distance error (m)")
+        self.subplot2.set_title("Average error: distance")
+        self.subplot2.set_xlabel("numbers of track")
+        self.subplot2.set_ylabel("Distance error (cm)")
 
-        self.subplot3.set_title("Average error: Yaw")
-        self.subplot3.set_xlabel("# reflector")
+        self.subplot3.set_title("Average error: yaw")
+        self.subplot3.set_xlabel("numbers of track")
         self.subplot3.set_ylabel("Yaw error (deg)")
+
+        for ax in self.axes.flat:
+            ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
     def remove_annotation(self, annotation):
         if annotation is not None:
@@ -166,9 +172,9 @@ class Plotter:
         self.subplot2.set_xlim(0, xlim)
         self.subplot3.set_xlim(0, xlim)
 
-        self.subplot0.set_ylim(0, self.max_ylim0 + 0.1)
+        self.subplot0.set_ylim(0, self.max_ylim0 + 5)
         self.subplot1.set_ylim(0, self.max_ylim1 + 0.1)
-        self.subplot2.set_ylim(0, self.max_ylim2 + 0.1)
+        self.subplot2.set_ylim(0, self.max_ylim2 + 5)
         self.subplot3.set_ylim(0, self.max_ylim3 + 0.1)
 
     def draw_lines(self):
@@ -194,32 +200,34 @@ class Plotter:
         )
 
         self.anno0 = self.subplot0.annotate(
-            "%0.4f" % self.cv_distance_error,
+            f"{self.cv_distance_error:.2f}",
             xy=(self.num_of_reflectors, self.cv_distance_error),
             color=self.color_b,
         )
         self.anno1 = self.subplot1.annotate(
-            "%0.4f" % self.cv_yaw_error,
+            f"{self.cv_yaw_error:.2f}",
             xy=(self.num_of_reflectors, self.cv_yaw_error),
             color=self.color_g,
         )
         self.anno2 = self.subplot2.annotate(
-            "%0.4f" % self.calibration_distance_error,
+            f"{self.calibration_distance_error:.2f}",
             xy=(self.num_of_reflectors, self.calibration_distance_error),
             color=self.color_b,
         )
         self.anno3 = self.subplot3.annotate(
-            "%0.4f" % self.calibration_yaw_error,
+            f"{self.calibration_yaw_error:.2f}",
             xy=(self.num_of_reflectors, self.calibration_yaw_error),
             color=self.color_g,
         )
+        plt.tight_layout()
         plt.pause(0.1)
 
     def draw_with_msg(self, msg):
         self.num_of_reflectors = msg.data[0]
-        self.cv_distance_error = msg.data[1]
+        # changing from meters to centimetres
+        self.cv_distance_error = msg.data[1] * 100
         self.cv_yaw_error = msg.data[2]
-        self.calibration_distance_error = msg.data[3]
+        self.calibration_distance_error = msg.data[3] * 100
         self.calibration_yaw_error = 0 if math.isnan(msg.data[4]) else msg.data[4]
 
         self.check_if_deleted()

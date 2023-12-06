@@ -133,6 +133,7 @@ protected:
     const std::vector<Eigen::Vector3d> & radar_detections,
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections);
   void visualizeTrackMarkers();
+  void deleteTrackMarkers();
   void drawCalibrationStatusText();
 
   rcl_interfaces::msg::SetParametersResult paramCallback(
@@ -255,8 +256,10 @@ protected:
   std::vector<Track> converged_tracks_;
 
   // Metrics
-  float output_cv_distance_error = 0, output_cv_yaw_error = 0;
-  float output_calibration_distance_error = 0, output_calibration_yaw_error = 0;
+  float output_cv_distance_error{0};
+  float output_cv_yaw_error = {0};
+  float output_calibration_distance_error{0};
+  float output_calibration_yaw_error{0};
 };
 
 #endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_
