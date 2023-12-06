@@ -17,7 +17,6 @@
 import math
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
@@ -224,7 +223,7 @@ class Plotter:
 
     def draw_with_msg(self, msg):
         self.num_of_reflectors = msg.data[0]
-        # changing from meters to centimetres
+        # changing from meters to centimeters
         self.cv_distance_error = msg.data[1] * 100
         self.cv_yaw_error = msg.data[2]
         self.calibration_distance_error = msg.data[3] * 100
