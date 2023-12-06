@@ -1655,10 +1655,9 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackMarkers()
     marker.action = visualization_msgs::msg::Marker::DELETE;
     tracking_marker_array.markers.push_back(marker);
   }
-  
+
   tracking_markers_pub_->publish(tracking_marker_array);
 }
-
 
 void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
 {
@@ -1683,9 +1682,10 @@ void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
 
   text_marker.text =
     " pairs=" + std::to_string(converged_tracks_.size()) +
-    "\n crossval_distance_error(cm)=" + to_string_with_precision(output_cv_distance_error*100) +
+    "\n crossval_distance_error(cm)=" + to_string_with_precision(output_cv_distance_error * 100) +
     "\n crossval_yaw_error(deg)=" + to_string_with_precision(output_cv_yaw_error) +
-    "\n average_distance_error(cm)=" + to_string_with_precision(output_calibration_distance_error*100) +
+    "\n average_distance_error(cm)=" +
+    to_string_with_precision(output_calibration_distance_error * 100) +
     "\n average_yaw_error(deg)=" + to_string_with_precision(output_calibration_yaw_error);
 
   text_marker.pose.position.x = 1;
