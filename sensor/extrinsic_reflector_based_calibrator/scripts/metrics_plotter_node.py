@@ -121,8 +121,15 @@ class MetricsPlotter:
 
     def check_if_deleted(self):
         if self.num_of_reflectors < self.num_of_reflectors_list[-1]:
-            self.prev_crossval_distance_error, self.prev_num_of_reflectors, index = self.redraw_subplot(
-                self.num_of_reflectors, self.crossval_distance_error_list, self.subplot0, self.color_bo
+            (
+                self.prev_crossval_distance_error,
+                self.prev_num_of_reflectors,
+                index,
+            ) = self.redraw_subplot(
+                self.num_of_reflectors,
+                self.crossval_distance_error_list,
+                self.subplot0,
+                self.color_bo,
             )
             self.prev_crossval_yaw_error, _, _ = self.redraw_subplot(
                 self.num_of_reflectors, self.crossval_yaw_error_list, self.subplot1, self.color_go
@@ -151,9 +158,13 @@ class MetricsPlotter:
 
     def update_xy_lim(self):
         self.max_ylim0 = (
-            self.crossval_distance_error if self.crossval_distance_error > self.max_ylim0 else self.max_ylim0
+            self.crossval_distance_error
+            if self.crossval_distance_error > self.max_ylim0
+            else self.max_ylim0
         )
-        self.max_ylim1 = self.crossval_yaw_error if self.crossval_yaw_error > self.max_ylim1 else self.max_ylim1
+        self.max_ylim1 = (
+            self.crossval_yaw_error if self.crossval_yaw_error > self.max_ylim1 else self.max_ylim1
+        )
         self.max_ylim2 = (
             self.calibration_distance_error
             if self.calibration_distance_error > self.max_ylim2

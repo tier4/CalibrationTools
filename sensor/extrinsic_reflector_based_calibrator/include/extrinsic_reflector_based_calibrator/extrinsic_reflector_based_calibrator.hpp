@@ -48,9 +48,9 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
-#include <tuple>
 
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
@@ -117,8 +117,9 @@ protected:
   bool trackMatches(
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
     builtin_interfaces::msg::Time & time);
-    
-  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr, double, double> getPointsSetAndDelta();
+
+  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr, double, double>
+  getPointsSetAndDelta();
   void estimateTransformation(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
@@ -134,9 +135,8 @@ protected:
   void visualizeTrackMarkers();
   void deleteTrackMarkers();
   void drawCalibrationStatusText();
-  geometry_msgs::msg::Point eigenToPointMsg(const Eigen::Vector3d &p_eigen);
-  double getYawError(const Eigen::Vector3d &v1, const Eigen::Vector3d &v2);
-
+  geometry_msgs::msg::Point eigenToPointMsg(const Eigen::Vector3d & p_eigen);
+  double getYawError(const Eigen::Vector3d & v1, const Eigen::Vector3d & v2);
 
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
