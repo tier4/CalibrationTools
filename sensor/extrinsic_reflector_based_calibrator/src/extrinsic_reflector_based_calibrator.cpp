@@ -407,6 +407,8 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
   __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
   __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
+  using std::chrono_literals::operator""s;
+
   if (converged_tracks_.size() > 0) {
     converged_tracks_.pop_back();
     calibrateSensors();
@@ -416,6 +418,8 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
     RCLCPP_INFO(
       this->get_logger(), "The last track was successfully deleted. Remaining converged tracks: %d",
       static_cast<int>(converged_tracks_.size()));
+    // sleep for 1s for the plotter node to finsih plotting. 
+    rclcpp::sleep_for(1s);
   } else {
     RCLCPP_WARN(this->get_logger(), "There are no converged tracks available");
   }

@@ -127,7 +127,6 @@ class CalibratorUI(QMainWindow):
 
     def delete_lidar_radar_pair_result_callback(self, result):
         self.pending_service = False
-        time.sleep(1)
         self.check_status()
 
     def delete_lidar_radar_pair_status_callback(self, status):
