@@ -22,7 +22,7 @@ from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 
 
-class Plotter:
+class MetricsPlotter:
     def __init__(self):
         self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(8, 6))
         self.subplot0 = self.axes[0, 0]
@@ -38,48 +38,49 @@ class Plotter:
 
         (
             self.num_of_reflectors,
-            self.cv_distance_error,
-            self.cv_yaw_error,
+            self.crossval_distance_error,
+            self.crossval_yaw_error,
             self.calibration_distance_error,
             self.calibration_yaw_error,
         ) = (0, 0, 0, 0, 0)
         (
             self.prev_calibration_distance_error,
             self.prev_calibration_yaw_error,
-            self.prev_cv_distance_error,
-            self.prev_cv_yaw_error,
+            self.prev_crossval_distance_error,
+            self.prev_crossval_yaw_error,
             self.prev_num_of_reflectors,
         ) = (0, 0, 0, 0, 0)
         (
-            self.cv_distance_error_list,
-            self.cv_yaw_error_list,
+            self.crossval_distance_error_list,
+            self.crossval_yaw_error_list,
             self.calibration_distance_error_list,
             self.calibration_yaw_error_list,
             self.num_of_reflectors_list,
         ) = ([0], [0], [0], [0], [0])
         self.anno0, self.anno1, self.anno2, self.anno3 = None, None, None, None
         self.max_ylim0, self.max_ylim1, self.max_ylim2, self.max_ylim3 = 0, 0, 0, 0
+        self.m_to_cm = 0
 
         self.init_plot()
         plt.tight_layout()
         plt.pause(0.1)
 
     def init_plot(self):
-        self.subplot0.set_title("Cross-validation error: distance")
-        self.subplot0.set_xlabel("numbers of track")
-        self.subplot0.set_ylabel("Distance error (cm)")
+        self.subplot0.set_title("cross-validation error: distance")
+        self.subplot0.set_xlabel("number of tracks")
+        self.subplot0.set_ylabel("distance error [cm]")
 
-        self.subplot1.set_title("Cross-validation error: yaw")
-        self.subplot1.set_xlabel("numbers of track")
-        self.subplot1.set_ylabel("Yaw error (deg)")
+        self.subplot1.set_title("cross-validation error: yaw")
+        self.subplot1.set_xlabel("number of tracks")
+        self.subplot1.set_ylabel("yaw error (deg)")
 
-        self.subplot2.set_title("Average error: distance")
-        self.subplot2.set_xlabel("numbers of track")
-        self.subplot2.set_ylabel("Distance error (cm)")
+        self.subplot2.set_title("average error: distance")
+        self.subplot2.set_xlabel("number of tracks")
+        self.subplot2.set_ylabel("distance error [cm]")
 
-        self.subplot3.set_title("Average error: yaw")
-        self.subplot3.set_xlabel("numbers of track")
-        self.subplot3.set_ylabel("Yaw error (deg)")
+        self.subplot3.set_title("average error: yaw")
+        self.subplot3.set_xlabel("number of tracks")
+        self.subplot3.set_ylabel("yaw error (deg)")
 
         for ax in self.axes.flat:
             ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
@@ -120,11 +121,11 @@ class Plotter:
 
     def check_if_deleted(self):
         if self.num_of_reflectors < self.num_of_reflectors_list[-1]:
-            self.prev_cv_distance_error, self.prev_num_of_reflectors, index = self.redraw_subplot(
-                self.num_of_reflectors, self.cv_distance_error_list, self.subplot0, self.color_bo
+            self.prev_crossval_distance_error, self.prev_num_of_reflectors, index = self.redraw_subplot(
+                self.num_of_reflectors, self.crossval_distance_error_list, self.subplot0, self.color_bo
             )
-            self.prev_cv_yaw_error, _, _ = self.redraw_subplot(
-                self.num_of_reflectors, self.cv_yaw_error_list, self.subplot1, self.color_go
+            self.prev_crossval_yaw_error, _, _ = self.redraw_subplot(
+                self.num_of_reflectors, self.crossval_yaw_error_list, self.subplot1, self.color_go
             )
             self.prev_calibration_distance_error, _, _ = self.redraw_subplot(
                 self.num_of_reflectors,
@@ -142,17 +143,17 @@ class Plotter:
             self.init_plot()
 
         if self.num_of_reflectors != 0:
-            self.cv_distance_error_list.append(self.cv_distance_error)
-            self.cv_yaw_error_list.append(self.cv_yaw_error)
+            self.crossval_distance_error_list.append(self.crossval_distance_error)
+            self.crossval_yaw_error_list.append(self.crossval_yaw_error)
             self.calibration_distance_error_list.append(self.calibration_distance_error)
             self.calibration_yaw_error_list.append(self.calibration_yaw_error)
             self.num_of_reflectors_list.append(self.num_of_reflectors)
 
     def update_xy_lim(self):
         self.max_ylim0 = (
-            self.cv_distance_error if self.cv_distance_error > self.max_ylim0 else self.max_ylim0
+            self.crossval_distance_error if self.crossval_distance_error > self.max_ylim0 else self.max_ylim0
         )
-        self.max_ylim1 = self.cv_yaw_error if self.cv_yaw_error > self.max_ylim1 else self.max_ylim1
+        self.max_ylim1 = self.crossval_yaw_error if self.crossval_yaw_error > self.max_ylim1 else self.max_ylim1
         self.max_ylim2 = (
             self.calibration_distance_error
             if self.calibration_distance_error > self.max_ylim2
@@ -179,12 +180,12 @@ class Plotter:
     def draw_lines(self):
         self.subplot0.plot(
             [self.prev_num_of_reflectors, self.num_of_reflectors],
-            [self.prev_cv_distance_error, self.cv_distance_error],
+            [self.prev_crossval_distance_error, self.crossval_distance_error],
             self.color_bo,
         )
         self.subplot1.plot(
             [self.prev_num_of_reflectors, self.num_of_reflectors],
-            [self.prev_cv_yaw_error, self.cv_yaw_error],
+            [self.prev_crossval_yaw_error, self.crossval_yaw_error],
             self.color_go,
         )
         self.subplot2.plot(
@@ -199,13 +200,13 @@ class Plotter:
         )
 
         self.anno0 = self.subplot0.annotate(
-            f"{self.cv_distance_error:.2f}",
-            xy=(self.num_of_reflectors, self.cv_distance_error),
+            f"{self.crossval_distance_error:.2f}",
+            xy=(self.num_of_reflectors, self.crossval_distance_error),
             color=self.color_b,
         )
         self.anno1 = self.subplot1.annotate(
-            f"{self.cv_yaw_error:.2f}",
-            xy=(self.num_of_reflectors, self.cv_yaw_error),
+            f"{self.crossval_yaw_error:.2f}",
+            xy=(self.num_of_reflectors, self.crossval_yaw_error),
             color=self.color_g,
         )
         self.anno2 = self.subplot2.annotate(
@@ -224,9 +225,9 @@ class Plotter:
     def draw_with_msg(self, msg):
         self.num_of_reflectors = msg.data[0]
         # changing from meters to centimeters
-        self.cv_distance_error = msg.data[1] * 100
-        self.cv_yaw_error = msg.data[2]
-        self.calibration_distance_error = msg.data[3] * 100
+        self.crossval_distance_error = msg.data[1] * self.m_to_cm
+        self.crossval_yaw_error = msg.data[2]
+        self.calibration_distance_error = msg.data[3] * self.m_to_cm
         self.calibration_yaw_error = 0 if math.isnan(msg.data[4]) else msg.data[4]
 
         self.check_if_deleted()
@@ -234,30 +235,30 @@ class Plotter:
         self.remove_annotations()
         self.draw_lines()
 
-        self.prev_cv_distance_error = self.cv_distance_error
-        self.prev_cv_yaw_error = self.cv_yaw_error
+        self.prev_crossval_distance_error = self.crossval_distance_error
+        self.prev_crossval_yaw_error = self.crossval_yaw_error
         self.prev_calibration_distance_error = self.calibration_distance_error
         self.prev_calibration_yaw_error = self.calibration_yaw_error
         self.prev_num_of_reflectors = self.num_of_reflectors
 
 
-class MetricsPlotter(Node):
+class MetricsPlotterNode(Node):
     def __init__(self):
         super().__init__("plot_metric")
-        self.plotter = Plotter()
+        self.metrics_plotter = MetricsPlotter()
         self.subscription = self.create_subscription(
-            Float32MultiArray, "cross_validation_metrics", self.listener_callback, 10
+            Float32MultiArray, "calibration_metrics", self.listener_callback, 10
         )
 
     def listener_callback(self, msg):
-        self.plotter.draw_with_msg(msg)
+        self.metrics_plotter.draw_with_msg(msg)
 
 
 def main(args=None):
     rclpy.init(args=args)
-    metrics_plotter = MetricsPlotter()
-    rclpy.spin(metrics_plotter)
-    metrics_plotter.destroy_node()
+    metrics_plotter_node = MetricsPlotterNode()
+    rclpy.spin(metrics_plotter_node)
+    metrics_plotter_node.destroy_node()
     rclpy.shutdown()
 
 

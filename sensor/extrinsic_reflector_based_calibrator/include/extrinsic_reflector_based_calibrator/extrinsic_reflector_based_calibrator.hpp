@@ -50,6 +50,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <tuple>
 
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
@@ -113,20 +114,18 @@ protected:
     const std::vector<Eigen::Vector3d> & lidar_detections,
     const std::vector<Eigen::Vector3d> & radar_detections);
 
-  void trackMatches(
+  bool trackMatches(
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
-    builtin_interfaces::msg::Time & time, bool & is_converged);
-  void getPointsSetAndDelta(
-    pcl::PointCloud<PointType>::Ptr & lidar_points_pcs,
-    pcl::PointCloud<PointType>::Ptr & radar_points_rcs, double & delta_cos_sum,
-    double & delta_sin_sum);
-  void estimateTransformationSVD(
+    builtin_interfaces::msg::Time & time);
+    
+  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr, double, double> getPointsSetAndDelta();
+  void estimateTransformation(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
   void crossValEvaluation(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs);
-  void publish_metrics();
+  void publishMetrics();
   void calibrateSensors();
   void visualizationMarkers(
     const std::vector<Eigen::Vector3d> & lidar_detections,
@@ -135,6 +134,9 @@ protected:
   void visualizeTrackMarkers();
   void deleteTrackMarkers();
   void drawCalibrationStatusText();
+  geometry_msgs::msg::Point eigenToPointMsg(const Eigen::Vector3d &p_eigen);
+  double getYawError(const Eigen::Vector3d &v1, const Eigen::Vector3d &v2);
+
 
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
@@ -250,16 +252,17 @@ protected:
   // Tracking
   bool tracking_active_;
   int current_new_tracks_;
-  bool deletion_active_;
   TrackFactory::Ptr factory_ptr_;
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
 
   // Metrics
-  float output_cv_distance_error{0};
-  float output_cv_yaw_error = {0};
-  float output_calibration_distance_error{0};
-  float output_calibration_yaw_error{0};
+  float output_crossval_distance_error_{0};
+  float output_crossval_yaw_error_{0};
+  float output_calibration_distance_error_{0};
+  float output_calibration_yaw_error_{0};
+
+  static constexpr int MARKER_SIZE_PER_TRACK = 8;
 };
 
 #endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_

@@ -244,9 +244,10 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     this->create_publisher<visualization_msgs::msg::MarkerArray>("matches_markers", 10);
   tracking_markers_pub_ =
     this->create_publisher<visualization_msgs::msg::MarkerArray>("tracking_markers", 10);
-  text_markers_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("text_markers", 10);
+  text_markers_pub_ = 
+    this->create_publisher<visualization_msgs::msg::Marker>("text_markers", 10);
   metrics_pub_ =
-    this->create_publisher<std_msgs::msg::Float32MultiArray>("cross_validation_metrics", 10);
+    this->create_publisher<std_msgs::msg::Float32MultiArray>("calibration_metrics", 10);
 
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
     "input_lidar_pointcloud", rclcpp::SensorDataQoS(),
@@ -406,8 +407,6 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback(
   __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
   __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-  using std::chrono_literals::operator""s;
-
   if (converged_tracks_.size() > 0) {
     converged_tracks_.pop_back();
     calibrateSensors();
@@ -445,9 +444,9 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
 
   auto matches = matchDetections(lidar_detections, radar_detections);
 
-  bool is_converged = false;
-  trackMatches(matches, msg->header.stamp, is_converged);
-  if (is_converged) calibrateSensors();
+  
+  bool is_track_converged = trackMatches(matches, msg->header.stamp);
+  if (is_track_converged) calibrateSensors();
   visualizationMarkers(lidar_detections, radar_detections, matches);
   visualizeTrackMarkers();
   drawCalibrationStatusText();
@@ -1085,14 +1084,14 @@ ExtrinsicReflectorBasedCalibrator::matchDetections(
   return matched_detections;
 }
 
-void ExtrinsicReflectorBasedCalibrator::trackMatches(
+bool ExtrinsicReflectorBasedCalibrator::trackMatches(
   const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
-  builtin_interfaces::msg::Time & current_time, bool & is_converged)
+  builtin_interfaces::msg::Time & current_time)
 {
   std::unique_lock<std::mutex> lock(mutex_);
 
   if (!tracking_active_) {
-    return;
+    return false;
   }
 
   // Check if active tracks expired
@@ -1102,7 +1101,6 @@ void ExtrinsicReflectorBasedCalibrator::trackMatches(
 
   active_tracks_.erase(timed_out_end, active_tracks_.end());
 
-  bool new_track = false;
   // Update tracks
   for (const auto & [lidar_detection, radar_detection] : matches) {
     if (std::any_of(
@@ -1113,7 +1111,7 @@ void ExtrinsicReflectorBasedCalibrator::trackMatches(
       continue;
     }
 
-    new_track = std::all_of(
+    bool new_track = std::all_of(
       active_tracks_.begin(), active_tracks_.end(),
       [&lidar_detection, &radar_detection](auto & track) {
         return !track.match(lidar_detection, radar_detection);
@@ -1140,7 +1138,7 @@ void ExtrinsicReflectorBasedCalibrator::trackMatches(
     active_tracks_.begin(), active_tracks_.end(), 0, std::plus{},
     [](auto & track) { return track.converged(); });
 
-  is_converged = std::any_of(
+  bool is_track_converged = std::any_of(
     active_tracks_.begin(), active_tracks_.end(), [](auto & track) { return track.converged(); });
 
   auto converged_end = std::remove_if(
@@ -1152,13 +1150,21 @@ void ExtrinsicReflectorBasedCalibrator::trackMatches(
   if (current_new_tracks_ > 0 && active_tracks_.size() == 0) {
     tracking_active_ = false;
   }
+
+  return is_track_converged;
 }
 
-void ExtrinsicReflectorBasedCalibrator::getPointsSetAndDelta(
-  pcl::PointCloud<PointType>::Ptr & lidar_points_pcs,
-  pcl::PointCloud<PointType>::Ptr & radar_points_rcs, double & delta_cos_sum,
-  double & delta_sin_sum)
-{
+std::tuple<pcl::PointCloud<ExtrinsicReflectorBasedCalibrator::PointType>::Ptr, pcl::PointCloud<ExtrinsicReflectorBasedCalibrator::PointType>::Ptr, double, double> ExtrinsicReflectorBasedCalibrator::getPointsSetAndDelta()
+{   
+  // Define two sets of 2D points (just 3D points with z=0)
+  pcl::PointCloud<PointType>::Ptr lidar_points_pcs(new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr radar_points_rcs(new pcl::PointCloud<PointType>);
+  lidar_points_pcs->reserve(converged_tracks_.size());
+  radar_points_rcs->reserve(converged_tracks_.size());
+
+  double delta_cos_sum = 0.0; 
+  double delta_sin_sum = 0.0;
+
   auto eigen_to_pcl_2d = [](const auto & p) { return PointType(p.x(), p.y(), 0.0); };
 
   for (std::size_t track_index = 0; track_index < converged_tracks_.size(); track_index++) {
@@ -1198,9 +1204,10 @@ void ExtrinsicReflectorBasedCalibrator::getPointsSetAndDelta(
       this->get_logger(), "radar_estimation_rcs:\n"
                             << radar_estimation_rcs.matrix());
   }
+  return {lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum};
 }
 
-void ExtrinsicReflectorBasedCalibrator::estimateTransformationSVD(
+void ExtrinsicReflectorBasedCalibrator::estimateTransformation(
   pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
   pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum)
 {
@@ -1229,10 +1236,6 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformationSVD(
     delta_transformation * initial_radar_to_lidar_eigen_;
 
   // Estimate the pre & post calibration error
-  auto get_yaw_error = [](const Eigen::Vector3d & v1, const Eigen::Vector3d & v2) -> double {
-    return std::abs(std::acos(v1.dot(v2) / (v1.norm() * v2.norm())));
-  };
-
   auto compute_calibration_error =
     [&](const Eigen::Isometry3d & radar_to_lidar_isometry) -> std::pair<double, double> {
     double distance_error = 0.0;
@@ -1246,7 +1249,7 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformationSVD(
       radar_estimation.z() = 0.0;
 
       distance_error += (lidar_estimation_transformed - radar_estimation).norm();
-      yaw_error += get_yaw_error(lidar_estimation_transformed, radar_estimation);
+      yaw_error += getYawError(lidar_estimation_transformed, radar_estimation);
     }
 
     distance_error /= static_cast<double>(converged_tracks_.size());
@@ -1271,6 +1274,7 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformationSVD(
   RCLCPP_INFO_STREAM(
     this->get_logger(), "Pure rotation calibration radar->lidar transform:\n"
                           << calibrated_rotation_radar_to_lidar_transformation.matrix());
+
   // Evaluate the different calibrations and decide on an output
   auto compute_transformation_difference =
     [](const Eigen::Isometry3d & t1, const Eigen::Isometry3d & t2) -> std::pair<double, double> {
@@ -1326,8 +1330,8 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformationSVD(
   }
 
   // for plotter and rviz display
-  output_calibration_distance_error = static_cast<float>(calibrated_2d_distance_error);
-  output_calibration_yaw_error = static_cast<float>(calibrated_2d_yaw_error);
+  output_calibration_distance_error_ = static_cast<float>(calibrated_2d_distance_error);
+  output_calibration_yaw_error_ = static_cast<float>(calibrated_2d_yaw_error);
 }
 
 void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
@@ -1335,11 +1339,8 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
   pcl::PointCloud<PointType>::Ptr radar_points_rcs)
 {
   // Evaluate the cross validation metric using SVD
-  double cv_distance_error = 0.0;
-  double cv_yaw_error = 0.0;
-  auto get_yaw_error = [](const Eigen::Vector3d & v1, const Eigen::Vector3d & v2) -> double {
-    return std::abs(std::acos(v1.dot(v2) / (v1.norm() * v2.norm())));
-  };
+  double crossval_distance_error = 0.0;
+  double crossval_yaw_error = 0.0;
 
   if (converged_tracks_.size() > 1) {
     std::vector<int> indices_vec(converged_tracks_.size());
@@ -1348,26 +1349,26 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
       // Rotate the vector so that it starts from the current index
       std::rotate(indices_vec.begin(), indices_vec.begin() + 1, indices_vec.end());
 
-      pcl::PointCloud<PointType>::Ptr cv_lidar_points_pcs(new pcl::PointCloud<PointType>);
-      pcl::PointCloud<PointType>::Ptr cv_radar_points_rcs(new pcl::PointCloud<PointType>);
-      cv_lidar_points_pcs->reserve(converged_tracks_.size() - 1);
-      cv_radar_points_rcs->reserve(converged_tracks_.size() - 1);
+      pcl::PointCloud<PointType>::Ptr crossval_lidar_points_pcs(new pcl::PointCloud<PointType>);
+      pcl::PointCloud<PointType>::Ptr crossval_radar_points_rcs(new pcl::PointCloud<PointType>);
+      crossval_lidar_points_pcs->reserve(converged_tracks_.size() - 1);
+      crossval_radar_points_rcs->reserve(converged_tracks_.size() - 1);
 
       for (std::size_t i = 0; i < converged_tracks_.size() - 1; i++) {
-        cv_lidar_points_pcs->emplace_back(lidar_points_pcs->points[indices_vec[i]]);
-        cv_radar_points_rcs->emplace_back(radar_points_rcs->points[indices_vec[i]]);
+        crossval_lidar_points_pcs->emplace_back(lidar_points_pcs->points[indices_vec[i]]);
+        crossval_radar_points_rcs->emplace_back(radar_points_rcs->points[indices_vec[i]]);
       }
       // random select n-1 points to compute new calibration matrix and 1 to evaluate.
-      pcl::registration::TransformationEstimationSVD<PointType, PointType> cv_estimator;
-      Eigen::Matrix4f cv_radar_to_parent_transformation;
-      cv_estimator.estimateRigidTransformation(
-        *cv_lidar_points_pcs, *cv_radar_points_rcs, cv_radar_to_parent_transformation);
-      Eigen::Isometry3d cv_calibrated_2d_radar_to_parent_transformation(
-        cv_radar_to_parent_transformation.cast<double>());
-      cv_calibrated_2d_radar_to_parent_transformation.translation().z() =
+      pcl::registration::TransformationEstimationSVD<PointType, PointType> crossval_estimator;
+      Eigen::Matrix4f crossval_radar_to_parent_transformation;
+      crossval_estimator.estimateRigidTransformation(
+        *crossval_lidar_points_pcs, *crossval_radar_points_rcs, crossval_radar_to_parent_transformation);
+      Eigen::Isometry3d crossval_calibrated_2d_radar_to_parent_transformation(
+        crossval_radar_to_parent_transformation.cast<double>());
+      crossval_calibrated_2d_radar_to_parent_transformation.translation().z() =
         (initial_radar_to_lidar_eigen_ * parent_to_lidar_eigen_.inverse()).translation().z();
-      Eigen::Isometry3d cv_calibrated_2d_radar_to_lidar_transformation =
-        cv_calibrated_2d_radar_to_parent_transformation * parent_to_lidar_eigen_;
+      Eigen::Isometry3d crossval_calibrated_2d_radar_to_lidar_transformation =
+        crossval_calibrated_2d_radar_to_parent_transformation * parent_to_lidar_eigen_;
 
       auto compute_calibration_error_with_one_validation =
         [&](const Eigen::Isometry3d & radar_to_lidar_isometry) -> void {
@@ -1378,58 +1379,50 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
         lidar_estimation_transformed.z() = 0.0;
         radar_estimation.z() = 0.0;
 
-        cv_distance_error += (lidar_estimation_transformed - radar_estimation).norm();
-        cv_yaw_error += get_yaw_error(lidar_estimation_transformed, radar_estimation);
+        crossval_distance_error += (lidar_estimation_transformed - radar_estimation).norm();
+        crossval_yaw_error += getYawError(lidar_estimation_transformed, radar_estimation);
       };
-      compute_calibration_error_with_one_validation(cv_calibrated_2d_radar_to_lidar_transformation);
+      compute_calibration_error_with_one_validation(crossval_calibrated_2d_radar_to_lidar_transformation);
     }
-    cv_distance_error /= static_cast<double>(converged_tracks_.size());
-    cv_yaw_error *= 180.0 / (M_PI * static_cast<double>(converged_tracks_.size()));
+    crossval_distance_error /= static_cast<double>(converged_tracks_.size());
+    crossval_yaw_error *= 180.0 / (M_PI * static_cast<double>(converged_tracks_.size()));
   }
 
   RCLCPP_INFO(
     this->get_logger(),
     "track size=%f, cross validation calibration error: detection2detection.distance=%.4fm, "
     "yaw=%.4f degrees",
-    static_cast<float>(converged_tracks_.size()), cv_distance_error, cv_yaw_error);
+    static_cast<float>(converged_tracks_.size()), crossval_distance_error, crossval_yaw_error);
   // for plotter and rviz display
-  output_cv_distance_error = static_cast<float>(cv_distance_error);
-  output_cv_yaw_error = static_cast<float>(cv_yaw_error);
+  output_crossval_distance_error_ = static_cast<float>(crossval_distance_error);
+  output_crossval_yaw_error_ = static_cast<float>(crossval_yaw_error);
 }
 
-void ExtrinsicReflectorBasedCalibrator::publish_metrics()
+void ExtrinsicReflectorBasedCalibrator::publishMetrics()
 {
   // publish metrics
-  std_msgs::msg::Float32MultiArray cv_metrics_msg = std_msgs::msg::Float32MultiArray();
-  cv_metrics_msg.data = {
-    static_cast<float>(converged_tracks_.size()), output_cv_distance_error, output_cv_yaw_error,
-    output_calibration_distance_error, output_calibration_yaw_error};
-  metrics_pub_->publish(cv_metrics_msg);
+  std_msgs::msg::Float32MultiArray calibration_metrics_msg = std_msgs::msg::Float32MultiArray();
+  calibration_metrics_msg.data = {
+    static_cast<float>(converged_tracks_.size()), output_crossval_distance_error_, output_crossval_yaw_error_,
+    output_calibration_distance_error_, output_calibration_yaw_error_};
+  metrics_pub_->publish(calibration_metrics_msg);
 }
 
 void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
 {
   if (!checkInitialTransforms() || converged_tracks_.size() == 0) {
     if (converged_tracks_.size() == 0) {
-      std_msgs::msg::Float32MultiArray cv_metrics_msg = std_msgs::msg::Float32MultiArray();
-      cv_metrics_msg.data = {0, 0, 0, 0, 0};
-      metrics_pub_->publish(cv_metrics_msg);
+      std_msgs::msg::Float32MultiArray calibration_metrics_msg = std_msgs::msg::Float32MultiArray();
+      calibration_metrics_msg.data = {0, 0, 0, 0, 0};
+      metrics_pub_->publish(calibration_metrics_msg);
     }
     return;
   }
 
-  // Define two sets of 2D points (just 3D points with z=0)
-  pcl::PointCloud<PointType>::Ptr lidar_points_pcs(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr radar_points_rcs(new pcl::PointCloud<PointType>);
-  lidar_points_pcs->reserve(converged_tracks_.size());
-  radar_points_rcs->reserve(converged_tracks_.size());
-
-  double delta_cos_sum = 0.0;
-  double delta_sin_sum = 0.0;
-  getPointsSetAndDelta(lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum);
-  estimateTransformationSVD(lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum);
+  auto [lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum] = getPointsSetAndDelta();
+  estimateTransformation(lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum);
   crossValEvaluation(lidar_points_pcs, radar_points_rcs);
-  publish_metrics();
+  publishMetrics();
 }
 
 void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
@@ -1437,14 +1430,6 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
   const std::vector<Eigen::Vector3d> & radar_detections,
   const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections)
 {
-  auto eigen_to_point_msg = [](const Eigen::Vector3d & p_eigen) {
-    geometry_msgs::msg::Point p;
-    p.x = p_eigen.x();
-    p.y = p_eigen.y();
-    p.z = p_eigen.z();
-    return p;
-  };
-
   visualization_msgs::msg::MarkerArray lidar_detections_marker_array;
 
   for (std::size_t detection_index = 0; detection_index < lidar_detections.size();
@@ -1533,8 +1518,8 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
     marker.color.r = 1.0;
     marker.color.g = 0.0;
     marker.color.b = 1.0;
-    marker.points.push_back(eigen_to_point_msg(lidar_detection_transformed));
-    marker.points.push_back(eigen_to_point_msg(radar_detection));
+    marker.points.push_back(eigenToPointMsg(lidar_detection_transformed));
+    marker.points.push_back(eigenToPointMsg(radar_detection));
     matches_marker_array.markers.push_back(marker);
   }
 
@@ -1543,13 +1528,6 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
 
 void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
 {
-  auto eigen_to_point_msg = [](const Eigen::Vector3d & p_eigen) {
-    geometry_msgs::msg::Point p;
-    p.x = p_eigen.x();
-    p.y = p_eigen.y();
-    p.z = p_eigen.z();
-    return p;
-  };
   auto add_track_markers = [&](
                              const Eigen::Vector3d & lidar_estimation,
                              const Eigen::Vector3d & radar_estimation_transformed,
@@ -1567,13 +1545,13 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     marker.scale.y = 0.2 * parameters_.reflector_radius;
     marker.scale.z = 0.2 * parameters_.reflector_radius;
     marker.color = color;
-    marker.points.push_back(eigen_to_point_msg(radar_estimation_transformed));
-    marker.points.push_back(eigen_to_point_msg(lidar_estimation));
+    marker.points.push_back(eigenToPointMsg(radar_estimation_transformed));
+    marker.points.push_back(eigenToPointMsg(lidar_estimation));
     markers.push_back(marker);
 
     marker.id = markers.size();
     marker.type = visualization_msgs::msg::Marker::CUBE;
-    marker.pose.position = eigen_to_point_msg(radar_estimation_transformed);
+    marker.pose.position = eigenToPointMsg(radar_estimation_transformed);
     marker.pose.orientation.w = 1.0;
     marker.scale.x = parameters_.reflector_radius;
     marker.scale.y = parameters_.reflector_radius;
@@ -1586,13 +1564,13 @@ void ExtrinsicReflectorBasedCalibrator::visualizeTrackMarkers()
     marker.scale.x = 0.2 * parameters_.reflector_radius;
     marker.scale.y = 0.2 * parameters_.reflector_radius;
     marker.scale.z = 0.2 * parameters_.reflector_radius;
-    marker.points.push_back(eigen_to_point_msg(Eigen::Vector3d(0.0, 0.0, -0.5)));
-    marker.points.push_back(eigen_to_point_msg(Eigen::Vector3d(0.0, 0.0, 0.5)));
+    marker.points.push_back(eigenToPointMsg(Eigen::Vector3d(0.0, 0.0, -0.5)));
+    marker.points.push_back(eigenToPointMsg(Eigen::Vector3d(0.0, 0.0, 0.5)));
     markers.push_back(marker);
 
     marker.id = markers.size();
     marker.type = visualization_msgs::msg::Marker::CUBE;
-    marker.pose.position = eigen_to_point_msg(lidar_estimation);
+    marker.pose.position = eigenToPointMsg(lidar_estimation);
     marker.pose.orientation.w = 1.0;
     marker.scale.x = parameters_.reflector_radius;
     marker.scale.y = parameters_.reflector_radius;
@@ -1639,7 +1617,8 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackMarkers()
 {
   visualization_msgs::msg::MarkerArray tracking_marker_array;
   visualization_msgs::msg::Marker marker;
-  auto deleted_id_start = converged_tracks_.size() * 8;
+  auto deleted_id_start = converged_tracks_.size() * MARKER_SIZE_PER_TRACK;
+  // delete the latest initial marker
   std::string ns = "initial";
   for (int i = 0; i < 4; i++) {
     marker.id = deleted_id_start + i;
@@ -1647,7 +1626,7 @@ void ExtrinsicReflectorBasedCalibrator::deleteTrackMarkers()
     marker.action = visualization_msgs::msg::Marker::DELETE;
     tracking_marker_array.markers.push_back(marker);
   }
-
+  // delete the latest calibrated marker
   ns = "calibrated";
   for (int i = 4; i < 8; i++) {
     marker.id = deleted_id_start + i;
@@ -1680,21 +1659,36 @@ void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
   text_marker.ns = "calibration_status";
   text_marker.scale.z = 0.3;
 
+  double m_to_cm = 100.0;
   text_marker.text =
     " pairs=" + std::to_string(converged_tracks_.size()) +
-    "\n crossval_distance_error(cm)=" + to_string_with_precision(output_cv_distance_error * 100) +
-    "\n crossval_yaw_error(deg)=" + to_string_with_precision(output_cv_yaw_error) +
+    "\n crossval_distance_error(cm)=" + to_string_with_precision(output_crossval_distance_error_ * m_to_cm) +
+    "\n crossval_yaw_error(deg)=" + to_string_with_precision(output_crossval_yaw_error_) +
     "\n average_distance_error(cm)=" +
-    to_string_with_precision(output_calibration_distance_error * 100) +
-    "\n average_yaw_error(deg)=" + to_string_with_precision(output_calibration_yaw_error);
+    to_string_with_precision(output_calibration_distance_error_ * m_to_cm) +
+    "\n average_yaw_error(deg)=" + to_string_with_precision(output_calibration_yaw_error_);
 
-  text_marker.pose.position.x = 1;
-  text_marker.pose.position.y = 1;
-  text_marker.pose.position.z = 1;
+  text_marker.pose.position.x = 1.0;
+  text_marker.pose.position.y = 1.0;
+  text_marker.pose.position.z = 1.0;
   text_marker.pose.orientation.x = 0.0;
   text_marker.pose.orientation.y = 0.0;
   text_marker.pose.orientation.z = 0.0;
   text_marker.pose.orientation.w = 1.0;
 
   text_markers_pub_->publish(text_marker);
+}
+
+geometry_msgs::msg::Point ExtrinsicReflectorBasedCalibrator::eigenToPointMsg(const Eigen::Vector3d &p_eigen) 
+{
+    geometry_msgs::msg::Point p;
+    p.x = p_eigen.x();
+    p.y = p_eigen.y();
+    p.z = p_eigen.z();
+    return p;
+}
+
+double ExtrinsicReflectorBasedCalibrator::getYawError(const Eigen::Vector3d &v1, const Eigen::Vector3d &v2) 
+{
+    return std::abs(std::acos(v1.dot(v2) / (v1.norm() * v2.norm())));
 }
