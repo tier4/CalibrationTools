@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+
+  <let name="sensor_model" value="aip_x2"/>
+  <let name="parent_frame" value="front_unit_base_link"/>
+
+  <!-- extrinsic_calibration_client -->
+  <arg name="src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/front_unit_calibration.yaml"/>
+  <arg name="dst_yaml" default="$(env HOME)/front_unit_calibration.yaml"/>
+
+  <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="extrinsic_calibration_client" output="screen">
+    <param name="src_path" value="$(var src_yaml)"/>
+    <param name="dst_path" value="$(var dst_yaml)"/>
+  </node>
+
+  <!-- extrinsic_calibration_manager -->
+  <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen">
+    <param name="parent_frame" value="$(var parent_frame)"/>
+    <param name="child_frames" value="
+    [pandar_40p_front_base_link,
+    pandar_qt_front_base_link]"/>
+  </node>
+
+  <!-- extrinsic_manual_calibrator -->
+  <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
+    <arg name="ns" value="$(var parent_frame)/pandar_40p_front_base_link"/>
+    <arg name="parent_frame" value="$(var parent_frame)"/>
+    <arg name="child_frame" value="pandar_40p_front_base_link"/>
+  </include>
+
+  <include file="$(find-pkg-share extrinsic_manual_calibrator)/launch/calibrator.launch.xml">
+    <arg name="ns" value="$(var parent_frame)/pandar_qt_front_base_link"/>
+    <arg name="parent_frame" value="$(var parent_frame)"/>
+    <arg name="child_frame" value="pandar_qt_front_base_link"/>
+  </include>
+</launch>

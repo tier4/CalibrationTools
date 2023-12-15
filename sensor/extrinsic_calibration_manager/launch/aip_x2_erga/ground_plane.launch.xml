@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_x2"/>
+  <arg name="rviz" default="false"/>
+
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_ground_plane_calibrator)/rviz/x2.rviz"/>
+
+  <!--2023/04/21 - Parking lot -->
+  <let name="use_crop_box_filter" value="true"/>
+  <let name="crop_box_min_x" value="-12.0"/>
+  <let name="crop_box_min_y" value="-12.0"/>
+  <let name="crop_box_min_z" value="-12.0"/>
+  <let name="crop_box_max_x" value="12.0"/>
+  <let name="crop_box_max_y" value="12.0"/>
+  <let name="crop_box_max_z" value="-0.5"/>
+
+  <group>
+    <push-ros-namespace namespace="front_unit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/ground_plane_front_unit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="sensor_model" value="$(var sensor_model)"/>
+
+      <arg name="use_crop_box_filter" value="$(var use_crop_box_filter)"/>
+      <arg name="crop_box_min_x" value="$(var crop_box_min_x)"/>
+      <arg name="crop_box_min_y" value="$(var crop_box_min_y)"/>
+      <arg name="crop_box_min_z" value="$(var crop_box_min_z)"/>
+      <arg name="crop_box_max_x" value="$(var crop_box_max_x)"/>
+      <arg name="crop_box_max_y" value="$(var crop_box_max_y)"/>
+      <arg name="crop_box_max_z" value="$(var crop_box_max_z)"/>
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="rear_unit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/ground_plane_rear_unit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="sensor_model" value="$(var sensor_model)"/>
+
+      <arg name="use_crop_box_filter" value="$(var use_crop_box_filter)"/>
+      <arg name="crop_box_min_x" value="$(var crop_box_min_x)"/>
+      <arg name="crop_box_min_y" value="$(var crop_box_min_y)"/>
+      <arg name="crop_box_min_z" value="$(var crop_box_min_z)"/>
+      <arg name="crop_box_max_x" value="$(var crop_box_max_x)"/>
+      <arg name="crop_box_max_y" value="$(var crop_box_max_y)"/>
+      <arg name="crop_box_max_z" value="$(var crop_box_max_z)"/>
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="top_unit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/ground_plane_top_unit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="sensor_model" value="$(var sensor_model)"/>
+
+      <arg name="use_crop_box_filter" value="$(var use_crop_box_filter)"/>
+      <arg name="crop_box_min_x" value="$(var crop_box_min_x)"/>
+      <arg name="crop_box_min_y" value="$(var crop_box_min_y)"/>
+      <arg name="crop_box_min_z" value="$(var crop_box_min_z)"/>
+      <arg name="crop_box_max_x" value="$(var crop_box_max_x)"/>
+      <arg name="crop_box_max_y" value="$(var crop_box_max_y)"/>
+      <arg name="crop_box_max_z" value="$(var crop_box_max_z)"/>
+    </include>
+  </group>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
+</launch>

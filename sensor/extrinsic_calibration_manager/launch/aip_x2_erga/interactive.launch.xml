@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_x2"/>
+  <arg name="camera_name"/>
+  <arg name="rviz" default="false"/>
+  <arg name="use_concatenated_pointcloud" default="true"/>
+
+  <group>
+    <push-ros-namespace namespace="front_unit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/interactive_front_unit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="camera_name" value="$(var camera_name)"/>
+      <arg name="use_concatenated_pointcloud" value="$(var use_concatenated_pointcloud)"/>
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="rear_unit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/interactive_rear_unit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="camera_name" value="$(var camera_name)"/>
+      <arg name="use_concatenated_pointcloud" value="$(var use_concatenated_pointcloud)"/>
+    </include>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="top_unit"/>
+    <include file="$(find-pkg-share extrinsic_calibration_manager)/launch/$(var sensor_model)/interactive_top_unit.launch.xml">
+      <arg name="vehicle_id" value="$(var vehicle_id)"/>
+      <arg name="camera_name" value="$(var camera_name)"/>
+      <arg name="use_concatenated_pointcloud" value="$(var use_concatenated_pointcloud)"/>
+    </include>
+  </group>
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="
+        -d $(find-pkg-share extrinsic_calibration_manager)/config/x2/extrinsic_interactive_calibrator.rviz" if="$(var rviz)"/>
+</launch>

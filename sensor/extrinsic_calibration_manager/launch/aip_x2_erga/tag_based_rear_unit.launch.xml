@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="vehicle_id" default="default"/>
+  <let name="sensor_model" value="aip_x2"/>
+  <let name="parent_frame" value="rear_unit_base_link"/>
+  <arg name="camera_name"/>
+  <arg name="rviz"/>
+  <let name="camera_frame" value="$(var camera_name)/camera_link"/>
+  <let name="lidar_model" value="pandar_40p"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera3_pandar_40p_rear.rviz"/>
+
+  <let name="calibrate_sensor" value="false"/>
+  <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera3' &quot;)"/>
+
+  <!-- extrinsic_calibration_client -->
+  <arg name="src_yaml" default="$(find-pkg-share individual_params)/config/$(var vehicle_id)/$(var sensor_model)/rear_unit_calibration.yaml"/>
+  <arg name="dst_yaml" default="$(env HOME)/rear_unit_calibration.yaml"/>
+
+  <node pkg="extrinsic_calibration_client" exec="extrinsic_calibration_client" name="extrinsic_calibration_client" output="screen" if="$(var calibrate_sensor)">
+    <param name="src_path" value="$(var src_yaml)"/>
+    <param name="dst_path" value="$(var dst_yaml)"/>
+  </node>
+
+  <!-- extrinsic_calibration_manager -->
+  <node pkg="extrinsic_calibration_manager" exec="extrinsic_calibration_manager" name="extrinsic_calibration_manager" output="screen" if="$(var calibrate_sensor)">
+    <param name="parent_frame" value="$(var parent_frame)"/>
+    <param name="child_frames" value="
+    [$(var camera_frame)]"/>
+  </node>
+
+  <!-- image decompressor -->
+  <group if="$(var calibrate_sensor)">
+    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+      <remap from="decompressor/input/compressed_image" to="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
+      <remap from="decompressor/output/raw_image" to="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
+    </node>
+  </group>
+
+  <!-- tag based calibrator -->
+  <include file="$(find-pkg-share extrinsic_tag_based_calibrator)/launch/calibrator.launch.xml" if="$(var calibrate_sensor)">
+    <arg name="ns" value="$(var parent_frame)/$(var camera_frame)"/>
+    <arg name="parent_frame" value="$(var parent_frame)"/>
+    <arg name="child_frame" value="$(var camera_frame)"/>
+    <arg name="image_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
+    <arg name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
+    <arg name="pointcloud_topic" value="/sensing/lidar/rear_lower/pointcloud_raw"/>
+    <arg name="lidar_model" value="$(var lidar_model)"/>
+  </include>
+
+  <!-- interactive calibrator -->
+  <group if="$(var calibrate_sensor)">
+    <push-ros-namespace namespace="$(var parent_frame)/$(var camera_frame)"/>
+
+    <node pkg="extrinsic_interactive_calibrator" exec="interactive_calibrator" name="interactive_calibrator" output="screen">
+      <remap from="pointcloud" to="/sensing/lidar/rear_lower/pointcloud_raw"/>
+      <remap from="image" to="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
+      <remap from="camera_info" to="/sensing/camera/$(var camera_name)/camera_info"/>
+      <remap from="calibration_points_input" to="calibration_points"/>
+
+      <param name="camera_parent_frame" value="$(var parent_frame)"/>
+      <param name="camera_frame" value="$(var camera_frame)"/>
+      <param name="use_calibration_api" value="false"/>
+      <param name="can_publish_tf" value="false"/>
+    </node>
+
+    <include file="$(find-pkg-share intrinsic_camera_calibration)/launch/optimizer.launch.xml">
+      <arg name="k_coefficients" value="0"/>
+      <arg name="zero_tangent_dist" value="true"/>
+    </include>
+
+    <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)"/>
+  </group>
+</launch>
