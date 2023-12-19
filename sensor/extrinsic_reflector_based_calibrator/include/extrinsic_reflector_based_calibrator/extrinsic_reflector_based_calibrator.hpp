@@ -42,11 +42,14 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 
+#include <math.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -120,9 +123,14 @@ protected:
 
   std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr, double, double>
   getPointsSetAndDelta();
+  std::pair<double, double> computeCalibrationError(
+    const Eigen::Isometry3d & radar_to_lidar_isometry);
   void estimateTransformation(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
+  void findCombinations(
+    int n, int k, std::vector<int> & curr, int first_num,
+    std::vector<std::vector<int>> & combinations);
   void crossValEvaluation(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs);
@@ -179,6 +187,7 @@ protected:
     double max_matching_distance;
     double max_initial_calibration_translation_error;
     double max_initial_calibration_rotation_error;
+    int max_number_of_combinations;
   } parameters_;
 
   // ROS Interface
@@ -257,10 +266,7 @@ protected:
   std::vector<Track> converged_tracks_;
 
   // Metrics
-  float output_crossval_distance_error_{0};
-  float output_crossval_yaw_error_{0};
-  float output_calibration_distance_error_{0};
-  float output_calibration_yaw_error_{0};
+  std::vector<float> output_metrics_;
 
   static constexpr int MARKER_SIZE_PER_TRACK = 8;
 };

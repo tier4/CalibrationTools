@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-
 from PySide2.QtWidgets import QMainWindow
 from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QVBoxLayout
