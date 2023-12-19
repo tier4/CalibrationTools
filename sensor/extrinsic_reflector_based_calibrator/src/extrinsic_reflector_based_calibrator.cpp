@@ -1369,6 +1369,9 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
   pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
   pcl::PointCloud<PointType>::Ptr radar_points_rcs)
 {
+  int tracks_size = static_cast<int>(converged_tracks_.size());
+  if (tracks_size <= 3) return;
+
   pcl::PointCloud<PointType>::Ptr crossval_lidar_points_pcs(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr crossval_radar_points_rcs(new pcl::PointCloud<PointType>);
   pcl::registration::TransformationEstimationSVD<PointType, PointType> crossval_estimator;
@@ -1379,90 +1382,85 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
   double total_crossval_calibrated_2d_distance_error;
   double total_crossval_calibrated_2d_yaw_error;
 
-  int tracks_size = static_cast<int>(converged_tracks_.size());
-  if (tracks_size > 3) {
-    for (int num_of_samples = 3; num_of_samples < tracks_size; num_of_samples++) {
-      crossval_lidar_points_pcs->reserve(num_of_samples);
-      crossval_radar_points_rcs->reserve(num_of_samples);
-      std::vector<std::vector<int>> combinations;
-      std::vector<int> curr;
-      std::vector<double> crossval_calibrated_2d_distance_error_vector;
-      std::vector<double> crossval_calibrated_2d_yaw_error_vector;
-      total_crossval_calibrated_2d_distance_error = 0.0;
-      total_crossval_calibrated_2d_yaw_error = 0.0;
+  for (int num_of_samples = 3; num_of_samples < tracks_size; num_of_samples++) {
+    crossval_lidar_points_pcs->reserve(num_of_samples);
+    crossval_radar_points_rcs->reserve(num_of_samples);
+    std::vector<std::vector<int>> combinations;
+    std::vector<int> curr;
+    std::vector<double> crossval_calibrated_2d_distance_error_vector;
+    std::vector<double> crossval_calibrated_2d_yaw_error_vector;
+    total_crossval_calibrated_2d_distance_error = 0.0;
+    total_crossval_calibrated_2d_yaw_error = 0.0;
 
-      findCombinations(tracks_size - 1, num_of_samples, curr, 0, combinations);
+    findCombinations(tracks_size - 1, num_of_samples, curr, 0, combinations);
 
+    RCLCPP_INFO(
+      this->get_logger(), "The number of combinations is: %f, tracks_size: %d, num_of_samples: %d",
+      static_cast<double>(combinations.size()), tracks_size, num_of_samples);
+
+    // random select the combinations if the number of combinations is too large
+    if (combinations.size() > static_cast<std::size_t>(parameters_.max_number_of_combinations)) {
+      std::random_device rd;
+      std::mt19937 mt(rd());
+      std::shuffle(combinations.begin(), combinations.end(), mt);
+      combinations.resize(parameters_.max_number_of_combinations);
       RCLCPP_INFO(
-        this->get_logger(),
-        "The number of combinations is: %f, tracks_size: %d, num_of_samples: %d",
-        static_cast<double>(combinations.size()), tracks_size, num_of_samples);
-
-      // random select the combinations if the number of combinations is too large
-      if (combinations.size() > static_cast<std::size_t>(parameters_.max_number_of_combinations)) {
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::shuffle(combinations.begin(), combinations.end(), mt);
-        combinations.resize(parameters_.max_number_of_combinations);
-        RCLCPP_INFO(
-          this->get_logger(), "The number of new combinations size is : %f",
-          static_cast<double>(combinations.size()));
-      }
-
-      for (const auto & combination : combinations) {
-        // clear the lidar radar pcs
-        crossval_lidar_points_pcs->clear();
-        crossval_radar_points_rcs->clear();
-        // calculate the transformation.
-        for (int j = 0; j < num_of_samples; j++) {
-          crossval_lidar_points_pcs->emplace_back(lidar_points_pcs->points[combination[j]]);
-          crossval_radar_points_rcs->emplace_back(radar_points_rcs->points[combination[j]]);
-        }
-        crossval_estimator.estimateRigidTransformation(
-          *crossval_lidar_points_pcs, *crossval_radar_points_rcs,
-          crossval_radar_to_parent_transformation);
-        crossval_calibrated_2d_radar_to_parent_transformation =
-          crossval_radar_to_parent_transformation.cast<double>();
-        crossval_calibrated_2d_radar_to_parent_transformation.translation().z() =
-          (initial_radar_to_lidar_eigen_ * parent_to_lidar_eigen_.inverse()).translation().z();
-        crossval_calibrated_2d_radar_to_lidar_transformation =
-          crossval_calibrated_2d_radar_to_parent_transformation * parent_to_lidar_eigen_;
-
-        // calculate the error.
-        auto [crossval_calibrated_2d_distance_error, crossval_calibrated_2d_yaw_error] =
-          computeCalibrationError(crossval_calibrated_2d_radar_to_lidar_transformation);
-
-        total_crossval_calibrated_2d_distance_error += crossval_calibrated_2d_distance_error;
-        total_crossval_calibrated_2d_yaw_error += crossval_calibrated_2d_yaw_error;
-        crossval_calibrated_2d_distance_error_vector.push_back(
-          crossval_calibrated_2d_distance_error);
-        crossval_calibrated_2d_yaw_error_vector.push_back(crossval_calibrated_2d_yaw_error);
-      }
-
-      auto calculate_std = [](std::vector<double> & data, double mean) -> double {
-        double sum = 0.0;
-        for (size_t i = 0; i < data.size(); i++) {
-          sum += (data[i] - mean) * (data[i] - mean);
-        }
-        double variance = sum / data.size();
-        return sqrt(variance);
-      };
-
-      double avg_crossval_calibrated_2d_distance_error =
-        total_crossval_calibrated_2d_distance_error / combinations.size();
-      double avg_crossval_calibrated_2d_yaw_error =
-        total_crossval_calibrated_2d_yaw_error / combinations.size();
-      output_metrics_.push_back(static_cast<float>(num_of_samples));
-      output_metrics_.push_back(static_cast<float>(avg_crossval_calibrated_2d_distance_error));
-      output_metrics_.push_back(static_cast<float>(avg_crossval_calibrated_2d_yaw_error));
-
-      double std_crossval_calibrated_2d_distance_error = calculate_std(
-        crossval_calibrated_2d_distance_error_vector, avg_crossval_calibrated_2d_distance_error);
-      double std_crossval_calibrated_2d_yaw_error = calculate_std(
-        crossval_calibrated_2d_yaw_error_vector, avg_crossval_calibrated_2d_yaw_error);
-      output_metrics_.push_back(static_cast<float>(std_crossval_calibrated_2d_distance_error));
-      output_metrics_.push_back(static_cast<float>(std_crossval_calibrated_2d_yaw_error));
+        this->get_logger(), "The number of new combinations size is : %f",
+        static_cast<double>(combinations.size()));
     }
+
+    for (const auto & combination : combinations) {
+      // clear the lidar radar pcs
+      crossval_lidar_points_pcs->clear();
+      crossval_radar_points_rcs->clear();
+      // calculate the transformation.
+      for (int j = 0; j < num_of_samples; j++) {
+        crossval_lidar_points_pcs->emplace_back(lidar_points_pcs->points[combination[j]]);
+        crossval_radar_points_rcs->emplace_back(radar_points_rcs->points[combination[j]]);
+      }
+      crossval_estimator.estimateRigidTransformation(
+        *crossval_lidar_points_pcs, *crossval_radar_points_rcs,
+        crossval_radar_to_parent_transformation);
+      crossval_calibrated_2d_radar_to_parent_transformation =
+        crossval_radar_to_parent_transformation.cast<double>();
+      crossval_calibrated_2d_radar_to_parent_transformation.translation().z() =
+        (initial_radar_to_lidar_eigen_ * parent_to_lidar_eigen_.inverse()).translation().z();
+      crossval_calibrated_2d_radar_to_lidar_transformation =
+        crossval_calibrated_2d_radar_to_parent_transformation * parent_to_lidar_eigen_;
+
+      // calculate the error.
+      auto [crossval_calibrated_2d_distance_error, crossval_calibrated_2d_yaw_error] =
+        computeCalibrationError(crossval_calibrated_2d_radar_to_lidar_transformation);
+
+      total_crossval_calibrated_2d_distance_error += crossval_calibrated_2d_distance_error;
+      total_crossval_calibrated_2d_yaw_error += crossval_calibrated_2d_yaw_error;
+      crossval_calibrated_2d_distance_error_vector.push_back(crossval_calibrated_2d_distance_error);
+      crossval_calibrated_2d_yaw_error_vector.push_back(crossval_calibrated_2d_yaw_error);
+    }
+
+    auto calculate_std = [](std::vector<double> & data, double mean) -> double {
+      double sum = 0.0;
+      for (size_t i = 0; i < data.size(); i++) {
+        sum += (data[i] - mean) * (data[i] - mean);
+      }
+      double variance = sum / data.size();
+      return sqrt(variance);
+    };
+
+    double avg_crossval_calibrated_2d_distance_error =
+      total_crossval_calibrated_2d_distance_error / combinations.size();
+    double avg_crossval_calibrated_2d_yaw_error =
+      total_crossval_calibrated_2d_yaw_error / combinations.size();
+    output_metrics_.push_back(static_cast<float>(num_of_samples));
+    output_metrics_.push_back(static_cast<float>(avg_crossval_calibrated_2d_distance_error));
+    output_metrics_.push_back(static_cast<float>(avg_crossval_calibrated_2d_yaw_error));
+
+    double std_crossval_calibrated_2d_distance_error = calculate_std(
+      crossval_calibrated_2d_distance_error_vector, avg_crossval_calibrated_2d_distance_error);
+    double std_crossval_calibrated_2d_yaw_error =
+      calculate_std(crossval_calibrated_2d_yaw_error_vector, avg_crossval_calibrated_2d_yaw_error);
+    output_metrics_.push_back(static_cast<float>(std_crossval_calibrated_2d_distance_error));
+    output_metrics_.push_back(static_cast<float>(std_crossval_calibrated_2d_yaw_error));
   }
 }
 
