@@ -168,7 +168,7 @@ class MetricsPlotter:
                 color=self.color_yaw,
             )
 
-    def draw_crosval_subplots(self):
+    def draw_crossval_subplots(self):
         self.subplot0.clear()
         self.subplot1.clear()
 
@@ -221,7 +221,7 @@ class MetricsPlotter:
         self.add_avg_error_to_list(msg_array)
         self.add_crossval_error_to_list(msg_array)
         self.draw_avg_subplots()
-        self.draw_crosval_subplots()
+        self.draw_crossval_subplots()
         self.plot_label_and_set_xy_lim()
         plt.tight_layout()
         plt.pause(0.1)

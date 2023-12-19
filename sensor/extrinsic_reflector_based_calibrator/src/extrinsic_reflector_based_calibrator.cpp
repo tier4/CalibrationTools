@@ -1413,7 +1413,7 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
         // clear the lidar radar pcs
         crossval_lidar_points_pcs->clear();
         crossval_radar_points_rcs->clear();
-        // calculate the transfomration.
+        // calculate the transformation.
         for (int j = 0; j < num_of_samples; j++) {
           crossval_lidar_points_pcs->emplace_back(lidar_points_pcs->points[combination[j]]);
           crossval_radar_points_rcs->emplace_back(radar_points_rcs->points[combination[j]]);
@@ -1468,7 +1468,7 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
 
 void ExtrinsicReflectorBasedCalibrator::publishMetrics()
 {
-  // The final format of the output metircs is
+  // The final format of the output metrics is
   // num of reflectors,  calibration_distance_error, calibration_yaw_error,
   // sample, avg_crossval_dis_error, avg_crossval_yaw_error, std_crossval_dis_error,
   // std_crossval_yaw_error. sample, ....
