@@ -200,8 +200,8 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
   parameters_.reflector_radius = this->declare_parameter<double>("reflector_radius", 0.1);
   parameters_.reflector_max_height = this->declare_parameter<double>("reflector_max_height", 1.2);
   parameters_.max_matching_distance = this->declare_parameter<double>("max_matching_distance", 1.0);
-  parameters_.max_number_of_combinations =
-    this->declare_parameter<int>("max_number_of_combinations", 10000);
+  parameters_.max_number_of_combination_samples =
+    this->declare_parameter<int>("max_number_of_combination_samples", 10000);
 
   double initial_lidar_cov = this->declare_parameter<double>("initial_lidar_cov", 0.5);
   double initial_radar_cov = this->declare_parameter<double>("initial_radar_cov", 2.0);
@@ -1379,9 +1379,6 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
   Eigen::Isometry3d crossval_calibrated_2d_radar_to_parent_transformation;
   Eigen::Isometry3d crossval_calibrated_2d_radar_to_lidar_transformation;
 
-  double total_crossval_calibrated_2d_distance_error;
-  double total_crossval_calibrated_2d_yaw_error;
-
   for (int num_of_samples = 3; num_of_samples < tracks_size; num_of_samples++) {
     crossval_lidar_points_pcs->reserve(num_of_samples);
     crossval_radar_points_rcs->reserve(num_of_samples);
@@ -1389,24 +1386,29 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
     std::vector<int> curr;
     std::vector<double> crossval_calibrated_2d_distance_error_vector;
     std::vector<double> crossval_calibrated_2d_yaw_error_vector;
-    total_crossval_calibrated_2d_distance_error = 0.0;
-    total_crossval_calibrated_2d_yaw_error = 0.0;
+    double total_crossval_calibrated_2d_distance_error = 0.0;
+    double total_crossval_calibrated_2d_yaw_error = 0.0;
 
     findCombinations(tracks_size - 1, num_of_samples, curr, 0, combinations);
 
     RCLCPP_INFO(
-      this->get_logger(), "The number of combinations is: %f, tracks_size: %d, num_of_samples: %d",
-      static_cast<double>(combinations.size()), tracks_size, num_of_samples);
+      this->get_logger(),
+      "The number of combinations is: %d, converged_tracks_size: %d, num_of_samples: %d",
+      static_cast<int>(combinations.size()), tracks_size, num_of_samples);
 
     // random select the combinations if the number of combinations is too large
-    if (combinations.size() > static_cast<std::size_t>(parameters_.max_number_of_combinations)) {
+    if (
+      combinations.size() >
+      static_cast<std::size_t>(parameters_.max_number_of_combination_samples)) {
       std::random_device rd;
       std::mt19937 mt(rd());
       std::shuffle(combinations.begin(), combinations.end(), mt);
-      combinations.resize(parameters_.max_number_of_combinations);
-      RCLCPP_INFO(
-        this->get_logger(), "The number of new combinations size is : %f",
-        static_cast<double>(combinations.size()));
+      combinations.resize(parameters_.max_number_of_combination_samples);
+      RCLCPP_WARN(
+        this->get_logger(),
+        "The number of combinations is set to: %d, because it exceeds the maximum number of "
+        "combination samples: %d",
+        static_cast<int>(combinations.size()), parameters_.max_number_of_combination_samples);
     }
 
     for (const auto & combination : combinations) {
@@ -1444,7 +1446,7 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
         sum += (data[i] - mean) * (data[i] - mean);
       }
       double variance = sum / data.size();
-      return sqrt(variance);
+      return std::sqrt(variance);
     };
 
     double avg_crossval_calibrated_2d_distance_error =

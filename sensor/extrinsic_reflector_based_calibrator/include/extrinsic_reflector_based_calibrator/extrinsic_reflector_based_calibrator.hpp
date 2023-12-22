@@ -42,8 +42,6 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #endif
 
-#include <math.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
@@ -187,7 +185,7 @@ protected:
     double max_matching_distance;
     double max_initial_calibration_translation_error;
     double max_initial_calibration_rotation_error;
-    int max_number_of_combinations;
+    int max_number_of_combination_samples;
   } parameters_;
 
   // ROS Interface

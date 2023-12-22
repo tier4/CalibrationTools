@@ -99,9 +99,7 @@ class MetricsPlotter:
             ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
     def is_delete_operation(self, msg_array):
-        if self.num_of_reflectors_list and msg_array[0] < self.num_of_reflectors_list[-1]:
-            return True
-        return False
+        return self.num_of_reflectors_list and msg_array[0] < self.num_of_reflectors_list[-1]
 
     def remove_avg_error_from_list(self):
         if len(self.num_of_reflectors_list) == 1:
@@ -109,7 +107,7 @@ class MetricsPlotter:
             self.calibration_yaw_error_list.pop()
             self.num_of_reflectors_list.pop()
         else:
-            for i in range(2):
+            for i in range(min(2, len(self.num_of_reflectors_list))):
                 self.calibration_distance_error_list.pop()
                 self.calibration_yaw_error_list.pop()
                 self.num_of_reflectors_list.pop()
