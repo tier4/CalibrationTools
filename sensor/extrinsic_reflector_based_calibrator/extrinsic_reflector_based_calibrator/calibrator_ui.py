@@ -34,15 +34,22 @@ class CalibratorUI(QMainWindow):
 
         self.extract_background_model_status = False
         self.add_lidar_radar_pair_status = False
+        self.delete_lidar_radar_pair_status = False
         self.send_calibration_status = False
 
         self.ros_interface.set_extract_background_model_callback(
             self.extract_background_model_result_callback,
             self.extract_background_model_status_callback,
         )
+
         self.ros_interface.set_add_lidar_radar_pair_callback(
             self.add_lidar_radar_pair_result_callback,
             self.add_lidar_radar_pair_status_callback,
+        )
+
+        self.ros_interface.set_delete_lidar_radar_pair_callback(
+            self.delete_lidar_radar_pair_result_callback,
+            self.delete_lidar_radar_pair_status_callback,
         )
 
         self.ros_interface.set_send_calibration_callback(
@@ -68,6 +75,13 @@ class CalibratorUI(QMainWindow):
         self.add_lidar_radar_pair_button.clicked.connect(self.add_lidar_radar_pair_button_callback)
         self.layout.addWidget(self.add_lidar_radar_pair_button)
 
+        self.delete_lidar_radar_pair_button = QPushButton("Delete previous lidar-radar pair")
+        self.delete_lidar_radar_pair_button.setEnabled(False)
+        self.delete_lidar_radar_pair_button.clicked.connect(
+            self.delete_lidar_radar_pair_button_callback
+        )
+        self.layout.addWidget(self.delete_lidar_radar_pair_button)
+
         self.send_calibration_button = QPushButton("Send calibration")
         self.send_calibration_button.setEnabled(False)
         self.send_calibration_button.clicked.connect(self.send_calibration_button_callback)
@@ -84,6 +98,9 @@ class CalibratorUI(QMainWindow):
         )
         self.add_lidar_radar_pair_button.setEnabled(
             self.add_lidar_radar_pair_status and not disable_buttons
+        )
+        self.delete_lidar_radar_pair_button.setEnabled(
+            self.delete_lidar_radar_pair_status and not disable_buttons
         )
         self.send_calibration_button.setEnabled(
             self.send_calibration_status and not disable_buttons
@@ -106,6 +123,14 @@ class CalibratorUI(QMainWindow):
         self.add_lidar_radar_pair_status = status
         self.check_status()
 
+    def delete_lidar_radar_pair_result_callback(self, result):
+        self.pending_service = False
+        self.check_status()
+
+    def delete_lidar_radar_pair_status_callback(self, status):
+        self.delete_lidar_radar_pair_status = status
+        self.check_status()
+
     def send_calibration_result_callback(self, result):
         self.pending_service = False
         self.calibration_sent = True
@@ -123,6 +148,11 @@ class CalibratorUI(QMainWindow):
     def add_lidar_radar_pair_button_callback(self):
         self.pending_service = True
         self.ros_interface.add_lidar_radar_pair()
+        self.check_status()
+
+    def delete_lidar_radar_pair_button_callback(self):
+        self.pending_service = True
+        self.ros_interface.delete_lidar_radar_pair()
         self.check_status()
 
     def send_calibration_button_callback(self):

@@ -50,5 +50,6 @@
     </node>
 
     <node pkg="extrinsic_reflector_based_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
+    <node pkg="extrinsic_reflector_based_calibrator" exec="metrics_plotter_node.py" name="metrics_plotter_node" output="screen"/>
   </group>
 </launch>

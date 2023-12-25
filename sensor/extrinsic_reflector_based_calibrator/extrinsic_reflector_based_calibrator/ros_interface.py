@@ -67,11 +67,13 @@ class RosInterface(Node):
 
         self.extract_background_model_client = EmptyServiceWrapper(self, "extract_background_model")
         self.add_lidar_radar_pair_client = EmptyServiceWrapper(self, "add_lidar_radar_pair")
+        self.delete_lidar_radar_pair_client = EmptyServiceWrapper(self, "delete_lidar_radar_pair")
         self.send_calibration_client = EmptyServiceWrapper(self, "send_calibration")
 
         self.client_list = [
             self.extract_background_model_client,
             self.add_lidar_radar_pair_client,
+            self.delete_lidar_radar_pair_client,
             self.send_calibration_client,
         ]
 
@@ -87,6 +89,11 @@ class RosInterface(Node):
             self.add_lidar_radar_pair_client.set_result_callback(result_callback)
             self.add_lidar_radar_pair_client.set_status_callback(status_callback)
 
+    def set_delete_lidar_radar_pair_callback(self, result_callback, status_callback):
+        with self.lock:
+            self.delete_lidar_radar_pair_client.set_result_callback(result_callback)
+            self.delete_lidar_radar_pair_client.set_status_callback(status_callback)
+
     def set_send_calibration_callback(self, result_callback, status_callback):
         with self.lock:
             self.send_calibration_client.set_result_callback(result_callback)
@@ -97,6 +104,9 @@ class RosInterface(Node):
 
     def add_lidar_radar_pair(self):
         self.add_lidar_radar_pair_client()
+
+    def delete_lidar_radar_pair(self):
+        self.delete_lidar_radar_pair_client()
 
     def send_calibration(self):
         self.send_calibration_client()
