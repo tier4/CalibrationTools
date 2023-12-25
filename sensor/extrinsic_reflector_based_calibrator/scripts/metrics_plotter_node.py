@@ -102,15 +102,10 @@ class MetricsPlotter:
         return self.num_of_reflectors_list and msg_array[0] < self.num_of_reflectors_list[-1]
 
     def remove_avg_error_from_list(self):
-        if len(self.num_of_reflectors_list) == 1:
+        for i in range(min(2, len(self.num_of_reflectors_list))):
             self.calibration_distance_error_list.pop()
             self.calibration_yaw_error_list.pop()
             self.num_of_reflectors_list.pop()
-        else:
-            for i in range(min(2, len(self.num_of_reflectors_list))):
-                self.calibration_distance_error_list.pop()
-                self.calibration_yaw_error_list.pop()
-                self.num_of_reflectors_list.pop()
 
     def add_avg_error_to_list(self, msg_array):
         num_of_reflectors = msg_array[0]
