@@ -23,8 +23,9 @@ int main(int argc, char ** argv)
 
   rclcpp::executors::MultiThreadedExecutor executor;
   rclcpp::NodeOptions node_options;
-  std::shared_ptr<LidarToLidar2DCalibrator> node =
-    std::make_shared<LidarToLidar2DCalibrator>(node_options);
+  std::shared_ptr<extrinsic_lidar_to_lidar_2d_calibrator::LidarToLidar2DCalibrator> node =
+    std::make_shared<extrinsic_lidar_to_lidar_2d_calibrator::LidarToLidar2DCalibrator>(
+      node_options);
   executor.add_node(node);
   executor.spin();
 

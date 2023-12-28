@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <extrinsic_lidar_to_lidar_2d_calibrator/extrinsic_lidar_to_lidar_2d_calibrator.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_autoware_utils/geometry/geometry.hpp>
 
 #include <pcl/ModelCoefficients.h>
@@ -26,15 +27,11 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2/utils.h>
 
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
-
+#include <algorithm>
 #include <iostream>
 
-#define UNUSED(x) (void)x;
+namespace extrinsic_lidar_to_lidar_2d_calibrator
+{
 
 LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_lidar_to_lidar_2d_calibrator", options),
@@ -50,8 +47,6 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
-  sensor_kit_frame_ = this->declare_parameter<std::string>("parent_frame");
-  lidar_base_frame_ = this->declare_parameter<std::string>("child_frame");
 
   broadcast_calibration_tf_ = this->declare_parameter<bool>("broadcast_calibration_tf", false);
   filter_estimations_ = this->declare_parameter<bool>("filter_estimations", true);
@@ -85,9 +80,18 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   min_z_ = this->declare_parameter<double>("min_z", 0.2);
   max_z_ = this->declare_parameter<double>("max_z", 0.6);
 
-  markers_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 10);
-  source_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("source_points_2d", 10);
-  target_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("target_points_2d", 10);
+  filtered_source_initial_pub_ =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("filtered_source_initial_points", 10);
+  filtered_source_aligned_pub_ =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("filtered_source_aligned_points", 10);
+  filtered_target_pub_ =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("filtered_target_points", 10);
+  flat_source_initial_pub_ =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("flat_source_initial_points", 10);
+  flat_source_aligned_pub_ =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("flat_source_aligned_points", 10);
+  flat_target_pub_ =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("flat_target_points", 10);
 
   source_pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
     "source_input_pointcloud", rclcpp::SensorDataQoS(),
@@ -97,13 +101,13 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
     "target_input_pointcloud", rclcpp::SensorDataQoS(),
     std::bind(&LidarToLidar2DCalibrator::targetPointCloudCallback, this, std::placeholders::_1));
 
-  calib_timer_ = rclcpp::create_timer(
+  calibration_timer_ = rclcpp::create_timer(
     this, get_clock(), 200ms, std::bind(&LidarToLidar2DCalibrator::calibrationTimerCallback, this));
 
-  // The service server runs in a dedicated thread
+  // The service server runs in a dedicated thread since it is a blocking call
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &LidarToLidar2DCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -140,17 +144,16 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
 }
 
 void LidarToLidar2DCalibrator::requestReceivedCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+    request,
+  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
 {
-  // This tool uses several tfs, so for consistency we take the initial calibration using lookups
-  UNUSED(request);
   using std::chrono_literals::operator""s;
 
   {
     std::unique_lock<std::mutex> lock(mutex_);
     received_request_ = true;
-    initial_calibration_ = request->initial_pose;
   }
 
   // Loop until the calibration finishes
@@ -162,27 +165,33 @@ void LidarToLidar2DCalibrator::requestReceivedCallback(
       break;
     }
 
-    RCLCPP_WARN_SKIPFIRST(this->get_logger(), "Waiting for the calibration to end");
+    RCLCPP_INFO_THROTTLE(
+      this->get_logger(), *this->get_clock(), 10000, "Waiting for the calibration to end");
   }
 
-  response->success = true;
-  response->result_pose = output_calibration_msg_;
+  tier4_calibration_msgs::msg::CalibrationResult result;
+  result.message.data = "Calibration successful";
+  result.score = 0.f;
+  result.success = true;
+  result.transform_stamped = output_calibration_msg_;
+
+  response->results.push_back(result);
 }
 
 void LidarToLidar2DCalibrator::sourcePointCloudCallback(
-  const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+  sensor_msgs::msg::PointCloud2::UniquePtr msg)
 {
   source_pointcloud_frame_ = msg->header.frame_id;
   source_pointcloud_header_ = msg->header;
-  source_pointcloud_msg_ = msg;
+  source_pointcloud_msg_ = std::move(msg);
 }
 
 void LidarToLidar2DCalibrator::targetPointCloudCallback(
-  const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+  sensor_msgs::msg::PointCloud2::UniquePtr msg)
 {
   target_pointcloud_frame_ = msg->header.frame_id;
   target_pointcloud_header_ = msg->header;
-  target_pointcloud_msg_ = msg;
+  target_pointcloud_msg_ = std::move(msg);
 }
 
 bool LidarToLidar2DCalibrator::checkInitialTransforms()
@@ -198,11 +207,13 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
   try {
     rclcpp::Time t = rclcpp::Time(0);
     rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
+    tf2::Transform initial_base_to_source_tf2_;
+    tf2::Transform initial_base_to_target_tf2_;
 
-    initial_base_to_source_msg_ =
+    geometry_msgs::msg::Transform initial_base_to_source_msg_ =
       tf_buffer_->lookupTransform(base_frame_, source_pointcloud_frame_, t, timeout).transform;
 
-    initial_base_to_target_msg_ =
+    geometry_msgs::msg::Transform initial_base_to_target_msg_ =
       tf_buffer_->lookupTransform(base_frame_, target_pointcloud_frame_, t, timeout).transform;
 
     fromMsg(initial_base_to_source_msg_, initial_base_to_source_tf2_);
@@ -210,22 +221,9 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
     initial_base_to_source_eigen_ = tf2::transformToEigen(initial_base_to_source_msg_);
     initial_base_to_target_eigen_ = tf2::transformToEigen(initial_base_to_target_msg_);
 
-    base_to_sensor_kit_msg_ =
-      tf_buffer_->lookupTransform(base_frame_, sensor_kit_frame_, t, timeout).transform;
-
-    lidar_base_to_source_msg_ =
-      tf_buffer_->lookupTransform(lidar_base_frame_, source_pointcloud_frame_, t, timeout)
-        .transform;
-
-    fromMsg(base_to_sensor_kit_msg_, base_to_sensor_kit_tf2_);
-    base_to_sensor_kit_eigen_ = tf2::transformToEigen(base_to_sensor_kit_msg_);
-
-    fromMsg(lidar_base_to_source_msg_, lidar_base_to_source_tf2_);
-    lidar_base_to_source_eigen_ = tf2::transformToEigen(lidar_base_to_source_msg_);
-
     got_initial_transform_ = true;
   } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(this->get_logger(), "could not get initial tf. %s", ex.what());
+    RCLCPP_WARN(this->get_logger(), "Could not get initial tf. %s", ex.what());
     return false;
   }
 
@@ -235,102 +233,116 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
 void LidarToLidar2DCalibrator::calibrationTimerCallback()
 {
   // Make sure we have all the required initial tfs
-  if (!checkInitialTransforms()) {
+  if (!checkInitialTransforms() || !source_pointcloud_msg_ || !target_pointcloud_msg_) {
     return;
   }
+
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!received_request_) {
+      RCLCPP_WARN_ONCE(
+        this->get_logger(), "Attempted to calibrate before a request. Only printing this once");
+      return;
+    }
+  }
+
+  // nomenclature
+  // raw: non-processed pointcloud
+  // flat: null z-component
+  // scs = source coordinate system
+  // tcs = target coordinate system
+  // bcs = base coordinate system
 
   // lidar coordinates
   pcl::PointCloud<PointType>::Ptr raw_source_pointcloud_scs(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr raw_target_pointcloud_tcs(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr source_pointcloud_scs(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr target_pointcloud_tcs(new pcl::PointCloud<PointType>);
 
   // base coordinates
   pcl::PointCloud<PointType>::Ptr raw_source_pointcloud_bcs(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr raw_target_pointcloud_bcs(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr source_pointcloud_bcs(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr target_pointcloud_bcs(new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr filtered_source_pointcloud_bcs(new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr filtered_source_aligned_pointcloud_bcs(
+    new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr filtered_target_pointcloud_bcs(new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr flat_source_pointcloud_bcs(new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr flat_source_aligned_pointcloud_bcs(
+    new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr flat_target_pointcloud_bcs(new pcl::PointCloud<PointType>);
 
-  // kit coordinate
-  pcl::PointCloud<PointType>::Ptr source_pointcloud_kcs(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr target_pointcloud_kcs(new pcl::PointCloud<PointType>);
   pcl::fromROSMsg(*source_pointcloud_msg_, *raw_source_pointcloud_scs);
   pcl::fromROSMsg(*target_pointcloud_msg_, *raw_target_pointcloud_tcs);
+  source_pointcloud_msg_.reset();
+  target_pointcloud_msg_.reset();
 
-  // Check input pointclouds and frames
-  // Turn them into base coordinates
-
-  // Eigen::Matrix4f asd = initial_base_to_source_eigen_;
   pcl::transformPointCloud(
     *raw_source_pointcloud_scs, *raw_source_pointcloud_bcs, initial_base_to_source_eigen_);
   pcl::transformPointCloud(
     *raw_target_pointcloud_tcs, *raw_target_pointcloud_bcs, initial_base_to_target_eigen_);
 
   // Segment points in a range of z
-  for (auto & point : raw_source_pointcloud_bcs->points) {
-    if (
-      point.z >= min_z_ && point.z <= max_z_ &&
-      std::sqrt(point.x * point.x + point.y * point.y) <= max_calibration_range_) {
-      source_pointcloud_bcs->push_back(point);
-    }
+  auto filter_point_range = [&](const auto & point) {
+    return point.z >= min_z_ && point.z <= max_z_ &&
+           std::sqrt(point.x * point.x + point.y * point.y) <= max_calibration_range_;
+  };
+
+  std::copy_if(
+    raw_source_pointcloud_bcs->points.begin(), raw_source_pointcloud_bcs->points.end(),
+    std::back_inserter(filtered_source_pointcloud_bcs->points), filter_point_range);
+  std::copy_if(
+    raw_target_pointcloud_bcs->points.begin(), raw_target_pointcloud_bcs->points.end(),
+    std::back_inserter(filtered_target_pointcloud_bcs->points), filter_point_range);
+  filtered_source_pointcloud_bcs->width = filtered_source_pointcloud_bcs->size();
+  filtered_source_pointcloud_bcs->height = 1;
+  filtered_target_pointcloud_bcs->width = filtered_target_pointcloud_bcs->size();
+  filtered_target_pointcloud_bcs->height = 1;
+
+  // Discard the z-component to perform 2D ICP
+  auto discard_z = [](auto & point) { point.z = 0.f; };
+
+  pcl::copyPointCloud(*filtered_source_pointcloud_bcs, *flat_source_pointcloud_bcs);
+  pcl::copyPointCloud(*filtered_target_pointcloud_bcs, *flat_target_pointcloud_bcs);
+
+  std::for_each(
+    flat_source_pointcloud_bcs->points.begin(), flat_source_pointcloud_bcs->points.end(),
+    discard_z);
+  std::for_each(
+    flat_target_pointcloud_bcs->points.begin(), flat_target_pointcloud_bcs->points.end(),
+    discard_z);
+
+  if (flat_source_pointcloud_bcs->size() == 0 || flat_target_pointcloud_bcs->size() == 0) {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "Attempting to calibrate with empty clouds. Either the environment/sensor are not suitable "
+      "or the parameters need to be relaxed. source=%lu target=%lu",
+      filtered_source_pointcloud_bcs->size(), filtered_target_pointcloud_bcs->size());
+    return;
   }
 
-  for (auto & point : raw_target_pointcloud_bcs->points) {
-    if (
-      point.z >= min_z_ && point.z <= max_z_ &&
-      std::sqrt(point.x * point.x + point.y * point.y) <= max_calibration_range_) {
-      target_pointcloud_bcs->push_back(point);
-    }
+  // Perform 2D ICP
+  auto [best_source_aligned_pointcloud_bcs, best_transform, best_score] = findBestTransform(
+    flat_source_pointcloud_bcs, flat_target_pointcloud_bcs, calibration_registrators_);
+
+  if (std::isnan(best_score) || std::isinf(best_score) || best_score < 0.f) {
+    RCLCPP_WARN(this->get_logger(), "ICP did not converge. Skipping iteration");
+    return;
   }
 
-  pcl::transformPointCloud(
-    *source_pointcloud_bcs, *source_pointcloud_scs, initial_base_to_source_eigen_.inverse());
-  pcl::transformPointCloud(
-    *target_pointcloud_bcs, *target_pointcloud_tcs, initial_base_to_target_eigen_.inverse());
-
-  // Turn them into kit coordinates
-  pcl::transformPointCloud(
-    *source_pointcloud_bcs, *source_pointcloud_kcs, base_to_sensor_kit_eigen_.inverse());
-  pcl::transformPointCloud(
-    *target_pointcloud_bcs, *target_pointcloud_kcs, base_to_sensor_kit_eigen_.inverse());
-
-  // Discard the z component
-  for (auto & point : source_pointcloud_kcs->points) {
-    point.z = 0.f;
-  }
-
-  for (auto & point : target_pointcloud_kcs->points) {
-    point.z = 0.f;
-  }
-
-  pcl::PointCloud<PointType>::Ptr source_pointcloud_aligned_kcs(new pcl::PointCloud<PointType>);
-  Eigen::Matrix4f best_transform;
-  float best_score;
-
-  findBestTransform(
-    source_pointcloud_kcs, target_pointcloud_kcs, calibration_registrators_,
-    source_pointcloud_aligned_kcs, best_transform, best_score);
-
-  double init_error = getAlignmentError(source_pointcloud_kcs, target_pointcloud_kcs);
-  double final_error = getAlignmentError(source_pointcloud_aligned_kcs, target_pointcloud_kcs);
+  double init_error = getAlignmentError(flat_source_pointcloud_bcs, flat_target_pointcloud_bcs);
+  double final_error =
+    getAlignmentError(best_source_aligned_pointcloud_bcs, flat_target_pointcloud_bcs);
 
   RCLCPP_INFO(this->get_logger(), "Initial avrage error: %.4f m", init_error);
   RCLCPP_INFO(this->get_logger(), "Final average error: %.4f m", final_error);
 
   Eigen::Affine3d icp_affine = Eigen::Affine3d(best_transform.cast<double>());
-  Eigen::Affine3d inital_kit_to_source_eigen =
-    base_to_sensor_kit_eigen_.inverse() * initial_base_to_source_eigen_;
-
-  Eigen::Affine3d estimated_kit_to_source_eigen = icp_affine * inital_kit_to_source_eigen;
+  Eigen::Affine3d filtered_affine = icp_affine;
 
   // Optional filtering
   if (filter_estimations_) {
-    auto estimated_rpy =
-      tier4_autoware_utils::getRPY(tf2::toMsg(estimated_kit_to_source_eigen).orientation);
+    // We force our RPY to avoid convention errors
+    auto estimated_rpy = tier4_autoware_utils::getRPY(tf2::toMsg(icp_affine).orientation);
 
-    Eigen::Vector3d x(
-      estimated_rpy.z, estimated_kit_to_source_eigen.translation().x(),
-      estimated_kit_to_source_eigen.translation().y());
+    Eigen::Vector3d x(estimated_rpy.z, icp_affine.translation().x(), icp_affine.translation().y());
     Eigen::DiagonalMatrix<double, 3> p0(initial_angle_cov_, initial_xy_cov_, initial_xy_cov_);
 
     if (first_observation_) {
@@ -341,41 +353,84 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
     }
 
     estimated_rpy.z = kalman_filter_.getXelement(0);
-    estimated_kit_to_source_eigen.translation().x() = kalman_filter_.getXelement(1);
-    estimated_kit_to_source_eigen.translation().y() = kalman_filter_.getXelement(2);
+    filtered_affine.translation().x() = kalman_filter_.getXelement(1);
+    filtered_affine.translation().y() = kalman_filter_.getXelement(2);
 
-    geometry_msgs::msg::Pose pose_msg;
-    pose_msg.orientation = tier4_autoware_utils::createQuaternionFromRPY(
+    geometry_msgs::msg::Quaternion quaternion_msg = tier4_autoware_utils::createQuaternionFromRPY(
       estimated_rpy.x, estimated_rpy.y, estimated_rpy.z);
+    Eigen::Quaterniond quaternion_eigen(
+      quaternion_msg.w, quaternion_msg.x, quaternion_msg.y, quaternion_msg.z);
 
-    pose_msg.position.x = kalman_filter_.getXelement(1);
-    pose_msg.position.y = kalman_filter_.getXelement(2);
-    pose_msg.position.z = estimated_kit_to_source_eigen.translation().z();
-
-    tf2::fromMsg(pose_msg, estimated_kit_to_source_eigen);
+    filtered_affine.linear() = quaternion_eigen.matrix();
   }
 
-  geometry_msgs::msg::TransformStamped tf_msg =
-    tf2::eigenToTransform(estimated_kit_to_source_eigen);
-  tf_msg.header.stamp = source_pointcloud_header_.stamp;
-  tf_msg.header.frame_id = sensor_kit_frame_;
-  tf_msg.child_frame_id = source_pointcloud_frame_;
-  tf_broadcaster_.sendTransform(tf_msg);
+  // Compute the source_to_target_transform
+  Eigen::Affine3d target_to_source_transform =
+    initial_base_to_target_eigen_.inverse() * filtered_affine * initial_base_to_source_eigen_;
 
-  // Publish the segmented pointclouds back in their frames (to evaluate visually the calibration)
-  sensor_msgs::msg::PointCloud2 source_pointcloud_scs_msg, target_pointcloud_tcs_msg;
-  pcl::toROSMsg(*source_pointcloud_scs, source_pointcloud_scs_msg);
-  pcl::toROSMsg(*target_pointcloud_tcs, target_pointcloud_tcs_msg);
-  source_pointcloud_scs_msg.header = source_pointcloud_header_;
-  target_pointcloud_tcs_msg.header = target_pointcloud_header_;
-  source_pub_->publish(source_pointcloud_scs_msg);
-  target_pub_->publish(target_pointcloud_tcs_msg);
+  // Optionally broadcast the current calibration TF
+  if (broadcast_calibration_tf_) {
+    geometry_msgs::msg::TransformStamped tf_msg = tf2::eigenToTransform(target_to_source_transform);
+    tf_msg.header.stamp = target_pointcloud_header_.stamp;
+    tf_msg.header.frame_id = target_pointcloud_frame_;
+    tf_msg.child_frame_id = source_pointcloud_frame_;
+    tf_broadcaster_.sendTransform(tf_msg);
+  }
+
+  pcl::transformPointCloud(
+    *filtered_source_pointcloud_bcs, *filtered_source_aligned_pointcloud_bcs,
+    filtered_affine.matrix().cast<float>());
+
+  pcl::transformPointCloud(
+    *flat_source_pointcloud_bcs, *flat_source_aligned_pointcloud_bcs,
+    filtered_affine.matrix().cast<float>());
+
+  // Publish visualization pointclouds
+  sensor_msgs::msg::PointCloud2 filtered_source_initial_pointcloud_bcs_msg,
+    filtered_source_aligned_pointcloud_bcs_msg, filtered_target_pointcloud_bcs_msg;
+  pcl::toROSMsg(*filtered_source_pointcloud_bcs, filtered_source_initial_pointcloud_bcs_msg);
+  pcl::toROSMsg(
+    *filtered_source_aligned_pointcloud_bcs, filtered_source_aligned_pointcloud_bcs_msg);
+  pcl::toROSMsg(*filtered_target_pointcloud_bcs, filtered_target_pointcloud_bcs_msg);
+  filtered_source_initial_pointcloud_bcs_msg.header.stamp = source_pointcloud_header_.stamp;
+  filtered_source_aligned_pointcloud_bcs_msg.header.stamp = source_pointcloud_header_.stamp;
+  filtered_target_pointcloud_bcs_msg.header.stamp = target_pointcloud_header_.stamp;
+  filtered_source_initial_pointcloud_bcs_msg.header.frame_id = base_frame_;
+  filtered_source_aligned_pointcloud_bcs_msg.header.frame_id = base_frame_;
+  filtered_target_pointcloud_bcs_msg.header.frame_id = base_frame_;
+
+  filtered_source_initial_pub_->publish(filtered_source_initial_pointcloud_bcs_msg);
+  filtered_source_aligned_pub_->publish(filtered_source_aligned_pointcloud_bcs_msg);
+  filtered_target_pub_->publish(filtered_target_pointcloud_bcs_msg);
+
+  sensor_msgs::msg::PointCloud2 flat_source_initial_pointcloud_bcs_msg,
+    flat_source_aligned_pointcloud_bcs_msg, flat_target_pointcloud_bcs_msg;
+  pcl::toROSMsg(*flat_source_pointcloud_bcs, flat_source_initial_pointcloud_bcs_msg);
+  pcl::toROSMsg(*flat_source_aligned_pointcloud_bcs, flat_source_aligned_pointcloud_bcs_msg);
+  pcl::toROSMsg(*flat_target_pointcloud_bcs, flat_target_pointcloud_bcs_msg);
+  flat_source_initial_pointcloud_bcs_msg.header.stamp = source_pointcloud_header_.stamp;
+  flat_source_aligned_pointcloud_bcs_msg.header.stamp = source_pointcloud_header_.stamp;
+  flat_target_pointcloud_bcs_msg.header.stamp = target_pointcloud_header_.stamp;
+  flat_source_initial_pointcloud_bcs_msg.header.frame_id = base_frame_;
+  flat_source_aligned_pointcloud_bcs_msg.header.frame_id = base_frame_;
+  flat_target_pointcloud_bcs_msg.header.frame_id = base_frame_;
+
+  flat_source_initial_pub_->publish(flat_source_initial_pointcloud_bcs_msg);
+  flat_source_aligned_pub_->publish(flat_source_aligned_pointcloud_bcs_msg);
+  flat_target_pub_->publish(flat_target_pointcloud_bcs_msg);
 
   // We perform basic filtering on the estimated angles
   {
     std::unique_lock<std::mutex> lock(mutex_);
 
-    if (filter_estimations_) {
+    output_calibration_msg_ = tf2::eigenToTransform(target_to_source_transform);
+    output_calibration_msg_.header.stamp = target_pointcloud_header_.stamp;
+    output_calibration_msg_.header.frame_id = target_pointcloud_frame_;
+    output_calibration_msg_.child_frame_id = source_pointcloud_frame_;
+
+    if (!filter_estimations_) {
+      calibration_done_ = true;
+    } else {
       Eigen::MatrixXd p;
       kalman_filter_.getP(p);
       double yaw_cov = p(0, 0);
@@ -385,8 +440,6 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
       if (
         yaw_cov < angle_convergence_threshold_ && x_cov < xy_convergence_threshold_ &&
         y_cov < xy_convergence_threshold_) {
-        output_calibration_msg_ =
-          tf2::toMsg(estimated_kit_to_source_eigen * lidar_base_to_source_eigen_.inverse());
         calibration_done_ = true;
       }
 
@@ -396,11 +449,6 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
       RCLCPP_INFO(
         this->get_logger(), "Convergence thresh: angle=%.2e, xy=%.2e", angle_convergence_threshold_,
         xy_convergence_threshold_);
-
-    } else {
-      output_calibration_msg_ =
-        tf2::toMsg(estimated_kit_to_source_eigen * lidar_base_to_source_eigen_.inverse());
-      calibration_done_ = true;
     }
   }
 }
@@ -416,24 +464,23 @@ double LidarToLidar2DCalibrator::getAlignmentError(
   correspondence_estimator.determineCorrespondences(correspondences);
 
   double error = 0.0;
-  int n = 0;
+  std::size_t accepted_correspondances = 0;
 
   for (std::size_t i = 0; i < correspondences.size(); ++i) {
     if (correspondences[i].distance <= max_corr_distance_) {
       error += std::sqrt(correspondences[i].distance);
-      n += 1;
+      accepted_correspondances += 1;
     }
   }
 
-  return error / n;
+  return error / accepted_correspondances;
 }
 
-void LidarToLidar2DCalibrator::findBestTransform(
+std::tuple<pcl::PointCloud<PointType>::Ptr, Eigen::Matrix4f, float>
+LidarToLidar2DCalibrator::findBestTransform(
   pcl::PointCloud<PointType>::Ptr & source_pointcloud_ptr,
   pcl::PointCloud<PointType>::Ptr & target_pointcloud_ptr,
-  std::vector<pcl::Registration<PointType, PointType>::Ptr> & registratators,
-  pcl::PointCloud<PointType>::Ptr & best_aligned_pointcloud_ptr, Eigen::Matrix4f & best_transform,
-  float & best_score)
+  std::vector<pcl::Registration<PointType, PointType>::Ptr> & registratators)
 {
   pcl::Correspondences correspondences;
   pcl::registration::CorrespondenceEstimation<PointType, PointType> estimator;
@@ -441,13 +488,13 @@ void LidarToLidar2DCalibrator::findBestTransform(
   estimator.setInputTarget(target_pointcloud_ptr);
   estimator.determineCorrespondences(correspondences);
 
-  best_transform = Eigen::Matrix4f::Identity();
-  best_score = 0.f;
-  for (std::size_t i = 0; i < correspondences.size(); ++i) {
-    best_score += correspondences[i].distance;
-  }
-
-  best_score /= correspondences.size();
+  pcl::PointCloud<PointType>::Ptr best_aligned_pointcloud_ptr(new pcl::PointCloud<PointType>);
+  Eigen::Matrix4f best_transform = Eigen::Matrix4f::Identity();
+  float best_score =
+    std::transform_reduce(
+      correspondences.cbegin(), correspondences.cend(), 0.f, std::plus<float>{},
+      [](const pcl::Correspondence & correspondance) { return correspondance.distance; }) /
+    correspondences.size();
 
   std::vector<Eigen::Matrix4f> transforms = {best_transform};
 
@@ -481,4 +528,8 @@ void LidarToLidar2DCalibrator::findBestTransform(
 
     transforms.push_back(best_registrator_transform);
   }
-}
+
+  return std::make_tuple<>(best_aligned_pointcloud_ptr, best_transform, best_score);
+}  // extrinsic_lidar_to_lidar_2d_calibrator
+
+}  // namespace extrinsic_lidar_to_lidar_2d_calibrator
