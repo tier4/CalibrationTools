@@ -51,10 +51,10 @@ using PointType = pcl::PointXYZ;
 
 /**
  * A 2D lidar-lidar calibrator.
- * This tools assumes the existance of two lidars that have been independently calibrated to the
+ * This tools assumes the existence of two lidars that have been independently calibrated to the
  * base frame (at least to the plane of the base plane), and uses that information to reduce the 3D
- * lidar-lidar calibration problem into a 2D one (x, y, and rotation). Since ladars have different
- * resolutions and FOV, this metod selects a range of z values (measured from the base frame),
+ * lidar-lidar calibration problem into a 2D one (x, y, and rotation). Since lidars have different
+ * resolutions and FOV, this method selects a range of z values (measured from the base frame),
  * flattens them (ignores the z value) and perform classic ICP to find the 2D transform. Optionally,
  * this method also implemented basic filtering to improve the results.
  *
@@ -128,12 +128,12 @@ protected:
    * @param target_pointcloud_ptr The target pointcloud
    * @param target_pointcloud_ptr A vector of pointcloud registrators to solve the calibration
    * problem
-   * @return A tuple containin the best aligned pointcloud, trasform,  and score
+   * @return A tuple containing the best aligned pointcloud, transform,  and score
    */
   std::tuple<pcl::PointCloud<PointType>::Ptr, Eigen::Matrix4f, float> findBestTransform(
     pcl::PointCloud<PointType>::Ptr & source_pointcloud_ptr,
     pcl::PointCloud<PointType>::Ptr & target_pointcloud_ptr,
-    std::vector<pcl::Registration<PointType, PointType>::Ptr> & registratators);
+    std::vector<pcl::Registration<PointType, PointType>::Ptr> & registrators);
 
   // Parameters
   std::string base_frame_;

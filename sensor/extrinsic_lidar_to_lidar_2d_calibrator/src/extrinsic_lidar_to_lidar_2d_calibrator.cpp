@@ -331,7 +331,7 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
   double final_error =
     getAlignmentError(best_source_aligned_pointcloud_bcs, flat_target_pointcloud_bcs);
 
-  RCLCPP_INFO(this->get_logger(), "Initial avrage error: %.4f m", init_error);
+  RCLCPP_INFO(this->get_logger(), "Initial average error: %.4f m", init_error);
   RCLCPP_INFO(this->get_logger(), "Final average error: %.4f m", final_error);
 
   Eigen::Affine3d icp_affine = Eigen::Affine3d(best_transform.cast<double>());
@@ -352,6 +352,7 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
       kalman_filter_.update(x);
     }
 
+    // cSpell:ignore getXelement
     estimated_rpy.z = kalman_filter_.getXelement(0);
     filtered_affine.translation().x() = kalman_filter_.getXelement(1);
     filtered_affine.translation().y() = kalman_filter_.getXelement(2);
@@ -464,23 +465,23 @@ double LidarToLidar2DCalibrator::getAlignmentError(
   correspondence_estimator.determineCorrespondences(correspondences);
 
   double error = 0.0;
-  std::size_t accepted_correspondances = 0;
+  std::size_t accepted_correspondences = 0;
 
   for (std::size_t i = 0; i < correspondences.size(); ++i) {
     if (correspondences[i].distance <= max_corr_distance_) {
       error += std::sqrt(correspondences[i].distance);
-      accepted_correspondances += 1;
+      accepted_correspondences += 1;
     }
   }
 
-  return error / accepted_correspondances;
+  return error / accepted_correspondences;
 }
 
 std::tuple<pcl::PointCloud<PointType>::Ptr, Eigen::Matrix4f, float>
 LidarToLidar2DCalibrator::findBestTransform(
   pcl::PointCloud<PointType>::Ptr & source_pointcloud_ptr,
   pcl::PointCloud<PointType>::Ptr & target_pointcloud_ptr,
-  std::vector<pcl::Registration<PointType, PointType>::Ptr> & registratators)
+  std::vector<pcl::Registration<PointType, PointType>::Ptr> & registrators)
 {
   pcl::Correspondences correspondences;
   pcl::registration::CorrespondenceEstimation<PointType, PointType> estimator;
@@ -493,12 +494,12 @@ LidarToLidar2DCalibrator::findBestTransform(
   float best_score =
     std::transform_reduce(
       correspondences.cbegin(), correspondences.cend(), 0.f, std::plus<float>{},
-      [](const pcl::Correspondence & correspondance) { return correspondance.distance; }) /
+      [](const pcl::Correspondence & correspondence) { return correspondence.distance; }) /
     correspondences.size();
 
   std::vector<Eigen::Matrix4f> transforms = {best_transform};
 
-  for (auto & registrator : registratators) {
+  for (auto & registrator : registrators) {
     Eigen::Matrix4f best_registrator_transform = Eigen::Matrix4f::Identity();
     float best_registrator_score = std::numeric_limits<float>::max();
     pcl::PointCloud<PointType>::Ptr best_registrator_aligned_cloud_ptr(

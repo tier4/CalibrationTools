@@ -11,7 +11,7 @@
   <arg name="filter_estimations" default="true" description="Filter estimations using as simple filter"/>
 
   <arg name="max_calibration_range" default="60.0" description="Max range of the pointcloud to use during calibration"/>
-  <arg name="max_corr_distance" default="0.5" description="Maximum accepted distance for correspondances"/>
+  <arg name="max_corr_distance" default="0.5" description="Maximum accepted distance for correspondences"/>
   <arg name="max_iterations" default="100" description="Maximum number of ICP iterations for calibration"/>
 
   <arg

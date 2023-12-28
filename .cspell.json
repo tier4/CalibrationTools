@@ -1,5 +1,16 @@
 {
   "words": [
+    "autoware",
+    "kalman",
+    "pointcloud",
+    "pointclouds",
+    "lidars",
+    "registrator",
+    "registrators",
+    "gicp",
+    "icp",
+    "vectord",
+    "quaterniond",
     "Rodrigues",
     "subsampled",
     "undistortion",
