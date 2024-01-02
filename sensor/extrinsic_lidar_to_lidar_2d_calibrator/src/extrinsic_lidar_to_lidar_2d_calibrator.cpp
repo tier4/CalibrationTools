@@ -34,12 +34,7 @@ namespace extrinsic_lidar_to_lidar_2d_calibrator
 {
 
 LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & options)
-: Node("extrinsic_lidar_to_lidar_2d_calibrator", options),
-  tf_broadcaster_(this),
-  got_initial_transform_(false),
-  received_request_(false),
-  calibration_done_(false),
-  first_observation_(true)
+: Node("extrinsic_lidar_to_lidar_2d_calibrator", options), tf_broadcaster_(this)
 {
   using std::chrono_literals::operator""ms;
 
@@ -207,8 +202,6 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
   try {
     rclcpp::Time t = rclcpp::Time(0);
     rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
-    tf2::Transform initial_base_to_source_tf2_;
-    tf2::Transform initial_base_to_target_tf2_;
 
     geometry_msgs::msg::Transform initial_base_to_source_msg_ =
       tf_buffer_->lookupTransform(base_frame_, source_pointcloud_frame_, t, timeout).transform;
@@ -216,8 +209,6 @@ bool LidarToLidar2DCalibrator::checkInitialTransforms()
     geometry_msgs::msg::Transform initial_base_to_target_msg_ =
       tf_buffer_->lookupTransform(base_frame_, target_pointcloud_frame_, t, timeout).transform;
 
-    fromMsg(initial_base_to_source_msg_, initial_base_to_source_tf2_);
-    fromMsg(initial_base_to_target_msg_, initial_base_to_target_tf2_);
     initial_base_to_source_eigen_ = tf2::transformToEigen(initial_base_to_source_msg_);
     initial_base_to_target_eigen_ = tf2::transformToEigen(initial_base_to_target_msg_);
 

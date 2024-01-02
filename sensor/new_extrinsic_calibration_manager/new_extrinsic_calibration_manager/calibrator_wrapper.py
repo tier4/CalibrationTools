@@ -13,10 +13,6 @@ from new_extrinsic_calibration_manager.types import FramePair
 from tier4_calibration_msgs.msg import CalibrationResult
 from tier4_calibration_msgs.srv import NewExtrinsicCalibrator
 
-# import debugpy
-# debugpy.listen(5678)
-# debugpy.wait_for_client()
-
 
 class CalibratorServiceWrapper(QObject):
     data_changed = Signal()

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <extrinsic_ground_plane_calibrator/extrinsic_ground_plane_calibrator.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_autoware_utils/geometry/geometry.hpp>
 
 #include <pcl/ModelCoefficients.h>
@@ -26,27 +27,19 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2/utils.h>
 
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
-
 #include <iostream>
 
+namespace extrinsic_ground_plane_calibrator
+{
+
 ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options)
-: Node("extrinsic_ground_plane_calibrator_node", options),
-  tf_broadcaster_(this),
-  got_initial_transform_(false),
-  calibration_done_(false),
-  first_observation_(true)
+: Node("extrinsic_ground_plane_calibrator_node", options), tf_broadcaster_(this)
 {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
-  parent_frame_ = this->declare_parameter<std::string>("parent_frame");
-  child_frame_ = this->declare_parameter<std::string>("child_frame");
+  lidar_frame_ = this->declare_parameter<std::string>("lidar_frame");
 
   marker_size_ = this->declare_parameter<double>("marker_size", 20.0);
 
@@ -68,7 +61,7 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
   max_cos_distance_ = this->declare_parameter<double>("max_cos_distance", 0.2);
   max_iterations_ = this->declare_parameter<int>("max_iterations", 500);
   verbose_ = this->declare_parameter<bool>("verbose", false);
-  broadcast_calibration_tf_ = this->declare_parameter<bool>("broadcast_calibration_tf", false);
+  overwrite_xy_yaw_ = this->declare_parameter<bool>("overwrite_xy_yaw", false);
   filter_estimations_ = this->declare_parameter<bool>("filter_estimations", true);
   int ring_buffer_size = this->declare_parameter<int>("ring_buffer_size", 100);
 
@@ -108,7 +101,7 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
   // The service server runs in a dedicated thread
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &ExtrinsicGroundPlaneCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -128,48 +121,81 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
 }
 
 void ExtrinsicGroundPlaneCalibrator::requestReceivedCallback(
-  __attribute__((unused))
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
 {
   // This tool uses several tfs, so for consistency we take the initial calibration using lookups
   using std::chrono_literals::operator""s;
 
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    received_request_ = true;
+  }
+
   // Loop until the calibration finishes
   while (rclcpp::ok()) {
-    rclcpp::sleep_for(10s);
+    rclcpp::sleep_for(1s);
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (calibration_done_) {
       break;
     }
 
-    RCLCPP_WARN_SKIPFIRST(this->get_logger(), "Waiting for the calibration to end");
+    RCLCPP_INFO_THROTTLE(
+      this->get_logger(), *this->get_clock(), 10000, "Waiting for the calibration to end");
   }
 
-  response->success = true;
-  response->result_pose = output_parent_to_child_msg_;
+  tier4_calibration_msgs::msg::CalibrationResult result;
+  result.transform_stamped = tf2::eigenToTransform(calibrated_base_to_lidar_transform_);
+  result.transform_stamped.header.frame_id = base_frame_;
+  result.transform_stamped.child_frame_id = lidar_frame_;
+  result.score = 0.f;
+  result.success = true;
+  result.message.data =
+    "Calibration succeeded with convergence criteria. However, no metric is available for this "
+    "tool";
+
+  if (overwrite_xy_yaw_) {
+    result.transform_stamped =
+      overwriteXYYawValues(initial_base_to_lidar_transform_msg_, result.transform_stamped);
+  }
+
+  response->results.emplace_back(result);
 
   RCLCPP_INFO(this->get_logger(), "Calibration result sent");
 
+  // Forcefully unsubscribe from the pointcloud topic
   pointcloud_sub_.reset();
 }
 
 void ExtrinsicGroundPlaneCalibrator::pointCloudCallback(
   const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-  lidar_frame_ = msg->header.frame_id;
+  bool received_request;
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    received_request = received_request_;
+  }
+
+  if (lidar_frame_ != msg->header.frame_id) {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "Received pointcloud's frame does not match the expected one (received=%s vs. expected=%s)",
+      msg->header.frame_id.c_str(), lidar_frame_.c_str());
+    return;
+  }
+
   header_ = msg->header;
 
   // Make sure we have all the required initial tfs
-  if (!checkInitialTransforms() || calibration_done_) {
+  if (!received_request || !checkInitialTransforms() || calibration_done_) {
     return;
   }
 
   // Convert the pointcloud to PCL
   pcl::PointCloud<PointType>::Ptr pointcloud(new pcl::PointCloud<PointType>);
-  pcl::PointCloud<PointType>::Ptr inliers_pointcloud(new pcl::PointCloud<PointType>);
   pcl::fromROSMsg(*msg, *pointcloud);
 
   // Filter the pointcloud using previous outlier models
@@ -185,8 +211,10 @@ void ExtrinsicGroundPlaneCalibrator::pointCloudCallback(
   }
 
   // Extract the ground plane model
-  Eigen::Vector4d ground_plane_model;
-  if (!extractGroundPlane(pointcloud, ground_plane_model, inliers_pointcloud)) {
+  auto [ground_plane_result, ground_plane_model, inliers_pointcloud] =
+    extractGroundPlane(pointcloud);
+
+  if (!ground_plane_result) {
     return;
   }
 
@@ -198,10 +226,11 @@ void ExtrinsicGroundPlaneCalibrator::pointCloudCallback(
   pcl::toROSMsg(*inliers_pointcloud, inliers_msg);
   inliers_msg.header = header_;
   inliers_pub_->publish(inliers_msg);
+
   // Create markers to visualize the calibration
   visualizeCalibration(ground_plane_model);
 
-  filterCalibration(ground_plane_model, inliers_pointcloud);
+  filterGroundModelEstimation(ground_plane_model, inliers_pointcloud);
 
   // Obtain the final output tf and publish the lidar -> ground tfs to evaluate the calibration
   publishTf(ground_plane_model);
@@ -210,6 +239,7 @@ void ExtrinsicGroundPlaneCalibrator::pointCloudCallback(
 bool ExtrinsicGroundPlaneCalibrator::checkInitialTransforms()
 {
   if (lidar_frame_ == "") {
+    RCLCPP_ERROR(this->get_logger(), "The lidar frame can not be empty !");
     return false;
   }
 
@@ -221,37 +251,26 @@ bool ExtrinsicGroundPlaneCalibrator::checkInitialTransforms()
     rclcpp::Time t = rclcpp::Time(0);
     rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
 
-    initial_base_to_lidar_msg_ =
+    geometry_msgs::msg::Transform initial_base_to_lidar_transform_msg_ =
       tf_buffer_->lookupTransform(base_frame_, lidar_frame_, t, timeout).transform;
 
-    fromMsg(initial_base_to_lidar_msg_, initial_base_to_lidar_tf2_);
-    initial_base_to_lidar_eigen_ = tf2::transformToEigen(initial_base_to_lidar_msg_);
-
-    base_to_parent_msg_ =
-      tf_buffer_->lookupTransform(base_frame_, parent_frame_, t, timeout).transform;
-
-    fromMsg(base_to_parent_msg_, base_to_parent_tf2_);
-    base_to_parent_eigen_ = tf2::transformToEigen(base_to_parent_msg_);
-
-    child_to_lidar_msg_ =
-      tf_buffer_->lookupTransform(child_frame_, lidar_frame_, t, timeout).transform;
-
-    fromMsg(child_to_lidar_msg_, child_to_lidar_tf2_);
-    child_to_lidar_eigen_ = tf2::transformToEigen(child_to_lidar_msg_);
+    initial_base_to_lidar_transform_ = tf2::transformToEigen(initial_base_to_lidar_transform_msg_);
 
     got_initial_transform_ = true;
   } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(this->get_logger(), "could not get initial tf. %s", ex.what());
+    RCLCPP_WARN(this->get_logger(), "Could not get initial tf. %s", ex.what());
     return false;
   }
 
   return true;
 }
 
-bool ExtrinsicGroundPlaneCalibrator::extractGroundPlane(
-  pcl::PointCloud<PointType>::Ptr & pointcloud, Eigen::Vector4d & model,
-  pcl::PointCloud<PointType>::Ptr & inliers_pointcloud)
+std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr>
+ExtrinsicGroundPlaneCalibrator::extractGroundPlane(pcl::PointCloud<PointType>::Ptr & pointcloud)
 {
+  Eigen::Vector4d model;
+  pcl::PointCloud<PointType>::Ptr inliers_pointcloud(new pcl::PointCloud<PointType>);
+
   if (use_crop_box_filter_) {
     pcl::CropBox<PointType> boxFilter;
     boxFilter.setMin(Eigen::Vector4f(crop_box_min_x_, crop_box_min_y_, crop_box_min_z_, 1.0));
@@ -272,7 +291,7 @@ bool ExtrinsicGroundPlaneCalibrator::extractGroundPlane(
     rough_normal = vectors.col(2);
   } else {
     rough_normal =
-      (initial_base_to_lidar_eigen_.inverse().rotation() * Eigen::Vector3d(0.0, 0.0, 1.0))
+      (initial_base_to_lidar_transform_.inverse().rotation() * Eigen::Vector3d(0.0, 0.0, 1.0))
         .cast<float>();
   }
 
@@ -339,7 +358,8 @@ bool ExtrinsicGroundPlaneCalibrator::extractGroundPlane(
       extract.setIndices(inliers);
       extract.setNegative(false);
       extract.filter(*inliers_pointcloud);
-      return true;
+
+      return std::make_tuple(true, model, inliers_pointcloud);
     } else {
       if (remove_outliers_) {
         bool accept = true;
@@ -384,13 +404,13 @@ bool ExtrinsicGroundPlaneCalibrator::extractGroundPlane(
     iteration_cloud->swap(next_cloud);
     iteration_size = iteration_cloud->height * iteration_cloud->width;
   }
-  return false;
+  return std::make_tuple(false, model, inliers_pointcloud);
 }
 
 void ExtrinsicGroundPlaneCalibrator::evaluateModels(
   const Eigen::Vector4d & estimated_model, pcl::PointCloud<PointType>::Ptr inliers) const
 {
-  auto modelError =
+  auto model_error =
     [](float a, float b, float c, float d, pcl::PointCloud<PointType>::Ptr pc) -> float {
     assert(std::abs(a * a + b * b + c * c - 1.f) < 1e-5);
     float sum = 0.f;
@@ -400,172 +420,153 @@ void ExtrinsicGroundPlaneCalibrator::evaluateModels(
     return sum / (pc->height * pc->width);
   };
 
-  Eigen::Isometry3d initial_lidar_base_transform = initial_base_to_lidar_eigen_.inverse();
+  Eigen::Isometry3d initial_lidar_base_transform = initial_base_to_lidar_transform_.inverse();
   Eigen::Vector4d initial_model = poseToPlaneModel(initial_lidar_base_transform);
 
   float initial_model_error =
-    modelError(initial_model(0), initial_model(1), initial_model(2), initial_model(3), inliers);
+    model_error(initial_model(0), initial_model(1), initial_model(2), initial_model(3), inliers);
 
-  float estimated_model_error = modelError(
+  float estimated_model_error = model_error(
     estimated_model(0), estimated_model(1), estimated_model(2), estimated_model(3), inliers);
 
   RCLCPP_INFO(this->get_logger(), "Initial calibration error: %3f m", initial_model_error);
   RCLCPP_INFO(this->get_logger(), "Estimated calibration error: %3f m", estimated_model_error);
 }
 
-void ExtrinsicGroundPlaneCalibrator::filterCalibration(
+void ExtrinsicGroundPlaneCalibrator::filterGroundModelEstimation(
   const Eigen::Vector4d & ground_plane_model, pcl::PointCloud<PointType>::Ptr inliers)
 {
-  // Eigen::Isometry3d lidar_to_ground_pose = modelPlaneToPose(ground_plane_model);
-  // Eigen::Isometry3d ground_to_lidar_pose = lidar_to_ground_pose.inverse();
-
-  Eigen::Isometry3d estimated_base_to_lidar_pose =
-    refineBaseLidarPose(initial_base_to_lidar_eigen_, ground_plane_model);
-
-  Eigen::Isometry3d estimated_parent_to_child_eigen = base_to_parent_eigen_.inverse() *
-                                                      estimated_base_to_lidar_pose *
-                                                      child_to_lidar_eigen_.inverse();
-
-  Eigen::Isometry3d initial_parent_to_child_eigen = base_to_parent_eigen_.inverse() *
-                                                    initial_base_to_lidar_eigen_ *
-                                                    child_to_lidar_eigen_.inverse();
+  Eigen::Isometry3d estimated_base_to_lidar_transform =
+    estimateBaseLidarTransform(initial_base_to_lidar_transform_, ground_plane_model);
 
   Eigen::Vector3d estimated_translation;
   auto estimated_rpy =
-    tier4_autoware_utils::getRPY(tf2::toMsg(estimated_parent_to_child_eigen).orientation);
+    tier4_autoware_utils::getRPY(tf2::toMsg(estimated_base_to_lidar_transform).orientation);
   auto initial_rpy =
-    tier4_autoware_utils::getRPY(tf2::toMsg(initial_parent_to_child_eigen).orientation);
+    tier4_autoware_utils::getRPY(tf2::toMsg(initial_base_to_lidar_transform_).orientation);
 
   if (verbose_) {
     RCLCPP_INFO(
-      this->get_logger(), "Initial parent->child euler angles: roll=%.3f, pitch=%.3f, yaw=%.3f",
+      this->get_logger(), "Initial base->lidar euler angles: roll=%.3f, pitch=%.3f, yaw=%.3f",
       initial_rpy.x, initial_rpy.y, initial_rpy.z);
     RCLCPP_INFO(
-      this->get_logger(), "Estimated parent->child euler angles: roll=%.3f, pitch=%.3f, yaw=%.3f",
+      this->get_logger(), "Estimated base->lidar euler angles: roll=%.3f, pitch=%.3f, yaw=%.3f",
       estimated_rpy.x, estimated_rpy.y, estimated_rpy.z);
 
     RCLCPP_INFO(
-      this->get_logger(), "Initial parent->child translation: x=%.3f, y=%.3f, z=%.3f",
-      initial_parent_to_child_eigen.translation().x(),
-      initial_parent_to_child_eigen.translation().y(),
-      initial_parent_to_child_eigen.translation().z());
+      this->get_logger(), "Initial base->lidar translation: x=%.3f, y=%.3f, z=%.3f",
+      initial_base_to_lidar_transform_.translation().x(),
+      initial_base_to_lidar_transform_.translation().y(),
+      initial_base_to_lidar_transform_.translation().z());
     RCLCPP_INFO(
-      this->get_logger(), "Estimated parent->child translation: x=%.3f, y=%.3f, z=%.3f",
-      estimated_parent_to_child_eigen.translation().x(),
-      estimated_parent_to_child_eigen.translation().y(),
-      estimated_parent_to_child_eigen.translation().z());
+      this->get_logger(), "Estimated base->lidar translation: x=%.3f, y=%.3f, z=%.3f",
+      estimated_base_to_lidar_transform.translation().x(),
+      estimated_base_to_lidar_transform.translation().y(),
+      estimated_base_to_lidar_transform.translation().z());
   }
 
-  // Optional filtering
-  if (filter_estimations_) {
-    Eigen::Vector<double, 6> x(
-      estimated_rpy.x, estimated_rpy.y, estimated_rpy.z,
-      estimated_parent_to_child_eigen.translation().x(),
-      estimated_parent_to_child_eigen.translation().y(),
-      estimated_parent_to_child_eigen.translation().z());
-    Eigen::DiagonalMatrix<double, 6> p0(
-      initial_angle_cov_, initial_angle_cov_, initial_angle_cov_, initial_translation_cov_,
-      initial_translation_cov_, initial_translation_cov_);
-
-    if (first_observation_) {
-      kalman_filter_.init(x, p0);
-      first_observation_ = false;
-    } else {
-      kalman_filter_.update(x);
-    }
-
-    estimated_rpy.x = kalman_filter_.getXelement(0);
-    estimated_rpy.y = kalman_filter_.getXelement(1);
-    estimated_rpy.z = kalman_filter_.getXelement(2);
-    estimated_translation.x() = kalman_filter_.getXelement(3);
-    estimated_translation.y() = kalman_filter_.getXelement(4);
-    estimated_translation.z() = kalman_filter_.getXelement(5);
-  }
-
-  // By detecting the ground plane and fabricating a pose arbitrarily, the x, y, and yaw do not hold
-  // real meaning, so we instead just use the ones from the initial calibration
-  geometry_msgs::msg::Quaternion estimated_orientation_msg =
-    tier4_autoware_utils::createQuaternionFromRPY(estimated_rpy.x, estimated_rpy.y, initial_rpy.z);
-  Eigen::Quaterniond estimated_orientation_eigen;
-
-  tf2::fromMsg(estimated_orientation_msg, estimated_orientation_eigen);
-
-  output_parent_to_child_eigen_.linear() = estimated_orientation_eigen.toRotationMatrix();
-  output_parent_to_child_eigen_.translation() = estimated_translation;
-
-  // We perform basic filtering on the estimated angles
-  {
+  // If filtering is disabled no further processing is needed
+  if (!filter_estimations_) {
     std::unique_lock<std::mutex> lock(mutex_);
-    output_parent_to_child_msg_ = tf2::toMsg(output_parent_to_child_eigen_);
-
-    if (filter_estimations_) {
-      Eigen::MatrixXd p;
-      kalman_filter_.getP(p);
-      Eigen::VectorXd diag = p.diagonal();
-      std::array<double, 6> thresholds{
-        angle_convergence_threshold_,       angle_convergence_threshold_,
-        angle_convergence_threshold_,       translation_convergence_threshold_,
-        translation_convergence_threshold_, translation_convergence_threshold_};
-      inlier_observations_.add(inliers);
-
-      bool converged = true;
-      for (std::size_t index = 0; index < thresholds.size(); index++) {
-        converged &= diag(index) < thresholds[index];
-      }
-
-      RCLCPP_INFO(
-        this->get_logger(), "Filter cov: roll=%.2e, pitch=%.2e yaw=%.2e, x=%.2e, y=%.2e, z=%.2e",
-        diag(0), diag(1), diag(2), diag(3), diag(4), diag(5));
-
-      RCLCPP_INFO(
-        this->get_logger(), "Convergence thresh: angle=%.2e, translation=%.2e",
-        angle_convergence_threshold_, translation_convergence_threshold_);
-
-      if (!converged) {
-        return;
-      }
-
-      pcl::PointCloud<PointType>::Ptr augmented_inliers(new pcl::PointCloud<PointType>);
-
-      for (const auto & inliers : inlier_observations_.get()) {
-        *augmented_inliers += *inliers;
-      }
-
-      pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-      pcl::PointIndices::Ptr final_inliers(new pcl::PointIndices);
-      pcl::SACSegmentation<PointType> seg;
-      pcl::ExtractIndices<PointType> extract;
-      seg.setOptimizeCoefficients(true);
-      seg.setModelType(pcl::SACMODEL_PLANE);
-      seg.setMethodType(pcl::SAC_RANSAC);
-      seg.setDistanceThreshold(10 * max_inlier_distance_);
-      seg.setMaxIterations(max_iterations_);
-
-      seg.setInputCloud(augmented_inliers);
-      seg.segment(*final_inliers, *coefficients);
-      Eigen::Vector4d output_model(
-        coefficients->values[0], coefficients->values[1], coefficients->values[2],
-        coefficients->values[3]);
-
-      RCLCPP_INFO(
-        this->get_logger(),
-        "Final model: a=%.3f, b=%.3f, c=%.3f, d=%.3f final inliers=%lu total.percentage=%.2f",
-        output_model(0), output_model(1), output_model(2), output_model(3),
-        final_inliers->indices.size(),
-        100.f * final_inliers->indices.size() / augmented_inliers->size());
-
-      Eigen::Isometry3d output_base_to_lidar_pose =
-        refineBaseLidarPose(initial_base_to_lidar_eigen_, output_model);
-
-      output_parent_to_child_eigen_ = base_to_parent_eigen_.inverse() * output_base_to_lidar_pose *
-                                      child_to_lidar_eigen_.inverse();
-      output_parent_to_child_msg_ = tf2::toMsg(output_parent_to_child_eigen_);
-
-      calibration_done_ = true;
-    } else {
-      calibration_done_ = true;
-    }
+    calibrated_base_to_lidar_transform_ = estimated_base_to_lidar_transform;
+    calibration_done_ = true;
+    return;
   }
+
+  // Optional filtering:
+  // 1) Use linear kalman filter to determine convergence in the estimation
+  // 2) The liner kalman filter does not correctly filter rotations, instead use all the estimations
+  // so far to calibrate once more
+
+  // Kalman step
+  Eigen::Vector<double, 6> x(
+    estimated_rpy.x, estimated_rpy.y, estimated_rpy.z,
+    estimated_base_to_lidar_transform.translation().x(),
+    estimated_base_to_lidar_transform.translation().y(),
+    estimated_base_to_lidar_transform.translation().z());
+  Eigen::DiagonalMatrix<double, 6> p0(
+    initial_angle_cov_, initial_angle_cov_, initial_angle_cov_, initial_translation_cov_,
+    initial_translation_cov_, initial_translation_cov_);
+
+  if (first_observation_) {
+    kalman_filter_.init(x, p0);
+    first_observation_ = false;
+  } else {
+    kalman_filter_.update(x);
+  }
+
+  // cSpell:ignore getXelement
+  estimated_rpy.x = kalman_filter_.getXelement(0);
+  estimated_rpy.y = kalman_filter_.getXelement(1);
+  estimated_rpy.z = kalman_filter_.getXelement(2);
+  estimated_translation.x() = kalman_filter_.getXelement(3);
+  estimated_translation.y() = kalman_filter_.getXelement(4);
+  estimated_translation.z() = kalman_filter_.getXelement(5);
+
+  // Filtering convergence criteria
+  Eigen::MatrixXd p;
+  kalman_filter_.getP(p);
+  Eigen::VectorXd diag = p.diagonal();
+  std::array<double, 6> thresholds{
+    angle_convergence_threshold_,       angle_convergence_threshold_,
+    angle_convergence_threshold_,       translation_convergence_threshold_,
+    translation_convergence_threshold_, translation_convergence_threshold_};
+
+  bool converged = true;
+  for (std::size_t index = 0; index < thresholds.size(); index++) {
+    converged &= diag(index) < thresholds[index];
+  }
+
+  RCLCPP_INFO(
+    this->get_logger(), "Filter cov: roll=%.2e, pitch=%.2e yaw=%.2e, x=%.2e, y=%.2e, z=%.2e",
+    diag(0), diag(1), diag(2), diag(3), diag(4), diag(5));
+
+  RCLCPP_INFO(
+    this->get_logger(), "Convergence thresh: angle=%.2e, translation=%.2e",
+    angle_convergence_threshold_, translation_convergence_threshold_);
+
+  // Save the inliers for later refinement
+  inlier_observations_.add(inliers);
+
+  if (!converged) {
+    return;
+  }
+
+  // Integrate all the inliers so far and refine the estimation
+  pcl::PointCloud<PointType>::Ptr augmented_inliers(new pcl::PointCloud<PointType>);
+
+  for (const auto & inliers : inlier_observations_.get()) {
+    *augmented_inliers += *inliers;
+  }
+
+  // cSpell:ignore SACMODEL
+  pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr final_inliers(new pcl::PointIndices);
+  pcl::SACSegmentation<PointType> seg;
+  pcl::ExtractIndices<PointType> extract;
+  seg.setOptimizeCoefficients(true);
+  seg.setModelType(pcl::SACMODEL_PLANE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setDistanceThreshold(10 * max_inlier_distance_);
+  seg.setMaxIterations(max_iterations_);
+
+  seg.setInputCloud(augmented_inliers);
+  seg.segment(*final_inliers, *coefficients);
+  Eigen::Vector4d output_model(
+    coefficients->values[0], coefficients->values[1], coefficients->values[2],
+    coefficients->values[3]);
+
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Final model: a=%.3f, b=%.3f, c=%.3f, d=%.3f final inliers=%lu total.percentage=%.2f",
+    output_model(0), output_model(1), output_model(2), output_model(3),
+    final_inliers->indices.size(),
+    100.f * final_inliers->indices.size() / augmented_inliers->size());
+
+  std::unique_lock<std::mutex> lock(mutex_);
+  calibrated_base_to_lidar_transform_ =
+    estimateBaseLidarTransform(initial_base_to_lidar_transform_, output_model);
+  calibration_done_ = true;
 }
 
 void ExtrinsicGroundPlaneCalibrator::visualizeCalibration(
@@ -573,7 +574,7 @@ void ExtrinsicGroundPlaneCalibrator::visualizeCalibration(
 {
   visualization_msgs::msg::MarkerArray markers;
 
-  Eigen::Isometry3d initial_lidar_base_transform = initial_base_to_lidar_eigen_.inverse();
+  Eigen::Isometry3d initial_lidar_base_transform = initial_base_to_lidar_transform_.inverse();
 
   visualizePlaneModel("initial_calibration_pose", initial_lidar_base_transform, markers);
 
@@ -674,7 +675,7 @@ void ExtrinsicGroundPlaneCalibrator::visualizePlaneModel(
 void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_plane_model)
 {
   geometry_msgs::msg::TransformStamped initial_lidar_to_base_msg =
-    tf2::eigenToTransform(initial_base_to_lidar_eigen_.inverse());
+    tf2::eigenToTransform(initial_base_to_lidar_transform_.inverse());
   initial_lidar_to_base_msg.header.stamp = header_.stamp;
   initial_lidar_to_base_msg.header.frame_id = lidar_frame_;
   initial_lidar_to_base_msg.child_frame_id = "initial_base_link";
@@ -682,40 +683,32 @@ void ExtrinsicGroundPlaneCalibrator::publishTf(const Eigen::Vector4d & ground_pl
 
   Eigen::Isometry3d raw_lidar_to_base_eigen = modelPlaneToPose(ground_plane_model);
 
-  // The ground_plane_raw tf is only assures us that it lies on the ground plane, but its yaw is
-  // arbitrary, and the position in the plane is obtained by projecting the lidar origin in the
-  // plane
   geometry_msgs::msg::TransformStamped raw_lidar_to_base_msg =
     tf2::eigenToTransform(raw_lidar_to_base_eigen);
 
   raw_lidar_to_base_msg.header.stamp = header_.stamp;
   raw_lidar_to_base_msg.header.frame_id = lidar_frame_;
-  raw_lidar_to_base_msg.child_frame_id = lidar_frame_ + "_ground_plane_raw";
+  raw_lidar_to_base_msg.child_frame_id = "ground_plane_raw";
   tf_broadcaster_.sendTransform(raw_lidar_to_base_msg);
 
-  if (broadcast_calibration_tf_) {
-    geometry_msgs::msg::TransformStamped output_tf_msg;
-    output_tf_msg.transform.rotation = output_parent_to_child_msg_.orientation;
-    output_tf_msg.transform.translation.x = output_parent_to_child_msg_.position.x;
-    output_tf_msg.transform.translation.y = output_parent_to_child_msg_.position.y;
-    output_tf_msg.transform.translation.z = output_parent_to_child_msg_.position.z;
-    output_tf_msg.header.stamp = header_.stamp;
-    output_tf_msg.header.frame_id = parent_frame_;
-    output_tf_msg.child_frame_id = child_frame_;
-    tf_broadcaster_.sendTransform(output_tf_msg);
+  Eigen::Isometry3d calibrated_base_to_lidar_transform =
+    calibration_done_
+      ? calibrated_base_to_lidar_transform_
+      : estimateBaseLidarTransform(initial_base_to_lidar_transform_, ground_plane_model);
+  geometry_msgs::msg::TransformStamped calibrated_base_to_lidar_transform_msg =
+    tf2::eigenToTransform(calibrated_base_to_lidar_transform);
+
+  if (overwrite_xy_yaw_) {
+    calibrated_base_to_lidar_transform_msg = overwriteXYYawValues(
+      initial_base_to_lidar_transform_msg_, calibrated_base_to_lidar_transform_msg);
   }
 
-  Eigen::Isometry3d output_base_to_lidar_eigen =
-    base_to_parent_eigen_ * output_parent_to_child_eigen_ * child_to_lidar_eigen_;
-
-  // The ground_plane tf lies in the plane and is aligned with the initial base_link in the x, y,
-  // and yaw. The z, pitch, and roll may differ due to the calibration
-  geometry_msgs::msg::TransformStamped output_lidar_to_base_msg =
-    tf2::eigenToTransform(output_base_to_lidar_eigen.inverse());
-  output_lidar_to_base_msg.header.stamp = header_.stamp;
-  output_lidar_to_base_msg.header.frame_id = lidar_frame_;
-  output_lidar_to_base_msg.child_frame_id = lidar_frame_ + "_ground_plane";
-  tf_broadcaster_.sendTransform(output_lidar_to_base_msg);
+  geometry_msgs::msg::TransformStamped lidar_to_calibrated_base_transform_msg =
+    tf2::eigenToTransform(tf2::transformToEigen(calibrated_base_to_lidar_transform_msg).inverse());
+  lidar_to_calibrated_base_transform_msg.header.stamp = header_.stamp;
+  lidar_to_calibrated_base_transform_msg.header.frame_id = lidar_frame_;
+  lidar_to_calibrated_base_transform_msg.child_frame_id = "estimated_base_link";
+  tf_broadcaster_.sendTransform(lidar_to_calibrated_base_transform_msg);
 }
 
 Eigen::Vector4d ExtrinsicGroundPlaneCalibrator::poseToPlaneModel(
@@ -773,32 +766,37 @@ Eigen::Isometry3d ExtrinsicGroundPlaneCalibrator::modelPlaneToPose(
   return pose;
 }
 
-Eigen::Isometry3d ExtrinsicGroundPlaneCalibrator::refineBaseLidarPose(
-  const Eigen::Isometry3d & base_lidar_pose, const Eigen::Vector4d & model) const
+Eigen::Isometry3d ExtrinsicGroundPlaneCalibrator::estimateBaseLidarTransform(
+  const Eigen::Isometry3d & initial_base_to_lidar_transform, const Eigen::Vector4d & model) const
 {
-  const Eigen::Isometry3d lidar_base_pose = base_lidar_pose.inverse();
-  const Eigen::Isometry3d lidar_ground_pose = modelPlaneToPose(model);
+  const Eigen::Isometry3d lidar_to_initial_base_transform =
+    initial_base_to_lidar_transform.inverse();
+  const Eigen::Isometry3d lidar_to_ground_transform = modelPlaneToPose(model);
 
-  const Eigen::Isometry3d ground_base = lidar_ground_pose.inverse() * lidar_base_pose;
+  const Eigen::Isometry3d ground_to_initial_base_transform =
+    lidar_to_ground_transform.inverse() * lidar_to_initial_base_transform;
 
-  Eigen::Vector3d ground_base_projected_translation = ground_base.translation();
-  ground_base_projected_translation.z() = 0;
+  Eigen::Vector3d ground_to_initial_base_projected_translation =
+    ground_to_initial_base_transform.translation();
+  ground_to_initial_base_projected_translation.z() = 0;
 
-  Eigen::Vector3d ground_base_projected_rotation_x = ground_base.rotation().col(0);
-  ground_base_projected_rotation_x.z() = 0.0;
-  ground_base_projected_rotation_x.normalize();
+  Eigen::Vector3d ground_to_initial_base_projected_rotation_x =
+    ground_to_initial_base_transform.rotation().col(0);
+  ground_to_initial_base_projected_rotation_x.z() = 0.0;
+  ground_to_initial_base_projected_rotation_x.normalize();
 
-  Eigen::Matrix3d ground_base_projected_rotation;
-  ground_base_projected_rotation.col(2) = Eigen::Vector3d(0.0, 0.0, 1.0);
-  ground_base_projected_rotation.col(0) = ground_base_projected_rotation_x;
-  ground_base_projected_rotation.col(1) =
-    ground_base_projected_rotation.col(2).cross(ground_base_projected_rotation.col(0));
+  Eigen::Matrix3d ground_to_initial_base_projected_rotation;
+  ground_to_initial_base_projected_rotation.col(2) = Eigen::Vector3d(0.0, 0.0, 1.0);
+  ground_to_initial_base_projected_rotation.col(0) = ground_to_initial_base_projected_rotation_x;
+  ground_to_initial_base_projected_rotation.col(1) =
+    ground_to_initial_base_projected_rotation.col(2).cross(
+      ground_to_initial_base_projected_rotation.col(0));
 
-  Eigen::Isometry3d ground_base_projected;
-  ground_base_projected.translation() = ground_base_projected_translation;
-  ground_base_projected.linear() = ground_base_projected_rotation;
+  Eigen::Isometry3d ground_to_estimated_base_transform;
+  ground_to_estimated_base_transform.translation() = ground_to_initial_base_projected_translation;
+  ground_to_estimated_base_transform.linear() = ground_to_initial_base_projected_rotation;
 
-  return ground_base_projected.inverse() * lidar_ground_pose.inverse();
+  return ground_to_estimated_base_transform.inverse() * lidar_to_ground_transform.inverse();
 }
 
 pcl::PointCloud<PointType>::Ptr ExtrinsicGroundPlaneCalibrator::removeOutliers(
@@ -828,3 +826,30 @@ pcl::PointCloud<PointType>::Ptr ExtrinsicGroundPlaneCalibrator::removeOutliers(
 
   return inliers;
 }
+
+geometry_msgs::msg::TransformStamped ExtrinsicGroundPlaneCalibrator::overwriteXYYawValues(
+  const geometry_msgs::msg::TransformStamped & initial_base_lidar_transform_msg,
+  const geometry_msgs::msg::TransformStamped & calibrated_base_lidar_transform_msg) const
+{
+  geometry_msgs::msg::TransformStamped msg = calibrated_base_lidar_transform_msg;
+
+  // Overwrite xy
+  msg.transform.translation.x = initial_base_lidar_transform_msg.transform.translation.x;
+  msg.transform.translation.y = initial_base_lidar_transform_msg.transform.translation.y;
+
+  auto initial_rpy =
+    tier4_autoware_utils::getRPY(initial_base_lidar_transform_msg.transform.rotation);
+
+  auto calibrated_rpy =
+    tier4_autoware_utils::getRPY(calibrated_base_lidar_transform_msg.transform.rotation);
+
+  // Overwrite only yaw
+  auto output_rpy = calibrated_rpy;
+  output_rpy.z = initial_rpy.z;
+
+  msg.transform.rotation =
+    tier4_autoware_utils::createQuaternionFromRPY(output_rpy.x, output_rpy.y, output_rpy.z);
+  return msg;
+}
+
+}  // namespace extrinsic_ground_plane_calibrator

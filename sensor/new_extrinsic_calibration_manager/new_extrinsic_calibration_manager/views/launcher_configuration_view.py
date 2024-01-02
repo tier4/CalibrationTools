@@ -29,10 +29,6 @@ from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
 from ament_index_python.packages import get_package_share_directory
 
-# import debugpy
-# debugpy.listen(5678)
-# debugpy.wait_for_client()
-
 
 class LauncherConfigurationView(QWidget):
     """A simple widget to visualize and edit a ParameterizedClass's parameters."""
@@ -92,12 +88,12 @@ class LauncherConfigurationView(QWidget):
             if element.hasAttribute("default"):
                 self.optional_arguments_dict[element.getAttribute("name")] = {
                     "value": element.getAttribute("default"),
-                    "decription": description,
+                    "description": description,
                 }
             else:
                 self.required_arguments_dict[element.getAttribute("name")] = {
                     "value": "",
-                    "decription": description,
+                    "description": description,
                 }
 
         self.required_argument_layout.addWidget(QLabel("Name"), 0, 0)
@@ -115,10 +111,10 @@ class LauncherConfigurationView(QWidget):
             self.arguments_widgets_dict[argument_name].setMinimumWidth(400)
             self.arguments_widgets_dict[argument_name].setMaximumWidth(800)
 
-            description_label = QLabel(argument_data["decription"])
+            description_label = QLabel(argument_data["description"])
             description_label.setMaximumWidth(400)
-            description_label.setToolTip(argument_data["decription"])
-            description_label.setText(argument_data["decription"])
+            description_label.setToolTip(argument_data["description"])
+            description_label.setText(argument_data["description"])
 
             self.required_argument_layout.addWidget(name_label, i + 1, 0)
             self.required_argument_layout.addWidget(
@@ -141,10 +137,10 @@ class LauncherConfigurationView(QWidget):
             self.arguments_widgets_dict[argument_name].setMinimumWidth(400)
             self.arguments_widgets_dict[argument_name].setMaximumWidth(800)
 
-            description_label = QLabel(argument_data["decription"])
+            description_label = QLabel(argument_data["description"])
             description_label.setMaximumWidth(400)
-            description_label.setToolTip(argument_data["decription"])
-            description_label.setText(argument_data["decription"])
+            description_label.setToolTip(argument_data["description"])
+            description_label.setText(argument_data["description"])
 
             self.optional_argument_layout.addWidget(name_label, i + 1, 0)
             self.optional_argument_layout.addWidget(

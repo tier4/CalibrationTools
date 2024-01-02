@@ -230,7 +230,7 @@ class InteractiveCalibratorUI(QMainWindow):
         self.calibration_status_inliers_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
         self.state_1_message = (
-            f"To add a calibration pair\nfirst click the 3d point."
+            "To add a calibration pair\nfirst click the 3d point."
             + "\nTo delete a calibration\npoint, click it in the\nimage"
         )
 
@@ -272,7 +272,7 @@ class InteractiveCalibratorUI(QMainWindow):
             self.calibration2_button.setEnabled(False)
             self.calibration2_button.setText("Optimizing...")
             self.optimize_camera_intrinsics_waiting = True
-            assert self.optimize_camera_intrinsics_status == True
+            assert self.optimize_camera_intrinsics_status is True
 
         self.calibration2_button = QPushButton("Calibrate intrinsics\n(experimental)")
         self.calibration2_button.clicked.connect(calibration_intrinsics_callback)
@@ -648,8 +648,8 @@ class InteractiveCalibratorUI(QMainWindow):
         object_calibration_points = np.loadtxt(os.path.join(input_dir, "object_points.txt"))
         image_calibration_points = np.loadtxt(os.path.join(input_dir, "image_points.txt"))
 
-        self.object_calibration_points = [p for p in object_calibration_points]
-        self.image_calibration_points = [p for p in image_calibration_points]
+        self.object_calibration_points = list(object_calibration_points)
+        self.image_calibration_points = list(image_calibration_points)
 
         print(self.object_calibration_points)
         print(self.image_calibration_points)
@@ -946,8 +946,8 @@ class InteractiveCalibratorUI(QMainWindow):
         object_points = object_points[indexes, :]
         image_points = image_points[indexes, :]
 
-        self.object_calibration_points = [p for p in object_points]
-        self.image_calibration_points = [p for p in image_points]
+        self.object_calibration_points = list(object_points)
+        self.image_calibration_points = list(image_points)
 
         self.calibration_callback()
         self.image_view.set_calibration_points(
@@ -1002,13 +1002,13 @@ def main(args=None):
         signal.signal(signal.SIGINT, sigint_handler)
 
         ros_interface = RosInterface()
-        ex = InteractiveCalibratorUI(ros_interface)
+        ex = InteractiveCalibratorUI(ros_interface)  # noqa: F841
 
         ros_interface.spin()
 
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quiting...")
+        print("Received sigint. Quitting...")
         rclpy.shutdown()
 
 

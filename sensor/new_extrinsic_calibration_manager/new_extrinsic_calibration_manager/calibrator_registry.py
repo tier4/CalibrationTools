@@ -45,7 +45,7 @@ class CalibratorRegistry:
 
     @classmethod
     def create_calibrator(cls, project_name: str, calibrator_name: str, **kwargs) -> CalibratorBase:
-        """Create the excecutor using a factory pattern.
+        """Create the executor using a factory pattern.
 
         This method gets the appropriate Executor class from the registry
         and creates an instance of it, while passing in the parameters

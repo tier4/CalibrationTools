@@ -38,7 +38,7 @@ def main(args=None):
         sys.exit(app.exec_())
 
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quiting...", flush=True)
+        print("Received sigint. Quitting...", flush=True)
         rclpy.shutdown()
 
 

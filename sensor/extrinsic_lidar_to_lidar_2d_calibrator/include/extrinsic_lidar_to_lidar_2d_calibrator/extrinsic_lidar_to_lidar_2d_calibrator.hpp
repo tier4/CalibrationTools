@@ -199,14 +199,14 @@ protected:
   // Calibration output
   geometry_msgs::msg::TransformStamped output_calibration_msg_;
 
-  bool got_initial_transform_;
-  bool received_request_;
+  bool got_initial_transform_{false};
+  bool received_request_{false};
   bool broadcast_tf_;
-  bool calibration_done_;
+  bool calibration_done_{false};
 
   // Filtering
   KalmanFilter kalman_filter_;
-  bool first_observation_;
+  bool first_observation_{true};
 };
 
 }  // namespace extrinsic_lidar_to_lidar_2d_calibrator

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 #ifndef EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
 #define EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_
 
-#define PCL_NO_PRECOMPILE
 #include <Eigen/Dense>
 #include <extrinsic_ground_plane_calibrator/utils.hpp>
 #include <kalman_filter/kalman_filter.hpp>
@@ -23,7 +22,9 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
-#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/filters/passthrough.h>
@@ -34,19 +35,36 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#ifdef ROS_DISTRO_GALACTIC
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#else
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-#endif
-
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <tuple>
 #include <vector>
 
+namespace extrinsic_ground_plane_calibrator
+{
+
 using PointType = pcl::PointXYZ;
+
+/**
+ * A base-lidar calibrator.
+ *
+ * This calibrator assumes that the area around the vehicle consists on a flat surface and consist
+ * essentially on a plane estimation algorithm,
+ *
+ * Once the plane has been estimated, the create an arbitrary coordinate system in the estimated
+ * ground (gcs = ground coordinate system). Then, we proceed to estimate the initial base link pose
+ * in gcs, and proceed to project it into the new "ground", that is dropping the z component. Once
+ * that has been done, we can recompute the "calibrated" base lidar transform.
+ *
+ * Note: Although the result of this algorithm is a full 3D pose, not all the parameters were really
+ * calibrated. With only the ground, we can only calibrate roll, pitch, and z. That is despite the
+ * fact that the initial and output transforms may have different x, y, and yaw values. This is due
+ * to the fact once we obtain the ground plane, we only know for certain the normal and distance of
+ * the plane with respect to the lidar. All other values and transformation are derived from the
+ * initial base lidar calibration
+ */
 
 class ExtrinsicGroundPlaneCalibrator : public rclcpp::Node
 {
@@ -54,9 +72,16 @@ public:
   explicit ExtrinsicGroundPlaneCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
+  /*!
+   * External interface to start the calibration process and retrieve the result.
+   * The call gets blocked until the calibration finishes
+   *
+   * @param request An empty service request
+   * @param response A vector of calibration results
+   */
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response);
 
   /*!
    * ROS pointcloud callback
@@ -66,20 +91,18 @@ protected:
 
   /*!
    * Checks that all the needed tfs are available
-   * @retval wether or not all the needed tfs are available
+   * @return wether or not all the needed tfs are available
    */
   bool checkInitialTransforms();
 
   /*!
    * Extracts the ground plane from a pointcloud
    * @param[in] pointcloud the input pointcloud
-   * @param[in] model the estimated ground plane model
-   * @param[in] inliers the inliers of the current estimated model
-   * @retval wether or not th calibration plane was found
+   * @return A tuple containing wether or not th calibration plane was found, the estimated ground
+   * plane model, and the inliers of the respective model
    */
-  bool extractGroundPlane(
-    pcl::PointCloud<PointType>::Ptr & pointcloud, Eigen::Vector4d & model,
-    pcl::PointCloud<PointType>::Ptr & inliers);
+  std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr> extractGroundPlane(
+    pcl::PointCloud<PointType>::Ptr & pointcloud);
 
   /*!
    * Computes the fitting error of an estimated model and the initial one
@@ -95,7 +118,7 @@ protected:
    * @param[in] estimated_model the estimated model
    * @param[in] inliers the inliers of the current estimated model
    */
-  void filterCalibration(
+  void filterGroundModelEstimation(
     const Eigen::Vector4d & estimated_model, pcl::PointCloud<PointType>::Ptr inliers);
 
   /*!
@@ -134,7 +157,7 @@ protected:
    * The normal of the plane is given by the z-axis of the rotation of the pose
    * @param[in] pointcloud Point cloud to crop
    * @param[in] max_range Range to crop the pointcloud to
-   * @retval the plane model
+   * @return the plane model
    */
   Eigen::Vector4d poseToPlaneModel(const Eigen::Isometry3d & pose) const;
 
@@ -142,37 +165,45 @@ protected:
    * Compute a pose from a plane model a*x + b*y +c*z +d = 0
    * The pose lies has its origin on the z-projection of the plane
    * @param[in] model Point cloud to crop
-   * @retval the plane pose
+   * @return the plane pose
    */
   Eigen::Isometry3d modelPlaneToPose(const Eigen::Vector4d & model) const;
 
   /*!
-   * Refine a lidar-base pose given an estimated ground plane
-   * Projects the initial base lidar pose into the ground plane.
-   * @param[in] base_lidar_pose Initial base lidar pose
+   * Estimate / refine a lidar-base transform given an initial guess and an estimated ground plane
+   * @param[in] base_lidar_transform Initial base lidar transform
    * @param[in] ground_plane_model ground plane model
-   * @retval the refined base lidar pose
+   * @return the refined base lidar pose
    */
-  Eigen::Isometry3d refineBaseLidarPose(
-    const Eigen::Isometry3d & base_lidar_pose, const Eigen::Vector4d & model) const;
+  Eigen::Isometry3d estimateBaseLidarTransform(
+    const Eigen::Isometry3d & initial_base_lidar_transform, const Eigen::Vector4d & model) const;
 
   /*!
    * Removes the point that are consistent with an input plane from the pointcloud
    * @param[in] input_pointcloud the pointcloud to filter
    * @param[in] outlier_model the model that represents the outliers
    * @param[in] outlier_tolerance the tolerance with which a point is still considered an outlier
-   * @retval the refined base lidar pose
+   * @return the refined base lidar pose
    */
   pcl::PointCloud<PointType>::Ptr removeOutliers(
     pcl::PointCloud<PointType>::Ptr input_pointcloud, const Eigen::Vector4d & outlier_plane_model,
     double outlier_tolerance) const;
 
+  /*!
+   * Overwrite the calibrated x, y, and yaw values of the calibrated base lidar transform with the
+   * initial ones
+   * @param[in] initial_base_lidar_transform_msg the initial base lidar transform msg
+   * @param[in] calibrated_base_lidar_transform_msg the calibrated base lidar transform msg
+   * @return the calibrated base lidar transform with its x, y, and yaw values being overwritten by
+   * the initial ones
+   */
+  geometry_msgs::msg::TransformStamped overwriteXYYawValues(
+    const geometry_msgs::msg::TransformStamped & initial_base_lidar_transform_msg,
+    const geometry_msgs::msg::TransformStamped & calibrated_base_lidar_transform_msg) const;
+
   // Parameters
-  // We perform base-lidar pose estimation but the output are frames in between
-  // base -> parent -> child -> lidar
   std::string base_frame_;
-  std::string parent_frame_;
-  std::string child_frame_;
+  std::string lidar_frame_;
 
   double marker_size_;
   bool use_crop_box_filter_;
@@ -191,7 +222,7 @@ protected:
   double max_cos_distance_;
   int max_iterations_;
   bool verbose_;
-  bool broadcast_calibration_tf_;
+  bool overwrite_xy_yaw_;
   bool filter_estimations_;
   double initial_angle_cov_;
   double initial_translation_cov_;
@@ -215,41 +246,31 @@ protected:
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
 
-  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr service_server_;
 
   // Threading, sync, and result
   std::mutex mutex_;
 
   // ROS Data
   std_msgs::msg::Header header_;
-  std::string lidar_frame_;
 
   // Initial tfs comparable with the one with our method
-  geometry_msgs::msg::Transform initial_base_to_lidar_msg_;
-  tf2::Transform initial_base_to_lidar_tf2_;
-  Eigen::Isometry3d initial_base_to_lidar_eigen_;
+  geometry_msgs::msg::TransformStamped initial_base_to_lidar_transform_msg_;
+  Eigen::Isometry3d initial_base_to_lidar_transform_;
 
-  // Other tfs to calculate the complete chain. There are constant for our purposes
-  geometry_msgs::msg::Transform base_to_parent_msg_;
-  tf2::Transform base_to_parent_tf2_;
-  Eigen::Isometry3d base_to_parent_eigen_;
+  Eigen::Isometry3d calibrated_base_to_lidar_transform_;
 
-  geometry_msgs::msg::Transform child_to_lidar_msg_;
-  tf2::Transform child_to_lidar_tf2_;
-  Eigen::Isometry3d child_to_lidar_eigen_;
-
-  geometry_msgs::msg::Pose output_parent_to_child_msg_;
-  Eigen::Isometry3d output_parent_to_child_eigen_;
-
-  bool got_initial_transform_;
-  bool broadcast_tf_;
-  bool calibration_done_;
+  bool got_initial_transform_{false};
+  bool received_request_{false};
+  bool calibration_done_{false};
 
   // Filtering
   KalmanFilter kalman_filter_;
-  bool first_observation_;
+  bool first_observation_{true};
   RingBuffer<pcl::PointCloud<PointType>::Ptr> inlier_observations_;
   std::vector<Eigen::Vector4d> outlier_models_;
 };
+
+}  // namespace extrinsic_ground_plane_calibrator
 
 #endif  // EXTRINSIC_GROUND_PLANE_CALIBRATOR__EXTRINSIC_GROUND_PLANE_CALIBRATOR_HPP_

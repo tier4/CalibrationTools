@@ -23,8 +23,9 @@ int main(int argc, char ** argv)
 
   rclcpp::executors::MultiThreadedExecutor executor;
   rclcpp::NodeOptions node_options;
-  std::shared_ptr<ExtrinsicGroundPlaneCalibrator> node =
-    std::make_shared<ExtrinsicGroundPlaneCalibrator>(node_options);
+  std::shared_ptr<extrinsic_ground_plane_calibrator::ExtrinsicGroundPlaneCalibrator> node =
+    std::make_shared<extrinsic_ground_plane_calibrator::ExtrinsicGroundPlaneCalibrator>(
+      node_options);
   executor.add_node(node);
   executor.spin();
 

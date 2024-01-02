@@ -48,10 +48,6 @@ from new_extrinsic_calibration_manager.views.launcher_configuration_view import 
 from new_extrinsic_calibration_manager.views.tf_view import TfView
 import rclpy
 
-# import debugpy
-# debugpy.listen(5678)
-# debugpy.wait_for_client()
-
 
 class NewExtrinsicCalibrationManager(QMainWindow):
     tfs_graph_signal = Signal(object)
@@ -63,7 +59,7 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         # self.central_widget.resize(1000,1000)
 
         self.setCentralWidget(self.central_widget)
-        # self.setWindowTitle("New extrinsic calibration manaer")
+        # self.setWindowTitle("New extrinsic calibration manager")
 
         self.ros_interface: RosInterface = None
 
@@ -130,8 +126,8 @@ class NewExtrinsicCalibrationManager(QMainWindow):
             f"on_selected_calibrator: project_name={project_name} calibrator_name={calibrator_name}",
             flush=True,
         )
-        self.laucher_configuration_view = LauncherConfigurationView(project_name, calibrator_name)
-        self.laucher_configuration_view.launcher_parameters.connect(
+        self.launcher_configuration_view = LauncherConfigurationView(project_name, calibrator_name)
+        self.launcher_configuration_view.launcher_parameters.connect(
             partial(self.launch_calibrators, project_name, calibrator_name)
         )
         pass
@@ -288,7 +284,7 @@ def main(args=None):
 
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quiting...")
+        print("Received sigint. Quitting...")
         rclpy.shutdown()
 
 

@@ -30,10 +30,6 @@ from PySide2.QtWidgets import QWidget
 import pydot
 import transforms3d
 
-# import debugpy
-# debugpy.listen(5678)
-# debugpy.wait_for_client()
-
 
 class TfNode:
     def __init__(self, frame, transform):
@@ -209,6 +205,7 @@ class TfPlot(QWidget):
         # graph.write_png("frames.png")
         # graph.write_pdf("frames.pdf")
 
+        # cspell: ignore imgdata
         imgdata = graph.create_svg()
 
         # imgdata = StringIO()
@@ -273,10 +270,6 @@ class TfView(QGraphicsView):
 
         # scaled_pix_size = self.pix.size()
         # scaled_pix_size.scale(self.data_renderer.widget_size, Qt.KeepAspectRatio)
-
-        # import debugpy
-        # debugpy.listen(5678)
-        # debugpy.wait_for_client()
 
         for item in self.scene.items():
             item.prepareGeometryChange()
