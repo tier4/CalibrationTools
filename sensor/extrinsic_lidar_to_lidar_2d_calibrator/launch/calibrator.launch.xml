@@ -26,6 +26,10 @@
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
     <node pkg="extrinsic_lidar_to_lidar_2d_calibrator" exec="extrinsic_lidar_to_lidar_2d_calibrator" name="extrinsic_lidar_to_lidar_2d_calibrator" output="screen">
+      <remap from="source_input_pointcloud" to="$(var source_pointcloud_topic)"/>
+      <remap from="target_input_pointcloud" to="$(var target_pointcloud_topic)"/>
+      <remap from="extrinsic_calibration" to="$(var calibration_service_name)"/>
+
       <param name="base_frame" value="$(var base_frame)"/>
 
       <param name="broadcast_calibration_tf" value="$(var broadcast_calibration_tf)"/>
@@ -54,10 +58,6 @@
 
       <param name="min_z" value="$(var min_z)"/>
       <param name="max_z" value="$(var max_z)"/>
-
-      <remap from="source_input_pointcloud" to="$(var source_pointcloud_topic)"/>
-      <remap from="target_input_pointcloud" to="$(var target_pointcloud_topic)"/>
-      <remap from="extrinsic_calibration" to="$(var calibration_service_name)"/>
     </node>
   </group>
 

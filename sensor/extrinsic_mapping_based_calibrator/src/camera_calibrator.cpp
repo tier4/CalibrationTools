@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,23 +19,13 @@
 #include <extrinsic_mapping_based_calibrator/filters/object_detection_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/filters/sequential_filter.hpp>
 #include <opencv2/core.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_calibration_pcl_extensions/voxel_grid_triplets.hpp>
 
 #include <image_geometry/pinhole_camera_model.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/frustum_culling.h>
 #include <pcl_conversions/pcl_conversions.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
-
-#define UNUSED(x) (void)x;
-
-#pragma GCC push_options
-#pragma GCC optimize("O0")
 
 CameraCalibrator::CameraCalibrator(
   const std::string & calibration_camera_optical_link_frame,
@@ -72,9 +62,9 @@ CameraCalibrator::CameraCalibrator(
 
 void CameraCalibrator::configureCalibrators() {}
 
-bool CameraCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_score)
+std::tuple<bool, Eigen::Matrix4d, float> CameraCalibrator::calibrate()
 {
-  std::unique_lock<std::mutex> lock(data_->mutex_);
+  std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
 
   Eigen::Matrix4f initial_calibration_transform;
   float initial_distance;
@@ -99,7 +89,7 @@ bool CameraCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "could not get initial tf. %s", ex.what());
 
-    return false;
+    return std::make_tuple<>(false, Eigen::Matrix4d::Identity(), 0.f);
   }
 
   // Filter calibration frames using several criteria and select the best ones suited for
@@ -109,24 +99,22 @@ bool CameraCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_
 
   if (static_cast<int>(calibration_frames.size()) < parameters_->camera_calibration_min_frames_) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "Insufficient calibration frames. aborting.");
-    return false;
+    return std::make_tuple<>(false, Eigen::Matrix4d::Identity(), 0.f);
   }
 
-  // Prepate augmented calibration pointclouds
+  // Prepare augmented calibration pointclouds
   std::vector<pcl::PointCloud<PointType>::Ptr> targets;
   prepareCalibrationData(
     calibration_frames, initial_calibration_transform, initial_distance, targets);
 
-  // We no lnoger used the shared data
+  // We no longer used the shared data
   lock.unlock();
 
-  // Publish the calbiraton resullts
+  // Publish the calibration results
   publishResults(calibration_frames, targets, map_frame, initial_calibration_transform);
 
-  best_transform = Eigen::Matrix4f::Identity();
-  best_score = 0.f;
-
-  return true;
+  return std::make_tuple<>(true, Eigen::Matrix4d::Identity(), 0.f);
+  ;
 }
 
 void CameraCalibrator::prepareCalibrationData(
@@ -138,8 +126,8 @@ void CameraCalibrator::prepareCalibrationData(
     rclcpp::get_logger(calibrator_name_),
     "Preparing dense calibration pointclouds from the map...");
 
-  // Time fustrum-ing the last pointcloud or all the pointclouds in between
-  auto & camera_info = calibration_frames.front().source_camera_info;
+  // Time frustum-ing the last pointcloud or all the pointclouds in between
+  auto & camera_info = calibration_frames.front().source_camera_info_;
   float fx = camera_info->p[0];
   float fy = camera_info->p[5];
   float fov_x = (180.f / CV_PI) * 2 * std::atan(0.5f * camera_info->width / fx);
@@ -178,7 +166,7 @@ void CameraCalibrator::publishResults(
   const Eigen::Matrix4f & initial_calibration_transform)
 {
   image_geometry::PinholeCameraModel pinhole_camera_model_;
-  pinhole_camera_model_.fromCameraInfo(calibration_frames.front().source_camera_info);
+  pinhole_camera_model_.fromCameraInfo(calibration_frames.front().source_camera_info_);
 
   auto size = pinhole_camera_model_.fullResolution();
   cv::Point3d corner1 = parameters_->pc_features_max_distance_ *
@@ -280,25 +268,3 @@ void CameraCalibrator::publishResults(
   target_map_pub_->publish(target_map_msg);
   target_markers_pub_->publish(markers);
 }
-
-void CameraCalibrator::singleSensorCalibrationCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
-{
-  UNUSED(request);
-  UNUSED(response);
-}
-
-void CameraCalibrator::multipleSensorCalibrationCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
-{
-  UNUSED(request);
-  UNUSED(response);
-
-  Eigen::Matrix4f result;
-  float score;
-  response->success = calibrate(result, score);
-}
-
-#pragma GCC pop_options

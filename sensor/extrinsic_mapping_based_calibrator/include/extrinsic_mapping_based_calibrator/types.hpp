@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -86,8 +86,8 @@ struct CalibrationFrame
   using Ptr = std::shared_ptr<CalibrationFrame>;
   using ConstPtr = std::shared_ptr<const CalibrationFrame>;
 
-  sensor_msgs::msg::CameraInfo::SharedPtr source_camera_info;
-  sensor_msgs::msg::CompressedImage::SharedPtr source_image;
+  sensor_msgs::msg::CameraInfo::SharedPtr source_camera_info_;
+  sensor_msgs::msg::CompressedImage::SharedPtr source_image_;
   PointcloudType::Ptr source_pointcloud_;
   std_msgs::msg::Header source_header_;
 
@@ -112,7 +112,7 @@ struct MappingData
   std::vector<std::string> calibration_camera_optical_link_frame_names;
   std::vector<std::string> calibration_lidar_frame_names_;
 
-  std::mutex mutex_;
+  std::recursive_mutex mutex_;
   int n_processed_frames_{0};
   std::list<Frame::Ptr> unprocessed_frames_;
   std::vector<Frame::Ptr> processed_frames_;
@@ -136,6 +136,7 @@ struct MappingParameters
   using Ptr = std::shared_ptr<MappingParameters>;
   using ConstPtr = std::shared_ptr<const MappingParameters>;
 
+  std::string registrator_name_;
   bool mapping_verbose_;
   bool use_rosbag_;
   int mapping_max_frames_;
@@ -202,7 +203,7 @@ struct CalibrationParameters
   int solver_iterations_;
   double max_corr_dist_coarse_;
   double max_corr_dist_fine_;
-  double max_corr_dist_ultrafine_;
+  double max_corr_dist_ultra_fine_;
 
   bool calibration_use_only_stopped_;
   bool calibration_use_only_last_frames_;
@@ -223,6 +224,9 @@ struct CalibrationParameters
   int camera_calibration_max_frames_;
 
   // Base lidar calibration parameters;
+  bool calibrate_base_frame_;
+  std::string base_frame_;
+
   double base_lidar_crop_box_min_x_;
   double base_lidar_crop_box_min_y_;
   double base_lidar_crop_box_min_z_;
@@ -235,6 +239,7 @@ struct CalibrationParameters
   int base_lidar_min_plane_points_;
   double base_lidar_min_plane_points_percentage_;
   double base_lidar_max_cos_distance_;
+  bool base_lidar_overwrite_xy_yaw_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__TYPES_HPP_

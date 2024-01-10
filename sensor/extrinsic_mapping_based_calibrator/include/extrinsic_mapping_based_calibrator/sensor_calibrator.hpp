@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 
 class SensorCalibrator
 {
@@ -39,17 +40,11 @@ public:
     CalibrationParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
     std::shared_ptr<tf2_ros::Buffer> & tf_buffer);
 
-  virtual void singleSensorCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) = 0;
-  virtual void multipleSensorCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) = 0;
-
   /*!
    * Calibrate the sensor
+   * @returns a tuple containing the calibration success status, the transform, and a score
    */
-  virtual bool calibrate(Eigen::Matrix4f & best_transform, float & best_score) = 0;
+  virtual std::tuple<bool, Eigen::Matrix4d, float> calibrate() = 0;
 
   /*!
    * Configure the calibrator parameters
@@ -63,7 +58,7 @@ protected:
    * @param[in] frame Frame to use as a center for constructing the pointcloud
    * @param[in] resolution Max resolution of the resulting pointcloud
    * @param[in] max_range Max range of the resulting pointcloud
-   * @retval Source to distance pointcloud distance
+   * @return Source to distance pointcloud distance
    */
   PointcloudType::Ptr getDensePointcloudFromMap(
     const Eigen::Matrix4f & pose, const Frame::Ptr & frame, double resolution, double min_range,

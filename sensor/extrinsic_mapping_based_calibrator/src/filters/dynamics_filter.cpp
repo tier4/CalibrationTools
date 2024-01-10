@@ -26,7 +26,7 @@ std::vector<CalibrationFrame> DynamicsFilter::filter(
   std::vector<CalibrationFrame> filtered_frames;
 
   std::stringstream ss;
-  ss << "Accepted kyframes due to dynamics & interpolation: ";
+  ss << "Accepted keyframes due to dynamics & interpolation: ";
 
   for (auto & frame : calibration_frames) {
     RCLCPP_INFO(

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tier4_calibration_msgs/srv/calibration_database.hpp>
-#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/frame.hpp>
+#include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
 
 #include <tf2/convert.h>
 #include <tf2_ros/buffer.h>
@@ -59,17 +59,16 @@ public:
   explicit ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options);
 
 protected:
-  void cameraCalibrationRequestReceivedCallback(
-    const std::string & parent_frame, const std::string & calibration_camera_frame,
-    const std::string & calibration_camera_optical_frame,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
-
-  void lidarCalibrationRequestReceivedCallback(
-    const std::string & parent_frame, const std::string & calibration_lidar_base_frame,
-    const std::string & calibration_lidar_frame,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+  /*!
+   * External interface to start the calibration process and retrieve the result.
+   * The call gets blocked until the calibration finishes
+   *
+   * @param request An empty service request
+   * @param response A vector of calibration results
+   */
+  void requestReceivedCallback(
+    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response);
 
   /*!
    * Message callback for detected objects
@@ -106,8 +105,7 @@ protected:
 
   OnSetParametersCallbackHandle::SharedPtr set_param_res_;
 
-  rclcpp::CallbackGroup::SharedPtr subs_callback_group_;
-  std::map<std::string, rclcpp::CallbackGroup::SharedPtr> srv_callback_groups_map_;
+  rclcpp::CallbackGroup::SharedPtr srv_callback_group_;
 
   std::map<std::string, CameraInfoSubscription::SharedPtr> calibration_camera_info_subs_;
   std::map<std::string, ImageSubscription::SharedPtr> calibration_image_subs_;
@@ -118,9 +116,7 @@ protected:
   rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr
     predicted_objects_sub_;
 
-  std::map<
-    std::string, rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr>
-    calibration_api_server_map_;
+  rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr service_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   std::map<std::string, FrameService::SharedPtr> single_lidar_calibration_server_map_;
   std::map<std::string, FrameService::SharedPtr> multiple_lidar_calibration_server_map_;
@@ -140,12 +136,6 @@ protected:
 
   // Calibration API
   std::map<std::string, bool> calibration_pending_map_;
-  std::map<std::string, bool> calibration_status_map_;
-  std::map<std::string, Eigen::Matrix4f> calibration_results_map_;
-  std::map<std::string, float> calibration_scores_map_;
-  std::map<std::string, std::string> sensor_kit_frame_map_;              // calibration parent frame
-  std::map<std::string, std::string> calibration_lidar_base_frame_map_;  // calibration child frame
-  std::map<std::string, std::string> calibration_camera_frame_map_;      // calibration child frame
   std::mutex service_mutex_;
 
   // Mapper
@@ -153,6 +143,7 @@ protected:
   MappingData::Ptr mapping_data_;
 
   // Calibrators
+  bool calibration_pending_{false};
   std::map<std::string, CameraCalibrator::Ptr> camera_calibrators_;
   std::map<std::string, LidarCalibrator::Ptr> lidar_calibrators_;
   BaseLidarCalibrator::Ptr base_lidar_calibrator_;

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,11 @@
 #include <extrinsic_mapping_based_calibrator/calibration_mapper.hpp>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <extrinsic_mapping_based_calibrator/voxel_grid_filter_wrapper.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 #include <pcl/filters/crop_box.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2/utils.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
 
 CalibrationMapper::CalibrationMapper(
   MappingParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
@@ -49,25 +44,37 @@ CalibrationMapper::CalibrationMapper(
   bag_paused_(false),
   bag_pause_requested_(false),
   bag_resume_requested_(false),
-  stopped_(false)
+  state_(INITIAL)
 {
   published_map_pointcloud_ptr_.reset(new PointcloudType());
 
   assert(parameters_);
-  ndt_.setResolution(parameters_->mapper_resolution_);
-  ndt_.setStepSize(parameters_->mapper_step_size_);
-  ndt_.setMaximumIterations(parameters_->mapper_max_iterations_);
-  ndt_.setTransformationEpsilon(parameters_->mapper_epsilon_);
-  ndt_.setNeighborhoodSearchMethod(pclomp::DIRECT7);
-
-  gicp_.setMaximumIterations(
-    parameters_->mapper_max_iterations_);  // The maximum number of iterations
-  gicp_.setMaxCorrespondenceDistance(parameters_->mapper_max_correspondence_distance_);
-  gicp_.setTransformationEpsilon(parameters_->mapper_epsilon_);
-  gicp_.setEuclideanFitnessEpsilon(parameters_->mapper_epsilon_);
+  // cSpell:ignore pclomp
+  ndt_ptr_ = std::make_shared<pclomp::NormalDistributionsTransform<PointType, PointType>>();
+  ndt_ptr_->setResolution(parameters_->mapper_resolution_);
+  ndt_ptr_->setStepSize(parameters_->mapper_step_size_);
+  ndt_ptr_->setMaximumIterations(parameters_->mapper_max_iterations_);
+  ndt_ptr_->setTransformationEpsilon(parameters_->mapper_epsilon_);
+  ndt_ptr_->setNeighborhoodSearchMethod(pclomp::DIRECT7);
 
   if (parameters_->mapper_num_threads_ > 0) {
-    ndt_.setNumThreads(parameters_->mapper_num_threads_);
+    ndt_ptr_->setNumThreads(parameters_->mapper_num_threads_);
+  }
+
+  gicp_ptr_ = std::make_shared<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>>();
+  gicp_ptr_->setMaximumIterations(
+    parameters_->mapper_max_iterations_);  // The maximum number of iterations
+  gicp_ptr_->setMaxCorrespondenceDistance(parameters_->mapper_max_correspondence_distance_);
+  gicp_ptr_->setTransformationEpsilon(parameters_->mapper_epsilon_);
+  gicp_ptr_->setEuclideanFitnessEpsilon(parameters_->mapper_epsilon_);
+
+  if (parameters_->registrator_name_ == "ndt") {
+    registrator_ptr_ = ndt_ptr_;
+  } else if (parameters_->registrator_name_ == "gicp") {
+    registrator_ptr_ = gicp_ptr_;
+  } else {
+    RCLCPP_ERROR(rclcpp::get_logger("calibration_mapper"), "Invalid registrator");
+    return;
   }
 
   for (auto & calibration_frame_name : data_->calibration_lidar_frame_names_) {
@@ -79,27 +86,43 @@ CalibrationMapper::CalibrationMapper(
     data_->last_unmatched_keyframe_map_[calibration_frame_name] =
       parameters_->calibration_skip_keyframes_;
   }
-
-  std::thread thread = std::thread(&CalibrationMapper::mappingThreadWorker, this);
-  thread.detach();
 }
 
-bool CalibrationMapper::stopped()
+CalibrationMapper::State CalibrationMapper::getState()
 {
-  std::unique_lock<std::mutex> lock(data_->mutex_);
-  return stopped_;
+  std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
+  return state_;
 }
 
-void CalibrationMapper::stop() { stopped_ = true; }
+void CalibrationMapper::start()
+{
+  if (this->getState() == INITIAL) {
+    RCLCPP_INFO(rclcpp::get_logger("calibration_mapper"), "Starting mapping thread");
+
+    std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
+    state_ = MAPPING;
+    std::thread thread = std::thread(&CalibrationMapper::mappingThreadWorker, this);
+    thread.detach();
+  } else {
+    RCLCPP_INFO(
+      rclcpp::get_logger("calibration_mapper"),
+      "Attempting to start mapping when it was running or had already finished. Ignoring request");
+  }
+}
+
+void CalibrationMapper::stop()
+{
+  std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
+  state_ = FINISHED;
+}
 
 void CalibrationMapper::calibrationCameraInfoCallback(
   const sensor_msgs::msg::CameraInfo::SharedPtr msg, const std::string & frame_name)
 {
-  if (stopped_) {
-    std::unique_lock<std::mutex> lock(data_->mutex_);
-    RCLCPP_WARN(
+  if (this->getState() != MAPPING) {
+    RCLCPP_WARN_ONCE(
       rclcpp::get_logger("calibration_mapper"),
-      "Reveived a calibration camera info while not mapping. Ignoring it");
+      "Received a calibration camera info while not mapping. Ignoring it");
     return;
   }
 
@@ -109,11 +132,10 @@ void CalibrationMapper::calibrationCameraInfoCallback(
 void CalibrationMapper::calibrationImageCallback(
   const sensor_msgs::msg::CompressedImage::SharedPtr msg, const std::string & frame_name)
 {
-  if (stopped_) {
-    std::unique_lock<std::mutex> lock(data_->mutex_);
-    RCLCPP_WARN(
+  if (this->getState() != MAPPING) {
+    RCLCPP_WARN_ONCE(
       rclcpp::get_logger("calibration_mapper"),
-      "Reveived a calibration image while not mapping. Ignoring it");
+      "Received a calibration image while not mapping. Ignoring it");
     return;
   }
 
@@ -123,11 +145,13 @@ void CalibrationMapper::calibrationImageCallback(
 void CalibrationMapper::calibrationPointCloudCallback(
   const sensor_msgs::msg::PointCloud2::SharedPtr msg, const std::string & frame_name)
 {
-  if (stopped_) {
-    std::unique_lock<std::mutex> lock(data_->mutex_);
-    RCLCPP_WARN(
+  // This method does not need a lock since calibration_pointclouds_list_map_ is only accessed in
+  // the main ROS thread
+
+  if (this->getState() != MAPPING) {
+    RCLCPP_WARN_ONCE(
       rclcpp::get_logger("calibration_mapper"),
-      "Reveived a calibration pc while not mapping. Ignoring it");
+      "Received a calibration pc while not mapping. Ignoring it");
     return;
   }
 
@@ -137,11 +161,11 @@ void CalibrationMapper::calibrationPointCloudCallback(
 void CalibrationMapper::mappingPointCloudCallback(
   const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-  if (stopped_) {
-    std::unique_lock<std::mutex> lock(data_->mutex_);
-    RCLCPP_WARN(
+  if (this->getState() != MAPPING) {
+    RCLCPP_WARN_ONCE(
       rclcpp::get_logger("calibration_mapper"),
-      "Reveived a mapping pc while not mapping. Ignoring it");
+      "Received a mapping pc while not mapping. Ignoring it");
+
     return;
   }
 
@@ -162,18 +186,24 @@ void CalibrationMapper::mappingPointCloudCallback(
   transformPointcloud<PointcloudType>(
     msg->header.frame_id, data_->mapping_lidar_frame_, pc_ptr, *tf_buffer_);
 
-  std::unique_lock<std::mutex> lock(data_->mutex_);
+  std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
   auto frame = std::make_shared<Frame>();
   frame->header_ = msg->header;
   frame->pointcloud_raw_ = pc_ptr;
 
-  if (
-    rclcpp::Time(msg->header.stamp) < rclcpp::Time(mapping_lidar_header_->stamp) ||
-    static_cast<int>(data_->processed_frames_.size()) >= parameters_->mapping_max_frames_) {
+  if (rclcpp::Time(msg->header.stamp) < rclcpp::Time(mapping_lidar_header_->stamp)) {
+    stop();
+    RCLCPP_WARN(
+      rclcpp::get_logger("calibration_mapper"), "Stopping mapper due to negative delta timestamps");
+    return;
+  }
+
+  if (static_cast<int>(data_->processed_frames_.size()) >= parameters_->mapping_max_frames_) {
     stop();
     RCLCPP_WARN(
       rclcpp::get_logger("calibration_mapper"),
-      "Stopping mapper due to enough frames being collected");
+      "Stopping mapper due to enough frames being collected (%lu)",
+      data_->processed_frames_.size());
     return;
   }
 
@@ -181,9 +211,8 @@ void CalibrationMapper::mappingPointCloudCallback(
     parameters_->use_rosbag_ && !bag_paused_ && !bag_pause_requested_ &&
     data_->unprocessed_frames_.size() > 0) {
     auto cb = [&](rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedFuture response_client) {
-      auto res = response_client.get();
-      (void)res;
-      std::unique_lock<std::mutex> lock(data_->mutex_);
+      [[maybe_unused]] auto res = response_client.get();
+      std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
       bag_paused_ = true;
       bag_pause_requested_ = false;
     };
@@ -204,17 +233,17 @@ void CalibrationMapper::mappingThreadWorker()
   using std::chrono_literals::operator""ms;
 
   Eigen::Matrix4f last_pose =
-    Eigen::Matrix4f::Identity();  // not necessarily assciated with a frame
+    Eigen::Matrix4f::Identity();  // not necessarily associated with a frame
   builtin_interfaces::msg::Time last_stamp;
 
-  while (rclcpp::ok() && !stopped_) {
+  while (rclcpp::ok() && getState() == MAPPING) {
     Frame::Ptr frame, prev_frame, prev_frame_not_last;
 
     float prev_distance = 0.f;
 
     // Locked section
     {
-      std::unique_lock<std::mutex> lock(data_->mutex_);
+      std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
 
       if (data_->unprocessed_frames_.size() == 0) {
         if (parameters_->use_rosbag_ && bag_paused_ && !bag_resume_requested_) {
@@ -222,7 +251,7 @@ void CalibrationMapper::mappingThreadWorker()
             [&](rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedFuture response_client) {
               auto res = response_client.get();
               (void)res;
-              std::unique_lock<std::mutex> lock(data_->mutex_);
+              std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
               bag_paused_ = false;
               bag_resume_requested_ = false;
               RCLCPP_WARN(rclcpp::get_logger("calibration_mapper"), "Received resume response");
@@ -258,7 +287,7 @@ void CalibrationMapper::mappingThreadWorker()
     }
 
     if (!prev_frame) {
-      initLocalMap(frame);
+      this->initLocalMap(frame);
     }
 
     VoxelGridWrapper<PointType> voxel_grid;
@@ -273,8 +302,8 @@ void CalibrationMapper::mappingThreadWorker()
     voxel_grid.filter(*frame->pointcloud_subsampled_);
 
     // Register the frame to the map
-    gicp_.setInputTarget(data_->local_map_ptr_);
-    gicp_.setInputSource(frame->pointcloud_subsampled_);
+    registrator_ptr_->setInputTarget(data_->local_map_ptr_);
+    registrator_ptr_->setInputSource(frame->pointcloud_subsampled_);
 
     Eigen::Matrix4f guess = last_pose;
     double dt_since_last =
@@ -306,19 +335,19 @@ void CalibrationMapper::mappingThreadWorker()
         guess = prev_frame_not_last->pose_ * interpolated_pose;
       }
 
-      gicp_.align(*aligned_cloud_ptr, guess);
-      last_pose = gicp_.getFinalTransformation();
+      registrator_ptr_->align(*aligned_cloud_ptr, guess);
+      last_pose = registrator_ptr_->getFinalTransformation();
 
       float innovation = Eigen::Affine3f(guess.inverse() * last_pose).translation().norm();
-      float score = gicp_.getFitnessScore();
+      float score = registrator_ptr_->getFitnessScore();
 
       RCLCPP_INFO(
-        rclcpp::get_logger("calibration_mapper"), "NDT Innovation=%.2f. Score=%.2f", innovation,
-        score);
+        rclcpp::get_logger("calibration_mapper"), "Registrator innovation=%.2f. Score=%.2f",
+        innovation, score);
       last_stamp = frame->header_.stamp;
     }
 
-    std::unique_lock<std::mutex> lock(data_->mutex_);
+    std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
 
     // Fill the frame information
     frame->pose_ = last_pose;
@@ -343,12 +372,14 @@ void CalibrationMapper::mappingThreadWorker()
     pose_msg.pose = tf2::toMsg(Eigen::Affine3d(frame->pose_.cast<double>()));
     data_->trajectory_.push_back(pose_msg);
 
-    if (!checkFrameLost(prev_frame, frame, dt_since_last) && shouldDropFrame(prev_frame, frame)) {
+    if (
+      !this->checkFrameLost(prev_frame, frame, dt_since_last) &&
+      this->shouldDropFrame(prev_frame, frame)) {
       continue;
     }
 
     data_->processed_frames_.push_back(frame);
-    checkKeyframe(frame);
+    this->checkKeyframe(frame);
 
     RCLCPP_INFO(
       rclcpp::get_logger("calibration_mapper"),
@@ -386,8 +417,8 @@ void CalibrationMapper::checkKeyframe(Frame::Ptr frame)
     data_->keyframes_and_stopped_.push_back(frame);
     frame->is_key_frame_ = true;
     frame->keyframe_id_ = data_->keyframes_.size();
-    checkKeyframeLost(frame);
-    recalculateLocalMap();
+    this->checkKeyframeLost(frame);
+    this->recalculateLocalMap();
   }
 }
 
@@ -403,22 +434,24 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
   const Frame::Ptr & left_frame = data_->keyframes_[keyframe->keyframe_id_ - 1];
   Frame::Ptr & right_frame = keyframe;
 
-  Eigen::Affine3f dpose1(two_left_frame->pose_.inverse() * left_frame->pose_);
-  Eigen::Affine3f dpose2(left_frame->pose_.inverse() * right_frame->pose_);
+  Eigen::Affine3f delta_pose1(two_left_frame->pose_.inverse() * left_frame->pose_);
+  Eigen::Affine3f delta_pose2(left_frame->pose_.inverse() * right_frame->pose_);
   Eigen::Affine3f left_pose(left_frame->pose_);
   Eigen::Affine3f right_pose(right_frame->pose_);
 
-  auto d1 = dpose1.translation().normalized();
-  auto d2 = dpose2.translation().normalized();
+  auto d1 = delta_pose1.translation().normalized();
+  auto d2 = delta_pose2.translation().normalized();
 
   float trans_angle_diff = (180.0 / M_PI) * std::acos(d1.dot(d2));
-  trans_angle_diff =
-    dpose2.translation().norm() > parameters_->new_keyframe_min_distance_ ? trans_angle_diff : 0.0;
+  trans_angle_diff = delta_pose2.translation().norm() > parameters_->new_keyframe_min_distance_
+                       ? trans_angle_diff
+                       : 0.0;
 
   float rot_angle_diff =
-    (180.0 / M_PI) * std::acos(std::min(
-                       1.0, 0.5 * ((dpose1.rotation().inverse() * dpose2.rotation()).trace() -
-                                   1.0)));  // Tr(R) = 1 + 2*cos(theta)
+    (180.0 / M_PI) *
+    std::acos(std::min(
+      1.0, 0.5 * ((delta_pose1.rotation().inverse() * delta_pose2.rotation()).trace() -
+                  1.0)));  // Tr(R) = 1 + 2*cos(theta)
 
   if (
     std::abs(trans_angle_diff) > parameters_->lost_frame_max_angle_diff_ ||
@@ -428,7 +461,7 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
     RCLCPP_WARN(
       rclcpp::get_logger("calibration_mapper"),
       "Mapping failed. Angle between keyframes is too high. a1=%.2f (deg) a2=%.2f (deg) "
-      "theshold=%.2f (deg)",
+      "threshold=%.2f (deg)",
       trans_angle_diff, rot_angle_diff, parameters_->lost_frame_max_angle_diff_);
 
     return;
@@ -579,15 +612,12 @@ void CalibrationMapper::recalculateLocalMap()
   voxel_grid.filter(*data_->local_map_ptr_);
 }
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
 void CalibrationMapper::publisherTimerCallback()
 {
   static int published_frames = 0;
   static int published_keyframes = 0;
 
-  std::unique_lock<std::mutex> lock(data_->mutex_);
+  std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
 
   if (static_cast<int>(data_->keyframes_.size()) == published_keyframes) {
     return;
@@ -726,12 +756,12 @@ void CalibrationMapper::publisherTimerCallback()
   return;
 }
 
-#pragma GCC pop_options
-
 void CalibrationMapper::dataMatchingTimerCallback()
 {
+  // calibration_pointclouds_list_map_ are only used in the main ROS thread and thus do not need a
+  // lock
   for (const auto & frame_name : data_->calibration_camera_optical_link_frame_names) {
-    mappingCalibrationDatamatching<sensor_msgs::msg::CompressedImage>(
+    mappingCalibrationDataMatching<sensor_msgs::msg::CompressedImage>(
       frame_name, calibration_images_list_map_[frame_name],
       std::bind(
         &CalibrationMapper::addNewCameraCalibrationFrame, this, std::placeholders::_1,
@@ -739,7 +769,7 @@ void CalibrationMapper::dataMatchingTimerCallback()
   }
 
   for (const auto & frame_name : data_->calibration_lidar_frame_names_) {
-    mappingCalibrationDatamatching<sensor_msgs::msg::PointCloud2>(
+    mappingCalibrationDataMatching<sensor_msgs::msg::PointCloud2>(
       frame_name, calibration_pointclouds_list_map_[frame_name],
       std::bind(
         &CalibrationMapper::addNewLidarCalibrationFrame, this, std::placeholders::_1,
@@ -748,13 +778,13 @@ void CalibrationMapper::dataMatchingTimerCallback()
 }
 
 template <class MsgType>
-void CalibrationMapper::mappingCalibrationDatamatching(
+void CalibrationMapper::mappingCalibrationDataMatching(
   const std::string & calibration_frame_name,
   std::list<typename MsgType::SharedPtr> & calibration_msg_list,
   std::function<bool(const std::string &, typename MsgType::SharedPtr &, CalibrationFrame &)>
     add_frame_function)
 {
-  std::unique_lock<std::mutex> lock(data_->mutex_);
+  std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
   auto & last_unmatched_keyframe = data_->last_unmatched_keyframe_map_[calibration_frame_name];
 
   while (last_unmatched_keyframe < static_cast<int>(data_->keyframes_and_stopped_.size()) - 1) {
@@ -767,7 +797,7 @@ void CalibrationMapper::mappingCalibrationDatamatching(
       return;
     }
 
-    // We need there to be a frame after the keyframe since we may wanto to interpolate in that
+    // We need there to be a frame after the keyframe since we may want to interpolate in that
     // direction
     if (keyframe->frame_id_ + 1 >= static_cast<int>(data_->processed_frames_.size())) {
       return;
@@ -795,7 +825,7 @@ void CalibrationMapper::mappingCalibrationDatamatching(
     double interpolated_speed;
     double interpolated_accel;
 
-    // Compute first and second order derivates with finite differences
+    // Compute first and second order derivatives with finite differences
     if (dt_left < dt_right) {
       msg = msg_left;
 
@@ -884,9 +914,9 @@ bool CalibrationMapper::addNewCameraCalibrationFrame(
   const std::string & calibration_frame_name, sensor_msgs::msg::CompressedImage::SharedPtr & msg,
   CalibrationFrame & calibration_frame)
 {
-  calibration_frame.source_camera_info =
+  calibration_frame.source_camera_info_ =
     latest_calibration_camera_infos_map_[calibration_frame_name];
-  calibration_frame.source_image = msg;
+  calibration_frame.source_image_ = msg;
   data_->camera_calibration_frames_map_[calibration_frame_name].emplace_back(calibration_frame);
 
   return true;
@@ -930,13 +960,13 @@ bool CalibrationMapper::addNewLidarCalibrationFrame(
   return true;
 }
 
-template void CalibrationMapper::mappingCalibrationDatamatching<sensor_msgs::msg::CompressedImage>(
+template void CalibrationMapper::mappingCalibrationDataMatching<sensor_msgs::msg::CompressedImage>(
   const std::string & calibration_frame,
   std::list<sensor_msgs::msg::CompressedImage::SharedPtr> & calibration_msg_list,
   std::function<
     bool(const std::string &, sensor_msgs::msg::CompressedImage::SharedPtr &, CalibrationFrame &)>
     add_frame_function);
-template void CalibrationMapper::mappingCalibrationDatamatching<sensor_msgs::msg::PointCloud2>(
+template void CalibrationMapper::mappingCalibrationDataMatching<sensor_msgs::msg::PointCloud2>(
   const std::string & calibration_frame,
   std::list<sensor_msgs::msg::PointCloud2::SharedPtr> & calibration_msg_list,
   std::function<

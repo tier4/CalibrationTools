@@ -99,7 +99,8 @@ void ObjectDetectionFilter::filter(
   const Eigen::Affine3f & source_lidar_to_mapping_lidar_transform,
   const Eigen::Affine3f & mapping_lidar_to_detection_frame_transform)
 {
-  // Compute the min/max from the source pointcloud to use as AABB on the source pointcloud frame
+  // Compute the min/max from the source pointcloud to use as axis-aligned-bounding-boxes on the
+  // source pointcloud frame
   Eigen::Array4f min_p, max_p;
   min_p.setConstant(std::numeric_limits<float>::max());
   max_p.setConstant(-std::numeric_limits<float>::max());

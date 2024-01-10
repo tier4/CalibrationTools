@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 class LidarCalibrator : public SensorCalibrator
@@ -50,17 +51,11 @@ public:
     PointPublisher::SharedPtr & calibrated_source_aligned_map_pub,
     PointPublisher::SharedPtr & target_map_pub);
 
-  void singleSensorCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
-  void multipleSensorCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
-
   /*!
-   * Calibrate the lidar
+   * Calibrate the sensor
+   * @returns a tuple containing the calibration success status, the transform, and a score
    */
-  bool calibrate(Eigen::Matrix4f & best_transform, float & best_score) override;
+  std::tuple<bool, Eigen::Matrix4d, float> calibrate() override;
 
   /*!
    * Configure the calibrator parameters
@@ -114,17 +109,18 @@ protected:
   std::vector<pcl::Registration<PointType, PointType>::Ptr> calibration_registrators_;
   std::vector<pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr>
     calibration_batch_registrators_;
+  // cSpell:ignore pclomp
   pclomp::NormalDistributionsTransform<PointType, PointType>::Ptr calibration_ndt_;
   pcl::GeneralizedIterativeClosestPoint<PointType, PointType>::Ptr calibration_gicp_;
   pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_coarse_;
   pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_fine_;
-  pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_ultrafine_;
+  pcl::IterativeClosestPoint<PointType, PointType>::Ptr calibration_icp_ultra_fine_;
   pcl::registration::CorrespondenceEstimation<PointType, PointType>::Ptr correspondence_estimator_;
 
   pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr calibration_batch_icp_coarse_;
   pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr calibration_batch_icp_fine_;
   pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr
-    calibration_batch_icp_ultrafine_;
+    calibration_batch_icp_ultra_fine_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__LIDAR_CALIBRATOR_HPP_

@@ -20,6 +20,7 @@
 #include <kalman_filter/kalman_filter.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tier4_ground_plane_utils/ground_plane_utils.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -27,9 +28,9 @@
 #include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
-#include <pcl/filters/passthrough.h>
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <tf2/convert.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -46,6 +47,7 @@ namespace extrinsic_ground_plane_calibrator
 {
 
 using PointType = pcl::PointXYZ;
+using tier4_ground_plane_utils::GroundPlaneExtractorParameters;
 
 /**
  * A base-lidar calibrator.
@@ -96,23 +98,6 @@ protected:
   bool checkInitialTransforms();
 
   /*!
-   * Extracts the ground plane from a pointcloud
-   * @param[in] pointcloud the input pointcloud
-   * @return A tuple containing wether or not th calibration plane was found, the estimated ground
-   * plane model, and the inliers of the respective model
-   */
-  std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr> extractGroundPlane(
-    pcl::PointCloud<PointType>::Ptr & pointcloud);
-
-  /*!
-   * Computes the fitting error of an estimated model and the initial one
-   * @param[in] estimated_model the estimated model
-   * @param[in] inliers the inliers of the current estimated model
-   */
-  void evaluateModels(
-    const Eigen::Vector4d & estimated_model, pcl::PointCloud<PointType>::Ptr inliers) const;
-
-  /*!
    * Filter individual calibration plane estimations and accumulate the inliers for a final
    * regression
    * @param[in] estimated_model the estimated model
@@ -152,75 +137,12 @@ protected:
    */
   void publishTf(const Eigen::Vector4d & ground_plane_model);
 
-  /*!
-   * Computes a plane model given a pose.
-   * The normal of the plane is given by the z-axis of the rotation of the pose
-   * @param[in] pointcloud Point cloud to crop
-   * @param[in] max_range Range to crop the pointcloud to
-   * @return the plane model
-   */
-  Eigen::Vector4d poseToPlaneModel(const Eigen::Isometry3d & pose) const;
-
-  /*!
-   * Compute a pose from a plane model a*x + b*y +c*z +d = 0
-   * The pose lies has its origin on the z-projection of the plane
-   * @param[in] model Point cloud to crop
-   * @return the plane pose
-   */
-  Eigen::Isometry3d modelPlaneToPose(const Eigen::Vector4d & model) const;
-
-  /*!
-   * Estimate / refine a lidar-base transform given an initial guess and an estimated ground plane
-   * @param[in] base_lidar_transform Initial base lidar transform
-   * @param[in] ground_plane_model ground plane model
-   * @return the refined base lidar pose
-   */
-  Eigen::Isometry3d estimateBaseLidarTransform(
-    const Eigen::Isometry3d & initial_base_lidar_transform, const Eigen::Vector4d & model) const;
-
-  /*!
-   * Removes the point that are consistent with an input plane from the pointcloud
-   * @param[in] input_pointcloud the pointcloud to filter
-   * @param[in] outlier_model the model that represents the outliers
-   * @param[in] outlier_tolerance the tolerance with which a point is still considered an outlier
-   * @return the refined base lidar pose
-   */
-  pcl::PointCloud<PointType>::Ptr removeOutliers(
-    pcl::PointCloud<PointType>::Ptr input_pointcloud, const Eigen::Vector4d & outlier_plane_model,
-    double outlier_tolerance) const;
-
-  /*!
-   * Overwrite the calibrated x, y, and yaw values of the calibrated base lidar transform with the
-   * initial ones
-   * @param[in] initial_base_lidar_transform_msg the initial base lidar transform msg
-   * @param[in] calibrated_base_lidar_transform_msg the calibrated base lidar transform msg
-   * @return the calibrated base lidar transform with its x, y, and yaw values being overwritten by
-   * the initial ones
-   */
-  geometry_msgs::msg::TransformStamped overwriteXYYawValues(
-    const geometry_msgs::msg::TransformStamped & initial_base_lidar_transform_msg,
-    const geometry_msgs::msg::TransformStamped & calibrated_base_lidar_transform_msg) const;
-
   // Parameters
   std::string base_frame_;
   std::string lidar_frame_;
 
+  GroundPlaneExtractorParameters ground_plane_extractor_parameters_;
   double marker_size_;
-  bool use_crop_box_filter_;
-  double crop_box_min_x_;
-  double crop_box_min_y_;
-  double crop_box_min_z_;
-  double crop_box_max_x_;
-  double crop_box_max_y_;
-  double crop_box_max_z_;
-  bool remove_outliers_;
-  double remove_outlier_tolerance_;
-  bool use_pca_rough_normal_;
-  double max_inlier_distance_;
-  int min_plane_points_;
-  int min_plane_points_percentage_;
-  double max_cos_distance_;
-  int max_iterations_;
   bool verbose_;
   bool overwrite_xy_yaw_;
   bool filter_estimations_;

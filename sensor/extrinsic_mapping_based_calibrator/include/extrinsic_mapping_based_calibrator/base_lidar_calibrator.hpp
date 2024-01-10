@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 class BaseLidarCalibrator : public SensorCalibrator
@@ -44,54 +45,22 @@ public:
     PointPublisher::SharedPtr & augmented_pointcloud_pub,
     PointPublisher::SharedPtr & ground_pointcloud_pub);
 
-  void calibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response);
-
   /*!
-   * Calibrate the lidar
+   * Calibrate the sensor
+   * @returns a tuple containing the calibration success status, the transform, and a score
    */
-  bool calibrate(Eigen::Matrix4f & best_transform, float & best_score) override;
+  std::tuple<bool, Eigen::Matrix4d, float> calibrate() override;
 
-  virtual void singleSensorCalibrationCallback(
-    __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request>
-      request,
-    __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response>
-      response)
-  {
-  }
-
-  virtual void multipleSensorCalibrationCallback(
-    __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request>
-      request,
-    __attribute__((unused)) const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response>
-      response)
-  {
-  }
-
-  virtual void configureCalibrators() {}
+  void configureCalibrators() override {}
 
 protected:
-  /*!
-   * Extract the ground plane of a pointcloud
-   * @param[in] pointcloud Source pointcloud
-   * @param[in] initial_normal Target pointcloud
-   * @param[in] model Target pointcloud
-   * @param[in] inliers_pointcloud Target pointcloud
-   */
-  bool extractGroundPlane(
-    pcl::PointCloud<PointType>::Ptr & pointcloud, const Eigen::Vector3f & initial_normal,
-    Eigen::Vector4d & model, pcl::PointCloud<PointType>::Ptr & inliers_pointcloud);
-
   /*!
    * Publish the calibration results
    */
   void publishResults(
-    const Eigen::Vector4d & ground_model,
+    const Eigen::Vector4d & ground_model, const Eigen::Matrix4f & pose,
     const pcl::PointCloud<PointType>::Ptr & ground_plane_inliers,
     const pcl::PointCloud<PointType>::Ptr & augmented_pointcloud_ptr);
-
-  Eigen::Isometry3d modelPlaneToPose(const Eigen::Vector4d & model) const;
 
   tf2_ros::StaticTransformBroadcaster & tf_broadcaster_;
   PointPublisher::SharedPtr augmented_pointcloud_pub_;

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 class CameraCalibrator : public SensorCalibrator
@@ -45,17 +46,11 @@ public:
     std::shared_ptr<tf2_ros::Buffer> & tf_buffer, PointPublisher::SharedPtr & target_map_pub,
     MarkersPublisher::SharedPtr & target_markers_pub);
 
-  void singleSensorCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
-  void multipleSensorCalibrationCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response) override;
-
   /*!
-   * Calibrate the lidar
+   * Calibrate the sensor
+   * @returns a tuple containing the calibration success status, the transform, and a score
    */
-  bool calibrate(Eigen::Matrix4f & best_transform, float & best_score) override;
+  std::tuple<bool, Eigen::Matrix4d, float> calibrate() override;
 
   /*!
    * Configure the calibrator parameters

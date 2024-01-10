@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -132,8 +132,8 @@ template <class Archive>
 void serialize(Archive & ar, CalibrationFrame & frame, const unsigned int version)
 {
   (void)version;
-  ar & frame.source_camera_info;
-  ar & frame.source_image;
+  ar & frame.source_camera_info_;
+  ar & frame.source_image_;
   ar & frame.source_pointcloud_;
   ar & frame.source_header_;
 

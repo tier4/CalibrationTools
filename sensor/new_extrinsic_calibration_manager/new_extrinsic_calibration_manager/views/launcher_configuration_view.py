@@ -16,6 +16,7 @@
 
 
 from functools import reduce
+from typing import Dict
 import xml.dom.minidom
 
 from PySide2.QtCore import Signal
@@ -86,8 +87,10 @@ class LauncherConfigurationView(QWidget):
                 element.getAttribute("description") if element.hasAttribute("description") else " "
             )
             if element.hasAttribute("default"):
+                default_value = element.getAttribute("default").replace(" ", "")
+
                 self.optional_arguments_dict[element.getAttribute("name")] = {
-                    "value": element.getAttribute("default"),
+                    "value": default_value,
                     "description": description,
                 }
             else:
@@ -104,7 +107,9 @@ class LauncherConfigurationView(QWidget):
             name_label = QLabel(argument_name)
             name_label.setMaximumWidth(400)
 
-            self.arguments_widgets_dict[argument_name] = QLineEdit(argument_data["value"])
+            default_value = argument_data["value"].getAttribute("default").replace(" ", "")
+
+            self.arguments_widgets_dict[argument_name] = QLineEdit(default_value)
             self.arguments_widgets_dict[argument_name].textChanged.connect(
                 self.check_argument_status
             )
@@ -181,10 +186,17 @@ class LauncherConfigurationView(QWidget):
         print("check_argument_status", flush=True)
 
     def on_click(self):
-        args_dict = {
+        args_dict: Dict[str, str] = {
             arg_name: args_widget.text()
             for arg_name, args_widget in self.arguments_widgets_dict.items()
         }
+
+        def is_list(arg: str):
+            return len(arg) >= 2 and arg[0] == "[" and arg[-1] == "]"
+
+        for key, value in args_dict.items():
+            if is_list(value):
+                args_dict[key] = [item.strip() for item in value.strip("[]").split(",")]
 
         print(args_dict, flush=True)
 

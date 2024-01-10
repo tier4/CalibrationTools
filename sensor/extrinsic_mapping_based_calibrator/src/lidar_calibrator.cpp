@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,9 @@
 #include <extrinsic_mapping_based_calibrator/lidar_calibrator.hpp>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <extrinsic_mapping_based_calibrator/voxel_grid_filter_wrapper.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 #include <pcl_conversions/pcl_conversions.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
-
-#define UNUSED(x) (void)x;
 
 LidarCalibrator::LidarCalibrator(
   const std::string & calibration_lidar_frame, CalibrationParameters::Ptr & parameters,
@@ -67,25 +60,27 @@ LidarCalibrator::LidarCalibrator(
   correspondence_estimator_ =
     pcl::make_shared<pcl::registration::CorrespondenceEstimation<PointType, PointType>>();
 
+  // cSpell:ignore pclomp
   calibration_ndt_ = pcl::make_shared<pclomp::NormalDistributionsTransform<PointType, PointType>>();
   calibration_gicp_ =
     pcl::make_shared<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>>();
   calibration_icp_coarse_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
   calibration_icp_fine_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
-  calibration_icp_ultrafine_ = pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
+  calibration_icp_ultra_fine_ =
+    pcl::make_shared<pcl::IterativeClosestPoint<PointType, PointType>>();
 
   calibration_registrators_ = {
     calibration_ndt_, calibration_gicp_, calibration_icp_coarse_, calibration_icp_fine_,
-    calibration_icp_ultrafine_};
+    calibration_icp_ultra_fine_};
 
   calibration_batch_icp_coarse_ =
     pcl::make_shared<pcl::JointIterativeClosestPointExtended<PointType, PointType>>();
   calibration_batch_icp_fine_ =
     pcl::make_shared<pcl::JointIterativeClosestPointExtended<PointType, PointType>>();
-  calibration_batch_icp_ultrafine_ =
+  calibration_batch_icp_ultra_fine_ =
     pcl::make_shared<pcl::JointIterativeClosestPointExtended<PointType, PointType>>();
   calibration_batch_registrators_ = {
-    calibration_batch_icp_coarse_, calibration_batch_icp_fine_, calibration_batch_icp_ultrafine_};
+    calibration_batch_icp_coarse_, calibration_batch_icp_fine_, calibration_batch_icp_ultra_fine_};
 
   configureCalibrators();
 }
@@ -95,7 +90,7 @@ void LidarCalibrator::configureCalibrators()
   calibration_gicp_->setMaxCorrespondenceDistance(parameters_->max_corr_dist_coarse_);
   calibration_icp_coarse_->setMaxCorrespondenceDistance(parameters_->max_corr_dist_coarse_);
   calibration_icp_fine_->setMaxCorrespondenceDistance(parameters_->max_corr_dist_fine_);
-  calibration_icp_ultrafine_->setMaxCorrespondenceDistance(parameters_->max_corr_dist_ultrafine_);
+  calibration_icp_ultra_fine_->setMaxCorrespondenceDistance(parameters_->max_corr_dist_ultra_fine_);
 
   for (auto & calibrator : calibration_registrators_) {
     calibrator->setMaximumIterations(parameters_->solver_iterations_);
@@ -103,8 +98,8 @@ void LidarCalibrator::configureCalibrators()
 
   calibration_batch_icp_coarse_->setMaxCorrespondenceDistance(parameters_->max_corr_dist_coarse_);
   calibration_batch_icp_fine_->setMaxCorrespondenceDistance(parameters_->max_corr_dist_fine_);
-  calibration_batch_icp_ultrafine_->setMaxCorrespondenceDistance(
-    parameters_->max_corr_dist_ultrafine_);
+  calibration_batch_icp_ultra_fine_->setMaxCorrespondenceDistance(
+    parameters_->max_corr_dist_ultra_fine_);
 
   for (auto & calibrator : calibration_batch_registrators_) {
     calibrator->setMaximumIterations(parameters_->solver_iterations_);
@@ -120,172 +115,9 @@ void LidarCalibrator::setUpCalibrators(
   }
 }
 
-void LidarCalibrator::singleSensorCalibrationCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
+std::tuple<bool, Eigen::Matrix4d, float> LidarCalibrator::calibrate()
 {
-  std::unique_lock<std::mutex> lock(data_->mutex_);
-
-  Eigen::Matrix4f initial_calibration_transform;
-  float initial_distance;
-
-  // Get the tf between frames
-  try {
-    rclcpp::Time t = rclcpp::Time(0);
-    rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
-
-    geometry_msgs::msg::Transform initial_target_to_source_msg;
-    Eigen::Affine3d initial_target_to_source_affine;
-
-    initial_target_to_source_msg =
-      tf_buffer_->lookupTransform(data_->mapping_lidar_frame_, calibrator_sensor_frame_, t, timeout)
-        .transform;
-
-    initial_target_to_source_affine = tf2::transformToEigen(initial_target_to_source_msg);
-    initial_distance = initial_target_to_source_affine.translation().norm();
-    initial_calibration_transform = initial_target_to_source_affine.matrix().cast<float>();
-  } catch (tf2::TransformException & ex) {
-    RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "could not get initial tf. %s", ex.what());
-    return;
-  }
-
-  auto & calibration_frames = data_->lidar_calibration_frames_map_[calibrator_sensor_frame_];
-
-  std::vector<CalibrationFrame> filtered_calibration_frames =
-    filter_->filter(calibration_frames, data_);
-
-  if (request->id >= static_cast<int>(filtered_calibration_frames.size())) {
-    RCLCPP_WARN(
-      rclcpp::get_logger(calibrator_name_), "Invalid requested calibration frame. size=%lu",
-      filtered_calibration_frames.size());
-    return;
-  }
-
-  CalibrationFrame & calibration_frame = filtered_calibration_frames[request->id];
-  PointcloudType::Ptr source_pc_ptr = cropPointCloud<PointcloudType>(
-    calibration_frame.source_pointcloud_, parameters_->min_calibration_range_,
-    parameters_->max_calibration_range_);
-
-  PointcloudType::Ptr target_dense_pc_ptr = getDensePointcloudFromMap(
-    calibration_frame.local_map_pose_, calibration_frame.target_frame_,
-    parameters_->leaf_size_dense_map_, parameters_->min_calibration_range_,
-    parameters_->max_calibration_range_ + initial_distance);
-  PointcloudType::Ptr target_thin_pc_ptr = getDensePointcloudFromMap(
-    calibration_frame.local_map_pose_, calibration_frame.target_frame_,
-    parameters_->calibration_viz_leaf_size_, parameters_->min_calibration_range_,
-    parameters_->max_calibration_range_ + initial_distance);
-
-  PointcloudType::Ptr initial_source_aligned_pc_ptr(new PointcloudType());
-  pcl::transformPointCloud(
-    *source_pc_ptr, *initial_source_aligned_pc_ptr, initial_calibration_transform);
-
-  // Evaluate the initial calibration
-  setUpCalibrators(source_pc_ptr, target_dense_pc_ptr);
-
-  // Crop unused areas of the target pointcloud to save processing time
-  cropTargetPointcloud<PointType>(
-    initial_source_aligned_pc_ptr, target_dense_pc_ptr, initial_distance);
-  cropTargetPointcloud<PointType>(
-    initial_source_aligned_pc_ptr, target_thin_pc_ptr, initial_distance);
-
-  correspondence_estimator_->setInputSource(initial_source_aligned_pc_ptr);
-  correspondence_estimator_->setInputTarget(target_dense_pc_ptr);
-  double initial_score = sourceTargetDistance(
-    *correspondence_estimator_, parameters_->calibration_eval_max_corr_distance_);
-
-  RCLCPP_WARN(
-    rclcpp::get_logger(calibrator_name_),
-    "Initial calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = "
-    "%.4f m",
-    initial_score, std::sqrt(initial_score), parameters_->leaf_size_dense_map_);
-
-  // Find best calibration using an "ensemble" of calibrators
-  std::vector<Eigen::Matrix4f> candidate_transforms = {initial_calibration_transform};
-  Eigen::Matrix4f best_transform;
-  float best_score;
-
-  findBestTransform<pcl::Registration<PointType, PointType>, PointType>(
-    candidate_transforms, calibration_registrators_,
-    parameters_->calibration_eval_max_corr_distance_, parameters_->calibration_verbose_,
-    best_transform, best_score);
-
-  PointcloudType::Ptr calibrated_source_aligned_pc_ptr(new PointcloudType());
-  pcl::transformPointCloud(*source_pc_ptr, *calibrated_source_aligned_pc_ptr, best_transform);
-
-  RCLCPP_WARN(
-    rclcpp::get_logger(calibrator_name_),
-    "Best calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = "
-    "%.4f m",
-    best_score, std::sqrt(best_score), parameters_->leaf_size_dense_map_);
-
-  PointcloudType::Ptr test_aligned_pc_ptr(new PointcloudType());
-  pcl::transformPointCloud(*source_pc_ptr, *test_aligned_pc_ptr, best_transform);
-
-  correspondence_estimator_->setInputSource(test_aligned_pc_ptr);
-  correspondence_estimator_->setInputTarget(target_dense_pc_ptr);
-  double test_score = sourceTargetDistance(
-    *correspondence_estimator_, parameters_->calibration_eval_max_corr_distance_);
-
-  RCLCPP_WARN(
-    rclcpp::get_logger(calibrator_name_),
-    "Test calibration score = %.4f (avg.squared.dist) | sqrt.score = %.4f m | discretization = "
-    "%.4f m",
-    test_score, std::sqrt(test_score), parameters_->leaf_size_dense_map_);
-
-  // Output ROS data
-  PointcloudType::Ptr initial_source_aligned_map_ptr(new PointcloudType());
-  PointcloudType::Ptr calibrated_source_aligned_map_ptr(new PointcloudType());
-  PointcloudType::Ptr target_thin_map_ptr(new PointcloudType());
-  pcl::transformPointCloud(
-    *initial_source_aligned_pc_ptr, *initial_source_aligned_map_ptr,
-    calibration_frame.local_map_pose_);
-  pcl::transformPointCloud(
-    *calibrated_source_aligned_pc_ptr, *calibrated_source_aligned_map_ptr,
-    calibration_frame.local_map_pose_);
-  pcl::transformPointCloud(
-    *target_thin_pc_ptr, *target_thin_map_ptr, calibration_frame.local_map_pose_);
-
-  sensor_msgs::msg::PointCloud2 initial_source_aligned_map_msg, calibrated_source_aligned_map_msg,
-    target_map_msg;
-  initial_source_aligned_pc_ptr->width = initial_source_aligned_pc_ptr->points.size();
-  initial_source_aligned_pc_ptr->height = 1;
-  calibrated_source_aligned_pc_ptr->width = calibrated_source_aligned_pc_ptr->points.size();
-  calibrated_source_aligned_pc_ptr->height = 1;
-  target_thin_pc_ptr->width = target_thin_pc_ptr->points.size();
-  target_thin_pc_ptr->height = 1;
-
-  pcl::toROSMsg(*initial_source_aligned_map_ptr, initial_source_aligned_map_msg);
-  pcl::toROSMsg(*calibrated_source_aligned_map_ptr, calibrated_source_aligned_map_msg);
-  pcl::toROSMsg(*target_thin_map_ptr, target_map_msg);
-
-  initial_source_aligned_map_msg.header = calibration_frame.source_header_;
-  initial_source_aligned_map_msg.header.frame_id = data_->map_frame_;
-  calibrated_source_aligned_map_msg.header = calibration_frame.source_header_;
-  calibrated_source_aligned_map_msg.header.frame_id = data_->map_frame_;
-  target_map_msg.header = calibration_frame.target_frame_->header_;
-  target_map_msg.header.frame_id = data_->map_frame_;
-
-  initial_source_aligned_map_pub_->publish(initial_source_aligned_map_msg);
-  calibrated_source_aligned_map_pub_->publish(calibrated_source_aligned_map_msg);
-  target_map_pub_->publish(target_map_msg);
-
-  response->success = true;
-}
-
-void LidarCalibrator::multipleSensorCalibrationCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Request> request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::Frame::Response> response)
-{
-  UNUSED(request);
-
-  Eigen::Matrix4f result;
-  float score;
-  response->success = calibrate(result, score);
-}
-
-bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_score)
-{
-  std::unique_lock<std::mutex> lock(data_->mutex_);
+  std::unique_lock<std::recursive_mutex> lock(data_->mutex_);
 
   Eigen::Matrix4f initial_calibration_transform;
   float initial_distance;
@@ -310,7 +142,7 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "could not get initial tf. %s", ex.what());
 
-    return false;
+    return std::make_tuple<>(false, Eigen::Matrix4d::Identity(), 0.f);
   }
 
   // Filter calibration frames using several criteria and select the best ones suited for
@@ -319,17 +151,19 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
     filter_->filter(data_->lidar_calibration_frames_map_[calibrator_sensor_frame_], data_);
 
   if (static_cast<int>(calibration_frames.size()) < parameters_->lidar_calibration_min_frames_) {
-    RCLCPP_WARN(rclcpp::get_logger(calibrator_name_), "Insufficient calibration frames. aborting.");
-    return false;
+    RCLCPP_WARN(
+      rclcpp::get_logger(calibrator_name_), "Insufficient calibration frames (%lu / %d). aborting.",
+      calibration_frames.size(), parameters_->lidar_calibration_min_frames_);
+    return std::make_tuple<>(false, Eigen::Matrix4d::Identity(), 0.f);
   }
 
-  // Prepate augmented calibration pointclouds
+  // Prepare augmented calibration pointclouds
   std::vector<pcl::PointCloud<PointType>::Ptr> sources, targets, targets_thin;
   prepareCalibrationData(
     calibration_frames, initial_distance, initial_calibration_transform, sources, targets,
     targets_thin);
 
-  // We no lnoger used the shared data
+  // We no longer used the shared data
   lock.unlock();
 
   // Set all the registrators with the pointclouds
@@ -392,7 +226,7 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
       best_single_frame_transform_score, best_single_frame_transform_multi_frame_score);
   }
 
-  // Choose the best sigle-frame calibration
+  // Choose the best single-frame calibration
   std::vector<float>::iterator best_single_frame_calibration_multi_frame_score_it =
     std::min_element(
       std::begin(single_frame_calibration_multi_frame_score),
@@ -485,15 +319,14 @@ bool LidarCalibrator::calibrate(Eigen::Matrix4f & best_transform, float & best_s
     rclcpp::get_logger(calibrator_name_), "\t\tw: %f",
     best_multi_frame_calibration_tf.transform.rotation.w);
 
-  // Publish the calbiraton resullts
+  // Publish the calibration results
   publishResults(
     calibration_frames, sources, targets_thin, initial_calibration_transform,
     best_multi_frame_calibration_transform, map_frame);
 
-  best_transform = best_multi_frame_calibration_transform;
-  best_score = std::sqrt(best_multi_frame_calibration_multi_frame_score);
-
-  return true;
+  return std::make_tuple<>(
+    true, best_multi_frame_calibration_transform.cast<double>(),
+    std::sqrt(best_multi_frame_calibration_multi_frame_score));
 }
 
 void LidarCalibrator::prepareCalibrationData(
@@ -523,7 +356,7 @@ void LidarCalibrator::prepareCalibrationData(
       parameters_->calibration_viz_leaf_size_, parameters_->min_calibration_range_,
       parameters_->max_calibration_range_ + initial_distance);
 
-    // Transfor the source to target frame to crop it later
+    // Transform the source to target frame to crop it later
     PointcloudType::Ptr initial_source_aligned_pc_ptr(new PointcloudType());
     pcl::transformPointCloud(
       *source_pc_ptr, *initial_source_aligned_pc_ptr, initial_calibration_transform);

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ void transformPointcloud(
  * Crop a point cloud to a certain radius
  * @param[in] pointcloud Point cloud to crop
  * @param[in] max_range Range to crop the pointcloud to
- * @retval Cropped pointcloud
+ * @return Cropped pointcloud
  */
 template <typename PointcloudType>
 typename PointcloudType::Ptr cropPointCloud(
@@ -54,10 +54,10 @@ typename PointcloudType::Ptr cropPointCloud(
  * Interpolate a transform between two points in time
  * @param[in] t Interpolation time t >t1 and t<=t2
  * @param[in] t1 Left interpolation time
- * @param[in] t2 Righti interpolation time
+ * @param[in] t2 Right interpolation time
  * @param[in] m1 Transformation at time t1
  * @param[in] m2 Transformation at time t2
- * @retval Interpolated transform at time t
+ * @return Interpolated transform at time t
  */
 Eigen::Matrix4f poseInterpolationBase(
   double t, double t1, double t2, Eigen::Matrix4f const & m1, Eigen::Matrix4f const & m2);
@@ -66,10 +66,10 @@ Eigen::Matrix4f poseInterpolationBase(
  * Interpolate a transform between two points in time
  * @param[in] t Interpolation time (can be greater than t2 -> extrapolation)
  * @param[in] t1 Left interpolation time
- * @param[in] t2 Righti interpolation time
+ * @param[in] t2 Right interpolation time
  * @param[in] m1 Transformation at time t1
  * @param[in] m2 Transformation at time t2
- * @retval Interpolated transform at time t
+ * @return Interpolated transform at time t
  */
 Eigen::Matrix4f poseInterpolation(
   double t, double t1, double t2, Eigen::Matrix4f const & m1, Eigen::Matrix4f const & m2);
@@ -78,7 +78,7 @@ Eigen::Matrix4f poseInterpolation(
  * Compute the source to distance pointcloud distance
  * @param[in] estimator Correspondence estimator between source and target
  * @param[in] max_corr_distance Maximum distance allowed to be considered a correspondence [m]
- * @retval Source to distance pointcloud distance
+ * @return Source to distance pointcloud distance
  */
 template <class PointType>
 float sourceTargetDistance(
@@ -91,7 +91,7 @@ float sourceTargetDistance(
  * @param[in] target Target pointcloud
  * @param[in] transform Target to input frame transform
  * @param[in] max_corr_distance Maximum distance allowed to be considered a correspondence [m]
- * @retval Source to distance pointcloud distance
+ * @return Source to distance pointcloud distance
  */
 template <class PointType>
 float sourceTargetDistance(
@@ -105,7 +105,7 @@ float sourceTargetDistance(
  * @param[in] target Target pointcloud
  * @param[in] transform Target to input frame transform
  * @param[in] max_corr_distance Maximum distance allowed to be considered a correspondence [m]
- * @retval Source to distance pointcloud distance
+ * @return Source to distance pointcloud distance
  */
 template <class PointType>
 float sourceTargetDistance(
@@ -129,7 +129,7 @@ void findBestTransform(
   bool verbose, Eigen::Matrix4f & best_transform, float & best_score);
 
 /*!
- * Crop a target pointcloud to the ranges of a sorce one
+ * Crop a target pointcloud to the ranges of a source one
  * @param[in] initial_source_aligned_pc_ptr Pointcloud to use as a reference to crop a target
  * pointcloud
  * @param[out] target_dense_pc_ptr Pointcloud to be cropped

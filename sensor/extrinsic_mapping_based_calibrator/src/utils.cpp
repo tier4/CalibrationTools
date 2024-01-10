@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,17 +15,12 @@
 #include <Eigen/Core>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_calibration_pcl_extensions/joint_icp_extended.hpp>
 
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/voxel_grid.h>
 #include <tf2_ros/buffer.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
 
 #include <limits>
 
@@ -92,6 +87,7 @@ Eigen::Matrix4f poseInterpolationBase(
   Eigen::Affine3f aff1(m1);
   Eigen::Affine3f aff2(m2);
 
+  // cSpell:ignore Quaternionf
   Eigen::Quaternionf rot1(aff1.linear());
   Eigen::Quaternionf rot2(aff2.linear());
 
@@ -124,9 +120,9 @@ Eigen::Matrix4f poseInterpolation(
     te -= dt;
   }
 
-  auto asd = poseInterpolationBase(te, 0, dt, Eigen::Matrix4f::Identity(), dm);
+  auto rem = poseInterpolationBase(te, 0, dt, Eigen::Matrix4f::Identity(), dm);
 
-  return m * asd;
+  return m * rem;
 }
 
 template <class PointType>
@@ -137,15 +133,10 @@ float sourceTargetDistance(
   pcl::Correspondences correspondences;
   estimator.determineCorrespondences(correspondences, max_corr_distance);
 
-  int n_points = static_cast<int>(correspondences.size());
-  float sum = 0;
-
-  for (int i = 0; i < n_points; ++i) {
-    float distance = correspondences[i].distance;
-    sum += distance;
-  }
-
-  return sum / n_points;
+  return std::transform_reduce(
+           correspondences.begin(), correspondences.end(), 0.0, std::plus{},
+           [](auto & correspondence) { return correspondence.distance; }) /
+         correspondences.size();
 }
 
 template <class PointType>

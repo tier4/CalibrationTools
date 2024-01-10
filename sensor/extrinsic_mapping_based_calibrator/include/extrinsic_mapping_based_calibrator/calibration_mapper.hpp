@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ public:
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
   using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
+
+  enum State { INITIAL, MAPPING, FINISHED };
 
   CalibrationMapper(
     MappingParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
@@ -99,9 +101,15 @@ public:
   void dataMatchingTimerCallback();
 
   /*!
-   * Whether or not map has stopped
+   * State of the mapper
+   * @return the state of the mapper
    */
-  bool stopped();
+  State getState();
+
+  /*!
+   * Start the mapper
+   */
+  void start();
 
   /*!
    * Stop the mapper
@@ -117,7 +125,7 @@ protected:
    */
 
   template <class MsgType>
-  void mappingCalibrationDatamatching(
+  void mappingCalibrationDataMatching(
     const std::string & calibration_frame_name,
     std::list<typename MsgType::SharedPtr> & calibration_msg_list,
     std::function<bool(const std::string &, typename MsgType::SharedPtr &, CalibrationFrame &)>
@@ -197,8 +205,10 @@ protected:
   rclcpp::Client<rosbag2_interfaces::srv::Pause>::SharedPtr rosbag2_pause_client_;
   rclcpp::Client<rosbag2_interfaces::srv::Resume>::SharedPtr rosbag2_resume_client_;
 
-  pclomp::NormalDistributionsTransform<PointType, PointType> ndt_;
-  pcl::GeneralizedIterativeClosestPoint<PointType, PointType> gicp_;
+  // cSpell:ignore pclomp
+  pclomp::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_ptr_;
+  pcl::GeneralizedIterativeClosestPoint<PointType, PointType>::Ptr gicp_ptr_;
+  pcl::Registration<PointType, PointType>::Ptr registrator_ptr_;
 
   // ROS Data
   std_msgs::msg::Header::SharedPtr mapping_lidar_header_;
@@ -224,7 +234,7 @@ protected:
   bool bag_resume_requested_;
 
   // External interface
-  bool stopped_;
+  State state_;
 };
 
 #endif  // EXTRINSIC_MAPPING_BASED_CALIBRATOR__CALIBRATION_MAPPER_HPP_
