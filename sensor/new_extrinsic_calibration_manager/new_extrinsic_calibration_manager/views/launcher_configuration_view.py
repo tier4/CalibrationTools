@@ -107,7 +107,7 @@ class LauncherConfigurationView(QWidget):
             name_label = QLabel(argument_name)
             name_label.setMaximumWidth(400)
 
-            default_value = argument_data["value"].getAttribute("default").replace(" ", "")
+            default_value = argument_data["value"].replace(" ", "")
 
             self.arguments_widgets_dict[argument_name] = QLineEdit(default_value)
             self.arguments_widgets_dict[argument_name].textChanged.connect(
