@@ -28,7 +28,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: lidar
 Visualization Manager:
   Class: ""
   Displays:
@@ -69,7 +69,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /sensing/lidar/front_lower/pointcloud_raw
+        Value: /pointcloud_topic
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -103,7 +103,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/lidar_background_pointcloud
+        Value: /lidar_background_pointcloud
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -137,7 +137,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/lidar_foreground_pointcloud
+        Value: /lidar_foreground_pointcloud
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -171,7 +171,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/lidar_colored_clusters
+        Value: /lidar_colored_clusters
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -185,7 +185,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/lidar_detection_markers
+        Value: /lidar_detection_markers
       Value: true
     - BUS:
         Alpha: 0.9990000128746033
@@ -205,14 +205,17 @@ Visualization Manager:
       Display Twist: true
       Display UUID: true
       Display Velocity: true
-      Enabled: false
+      Enabled: true
       Line Width: 0.029999999329447746
       MOTORCYCLE:
         Alpha: 0.9990000128746033
         Color: 119; 11; 32
       Name: DetectedObjects
       Namespaces:
-        {}
+        label: true
+        shape: true
+        twist: true
+        velocity: true
       PEDESTRIAN:
         Alpha: 0.9990000128746033
         Color: 255; 192; 203
@@ -228,11 +231,11 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /sensing/radar/front_left/detected_objects
+        Value: /sensing/radar/front_center/detected_objects
       UNKNOWN:
         Alpha: 0.9990000128746033
         Color: 255; 255; 255
-      Value: false
+      Value: true
       Visualization Type: Normal
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
@@ -244,7 +247,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/radar_detection_markers
+        Value: /radar_detection_markers
       Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -258,7 +261,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -276,10 +279,10 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/radar_background_pointcloud
+        Value: /radar_background_pointcloud
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: tracking_markers
@@ -290,7 +293,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/tracking_markers
+        Value: /tracking_markers
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
@@ -302,7 +305,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /front_unit/front_unit_base_link/front_left/radar_link/matches_markers
+        Value: " /matches_markers"
       Value: true
     - Alpha: 0.5
       Cell Size: 1
@@ -319,13 +322,13 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 30
+      Plane Cell Count: 40
       Reference Frame: <Fixed Frame>
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: pandar_40p_front
+    Fixed Frame: radar_frame
     Frame Rate: 30
   Name: root
   Tools:
@@ -376,14 +379,14 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.274797260761261
+      Pitch: 0.3347971737384796
       Position:
-        X: -4.431237697601318
-        Y: 2.402275562286377
-        Z: 3.859571933746338
+        X: -5.563827037811279
+        Y: 0.02594861388206482
+        Z: 3.217146873474121
       Target Frame: <Fixed Frame>
       Value: FPS (rviz_default_plugins)
-      Yaw: 5.75633430480957
+      Yaw: 6.261345386505127
     Saved: ~
 Window Geometry:
   Displays:

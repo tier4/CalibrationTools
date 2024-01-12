@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_
-#define EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_
+#ifndef EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR_HPP_
+#define EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR_HPP_
 
 #include <Eigen/Dense>
-#include <extrinsic_reflector_based_calibrator/track.hpp>
-#include <extrinsic_reflector_based_calibrator/types.hpp>
+#include <extrinsic_marker_radar_lidar_calibrator/track.hpp>
+#include <extrinsic_marker_radar_lidar_calibrator/types.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
@@ -25,7 +25,9 @@
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <radar_msgs/msg/radar_tracks.hpp>
-#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/pcl_base.h>
@@ -35,19 +37,17 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#else
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#endif
-
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
+
+namespace extrinsic_marker_radar_lidar_calibrator
+{
 
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
@@ -59,8 +59,8 @@ public:
 
 protected:
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response);
 
   void timerCallback();
 
@@ -121,7 +121,7 @@ protected:
 
   struct Parameters
   {
-    std::string parent_frame;
+    std::string radar_parallel_frame;
     bool use_lidar_initial_crop_box_filter;
     double lidar_initial_crop_box_min_x;
     double lidar_initial_crop_box_min_y;
@@ -183,7 +183,7 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
   rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
 
-  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
+  rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr
     calibration_request_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr background_model_service_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr tracking_service_server_;
@@ -198,22 +198,22 @@ protected:
 
   // Initial tfs comparable with the one with our method
   geometry_msgs::msg::Transform initial_radar_to_lidar_msg_;
-  tf2::Transform initial_radar_to_lidar_tf2_;
   Eigen::Isometry3d initial_radar_to_lidar_eigen_;
   Eigen::Isometry3d calibrated_radar_to_lidar_eigen_;
 
-  geometry_msgs::msg::Transform parent_to_lidar_msg_;
-  tf2::Transform parent_to_lidar_tf2_;
-  Eigen::Isometry3d parent_to_lidar_eigen_;
+  geometry_msgs::msg::Transform radar_parallel_to_lidar_msg_;
+  Eigen::Isometry3d radar_parallel_to_lidar_eigen_;
 
-  bool got_initial_transform_;
-  bool broadcast_tf_;
-  bool calibration_valid_;
-  bool send_calibration_;
+  bool got_initial_transform_{false};
+  bool broadcast_tf_{false};
+  bool calibration_valid_{false};
+  double calibration_distance_score_{std::numeric_limits<double>::max()};
+  double calibration_yaw_score_{std::numeric_limits<double>::max()};
+  bool send_calibration_{false};
 
   // Background model
-  bool extract_lidar_background_model_;
-  bool extract_radar_background_model_;
+  bool extract_lidar_background_model_{false};
+  bool extract_radar_background_model_{false};
   std_msgs::msg::Header latest_updated_lidar_header_;
   std_msgs::msg::Header latest_updated_radar_header_;
   std_msgs::msg::Header first_lidar_header_;
@@ -225,11 +225,13 @@ protected:
   radar_msgs::msg::RadarTracks::SharedPtr latest_radar_msgs_;
 
   // Tracking
-  bool tracking_active_;
-  int current_new_tracks_;
+  bool tracking_active_{false};
+  int current_new_tracks_{false};
   TrackFactory::Ptr factory_ptr_;
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
 };
 
-#endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__EXTRINSIC_REFLECTOR_BASED_CALIBRATOR_HPP_
+}  // namespace extrinsic_marker_radar_lidar_calibrator
+
+#endif  // EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR_HPP_

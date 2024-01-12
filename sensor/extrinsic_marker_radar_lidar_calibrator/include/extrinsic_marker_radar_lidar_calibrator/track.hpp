@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__TRACK_HPP_
-#define EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__TRACK_HPP_
+#ifndef EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__TRACK_HPP_
+#define EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__TRACK_HPP_
 
 #include <Eigen/Dense>
 #include <builtin_interfaces/msg/time.hpp>
-#include <extrinsic_reflector_based_calibrator/types.hpp>
+#include <extrinsic_marker_radar_lidar_calibrator/types.hpp>
 #include <kalman_filter/kalman_filter.hpp>
 #include <rclcpp/time.hpp>
 
 #include <memory>
+
+namespace extrinsic_marker_radar_lidar_calibrator
+{
 
 class Track
 {
@@ -64,7 +67,7 @@ public:
   TrackFactory(
     double initial_lidar_cov, double initial_radar_cov, double lidar_measurement_cov,
     double radar_measurement_cov, double lidar_process_cov, double radar_process_cov,
-    double lidar_convergence_tresh, double radar_convergence_thresh, double timeout_thresh,
+    double lidar_convergence_thresh, double radar_convergence_thresh, double timeout_thresh,
     double max_matching_distance);
 
   Track makeTrack(
@@ -81,4 +84,6 @@ public:
   double max_matching_distance_;
 };
 
-#endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__TRACK_HPP_
+}  // namespace extrinsic_marker_radar_lidar_calibrator
+
+#endif  // EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__TRACK_HPP_

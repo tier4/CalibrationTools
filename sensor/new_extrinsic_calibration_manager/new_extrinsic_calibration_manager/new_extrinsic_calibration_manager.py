@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +36,11 @@ from PySide2.QtWidgets import QTableView
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
 from ament_index_python.packages import get_package_share_directory
+from launch import LaunchContext
+from launch.actions.declare_launch_argument import DeclareLaunchArgument
+from launch.actions.set_launch_configuration import SetLaunchConfiguration
+from launch.frontend import Parser
+from launch.launch_description import LaunchDescription
 from new_extrinsic_calibration_manager.calibration_manager_model import CalibratorManagerModel
 from new_extrinsic_calibration_manager.calibrator_base import CalibratorState
 from new_extrinsic_calibration_manager.calibrator_registry import CalibratorRegistry
@@ -132,16 +137,18 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         )
         pass
 
-    def launch_calibrators(self, project_name: str, calibrator_name: str, argument_dict: Dict):
+    def launch_calibrators(
+        self, project_name: str, calibrator_name: str, launch_argument_dict: Dict
+    ):
         # Show the main UI
         self.show()
 
         # Execute the launcher
-        print(argument_dict, flush=True)
-        argument_list = [f"{k}:={v}" for k, v in argument_dict.items()]
+        print(launch_argument_dict, flush=True)
+        argument_list = [f"{k}:={v}" for k, v in launch_argument_dict.items()]
 
         package_share_directory = get_package_share_directory("new_extrinsic_calibration_manager")
-        path = (
+        launcher_path = (
             package_share_directory
             + "/launch/"
             + project_name
@@ -149,7 +156,25 @@ class NewExtrinsicCalibrationManager(QMainWindow):
             + calibrator_name
             + ".launch.xml"
         )
-        self.process = subprocess.Popen(["ros2", "launch", path] + argument_list)
+        self.process = subprocess.Popen(["ros2", "launch", launcher_path] + argument_list)
+
+        # Recover all the launcher arguments (in addition to user defined in launch_arguments)
+        try:
+            with open(launcher_path) as f:
+                root_entity, parser = Parser.load(f)
+        except Exception as e:
+            print("Failed reading xml file. Either not-existent or invalid")
+            raise e
+
+        ld: LaunchDescription = parser.parse_description(root_entity)
+        context = LaunchContext()
+        context.launch_configurations.update(launch_argument_dict)
+
+        for e in ld.entities:
+            if isinstance(e, (DeclareLaunchArgument, SetLaunchConfiguration)):
+                e.visit(context)
+
+        print(context.launch_configurations)
 
         # Start the ROS interface
         self.ros_interface = RosInterface()
@@ -157,7 +182,10 @@ class NewExtrinsicCalibrationManager(QMainWindow):
 
         # Create the calibrator wrapper
         self.calibrator = CalibratorRegistry.create_calibrator(
-            project_name, calibrator_name, ros_interface=self.ros_interface, **argument_dict
+            project_name,
+            calibrator_name,
+            ros_interface=self.ros_interface,
+            **context.launch_configurations,
         )
         self.calibrator.state_changed_signal.connect(self.on_calibrator_state_changed)
         self.calibrator.calibration_finished_signal.connect(self.on_calibration_finished)

@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.5)
-project(extrinsic_reflector_based_calibrator)
+project(extrinsic_marker_radar_lidar_calibrator)
 
 find_package(autoware_cmake REQUIRED)
 
@@ -13,13 +13,13 @@ ament_export_include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-ament_auto_add_executable(extrinsic_reflector_based_calibrator
-  src/extrinsic_reflector_based_calibrator.cpp
+ament_auto_add_executable(extrinsic_marker_radar_lidar_calibrator
+  src/extrinsic_marker_radar_lidar_calibrator.cpp
   src/track.cpp
   src/main.cpp
 )
 
-target_link_libraries(extrinsic_reflector_based_calibrator
+target_link_libraries(extrinsic_marker_radar_lidar_calibrator
   ${OpenCV_LIBS}
 )
 

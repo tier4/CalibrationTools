@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="ns" default=""/>
-  <arg name="parent_frame" default="front_unit_base_link"/>
+  <arg name="calibration_service_name" default="calibrate_radar_lidar"/>
+  <arg name="rviz" default="true"/>
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_marker_radar_lidar_calibrator)/rviz/default.rviz"/>
+  <arg name="radar_parallel_frame" default="front_unit_base_link"/>
   <arg name="input_lidar_pointcloud" default="/sensing/lidar/front_lower/pointcloud_raw"/>
   <arg name="input_radar_objects" default="/sensing/radar/front_center/objects_raw"/>
 
@@ -25,8 +28,10 @@
 
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
-    <node pkg="extrinsic_reflector_based_calibrator" exec="extrinsic_reflector_based_calibrator" name="extrinsic_reflector_based_calibrator" output="screen">
-      <param name="parent_frame" value="$(var parent_frame)"/>
+    <node pkg="extrinsic_marker_radar_lidar_calibrator" exec="extrinsic_marker_radar_lidar_calibrator" name="extrinsic_marker_radar_lidar_calibrator" output="screen">
+      <param name="radar_parallel_frame" value="$(var radar_parallel_frame)"/>
+
+      <remap from="extrinsic_calibration" to="$(var calibration_service_name)"/>
       <remap from="input_lidar_pointcloud" to="$(var input_lidar_pointcloud)"/>
       <remap from="input_radar_objects" to="$(var input_radar_objects)"/>
 
@@ -49,6 +54,10 @@
       <param name="radar_initial_crop_box_max_z" value="$(var radar_initial_crop_box_max_z)"/>
     </node>
 
-    <node pkg="extrinsic_reflector_based_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
+    <node pkg="extrinsic_marker_radar_lidar_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
+
+    <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)">
+      <remap from="/pointcloud_topic" to="$(var input_lidar_pointcloud)"/>
+    </node>
   </group>
 </launch>

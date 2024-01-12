@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,9 +13,12 @@
 // limitations under the License.
 
 #include <Eigen/Dense>
-#include <extrinsic_reflector_based_calibrator/track.hpp>
-#include <extrinsic_reflector_based_calibrator/types.hpp>
+#include <extrinsic_marker_radar_lidar_calibrator/track.hpp>
+#include <extrinsic_marker_radar_lidar_calibrator/types.hpp>
 #include <kalman_filter/kalman_filter.hpp>
+
+namespace extrinsic_marker_radar_lidar_calibrator
+{
 
 Track::Track(
   builtin_interfaces::msg::Time & t0, const KalmanFilter & initial_lidar_filter,
@@ -151,3 +154,5 @@ Track TrackFactory::makeTrack(
     t0, lidar_filter, radar_filter, lidar_convergence_thresh_, radar_convergence_thresh_,
     timeout_thresh_, max_matching_distance_);
 }
+
+}  // namespace extrinsic_marker_radar_lidar_calibrator

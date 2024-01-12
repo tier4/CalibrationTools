@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__TYPES_HPP_
-#define EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__TYPES_HPP_
+#ifndef EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__TYPES_HPP_
+#define EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__TYPES_HPP_
 
 #include <Eigen/Dense>
 
@@ -25,11 +25,14 @@
 #include <memory>
 #include <unordered_set>
 
+namespace extrinsic_marker_radar_lidar_calibrator
+{
+
 struct BackgroundModel
 {
 public:
   using PointType = pcl::PointXYZ;
-  using TreeType = pcl::KdTreeFLANN<PointType>;
+  using TreeType = pcl::KdTreeFLANN<PointType>;  // cSpell:ignore FLANN
   using index_t = std::uint32_t;
 
   BackgroundModel()
@@ -54,4 +57,6 @@ public:
   TreeType tree_;
 };
 
-#endif  // EXTRINSIC_REFLECTOR_BASED_CALIBRATOR__TYPES_HPP_
+}  // namespace extrinsic_marker_radar_lidar_calibrator
+
+#endif  // EXTRINSIC_MARKER_RADAR_LIDAR_CALIBRATOR__TYPES_HPP_

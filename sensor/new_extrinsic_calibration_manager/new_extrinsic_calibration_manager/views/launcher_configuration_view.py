@@ -17,9 +17,9 @@
 
 from functools import reduce
 from typing import Dict
-import xml.dom.minidom
 
 from PySide2.QtCore import Signal
+from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QGridLayout
 from PySide2.QtWidgets import QGroupBox
 from PySide2.QtWidgets import QLabel
@@ -29,6 +29,9 @@ from PySide2.QtWidgets import QScrollArea
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
 from ament_index_python.packages import get_package_share_directory
+from launch.actions.declare_launch_argument import DeclareLaunchArgument
+from launch.frontend import Parser
+from launch.launch_description import LaunchDescription
 
 
 class LauncherConfigurationView(QWidget):
@@ -59,7 +62,7 @@ class LauncherConfigurationView(QWidget):
         self.arguments_widgets_dict = {}
 
         package_share_directory = get_package_share_directory("new_extrinsic_calibration_manager")
-        path = (
+        launcher_path = (
             package_share_directory
             + "/launch/"
             + project_name
@@ -68,35 +71,38 @@ class LauncherConfigurationView(QWidget):
             + ".launch.xml"
         )
 
-        print(f"Reading xml from: {path}")
+        print(f"Reading xml from: {launcher_path}")
 
         try:
-            xml_doc = xml.dom.minidom.parse(path)
+            with open(launcher_path) as f:
+                root_entity, parser = Parser.load(f)
         except Exception as e:
             print("Failed reading xml file. Either not-existent or invalid")
             raise e
 
-        arg_nodes = [
-            node
-            for node in xml_doc.getElementsByTagName("arg")
-            if node.parentNode == xml_doc.firstChild
-        ]
+        ld: LaunchDescription = parser.parse_description(root_entity)
 
-        for element in arg_nodes:
-            description = (
-                element.getAttribute("description") if element.hasAttribute("description") else " "
-            )
-            if element.hasAttribute("default"):
-                default_value = element.getAttribute("default").replace(" ", "")
+        for e in ld.entities:
+            if not isinstance(e, DeclareLaunchArgument):
+                continue
 
-                self.optional_arguments_dict[element.getAttribute("name")] = {
+            description = e.description if e.description != "no description given" else ""
+
+            if len(e.default_value) > 0:
+                default_value = e.default_value[-1].text.replace(
+                    " ", ""
+                )  # KL: not sure if should the first or last default value
+
+                self.optional_arguments_dict[e.name] = {
                     "value": default_value,
                     "description": description,
+                    "choices": e.choices,
                 }
             else:
-                self.required_arguments_dict[element.getAttribute("name")] = {
+                self.required_arguments_dict[e.name] = {
                     "value": "",
                     "description": description,
+                    "choices": e.choices,
                 }
 
         self.required_argument_layout.addWidget(QLabel("Name"), 0, 0)
@@ -109,10 +115,21 @@ class LauncherConfigurationView(QWidget):
 
             default_value = argument_data["value"].replace(" ", "")
 
-            self.arguments_widgets_dict[argument_name] = QLineEdit(default_value)
-            self.arguments_widgets_dict[argument_name].textChanged.connect(
-                self.check_argument_status
-            )
+            if argument_data["choices"] is None or len(argument_data["choices"]) == 0:
+                self.arguments_widgets_dict[argument_name] = QLineEdit(default_value)
+                self.arguments_widgets_dict[argument_name].textChanged.connect(
+                    self.check_argument_status
+                )
+
+            else:
+                combo_box = QComboBox()
+
+                for choice in argument_data["choices"]:
+                    combo_box.addItem(choice)
+
+                combo_box.currentTextChanged.connect(self.check_argument_status)
+                self.arguments_widgets_dict[argument_name] = combo_box
+
             self.arguments_widgets_dict[argument_name].setMinimumWidth(400)
             self.arguments_widgets_dict[argument_name].setMaximumWidth(800)
 
@@ -135,10 +152,21 @@ class LauncherConfigurationView(QWidget):
             name_label = QLabel(argument_name)
             name_label.setMaximumWidth(400)
 
-            self.arguments_widgets_dict[argument_name] = QLineEdit(argument_data["value"])
-            self.arguments_widgets_dict[argument_name].textChanged.connect(
-                self.check_argument_status
-            )
+            if argument_data["choices"] is None or len(argument_data["choices"]) == 0:
+                self.arguments_widgets_dict[argument_name] = QLineEdit(argument_data["value"])
+                self.arguments_widgets_dict[argument_name].textChanged.connect(
+                    self.check_argument_status
+                )
+
+            else:
+                combo_box = QComboBox()
+
+                for choice in argument_data["choices"]:
+                    combo_box.addItem(choice)
+
+                combo_box.currentTextChanged.connect(self.check_argument_status)
+                self.arguments_widgets_dict[argument_name] = combo_box
+
             self.arguments_widgets_dict[argument_name].setMinimumWidth(400)
             self.arguments_widgets_dict[argument_name].setMaximumWidth(800)
 
@@ -180,7 +208,10 @@ class LauncherConfigurationView(QWidget):
         self.launch_button.setEnabled(
             reduce(
                 lambda a, b: a and b,
-                [len(widget.text()) > 0 for widget in self.arguments_widgets_dict.values()],
+                [
+                    len(widget.text()) > 0 if hasattr(widget, "text") else widget.currentText()
+                    for widget in self.arguments_widgets_dict.values()
+                ],
             )
         )
         print("check_argument_status", flush=True)
@@ -188,6 +219,8 @@ class LauncherConfigurationView(QWidget):
     def on_click(self):
         args_dict: Dict[str, str] = {
             arg_name: args_widget.text()
+            if hasattr(args_widget, "text")
+            else args_widget.currentText()
             for arg_name, args_widget in self.arguments_widgets_dict.items()
         }
 
