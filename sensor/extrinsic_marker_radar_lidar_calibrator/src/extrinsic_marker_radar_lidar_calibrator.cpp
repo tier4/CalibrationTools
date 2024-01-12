@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <extrinsic_reflector_based_calibrator/extrinsic_reflector_based_calibrator.hpp>
+#include <extrinsic_marker_radar_lidar_calibrator/extrinsic_marker_radar_lidar_calibrator.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_autoware_utils/tier4_autoware_utils.hpp>
 
 #include <pcl/ModelCoefficients.h>
@@ -29,15 +30,10 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2/utils.h>
 
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
-
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <numeric>
 
 #define UPDATE_PARAM(PARAM_STRUCT, NAME) update_param(parameters, #NAME, PARAM_STRUCT.NAME)
 
@@ -59,6 +55,9 @@ void update_param(
 }
 }  // namespace
 
+namespace extrinsic_marker_radar_lidar_calibrator
+{
+
 rcl_interfaces::msg::SetParametersResult ExtrinsicReflectorBasedCalibrator::paramCallback(
   const std::vector<rclcpp::Parameter> & parameters)
 {
@@ -69,7 +68,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicReflectorBasedCalibrator::para
   Parameters p = parameters_;
 
   try {
-    UPDATE_PARAM(p, parent_frame);
+    UPDATE_PARAM(p, radar_parallel_frame);
     UPDATE_PARAM(p, use_lidar_initial_crop_box_filter);
     UPDATE_PARAM(p, lidar_initial_crop_box_min_x);
     UPDATE_PARAM(p, lidar_initial_crop_box_min_y);
@@ -118,19 +117,11 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicReflectorBasedCalibrator::para
 
 ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
   const rclcpp::NodeOptions & options)
-: Node("extrinsic_reflector_based_calibrator_node", options),
-  tf_broadcaster_(this),
-  got_initial_transform_(false),
-  calibration_valid_(false),
-  send_calibration_(false),
-  extract_lidar_background_model_(false),
-  extract_radar_background_model_(false),
-  tracking_active_(false),
-  current_new_tracks_(0)
+: Node("extrinsic_reflector_based_calibrator_node", options), tf_broadcaster_(this)
 {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-  parameters_.parent_frame = this->declare_parameter<std::string>("parent_frame");
+  parameters_.radar_parallel_frame = this->declare_parameter<std::string>("radar_parallel_frame");
 
   parameters_.use_lidar_initial_crop_box_filter =
     this->declare_parameter<bool>("use_lidar_initial_crop_box_filter", true);
@@ -264,7 +255,7 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     std::bind(&ExtrinsicReflectorBasedCalibrator::paramCallback, this, std::placeholders::_1));
 
   calibration_request_server_ =
-    this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+    this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
       "extrinsic_calibration",
       std::bind(
         &ExtrinsicReflectorBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -284,10 +275,10 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
 }
 
 void ExtrinsicReflectorBasedCalibrator::requestReceivedCallback(
-  __attribute__((unused))
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
 
@@ -305,12 +296,15 @@ void ExtrinsicReflectorBasedCalibrator::requestReceivedCallback(
 
   std::unique_lock<std::mutex> lock(mutex_);
 
-  Eigen::Isometry3d calibrated_parent_to_radar_transform =
-    parent_to_lidar_eigen_ * calibrated_radar_to_lidar_eigen_.inverse();
-  geometry_msgs::msg::Pose calibrated_parent_to_radar_pose =
-    toMsg(calibrated_parent_to_radar_transform);
-  response->result_pose = calibrated_parent_to_radar_pose;
-  response->success = true;
+  tier4_calibration_msgs::msg::CalibrationResult result;
+  result.message.data = "Calibration successful";
+  result.score = 0.f;
+  result.success = true;
+  result.transform_stamped = tf2::eigenToTransform(calibrated_radar_to_lidar_eigen_);
+  result.transform_stamped.header.frame_id = radar_frame_;
+  result.transform_stamped.child_frame_id = lidar_frame_;
+
+  response->results.emplace_back(result);
 }
 
 void ExtrinsicReflectorBasedCalibrator::timerCallback()
@@ -336,8 +330,8 @@ void ExtrinsicReflectorBasedCalibrator::timerCallback()
 }
 
 void ExtrinsicReflectorBasedCalibrator::backgroundModelRequestCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
   using std::chrono_literals::operator""s;
 
@@ -363,8 +357,8 @@ void ExtrinsicReflectorBasedCalibrator::backgroundModelRequestCallback(
 }
 
 void ExtrinsicReflectorBasedCalibrator::trackingRequestCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
   using std::chrono_literals::operator""s;
 
@@ -392,8 +386,8 @@ void ExtrinsicReflectorBasedCalibrator::trackingRequestCallback(
 }
 
 void ExtrinsicReflectorBasedCalibrator::sendCalibrationCallback(
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-  __attribute__((unused)) const std::shared_ptr<std_srvs::srv::Empty::Response> response)
+  [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+  [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
   std::unique_lock<std::mutex> lock(mutex_);
   send_calibration_ = true;
@@ -938,15 +932,14 @@ bool ExtrinsicReflectorBasedCalibrator::checkInitialTransforms()
     initial_radar_to_lidar_msg_ =
       tf_buffer_->lookupTransform(radar_frame_, lidar_frame_, t, timeout).transform;
 
-    fromMsg(initial_radar_to_lidar_msg_, initial_radar_to_lidar_tf2_);
     initial_radar_to_lidar_eigen_ = tf2::transformToEigen(initial_radar_to_lidar_msg_);
     calibrated_radar_to_lidar_eigen_ = initial_radar_to_lidar_eigen_;
 
-    parent_to_lidar_msg_ =
-      tf_buffer_->lookupTransform(parameters_.parent_frame, lidar_frame_, t, timeout).transform;
+    radar_parallel_to_lidar_msg_ =
+      tf_buffer_->lookupTransform(parameters_.radar_parallel_frame, lidar_frame_, t, timeout)
+        .transform;
 
-    fromMsg(parent_to_lidar_msg_, parent_to_lidar_tf2_);
-    parent_to_lidar_eigen_ = tf2::transformToEigen(parent_to_lidar_msg_);
+    radar_parallel_to_lidar_eigen_ = tf2::transformToEigen(radar_parallel_to_lidar_msg_);
 
     got_initial_transform_ = true;
   } catch (tf2::TransformException & ex) {
@@ -1135,7 +1128,7 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
   for (std::size_t track_index = 0; track_index < converged_tracks_.size(); track_index++) {
     auto track = converged_tracks_[track_index];
     const auto & lidar_estimation = track.getLidarEstimation();
-    const auto & lidar_estimation_pcs = parent_to_lidar_eigen_ * lidar_estimation;
+    const auto & lidar_estimation_pcs = radar_parallel_to_lidar_eigen_ * lidar_estimation;
     const auto & lidar_transformed_estimation = initial_radar_to_lidar_eigen_ * lidar_estimation;
     const auto & radar_estimation_rcs = track.getRadarEstimation();
     lidar_points_pcs->emplace_back(eigen_to_pcl_2d(lidar_estimation_pcs));
@@ -1161,16 +1154,36 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
 
   // Estimate full transformation using SVD
   pcl::registration::TransformationEstimationSVD<PointType, PointType> estimator;
-  Eigen::Matrix4f full_radar_to_parent_transformation;
+  Eigen::Matrix4f full_radar_to_radar_parallel_transformation;
   estimator.estimateRigidTransformation(
-    *lidar_points_pcs, *radar_points_rcs, full_radar_to_parent_transformation);
-  Eigen::Isometry3d calibrated_2d_radar_to_parent_transformation(
-    full_radar_to_parent_transformation.cast<double>());
+    *lidar_points_pcs, *radar_points_rcs, full_radar_to_radar_parallel_transformation);
+  Eigen::Isometry3d calibrated_2d_radar_to_radar_parallel_transformation(
+    full_radar_to_radar_parallel_transformation.cast<double>());
 
-  calibrated_2d_radar_to_parent_transformation.translation().z() =
-    (initial_radar_to_lidar_eigen_ * parent_to_lidar_eigen_.inverse()).translation().z();
+  // Check that is is actually a 2D transformation
+  auto calibrated_2d_radar_to_radar_parallel_rpy = tier4_autoware_utils::getRPY(
+    tf2::toMsg(calibrated_2d_radar_to_radar_parallel_transformation).orientation);
+  double calibrated_2d_radar_to_radar_parallel_z =
+    calibrated_2d_radar_to_radar_parallel_transformation.translation().z();
+  double calibrated_2d_radar_to_radar_parallel_roll = calibrated_2d_radar_to_radar_parallel_rpy.x;
+  double calibrated_2d_radar_to_radar_parallel_pitch = calibrated_2d_radar_to_radar_parallel_rpy.y;
+
+  if (
+    calibrated_2d_radar_to_radar_parallel_z != 0.0 ||
+    calibrated_2d_radar_to_radar_parallel_roll != 0.0 ||
+    calibrated_2d_radar_to_radar_parallel_pitch != 0.0) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "The estimated 2D translation was not really 2D. Continue at your own risk. z=%.3f roll=%.3f "
+      "pitch=%.3f",
+      calibrated_2d_radar_to_radar_parallel_z, calibrated_2d_radar_to_radar_parallel_roll,
+      calibrated_2d_radar_to_radar_parallel_pitch);
+  }
+
+  calibrated_2d_radar_to_radar_parallel_transformation.translation().z() =
+    (initial_radar_to_lidar_eigen_ * radar_parallel_to_lidar_eigen_.inverse()).translation().z();
   Eigen::Isometry3d calibrated_2d_radar_to_lidar_transformation =
-    calibrated_2d_radar_to_parent_transformation * parent_to_lidar_eigen_;
+    calibrated_2d_radar_to_radar_parallel_transformation * radar_parallel_to_lidar_eigen_;
 
   // Estimate the 2D transformation estimating only yaw
   double delta_cos = delta_cos_sum / converged_tracks_.size();
@@ -1265,6 +1278,8 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
       this->get_logger(), "The 2D calibration pose was chosen as the output calibration pose");
     calibrated_radar_to_lidar_eigen_ = calibrated_2d_radar_to_lidar_transformation;
     calibration_valid_ = true;
+    calibration_distance_score_ = calibrated_2d_distance_error;
+    calibration_yaw_score_ = calibrated_2d_yaw_error;
   } else if (
     calibrated_rotation_translation_difference <
       parameters_.max_initial_calibration_translation_error &&
@@ -1275,6 +1290,8 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
       "you need to collect more points");
     calibrated_radar_to_lidar_eigen_ = calibrated_rotation_radar_to_lidar_transformation;
     calibration_valid_ = true;
+    calibration_distance_score_ = calibrated_rotation_distance_error;
+    calibration_yaw_score_ = calibrated_rotation_yaw_error;
   } else {
     RCLCPP_WARN(
       this->get_logger(),
@@ -1475,3 +1492,5 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
 
   tracking_markers_pub_->publish(tracking_marker_array);
 }
+
+}  // namespace extrinsic_marker_radar_lidar_calibrator

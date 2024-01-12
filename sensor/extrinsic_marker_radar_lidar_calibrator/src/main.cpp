@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <extrinsic_reflector_based_calibrator/extrinsic_reflector_based_calibrator.hpp>
+#include <extrinsic_marker_radar_lidar_calibrator/extrinsic_marker_radar_lidar_calibrator.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 int main(int argc, char ** argv)
@@ -21,8 +21,9 @@ int main(int argc, char ** argv)
 
   rclcpp::executors::MultiThreadedExecutor executor;
   rclcpp::NodeOptions node_options;
-  std::shared_ptr<ExtrinsicReflectorBasedCalibrator> node =
-    std::make_shared<ExtrinsicReflectorBasedCalibrator>(node_options);
+  std::shared_ptr<extrinsic_marker_radar_lidar_calibrator::ExtrinsicReflectorBasedCalibrator> node =
+    std::make_shared<extrinsic_marker_radar_lidar_calibrator::ExtrinsicReflectorBasedCalibrator>(
+      node_options);
   executor.add_node(node);
   executor.spin();
 

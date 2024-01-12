@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ from PySide2.QtWidgets import QWidget
 class CalibratorUI(QMainWindow):
     def __init__(self, ros_interface):
         super().__init__()
-        self.setWindowTitle("Reflector-based lidar-radar calibrator")
+        self.setWindowTitle("Marker radar-lidar calibrator")
 
         # ROS Interface
         self.ros_interface = ros_interface
