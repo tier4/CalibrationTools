@@ -26,6 +26,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <radar_msgs/msg/radar_tracks.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -37,12 +38,15 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -73,6 +77,10 @@ protected:
     const std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
   void sendCalibrationCallback(
+    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+    const std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+  void deleteTrackRequestCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request> request,
     const std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
@@ -107,14 +115,34 @@ protected:
     const std::vector<Eigen::Vector3d> & lidar_detections,
     const std::vector<Eigen::Vector3d> & radar_detections);
 
-  void trackMatches(
+  bool trackMatches(
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
     builtin_interfaces::msg::Time & time);
+
+  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr, double, double>
+  getPointsSetAndDelta();
+  std::pair<double, double> computeCalibrationError(
+    const Eigen::Isometry3d & radar_to_lidar_isometry);
+  void estimateTransformation(
+    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
+    pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
+  void findCombinations(
+    int n, int k, std::vector<int> & curr, int first_num,
+    std::vector<std::vector<int>> & combinations);
+  void crossValEvaluation(
+    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
+    pcl::PointCloud<PointType>::Ptr radar_points_rcs);
+  void publishMetrics();
   void calibrateSensors();
   void visualizationMarkers(
     const std::vector<Eigen::Vector3d> & lidar_detections,
     const std::vector<Eigen::Vector3d> & radar_detections,
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matched_detections);
+  void visualizeTrackMarkers();
+  void deleteTrackMarkers();
+  void drawCalibrationStatusText();
+  geometry_msgs::msg::Point eigenToPointMsg(const Eigen::Vector3d & p_eigen);
+  double getYawError(const Eigen::Vector3d & v1, const Eigen::Vector3d & v2);
 
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
@@ -157,6 +185,7 @@ protected:
     double max_matching_distance;
     double max_initial_calibration_translation_error;
     double max_initial_calibration_rotation_error;
+    int max_number_of_combination_samples;
   } parameters_;
 
   // ROS Interface
@@ -179,6 +208,8 @@ protected:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr radar_detections_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr matches_markers_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr tracking_markers_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr text_markers_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr metrics_pub_;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
   rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
@@ -188,6 +219,7 @@ protected:
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr background_model_service_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr tracking_service_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr send_calibration_service_server_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr delete_track_service_server_;
 
   // Threading, sync, and result
   std::mutex mutex_;
@@ -230,6 +262,11 @@ protected:
   TrackFactory::Ptr factory_ptr_;
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
+
+  // Metrics
+  std::vector<float> output_metrics_;
+
+  static constexpr int MARKER_SIZE_PER_TRACK = 8;
 };
 
 }  // namespace extrinsic_marker_radar_lidar_calibrator

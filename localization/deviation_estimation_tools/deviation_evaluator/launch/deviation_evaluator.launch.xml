@@ -104,10 +104,10 @@
 
   <!-- Map -->
   <group>
-    <include file="$(find-pkg-share map_loader)/launch/lanelet2_map_loader.launch.xml" if="$(var rviz)">
+    <include file="$(find-pkg-share tier4_map_launch)/launch/map.launch.py" if="$(var rviz)">
       <arg name="lanelet2_map_path" value="$(var lanelet2_map_file)"/>
-      <arg name="lanelet2_map_topic" value="/map/vector_map"/>
-      <arg name="lanelet2_map_marker_topic" value="/map/vector_map_marker"/>
+      <arg name="pointcloud_map_loader_param_path" value="$(find-pkg-share autoware_launch)/config/map/pointcloud_map_loader.param.yaml"/>
+      <arg name="lanelet2_map_loader_param_path" value="$(find-pkg-share autoware_launch)/config/map/lanelet2_map_loader.param.yaml"/>
     </include>
   </group>
 

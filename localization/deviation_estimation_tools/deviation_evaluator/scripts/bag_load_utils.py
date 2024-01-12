@@ -20,6 +20,7 @@ import bisect
 import dataclasses
 import sqlite3
 
+from constants import THRESHOLD_FOR_INITIALIZED_ERROR
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
@@ -208,17 +209,19 @@ class BagFileEvaluator:
         stddev_long_2d, stddev_short_2d = calc_long_short_radius(ekf_dr_pose_cov_list)
         stddev_long_2d_gt, stddev_short_2d_gt = calc_long_short_radius(ekf_gt_pose_cov_list)
 
+        ignore_index = np.where(stddev_long_2d_gt < THRESHOLD_FOR_INITIALIZED_ERROR)[0][0]
+
         long_radius_results = ErrorResults(
             "long_radius",
             np.linalg.norm(errors_along_elliptical_axis, axis=1)[valid_idxs],
             stddev_long_2d[valid_idxs] * params["scale"],
-            np.max(stddev_long_2d_gt[50:]) * params["scale"],
+            np.max(stddev_long_2d_gt[ignore_index:]) * params["scale"],
         )
         lateral_results = ErrorResults(
             "lateral",
             np.abs(errors_along_body_frame[valid_idxs, 1]),
             stddev_lateral_2d[valid_idxs] * params["scale"],
-            np.max(stddev_lateral_2d_gt[50:]) * params["scale"],
+            np.max(stddev_lateral_2d_gt[ignore_index:]) * params["scale"],
         )
         longitudinal_results = ErrorResults(
             "longitudinal",

@@ -55,6 +55,7 @@
     </node>
 
     <node pkg="extrinsic_marker_radar_lidar_calibrator" exec="calibrator_ui_node.py" name="calibrator_ui" output="screen"/>
+    <node pkg="extrinsic_reflector_based_calibrator" exec="metrics_plotter_node.py" name="metrics_plotter_node" output="screen"/>
 
     <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)" if="$(var rviz)">
       <remap from="/pointcloud_topic" to="$(var input_lidar_pointcloud)"/>
