@@ -88,7 +88,7 @@ class LauncherConfigurationView(QWidget):
 
             description = e.description if e.description != "no description given" else ""
 
-            if len(e.default_value) > 0:
+            if e.default_value is not None and len(e.default_value) > 0:
                 default_value = e.default_value[-1].text.replace(
                     " ", ""
                 )  # KL: not sure if should the first or last default value

@@ -6,6 +6,7 @@
   <arg name="camera_info_topic" default="/sensing/camera/camera0/camera_info"/>
   <arg name="pointcloud_topic" default="/sensing/lidar/top/pointcloud_raw"/>
   <arg name="lidar_model" default="velodyne_vls128" description="this lidar must be supported by the lidartag package"/>
+  <arg name="use_rectified_image" default="true" description="image_rect vs. raw"/>
 
   <let name="rviz_profile" value=""/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
@@ -23,6 +24,7 @@
     <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
     <arg name="pointcloud_topic_ex" value="$(var camera_info_topic)"/>
     <arg name="lidar_model" value="$(var lidar_model)"/>
+    <arg name="use_rectified_image" value="$(var use_rectified_image)"/>
     <arg name="calibration_service_name" value="calibrate_camera_lidar"/>
   </include>
 

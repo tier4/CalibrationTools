@@ -5,6 +5,7 @@
   <arg name="base_frame" default="base_link"/>
   <arg name="lidar_model" description="For supported lidar models check the lidartag repository"/>
   <arg name="use_receive_time" default="false" description="If sensor synchronization does not work, we can force the use of system time"/>
+  <arg name="use_rectified_image" default="true" description="We need to know if the image has been rectified so we can determine the use of K or P"/>
   <arg name="calibration_pairs" default="9" description="Number of lidar-image pairs for the calibration to converge"/>
   <arg name="calibration_pairs_min_distance" default="1.5" description="Minimum allowed between a new detection and current pairs"/>
 
@@ -32,6 +33,7 @@
     <param name="max_tag_distance" value="20.0"/>
     <param name="max_allowed_homography_error" value="0.5"/>
     <param name="use_receive_time" value="$(var use_receive_time)"/>
+    <param name="use_rectified_image" value="$(var use_rectified_image)"/>
 
     <param name="calibration_crossvalidation_training_ratio" value="0.7"/>
     <param name="calibration_convergence_min_pairs" value="$(var calibration_pairs)"/>
