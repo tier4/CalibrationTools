@@ -59,7 +59,7 @@ class EmptyServiceWrapper(ServiceWrapper):
 
 class RosInterface(Node):
     def __init__(self):
-        super().__init__("extrinsic_reflector_based_calibrator_ui")
+        super().__init__("extrinsic_marker_radar_lidar_calibrator_ui")
 
         self.ros_context = None
         self.ros_executor = None

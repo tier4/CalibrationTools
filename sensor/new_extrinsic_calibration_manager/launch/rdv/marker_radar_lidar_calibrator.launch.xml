@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="radar_name" default="front_center">
+    <choice value="front_left"/>
+    <choice value="front_center"/>
+    <choice value="front_right"/>
+    <choice value="rear_left"/>
+    <choice value="rear_center"/>
+    <choice value="rear_right"/>
+  </arg>
+
+  <arg name="rviz" default="true"/>
+
+  <let name="radar_parallel_frame" value="base_link"/>
+  <let name="radar_frame" value="$(var radar_name)/radar_link"/>
+  <let name="lidar_frame" value="pandar_top"/>
+
+  <let name="input_radar_objects" value="/sensing/radar/$(var radar_name)/objects_raw"/>
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/top/pointcloud_raw"/>
+
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="lidar_broadcaster" output="screen" args="0 0 0 0 0 0 $(var radar_frame) radar_frame"/>
+
+  <!-- marker radar-lidar calibrator -->
+  <include file="$(find-pkg-share extrinsic_marker_radar_lidar_calibrator)/launch/calibrator.launch.xml">
+    <arg name="rviz" value="$(var rviz)"/>
+    <arg name="calibration_service_name" value="calibrate_radar_lidar"/>
+    <arg name="radar_parallel_frame" value="$(var radar_parallel_frame)"/>
+    <arg name="input_lidar_pointcloud" value="$(var input_lidar_pointcloud)"/>
+    <arg name="input_radar_objects" value="$(var input_radar_objects)"/>
+  </include>
+</launch>

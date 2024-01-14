@@ -393,7 +393,6 @@ void TagCalibratorVisualizer::drawCalibrationStatusText(
   text_marker.header.frame_id = base_frame_;
   text_marker.header.stamp = stamp;
   text_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-  text_marker.lifetime = rclcpp::Duration::from_seconds(5.0);
   text_marker.color.r = 1.0;
   text_marker.color.g = 1.0;
   text_marker.color.b = 1.0;

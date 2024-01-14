@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="base_frame" default="base_link"/>
+  <arg name="lost_frame_max_acceleration" default="10.0"/>
+  <arg name="calibration_skip_keyframes" default="7"/>
+  <arg name="mapping_registrator" default="ndt" description="ndt or gicp"/>
+  <arg name="mapping_min_range" default="5.0" description="minimum distance to use for mapping"/>
+  <arg name="mapping_max_range" default="80.0" description="maximum distance to use for mapping"/>
+  <arg name="lidar_calibration_max_frames" default="3" description="Number of frames to use for calibration"/>
+  <arg name="solver_iterations" default="50" description="Number of iterations for the calibration solver"/>
+  <arg name="calibration_skip_keyframes" default="3" description="How many keyframes to skip at the beginnign when selecting calibration keyframes"/>
+  <arg name="rviz" default="true"/>
+
+  <let name="calibration_camera_optical_link_frames" value="['']"/>
+
+  <let name="calibration_lidar_frames" value="[
+    pandar_front,
+    pandar_left,
+    pandar_right]"/>
+
+  <let name="mapping_lidar_frame" value="pandar_top"/>
+  <let name="mapping_pointcloud" value="/sensing/lidar/top/pointcloud_raw"/>
+  <let name="detected_objects" value="/perception/object_recognition/detection/objects"/>
+
+  <let name="calibration_camera_info_topics" value="['']"/>
+
+  <let name="calibration_image_topics" value="[
+    '']"/>
+
+  <let name="calibration_pointcloud_topics" value="[
+    /sensing/lidar/front/pointcloud_raw,
+    /sensing/lidar/left/pointcloud_raw,
+    /sensing/lidar/right/pointcloud_raw]"/>
+
+  <!-- mapping based calibrator -->
+  <include file="$(find-pkg-share extrinsic_mapping_based_calibrator)/launch/calibrator.launch.xml">
+    <arg name="ns" value=""/>
+    <arg name="calibration_service_name" value="calibrate_lidar_lidar"/>
+
+    <arg name="rviz" value="$(var rviz)"/>
+    <arg name="base_frame" value="$(var base_frame)"/>
+
+    <arg name="calibration_camera_optical_link_frames" value="$(var calibration_camera_optical_link_frames)"/>
+    <arg name="calibration_lidar_frames" value="$(var calibration_lidar_frames)"/>
+    <arg name="mapping_lidar_frame" value="$(var mapping_lidar_frame)"/>
+
+    <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)"/>
+    <arg name="detected_objects" value="$(var detected_objects)"/>
+
+    <arg name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
+    <arg name="calibration_image_topics" value="$(var calibration_image_topics)"/>
+    <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
+
+    <arg name="mapping_registrator" value="$(var mapping_registrator)"/>
+    <arg name="lost_frame_max_acceleration" value="$(var lost_frame_max_acceleration)"/>
+    <arg name="calibration_skip_keyframes" value="$(var calibration_skip_keyframes)"/>
+    <arg name="mapping_min_range" value="$(var mapping_min_range)"/>
+    <arg name="mapping_max_range" value="$(var mapping_max_range)"/>
+    <arg name="lidar_calibration_max_frames" value="$(var lidar_calibration_max_frames)"/>
+    <arg name="solver_iterations" value="$(var solver_iterations)"/>
+    <arg name="calibration_skip_keyframes" value="$(var calibration_skip_keyframes)"/>
+  </include>
+</launch>

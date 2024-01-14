@@ -17,15 +17,10 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/imgproc.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 #include <pcl/point_types.h>
 #include <tf2/utils.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
 
 #include <limits>
 #include <random>
@@ -264,9 +259,8 @@ bool CalibrationEstimator::update(const rclcpp::Time & stamp)
   return true;
 }
 
-void CalibrationEstimator::getCalibrationPoints(
-  std::vector<cv::Point3d> & object_points, std::vector<cv::Point2d> & image_points,
-  bool use_estimated)
+std::tuple<std::vector<cv::Point3d>, std::vector<cv::Point2d>>
+CalibrationEstimator::getCalibrationPoints(bool use_estimated)
 {
   bool negative_id = false;
 
@@ -279,17 +273,18 @@ void CalibrationEstimator::getCalibrationPoints(
   }
 
   if (negative_id) {
-    return getCalibrationPointsIdless(object_points, image_points, use_estimated);
+    return getCalibrationPointsIdless(use_estimated);
   } else {
-    return getCalibrationPointsIdBased(object_points, image_points, use_estimated);
+    return getCalibrationPointsIdBased(use_estimated);
   }
 }
 
-void CalibrationEstimator::getCalibrationPointsIdBased(
-  std::vector<cv::Point3d> & lidartag_object_points,
-  std::vector<cv::Point2d> & apriltag_image_points, bool use_estimated)
+std::tuple<std::vector<cv::Point3d>, std::vector<cv::Point2d>>
+CalibrationEstimator::getCalibrationPointsIdBased(bool use_estimated)
 {
   assert(converged_lidartag_hypotheses_.size() == converged_apriltag_hypotheses_.size());
+  std::vector<cv::Point3d> lidartag_object_points;
+  std::vector<cv::Point2d> apriltag_image_points;
 
   for (std::size_t i = 0; i < converged_lidartag_hypotheses_.size(); ++i) {
     std::shared_ptr<tier4_tag_utils::LidartagHypothesis> & lidartag_h =
@@ -314,12 +309,16 @@ void CalibrationEstimator::getCalibrationPointsIdBased(
     apriltag_image_points.insert(
       apriltag_image_points.end(), h_apriltag_image_points.begin(), h_apriltag_image_points.end());
   }
+
+  return std::make_tuple(lidartag_object_points, apriltag_image_points);
 }
 
-void CalibrationEstimator::getCalibrationPointsIdless(
-  std::vector<cv::Point3d> & object_points, std::vector<cv::Point2d> & image_points,
-  bool use_estimated)
+std::tuple<std::vector<cv::Point3d>, std::vector<cv::Point2d>>
+CalibrationEstimator::getCalibrationPointsIdless(bool use_estimated)
 {
+  std::vector<cv::Point3d> object_points;
+  std::vector<cv::Point2d> image_points;
+
   std::vector<cv::Point2d> apriltag_image_points;
   std::vector<cv::Point3d> apriltag_object_points;
   std::vector<cv::Point3d> apriltag_object_normals;
@@ -423,55 +422,59 @@ void CalibrationEstimator::getCalibrationPointsIdless(
   if (
     apriltag_cloud->size() != lidartag_cloud->size() ||
     static_cast<int>(apriltag_cloud->size()) < min_pnp_pairs_) {
-    return;
+    return std::make_tuple(object_points, image_points);
   }
 
   if (!bruteForceMatcher(
         apriltag_cloud, lidartag_cloud, thresh, apriltag_indexes, lidartag_indexes, false)) {
-    return;
+    return std::make_tuple(object_points, image_points);
   }
 
   assert(apriltag_indexes.size() == lidartag_indexes.size());
-  object_points.clear();
-  image_points.clear();
 
   for (std::size_t i = 0; i < apriltag_indexes.size(); i++) {
     object_points.push_back(lidartag_object_points[lidartag_indexes[i]]);
     image_points.push_back(apriltag_image_points[apriltag_indexes[i]]);
   }
+
+  return std::make_tuple(object_points, image_points);
 }
 
 bool CalibrationEstimator::calibrate()
 {
-  std::vector<cv::Point3d> observation_object_points, estimated_object_points;
-  std::vector<cv::Point2d> observation_image_points, estimated_image_points;
+  auto [observation_object_points, observation_image_points] = getCalibrationPoints(false);
+  auto [estimated_object_points, estimated_image_points] = getCalibrationPoints(true);
 
-  getCalibrationPoints(observation_object_points, observation_image_points, false);
-  getCalibrationPoints(estimated_object_points, estimated_image_points, true);
-
-  bool observation_status = calibrate(
-    observation_object_points, observation_image_points, observation_translation_vector_,
-    observation_rotation_matrix_);
-  bool estimation_status = calibrate(
-    estimated_object_points, estimated_image_points, hypothesis_translation_vector_,
-    hypothesis_rotation_matrix_);
+  auto [observation_status, observation_translation_vector, observation_rotation_matrix] =
+    calibrate(observation_object_points, observation_image_points);
+  auto [estimation_status, hypothesis_translation_vector, hypothesis_rotation_matrix] =
+    calibrate(estimated_object_points, estimated_image_points);
 
   bool status = observation_status && estimation_status;
   valid_ |= status;
+
+  if (status) {
+    observation_translation_vector_ = observation_translation_vector;
+    observation_rotation_matrix_ = observation_rotation_matrix;
+    hypothesis_translation_vector_ = hypothesis_translation_vector;
+    hypothesis_rotation_matrix_ = hypothesis_rotation_matrix;
+  }
 
   computeCrossValidationReprojectionError(estimated_object_points, estimated_image_points);
 
   return status;
 }
 
-bool CalibrationEstimator::calibrate(
-  const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points,
-  cv::Matx31d & translation_vector, cv::Matx33d & rotation_matrix)
+std::tuple<bool, cv::Matx31d, cv::Matx33d> CalibrationEstimator::calibrate(
+  const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points)
 {
+  cv::Matx31d translation_vector;
+  cv::Matx33d rotation_matrix;
+
   if (
     object_points.size() != image_points.size() ||
     static_cast<int>(object_points.size()) < min_pnp_pairs_) {
-    return false;
+    return std::tuple<bool, cv::Matx31d, cv::Matx33d>(false, translation_vector, rotation_matrix);
   }
 
   auto camera_intrinsics = pinhole_camera_model_.intrinsicMatrix();
@@ -484,14 +487,14 @@ bool CalibrationEstimator::calibrate(
     cv::SOLVEPNP_SQPNP);
 
   if (!success) {
-    RCLCPP_ERROR(rclcpp::get_logger("tier4_tag_utils"), "PNP failed");
-    return false;
+    RCLCPP_ERROR(rclcpp::get_logger("calibration_estimator"), "PNP failed");
+    return std::tuple<bool, cv::Matx31d, cv::Matx33d>(false, translation_vector, rotation_matrix);
   }
 
   translation_vector = tvec;
   cv::Rodrigues(rvec, rotation_matrix);
 
-  return true;
+  return std::tuple<bool, cv::Matx31d, cv::Matx33d>(true, translation_vector, rotation_matrix);
 }
 
 tf2::Transform CalibrationEstimator::toTf2(
@@ -515,7 +518,7 @@ void CalibrationEstimator::computeCrossValidationReprojectionError(
   // Iterate a number of times
   // Permutate the image object
   // Separate into train and test
-  const int trials = 30;
+  constexpr int trials = 30;
 
   std::vector<int> indexes(object_points.size());
   std::iota(indexes.begin(), indexes.end(), 0);
@@ -546,12 +549,10 @@ void CalibrationEstimator::computeCrossValidationReprojectionError(
       }
     }
 
-    cv::Matx31d iter_translation_vector;
-    cv::Matx33d iter_rotation_matrix;
     std::vector<cv::Point2d> eval_projected_points;
 
-    calibrate(
-      training_object_points, training_image_points, iter_translation_vector, iter_rotation_matrix);
+    [[maybe_unused]] auto [status, iter_translation_vector, iter_rotation_matrix] =
+      calibrate(training_object_points, training_image_points);
 
     cv::Matx31d iter_rvec;
     cv::Rodrigues(iter_rotation_matrix, iter_rvec);
@@ -625,28 +626,26 @@ void CalibrationEstimator::setCameraModel(const sensor_msgs::msg::CameraInfo & c
   pinhole_camera_model_.fromCameraInfo(camera_info);
 }
 
-tf2::Transform CalibrationEstimator::getCurrentPose() const
+tf2::Transform CalibrationEstimator::getCurrentPoseAsTF() const
 {
   return toTf2(observation_translation_vector_, observation_rotation_matrix_);
 }
 
-void CalibrationEstimator::getCurrentPose(
-  cv::Matx31d & trans_vector, cv::Matx33d & rot_matrix) const
+std::tuple<cv::Matx31d, cv::Matx33d> CalibrationEstimator::getCurrentPose() const
 {
-  trans_vector = observation_translation_vector_;
-  rot_matrix = observation_rotation_matrix_;
+  return std::tuple<cv::Matx31d, cv::Matx33d>(
+    observation_translation_vector_, observation_rotation_matrix_);
 }
 
-tf2::Transform CalibrationEstimator::getFilteredPose() const
+tf2::Transform CalibrationEstimator::getFilteredPoseAsTF() const
 {
   return toTf2(hypothesis_translation_vector_, hypothesis_rotation_matrix_);
 }
 
-void CalibrationEstimator::getFilteredPose(
-  cv::Matx31d & trans_vector, cv::Matx33d & rot_matrix) const
+std::tuple<cv::Matx31d, cv::Matx33d> CalibrationEstimator::getFilteredPose() const
 {
-  trans_vector = hypothesis_translation_vector_;
-  rot_matrix = hypothesis_rotation_matrix_;
+  return std::tuple<cv::Matx31d, cv::Matx33d>(
+    hypothesis_translation_vector_, hypothesis_rotation_matrix_);
 }
 
 void CalibrationEstimator::setCrossvalidationTrainingRatio(double ratio)
@@ -767,3 +766,5 @@ double CalibrationEstimator::getCrossValidationReprojectionError() const
 {
   return crossvalidation_reprojection_error_;
 }
+
+int CalibrationEstimator::getConvergencePairNumber() const { return convergence_min_pairs_; }

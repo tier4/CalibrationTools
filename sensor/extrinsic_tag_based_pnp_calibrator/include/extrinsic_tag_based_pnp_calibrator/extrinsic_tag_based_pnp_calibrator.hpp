@@ -21,6 +21,7 @@
 #include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include <apriltag_msgs/msg/april_tag_detection.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
@@ -36,12 +37,6 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#else
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-#endif
 
 #include <iostream>
 #include <memory>
@@ -125,6 +120,7 @@ protected:
   rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr service_server_;
 
   // Threading, sync, and result
+  bool request_received_;
   std::mutex mutex_;
 
   // Rviz visualizations

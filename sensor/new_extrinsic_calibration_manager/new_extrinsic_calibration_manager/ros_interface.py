@@ -43,9 +43,6 @@ class RosInterface(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.buf = Buffer(node=self)
-        self.listener = TransformListener(self.buf, self, spin_thread=False)
-
         self.tf_qos_profile = rclpy.qos.QoSProfile(
             reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
             durability=rclpy.qos.DurabilityPolicy.TRANSIENT_LOCAL,
@@ -128,6 +125,9 @@ class RosInterface(Node):
             future = self.calibration_services_dict[service_name].call_async(req)
             self.calibration_futures_dict[service_name] = future
             self.calibration_service_start_dict[service_name] = True
+
+            # We stop listening for tfs after calibration starts (depending on the calibrator, tfs may change and we do not want them to affect the behavior of this node)
+            self.tf_listener.unregister()
 
     def spin(self):
         self.ros_executor = SingleThreadedExecutor()

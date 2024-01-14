@@ -8,7 +8,7 @@ import numpy as np
 
 
 @CalibratorRegistry.register_calibrator(
-    project_name="x2", calibrator_name="marker_radar_lidar_calibrator"
+    project_name="rdv", calibrator_name="marker_radar_lidar_calibrator"
 )
 class MarkerRadarLidarCalibrator(CalibratorBase):
     required_frames = []
@@ -22,7 +22,7 @@ class MarkerRadarLidarCalibrator(CalibratorBase):
 
         self.required_frames.extend([self.radar_parallel_frame, self.radar_frame, self.lidar_frame])
 
-        print("X2_MarkerRadarLidarCalibrator")
+        print("RDV_MarkerRadarLidarCalibrator")
 
         self.add_calibrator(
             service_name="calibrate_radar_lidar",

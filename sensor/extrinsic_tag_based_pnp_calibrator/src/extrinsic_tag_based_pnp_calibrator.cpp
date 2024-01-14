@@ -32,6 +32,7 @@
 ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_tag_based_pnp_calibrator_node", options),
   tf_broadcaster_(this),
+  request_received_(false),
   got_initial_transform(false)
 {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -279,24 +280,30 @@ void ExtrinsicTagBasedPNPCalibrator::cameraInfoCallback(
 }
 
 void ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+    request,
   const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
 {
-  CV_UNUSED(request);
   using std::chrono_literals::operator""s;
   RCLCPP_INFO(this->get_logger(), "Received calibration request");
+
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    request_received_ = true;
+  }
 
   // Wait for subscription topic
   while (rclcpp::ok()) {
     rclcpp::sleep_for(1s);
     std::unique_lock<std::mutex> lock(mutex_);
 
-    if (estimator_.converged() && got_initial_transform && estimator_.calibrate()) {
+    if (got_initial_transform && estimator_.converged() && estimator_.calibrate()) {
       break;
     }
   }
 
-  tf2::Transform optical_axis_to_lidar_tf2 = estimator_.getFilteredPose();
+  tf2::Transform optical_axis_to_lidar_tf2 = estimator_.getFilteredPoseAsTF();
 
   geometry_msgs::msg::Transform transform_msg;
   transform_msg = tf2::toMsg(optical_axis_to_lidar_tf2);
@@ -356,7 +363,7 @@ void ExtrinsicTagBasedPNPCalibrator::tfTimerCallback()
     return;
   }
 
-  tf2::Transform optical_axis_to_lidar_tf2 = estimator_.getFilteredPose();
+  tf2::Transform optical_axis_to_lidar_tf2 = estimator_.getFilteredPoseAsTF();
 
   geometry_msgs::msg::TransformStamped transform_stamped;
   transform_stamped.header.stamp = header_.stamp;
@@ -370,7 +377,7 @@ void ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback()
 {
   std::unique_lock<std::mutex> lock(mutex_);
 
-  if (!apriltag_detections_array_ || !lidartag_detections_array_) {
+  if (!request_received_ || !apriltag_detections_array_ || !lidartag_detections_array_) {
     return;
   }
 
@@ -378,11 +385,11 @@ void ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback()
 
   if (estimator_.calibrate()) {
     // Visualization
-    cv::Matx33d initial_rot_matrix, current_rot_matrix, filtered_rot_matrix;
-    cv::Matx31d initial_trans_vector, current_trans_vector, filtered_trans_vector;
+    cv::Matx33d initial_rot_matrix;
+    cv::Matx31d initial_trans_vector;
 
-    estimator_.getCurrentPose(current_trans_vector, current_rot_matrix);
-    estimator_.getFilteredPose(filtered_trans_vector, filtered_rot_matrix);
+    auto [current_trans_vector, current_rot_matrix] = estimator_.getCurrentPose();
+    auto [filtered_trans_vector, filtered_rot_matrix] = estimator_.getFilteredPose();
 
     Eigen::Isometry3d initial_transform_eigen =
       tf2::transformToEigen(tf2::toMsg(initial_optical_axis_to_lidar_tf2_));
@@ -407,10 +414,7 @@ void ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback()
     auto distortion_coeffs = pinhole_camera_model_.distortionCoeffs();
 
     // Obtain the calibration points
-    std::vector<cv::Point3d> object_points;
-    std::vector<cv::Point2d> image_points;
-
-    estimator_.getCalibrationPoints(object_points, image_points, false);
+    auto [object_points, image_points] = estimator_.getCalibrationPoints(false);
 
     if (object_points.size() == 0 || image_points.size() == 0) {
       RCLCPP_ERROR(this->get_logger(), "Could not get the calibration points");
@@ -444,7 +448,10 @@ void ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback()
     double filtered_reprojection_error =
       reprojection_error(image_points, filtered_projected_points);
 
-    RCLCPP_INFO(this->get_logger(), "Partial calibration results:");
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Partial calibration results (%d/%d pairs):", estimator_.getCurrentCalibrationPairsNumber(),
+      estimator_.getConvergencePairNumber());
     RCLCPP_INFO(
       this->get_logger(), "\tInitial reprojection error=%.2f", initial_reprojection_error);
     RCLCPP_INFO(

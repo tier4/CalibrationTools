@@ -8,7 +8,6 @@ Panels:
         - /lidar1/Topic1
         - /lidar_background_pointcloud1/Topic1
         - /lidar_colored_clusters1/Topic1
-        - /DetectedObjects1/Topic1
       Splitter Ratio: 0.5
     Tree Height: 1106
   - Class: rviz_common/Selection
@@ -179,7 +178,7 @@ Visualization Manager:
       Enabled: true
       Name: lidar_detections
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -187,61 +186,12 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /lidar_detection_markers
       Value: true
-    - BUS:
-        Alpha: 0.9990000128746033
-        Color: 30; 144; 255
-      CAR:
-        Alpha: 0.9990000128746033
-        Color: 30; 144; 255
-      CYCLIST:
-        Alpha: 0.9990000128746033
-        Color: 119; 11; 32
-      Class: autoware_auto_perception_rviz_plugin/DetectedObjects
-      Display Acceleration: true
-      Display Label: true
-      Display PoseWithCovariance: true
-      Display Predicted Path Confidence: true
-      Display Predicted Paths: true
-      Display Twist: true
-      Display UUID: true
-      Display Velocity: true
-      Enabled: true
-      Line Width: 0.029999999329447746
-      MOTORCYCLE:
-        Alpha: 0.9990000128746033
-        Color: 119; 11; 32
-      Name: DetectedObjects
-      Namespaces:
-        label: true
-        shape: true
-        twist: true
-        velocity: true
-      PEDESTRIAN:
-        Alpha: 0.9990000128746033
-        Color: 255; 192; 203
-      Polygon Type: 3d
-      TRAILER:
-        Alpha: 0.9990000128746033
-        Color: 30; 144; 255
-      TRUCK:
-        Alpha: 0.9990000128746033
-        Color: 30; 144; 255
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /sensing/radar/front_center/detected_objects
-      UNKNOWN:
-        Alpha: 0.9990000128746033
-        Color: 255; 255; 255
-      Value: true
-      Visualization Type: Normal
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: radar_detections
       Namespaces:
-        {}
+        center: true
+        line: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -287,7 +237,8 @@ Visualization Manager:
       Enabled: true
       Name: tracking_markers
       Namespaces:
-        {}
+        calibrated: true
+        initial: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -379,14 +330,14 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3347971737384796
+      Pitch: 0.23479722440242767
       Position:
-        X: -5.563827037811279
-        Y: 0.02594861388206482
-        Z: 3.217146873474121
+        X: -6.539778709411621
+        Y: 0.01612010970711708
+        Z: 3.799168348312378
       Target Frame: <Fixed Frame>
       Value: FPS (rviz_default_plugins)
-      Yaw: 6.261345386505127
+      Yaw: 0.0031585693359375
     Saved: ~
 Window Geometry:
   Displays:

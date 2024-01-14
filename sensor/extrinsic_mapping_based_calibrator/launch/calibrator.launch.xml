@@ -21,6 +21,7 @@
   <arg name="local_map_num_keyframes" default="15"/>
   <arg name="dense_pointcloud_num_keyframes" default="10"/>
   <arg name="mapping_max_frames" default="5000"/>
+  <arg name="mapping_min_range" default="1.0"/>
   <arg name="mapping_max_range" default="100.0"/>
   <arg name="marker_size" default="10.0"/>
   <arg name="mapper_resolution" default="1.0"/>
@@ -86,6 +87,7 @@
       <param name="local_map_num_keyframes" value="$(var local_map_num_keyframes)"/>
       <param name="dense_pointcloud_num_keyframes" value="$(var dense_pointcloud_num_keyframes)"/>
       <param name="mapping_max_frames" value="$(var mapping_max_frames)"/>
+      <param name="mapping_min_range" value="$(var mapping_min_range)"/>
       <param name="mapping_max_range" value="$(var mapping_max_range)"/>
       <param name="marker_size" value="$(var marker_size)"/>
       <param name="mapper_resolution" value="$(var mapper_resolution)"/>

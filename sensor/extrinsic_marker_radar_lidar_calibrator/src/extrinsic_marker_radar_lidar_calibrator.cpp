@@ -34,6 +34,7 @@
 #include <iostream>
 #include <limits>
 #include <numeric>
+#include <sstream>
 
 #define UPDATE_PARAM(PARAM_STRUCT, NAME) update_param(parameters, #NAME, PARAM_STRUCT.NAME)
 
@@ -49,7 +50,7 @@ void update_param(
   if (it != parameters.cend()) {
     value = it->template get_value<T>();
     RCLCPP_INFO_STREAM(
-      rclcpp::get_logger("extrinsic_reflector_based_calibrator"),
+      rclcpp::get_logger("extrinsic_marker_radar_lidar_calibrator"),
       "Setting parameter [" << name << "] to " << value);
   }
 }
@@ -117,7 +118,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicReflectorBasedCalibrator::para
 
 ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
   const rclcpp::NodeOptions & options)
-: Node("extrinsic_reflector_based_calibrator_node", options), tf_broadcaster_(this)
+: Node("extrinsic_marker_radar_lidar_calibrator_node", options), tf_broadcaster_(this)
 {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -301,9 +302,13 @@ void ExtrinsicReflectorBasedCalibrator::requestReceivedCallback(
 
   std::unique_lock<std::mutex> lock(mutex_);
 
+  std::stringstream ss;
+  ss << "Calibration successful. distance_score=" << calibration_distance_score_
+     << " yaw_score=" << calibration_yaw_score_;
+
   tier4_calibration_msgs::msg::CalibrationResult result;
-  result.message.data = "Calibration successful";
-  result.score = 0.f;
+  result.message.data = ss.str();
+  result.score = calibration_distance_score_;
   result.success = true;
   result.transform_stamped = tf2::eigenToTransform(calibrated_radar_to_lidar_eigen_);
   result.transform_stamped.header.frame_id = radar_frame_;
@@ -1012,6 +1017,17 @@ ExtrinsicReflectorBasedCalibrator::matchDetections(
       transformed_point.z() = 0.f;
       return transformed_point;
     });
+
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Lidar reflectors in radar coordinate system (using the initial transformation)");
+  for (std::size_t lidar_index = 0; lidar_index < lidar_detections.size(); lidar_index++) {
+    const auto & lidar_detection = lidar_detections_transformed[lidar_index];
+    RCLCPP_INFO(
+      this->get_logger(), "\t Lidar reflector (rcs) id=%lu size=%lu center: x=%.2f y=%.2f z=%.2f",
+      lidar_index, lidar_detections.size(), lidar_detection.x(), lidar_detection.y(),
+      lidar_detection.z());
+  }
 
   std::vector<std::size_t> lidar_to_radar_closest_idx, radar_to_lidar_closest_idx;
   lidar_to_radar_closest_idx.resize(lidar_detections.size());
@@ -1754,7 +1770,7 @@ void ExtrinsicReflectorBasedCalibrator::drawCalibrationStatusText()
   // show the latest cross validation results which is located in the last two elements of the
   // metrics vector show the latest calibration result, which is located in the 2nd and 3rd index of
   // the metrics vector
-  double m_to_cm = 100.0;
+  constexpr double m_to_cm = 100.0;
 
   if (converged_tracks_.size() == 0) {
     text_marker.text = " pairs=" + std::to_string(converged_tracks_.size());

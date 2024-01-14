@@ -146,6 +146,11 @@ class CalibratorBase(QObject):
         pass
 
     def post_process_internal(self):
+        print("Before post_process")
+        for parent, children_and_transforms in self.calibration_result_tfs.items():
+            for child, transform in children_and_transforms.items():
+                print(f"{parent}->{child}:\n{transform}")
+
         calibration_transforms = {
             parent: {
                 child: tf_message_to_transform_matrix(transform)
@@ -161,6 +166,11 @@ class CalibratorBase(QObject):
             }
             for parent, children_and_transforms in calibration_transforms.items()
         }
+
+        print("After post_process")
+        for parent, children_and_transforms in self.processed_calibration_result_tfs.items():
+            for child, transform in children_and_transforms.items():
+                print(f"{parent}->{child}:\n{transform}")
 
     def post_process(self, calibration_transforms) -> Dict[str, Dict[str, np.array]]:
         return calibration_transforms

@@ -30,6 +30,7 @@
 #include <tf2/utils.h>
 
 #include <memory>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -44,8 +45,7 @@ public:
   void update(const lidartag_msgs::msg::LidarTagDetection & msg, const rclcpp::Time & time_stamp);
   bool update(const rclcpp::Time & timestamp);
 
-  void getCalibrationPoints(
-    std::vector<cv::Point3d> & object_points, std::vector<cv::Point2d> & image_points,
+  std::tuple<std::vector<cv::Point3d>, std::vector<cv::Point2d>> getCalibrationPoints(
     bool use_estimated);
 
   bool calibrate();
@@ -64,10 +64,10 @@ public:
     const;
 
   void setCameraModel(const sensor_msgs::msg::CameraInfo & camera_info);
-  tf2::Transform getCurrentPose() const;
-  void getCurrentPose(cv::Matx31d & trans_vector, cv::Matx33d & rot_matrix) const;
-  tf2::Transform getFilteredPose() const;
-  void getFilteredPose(cv::Matx31d & trans_vector, cv::Matx33d & rot_matrix) const;
+  tf2::Transform getCurrentPoseAsTF() const;
+  std::tuple<cv::Matx31d, cv::Matx33d> getCurrentPose() const;
+  tf2::Transform getFilteredPoseAsTF() const;
+  std::tuple<cv::Matx31d, cv::Matx33d> getFilteredPose() const;
 
   // Parameters setters
   void setCrossvalidationTrainingRatio(double ratio);
@@ -93,19 +93,17 @@ public:
   double getCalibrationCoveragePercentage() const;
   int getCurrentCalibrationPairsNumber() const;
   double getCrossValidationReprojectionError() const;
+  int getConvergencePairNumber() const;
 
 private:
-  void getCalibrationPointsIdBased(
-    std::vector<cv::Point3d> & object_points, std::vector<cv::Point2d> & image_points,
+  std::tuple<std::vector<cv::Point3d>, std::vector<cv::Point2d>> getCalibrationPointsIdBased(
     bool use_estimated);
 
-  void getCalibrationPointsIdless(
-    std::vector<cv::Point3d> & object_points, std::vector<cv::Point2d> & image_points,
+  std::tuple<std::vector<cv::Point3d>, std::vector<cv::Point2d>> getCalibrationPointsIdless(
     bool use_estimated);
 
-  bool calibrate(
-    const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points,
-    cv::Matx31d & translation_vector, cv::Matx33d & rotation_matrix);
+  std::tuple<bool, cv::Matx31d, cv::Matx33d> calibrate(
+    const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points);
 
   tf2::Transform toTf2(
     const cv::Matx31d & translation_vector, const cv::Matx33d & rotation_matrix) const;

@@ -26,8 +26,9 @@
 
 typedef pcl::PointNormal PointNT;
 typedef pcl::PointCloud<PointNT> PointCloudT;
-typedef pcl::FPFHSignature33 FeatureT;
-typedef pcl::FPFHEstimationOMP<PointNT, PointNT, FeatureT> FeatureEstimationT;
+typedef pcl::FPFHSignature33 FeatureT;  // cSpell:ignore FPFH
+typedef pcl::FPFHEstimationOMP<PointNT, PointNT, FeatureT>
+  FeatureEstimationT;  // cSpell:ignore FPFH
 typedef pcl::PointCloud<FeatureT> FeatureCloudT;
 
 bool bruteForceMatcher(
