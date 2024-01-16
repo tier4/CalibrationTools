@@ -67,6 +67,7 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         # self.setWindowTitle("New extrinsic calibration manager")
 
         self.ros_interface: RosInterface = None
+        self.tfs_dict: Dict[str, Dict[str, None]] = defaultdict(lambda: dict)
 
         # Threading variables
         self.lock = threading.RLock()
@@ -156,7 +157,10 @@ class NewExtrinsicCalibrationManager(QMainWindow):
             + calibrator_name
             + ".launch.xml"
         )
-        self.process = subprocess.Popen(["ros2", "launch", launcher_path] + argument_list)
+
+        command_list = ["ros2", "launch", launcher_path] + argument_list
+        print(f"Launching calibrator with the following command: {command_list}", flush=True)
+        self.process = subprocess.Popen(command_list)
 
         # Recover all the launcher arguments (in addition to user defined in launch_arguments)
         try:
@@ -287,7 +291,8 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         if self.calibrator.state != CalibratorState.WAITING_TFS:
             return
 
-        self.tfs_dict = tfs_dict
+        for parent, children_and_tf_dict in tfs_dict.items():
+            self.tfs_dict[parent].update(children_and_tf_dict)
 
         if self.tfs_dict and len(self.tfs_dict) > 0 and self.calibrator:
             self.initial_tfs_view.setTfs(

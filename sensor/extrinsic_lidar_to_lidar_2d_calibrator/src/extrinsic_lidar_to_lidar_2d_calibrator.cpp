@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <numeric>
 
 namespace extrinsic_lidar_to_lidar_2d_calibrator
 {

@@ -112,11 +112,12 @@ class TfTree:
         if current_node.frame in target_frames:
             sliced_children_frames = sliced_children_frames + [current_node.frame]
 
-        return (
-            (sliced_node, sliced_children_frames)
-            if len(sliced_children) > 0
-            else (None, sliced_children_frames)
-        )
+        if len(sliced_children) > 0:
+            return (sliced_node, sliced_children_frames)
+        elif current_node.frame in target_frames:
+            return (sliced_node, [current_node.frame])
+        else:
+            return (None, sliced_children_frames)
 
     def getSlicesTrees(self, target_frames):
         sliced_trees = [self.getSlicedTree(root, target_frames)[0] for root in self.roots]
@@ -198,7 +199,7 @@ class TfPlot(QWidget):
 
         graph_list.append("}")
         graph_string = "".join(graph_list)
-        # print(graph_string)
+        # print(f"graph_string={graph_string}")
         graphs = pydot.graph_from_dot_data(graph_string)
         graph = graphs[0]
 

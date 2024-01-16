@@ -229,7 +229,10 @@ class LauncherConfigurationView(QWidget):
 
         for key, value in args_dict.items():
             if is_list(value):
-                args_dict[key] = [item.strip() for item in value.strip("[]").split(",")]
+                args_dict[key]: Dict[str, str] = [
+                    item.strip() for item in value.strip("[]").split(",")
+                ]
+                args_dict[key] = [int(v2) if v2.isnumeric() else v2 for v2 in args_dict[key]]
 
         print(args_dict, flush=True)
 

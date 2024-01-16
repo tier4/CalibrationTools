@@ -1,0 +1,87 @@
+/**:
+  ros__parameters:
+
+    # Tag configuration
+    lidartag_to_apriltag_scale: 0.75
+
+    waypoint_tag:
+      family: "tag16h5"
+      rows: 1
+      cols: 1
+      size: 0.6
+      spacing: 0.2
+      ids: [-1]
+
+    ground_tag:
+      family: "tag36h11"
+      rows: 1
+      cols: 1
+      size: 0.22
+      spacing: 0.2
+      ids: [-1]
+
+    wheel_tag:
+      family: "tag16h5"
+      rows: 2
+      cols: 2
+      size: 0.166
+      spacing: 0.2
+      ids: [-1]
+
+
+    auxiliar_tag:
+      family: "tag36h11"
+      rows: 1
+      cols: 1
+      size: 0.22
+      spacing: 0.2
+      ids: [-1]
+
+    # Optimization configuration
+    ba:
+      optimize_intrinsics: true
+      share_intrinsics: true
+      force_shared_ground_plane: true
+      virtual_lidar_f: 10000.0
+
+      calibration_camera_optimization_weight: 0.2
+      calibration_lidar_optimization_weight: 0.2
+      external_camera_optimization_weight: 0.6
+
+      fixed_ground_plane_model: false
+      fixed_ground_plane_model_a: -0.015014
+      fixed_ground_plane_model_b: 0.028632
+      fixed_ground_plane_model_c: 0.999477
+      fixed_ground_plane_model_d: 2.849738
+
+
+    # Initial intrinsics calibration
+    initial_intrinsic_calibration:
+      board_type: "chessboard"
+      tangent_distortion: true
+      radial_distortion_coeffs: 2
+      debug: true
+      # Apriltag parameters
+      tag:
+        family: "tag16h5"
+        rows: 1
+        cols: 1
+        size: 0.6
+        spacing: 0.2
+        ids: [0, 1, 2, 3, 4, 5]
+      # Chessboard parameters
+      board_cols: 8
+      board_rows: 6
+
+    # Apriltag detector configuration
+    apriltag:
+      max_hamming: 0
+      min_margin: 50.0
+      max_out_of_plane_angle: 90.0
+      max_reprojection_error: 10.0
+      max_homography_error: 0.5
+      quad_decimate: 1.0
+      quad_sigma: 0.0
+      nthreads: 12
+      debug: false
+      refine_edges: true
