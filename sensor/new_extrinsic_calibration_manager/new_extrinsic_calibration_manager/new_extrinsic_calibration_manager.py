@@ -67,7 +67,7 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         # self.setWindowTitle("New extrinsic calibration manager")
 
         self.ros_interface: RosInterface = None
-        self.tfs_dict: Dict[str, Dict[str, None]] = defaultdict(lambda: dict)
+        self.tfs_dict: Dict[str, Dict[str, None]] = defaultdict(lambda: defaultdict(None))
 
         # Threading variables
         self.lock = threading.RLock()

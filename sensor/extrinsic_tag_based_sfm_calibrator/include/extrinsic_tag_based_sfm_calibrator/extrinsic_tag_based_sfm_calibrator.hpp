@@ -223,6 +223,7 @@ protected:
     lidartag_detections_sub_map_;
 
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr raw_detections_markers_pub_;
 
   // Calibration API related services
   rclcpp::CallbackGroup::SharedPtr calibration_api_srv_group_;
@@ -253,7 +254,7 @@ protected:
 
   // Calibration API parameters and variables
   std::string base_frame_;
-
+  bool publish_tfs_;
   std::mutex mutex_;
   tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

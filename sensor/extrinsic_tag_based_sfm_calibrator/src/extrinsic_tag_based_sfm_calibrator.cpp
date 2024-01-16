@@ -56,6 +56,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
+  publish_tfs_ = this->declare_parameter<bool>("publish_tfs");
   base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
 
   main_calibration_sensor_frame_ =
@@ -283,6 +284,8 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   }
 
   markers_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 10);
+  raw_detections_markers_pub_ =
+    this->create_publisher<visualization_msgs::msg::MarkerArray>("raw_detections_markers", 10);
 
   visualization_timer_ = rclcpp::create_timer(
     this, get_clock(), std::chrono::seconds(1),
@@ -630,6 +633,7 @@ void ExtrinsicTagBasedBaseCalibrator::lidartagDetectionsCallback(
 void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
 {
   visualization_msgs::msg::MarkerArray markers;
+  visualization_msgs::msg::MarkerArray raw_detections_markers;
 
   visualization_msgs::msg::Marker base_marker;
   base_marker.ns = "raw_detections";
@@ -829,11 +833,12 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
   cv::cv2eigen(
     calibrated_main_sensor_to_base_link_pose_.matrix, main_sensor_to_base_link_transform);
 
+  std::vector<geometry_msgs::msg::TransformStamped> transforms_msgs;
   geometry_msgs::msg::TransformStamped tf_msg =
     tf2::eigenToTransform(Eigen::Affine3d(main_sensor_to_base_link_transform));
   tf_msg.header.frame_id = main_calibration_sensor_frame_;
   tf_msg.child_frame_id = "estimated_base_link";
-  tf_broadcaster_.sendTransform(tf_msg);
+  transforms_msgs.push_back(tf_msg);
 
   // Publish the tf to all external cameras
   for (const auto & [uid, sensor_pose_cv] : data_->optimized_sensor_poses_map) {
@@ -844,8 +849,42 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
       tf2::eigenToTransform(Eigen::Affine3d(sensor_pose_eigen));
     tf_msg.header.frame_id = main_calibration_sensor_frame_;
     tf_msg.child_frame_id = uid.toString();
-    tf_broadcaster_.sendTransform(tf_msg);
+    transforms_msgs.push_back(tf_msg);
   }
+
+  if (publish_tfs_) {
+    // Publish all the resulting tfs (main sensor to all frames)
+    // This will probably destroy the current tf tree so proceed with auction
+    auto cv_to_eigen_pose = [](const cv::Affine3d & pose_cv) -> Eigen::Affine3d {
+      Eigen::Matrix4d matrix;
+      cv::cv2eigen(pose_cv.matrix, matrix);
+      return Eigen::Affine3d(matrix);
+    };
+
+    auto main_sensor_uid = getMainSensorUID();
+
+    for (const auto & [sensor_uid, pose] : data_->optimized_sensor_poses_map) {
+      geometry_msgs::msg::TransformStamped transform_stamped_msg;
+      transform_stamped_msg = tf2::eigenToTransform(cv_to_eigen_pose(*pose));
+      transform_stamped_msg.header.frame_id = main_calibration_sensor_frame_;
+
+      if (sensor_uid == main_sensor_uid) {
+        continue;
+      } else if (sensor_uid.sensor_type == SensorType::CalibrationLidar) {
+        transform_stamped_msg.child_frame_id =
+          calibration_lidar_frames_vector_[sensor_uid.calibration_sensor_id];
+      } else if (sensor_uid.sensor_type == SensorType::CalibrationCamera) {
+        transform_stamped_msg.child_frame_id =
+          calibration_camera_frames_vector_[sensor_uid.calibration_sensor_id];
+      } else {
+        continue;
+      }
+
+      transforms_msgs.push_back(transform_stamped_msg);
+    }
+  }
+
+  tf_broadcaster_.sendTransform(transforms_msgs);
 
   visualization_msgs::msg::Marker detections_base_marker = base_marker;
 
@@ -873,8 +912,8 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
         for (const auto & grid_detection : grid_detections) {
           for (const auto & detection : grid_detection.sub_detections) {
             addTagMarkers(
-              markers, std::to_string(detection.id), tag_parameters, color, detection.pose,
-              detections_base_marker);
+              raw_detections_markers, std::to_string(detection.id), tag_parameters, color,
+              detection.pose, detections_base_marker);
           }
         }
       }
@@ -885,7 +924,13 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
     markers.markers[marker_index].id = marker_index;
   }
 
+  for (std::size_t marker_index = 0; marker_index < raw_detections_markers.markers.size();
+       marker_index++) {
+    raw_detections_markers.markers[marker_index].id = marker_index;
+  }
+
   markers_pub_->publish(markers);
+  raw_detections_markers_pub_->publish(raw_detections_markers);
 }
 
 std_msgs::msg::ColorRGBA ExtrinsicTagBasedBaseCalibrator::getNextColor()

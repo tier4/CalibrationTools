@@ -8,6 +8,8 @@
   <arg name="config_file" default="omiya_calibration_room_2023.param.yaml"/>
   <let name="param_path" value="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/config/$(var config_file)"/>
 
+  <arg name="publish_tfs" default="true"/>
+
   <!-- Frame configuration -->
   <arg name="base_frame" default="base_link"/>
   <arg name="main_calibration_sensor_frame"/>
@@ -144,6 +146,8 @@
     <node pkg="extrinsic_tag_based_sfm_calibrator" exec="extrinsic_tag_based_sfm_calibrator" name="extrinsic_tag_based_sfm_calibrator" output="screen">
       <param from="$(var param_path)"/>
       <remap from="extrinsic_calibration" to="$(var calibration_service_name)"/>
+
+      <param name="publish_tfs" value="$(var publish_tfs)"/>
 
       <!-- Frame configuration -->
       <param name="base_frame" value="$(var base_frame)"/>

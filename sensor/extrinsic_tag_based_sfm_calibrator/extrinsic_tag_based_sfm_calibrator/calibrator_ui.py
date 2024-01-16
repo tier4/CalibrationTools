@@ -324,13 +324,9 @@ class CalibratorUI(QMainWindow):
         self.check_status()
 
     def add_external_images_button_callback(self):
-        # Here simply select folder
-        # Iterate folder looking for scene{i}
-        # Call the same service
-
         output_folder = QFileDialog.getExistingDirectory(
             None,
-            "Select directory to save the calibration result",
+            "Select directory to load the external images from",
             ".",
             QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
         )

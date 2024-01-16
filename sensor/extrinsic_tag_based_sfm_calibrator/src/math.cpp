@@ -405,6 +405,55 @@ void estimateInitialPoses(
   std::map<UID, cv::Affine3d> estimated_poses;
   std::set<UID> iteration_uids;  // cSpell:ignore uids
 
+  // Show a list of the number of connections per uid
+  std::stringstream ss;
+  std::vector<std::string> connections_count;
+  ss << "List of connections:\n";
+
+  for (const auto & [uid, connections] : data.uid_connections_map) {
+    connections_count.push_back(uid.toString() + "(" + std::to_string(connections.size()) + ")");
+  }
+
+  std::sort(connections_count.begin(), connections_count.end());
+
+  for (const auto & connection_str : connections_count) {
+    ss << connection_str << " ";
+  }
+
+  // Show the connections per uid
+  std::unordered_map<std::string, UID> string_to_uid_to_uid_map;
+  std::vector<std::string> uid_strings;
+
+  for (const auto & it : data.uid_connections_map) {
+    string_to_uid_to_uid_map[it.first.toString()] = it.first;
+    uid_strings.push_back(it.first.toString());
+  }
+
+  std::sort(uid_strings.begin(), uid_strings.end());
+  ss << "\nConnections per UID:\n";
+
+  for (const auto & uid_string : uid_strings) {
+    const auto uid = string_to_uid_to_uid_map[uid_string];
+    const auto & connections = data.uid_connections_map[uid];
+    std::vector<std::string> connection_uid_strings;
+
+    for (const auto & connection_uid : connections) {
+      connection_uid_strings.push_back(connection_uid.toString());
+    }
+
+    std::sort(connection_uid_strings.begin(), connection_uid_strings.end());
+
+    ss << uid_string << ": ";
+
+    for (const auto & connection_uid_string : connection_uid_strings) {
+      ss << connection_uid_string << " ";
+    }
+
+    ss << "\n";
+  }
+
+  RCLCPP_INFO(rclcpp::get_logger("pose_estimation"), "%s", ss.str().c_str());
+
   {
     std::map<UID, std::vector<std::pair<UID, cv::Affine3d>>> raw_poses_map;
     raw_poses_map[main_sensor_uid].push_back(

@@ -3,6 +3,7 @@ from .mapping_based_lidar_lidar_calibrator import MappingBasedLidarLidarCalibrat
 from .marker_radar_lidar_calibrator import MarkerRadarLidarCalibrator
 from .tag_based_pnp_calibrator import TagBasedPNPCalibrator
 from .tag_based_sfm_base_lidar_calibrator import TagBasedSfmBaseLidarCalibrator
+from .tag_based_sfm_base_lidars_calibrator import TagBasedSfmBaseLidarsCalibrator
 
 __all__ = [
     "MappingBasedBaseLidarCalibrator",
@@ -10,4 +11,5 @@ __all__ = [
     "MarkerRadarLidarCalibrator",
     "TagBasedPNPCalibrator",
     "TagBasedSfmBaseLidarCalibrator",
+    "TagBasedSfmBaseLidarsCalibrator",
 ]

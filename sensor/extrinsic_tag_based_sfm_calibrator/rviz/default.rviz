@@ -27,7 +27,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: lidar0
 Visualization Manager:
   Class: ""
   Displays:
@@ -311,8 +311,28 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: calibration markers
+      Namespaces:
+        initial_base_link: true
+        initial_connections: false
+        initial_estimations: false
+        initial_ground_plane: true
+        optimized_base_link: true
+        optimized_connections: false
+        optimized_estimations: true
+        optimized_ground_plane: true
+        raw_detections: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /markers
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: false
+      Name: raw_detections markers
       Namespaces:
         {}
       Topic:
@@ -320,13 +340,13 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /markers
+        Value: /raw_detections_markers
       Value: false
     - Alpha: 0.5
       Cell Size: 0.10000000149011612
       Class: rviz_default_plugins/Grid
       Color: 171; 171; 171
-      Enabled: true
+      Enabled: false
       Line Style:
         Line Width: 0.029999999329447746
         Value: Lines
@@ -339,7 +359,7 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 80
       Reference Frame: base_link
-      Value: true
+      Value: false
     - Alpha: 0.5
       Cell Size: 0.10000000149011612
       Class: rviz_default_plugins/Grid
@@ -376,7 +396,7 @@ Visualization Manager:
       Enabled: true
       Name: lidar0_detections_frames
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -480,7 +500,8 @@ Visualization Manager:
       Enabled: true
       Name: lidar0_detections_ids
       Namespaces:
-        {}
+        Text0: true
+        Text5: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -626,14 +647,14 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6899994015693665
+      Pitch: 1.5647963285446167
       Position:
-        X: 0.07426369190216064
-        Y: -8.048012733459473
-        Z: 4.948040962219238
+        X: -0.49250850081443787
+        Y: 0.09322844445705414
+        Z: 11.653377532958984
       Target Frame: <Fixed Frame>
       Value: FPS (rviz_default_plugins)
-      Yaw: 1.5689579248428345
+      Yaw: 4.707127094268799
     Saved: ~
 Window Geometry:
   Displays:
