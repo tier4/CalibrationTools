@@ -123,6 +123,7 @@ void pcl::VoxelGridTriplets<PointT>::applyFilter(PointCloud & output)
   div_b_ = max_b_ - min_b_ + Eigen::Vector4i::Ones();
   div_b_[3] = 0;
 
+  // cSpell:ignore divb
   // Set up the division multiplier
   divb_mul_ = Eigen::Vector4i(1, div_b_[0], div_b_[0] * div_b_[1], 0);
 
@@ -199,6 +200,8 @@ void pcl::VoxelGridTriplets<PointT>::applyFilter(PointCloud & output)
     }
   }
 
+  // cSpell:ignore spreadsort
+  // cSpell:ignore rightshift
   // Second pass: sort the index_vector vector using value representing target cell as index
   // in effect all points belonging to the same output cell will be next to each other
   // auto rightshift_func = [](const cloud_point_index_idx_triplets &x, const unsigned offset) {

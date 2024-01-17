@@ -28,6 +28,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <tier4_autoware_utils/geometry/geometry.hpp>
+#include <tier4_ground_plane_utils/ground_plane_utils.hpp>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -88,15 +89,15 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
   std::vector<std::string> calibration_lidar_detections_topics =
     this->declare_parameter<std::vector<std::string>>("calibration_lidar_detections_topics");
-  std::vector<std::string> calibration_image_detections_topics =
-    this->declare_parameter<std::vector<std::string>>("calibration_image_detections_topics");
+  std::vector<std::string> calibration_camera_detections_topics =
+    this->declare_parameter<std::vector<std::string>>("calibration_camera_detections_topics");
   std::vector<std::string> calibration_camera_info_topics =
     this->declare_parameter<std::vector<std::string>>("calibration_camera_info_topics");
   std::vector<std::string> calibration_image_topics =
-    this->declare_parameter<std::vector<std::string>>("calibration_image_topics");
+    this->declare_parameter<std::vector<std::string>>("calibration_compressed_image_topics");
 
   calibration_lidar_detections_topics = remove_empty_strings(calibration_lidar_detections_topics);
-  calibration_image_detections_topics = remove_empty_strings(calibration_image_detections_topics);
+  calibration_camera_detections_topics = remove_empty_strings(calibration_camera_detections_topics);
   calibration_camera_info_topics = remove_empty_strings(calibration_camera_info_topics);
 
   for (std::size_t lidar_index = 0; lidar_index < calibration_lidar_frames_vector_.size();
@@ -112,7 +113,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
     const std::string camera_name = calibration_camera_frames_vector_[camera_index];
 
     calibration_image_detections_topic_map_[camera_name] =
-      calibration_image_detections_topics[camera_index];
+      calibration_camera_detections_topics[camera_index];
     calibration_camera_info_topic_map_[camera_name] = calibration_camera_info_topics[camera_index];
     calibration_image_topic_map_[camera_name] = calibration_image_topics[camera_index];
   }
@@ -196,10 +197,6 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
   ba_fixed_ground_plane_model_ =
     this->declare_parameter<bool>("ba.fixed_ground_plane_model", false);
-  ba_fixed_ground_plane_model_a_ = this->declare_parameter<double>("ba.fixed_ground_plane_model_a");
-  ba_fixed_ground_plane_model_b_ = this->declare_parameter<double>("ba.fixed_ground_plane_model_b");
-  ba_fixed_ground_plane_model_c_ = this->declare_parameter<double>("ba.fixed_ground_plane_model_c");
-  ba_fixed_ground_plane_model_d_ = this->declare_parameter<double>("ba.fixed_ground_plane_model_d");
 
   // Initial intrinsic calibration parameters
   initial_intrinsic_calibration_board_type_ =
@@ -390,7 +387,7 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
 
   // Get some of the initial tfs before calibration
   geometry_msgs::msg::Transform initial_base_link_to_lidar_msg;
-  Eigen::Affine3d initial_base_link_to_lidar_pose;
+  Eigen::Isometry3d initial_base_link_to_lidar_pose;
 
   // We calibrate the lidar base link, not the lidar, so we need to compute that pose
   try {
@@ -435,7 +432,7 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
     calibrated_main_sensor_to_base_link_pose_.inv().matrix;
   Eigen::Matrix4d base_link_to_lidar_transform;
   cv::cv2eigen(base_link_to_lidar_transform_cv, base_link_to_lidar_transform);
-  Eigen::Affine3d base_link_to_lidar_pose(base_link_to_lidar_transform);
+  Eigen::Isometry3d base_link_to_lidar_pose(base_link_to_lidar_transform);
   auto base_link_to_lidar_msg = tf2::eigenToTransform(base_link_to_lidar_pose).transform;
 
   // Display the initial and calibrated values
@@ -455,7 +452,7 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
     base_to_lidar_rpy.z);
 
   // Display the correction in calibration
-  Eigen::Affine3d initial_base_link_to_calibrated_base_link_pose =
+  Eigen::Isometry3d initial_base_link_to_calibrated_base_link_pose =
     initial_base_link_to_lidar_pose * base_link_to_lidar_pose.inverse();
   Eigen::Matrix3d initial_base_link_to_calibrated_base_link_rot =
     initial_base_link_to_calibrated_base_link_pose.rotation();
@@ -483,20 +480,30 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
   RCLCPP_INFO(
     this->get_logger(), "\t z: %.3f m", initial_base_link_to_calibrated_base_link_translation.z());
 
-  // Format the output
-  auto cv_to_eigen_pose = [](const cv::Affine3d & pose_cv) -> Eigen::Affine3d {
-    Eigen::Matrix4d matrix;
-    cv::cv2eigen(pose_cv.matrix, matrix);
-    return Eigen::Affine3d(matrix);
-  };
+  Eigen::Vector4d initial_ground_model =
+    tier4_ground_plane_utils::poseToPlaneModel(initial_base_link_to_lidar_pose.inverse());
+  RCLCPP_INFO(this->get_logger(), "Initial ground plane model");
+  RCLCPP_INFO(this->get_logger(), "\ta=%.4f", initial_ground_model.x());
+  RCLCPP_INFO(this->get_logger(), "\tb=%.4f", initial_ground_model.y());
+  RCLCPP_INFO(this->get_logger(), "\tc=%.4f", initial_ground_model.z());
+  RCLCPP_INFO(this->get_logger(), "\td=%.4f", initial_ground_model.w());
 
+  Eigen::Vector4d calibrated_ground_model =
+    tier4_ground_plane_utils::poseToPlaneModel(base_link_to_lidar_pose.inverse());
+  RCLCPP_INFO(this->get_logger(), "Calibrated ground plane model");
+  RCLCPP_INFO(this->get_logger(), "\ta=%.4f", calibrated_ground_model.x());
+  RCLCPP_INFO(this->get_logger(), "\tb=%.4f", calibrated_ground_model.y());
+  RCLCPP_INFO(this->get_logger(), "\tc=%.4f", calibrated_ground_model.z());
+  RCLCPP_INFO(this->get_logger(), "\td=%.4f", calibrated_ground_model.w());
+
+  // Format the output
   tier4_calibration_msgs::msg::CalibrationResult base_link_result;
   base_link_result.message.data =
     "Calibration successful. Base calibration does not provide a direct score";
   base_link_result.score = 0.f;
   base_link_result.success = true;
   base_link_result.transform_stamped =
-    tf2::eigenToTransform(cv_to_eigen_pose(calibrated_main_sensor_to_base_link_pose_));
+    tf2::eigenToTransform(cvToEigenPose(calibrated_main_sensor_to_base_link_pose_));
   base_link_result.transform_stamped.header.frame_id = main_calibration_sensor_frame_;
   base_link_result.transform_stamped.child_frame_id = base_frame_;
   response->results.push_back(base_link_result);
@@ -509,7 +516,7 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
       "Calibration successful. The error corresponds to reprojection error in pixel units";
     result.score = data_->optimized_sensor_residuals_map[sensor_uid];
     result.success = true;
-    result.transform_stamped = tf2::eigenToTransform(cv_to_eigen_pose(*pose));
+    result.transform_stamped = tf2::eigenToTransform(cvToEigenPose(*pose));
     result.transform_stamped.header.frame_id = main_calibration_sensor_frame_;
 
     if (sensor_uid == main_sensor_uid) {
@@ -855,17 +862,11 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
   if (publish_tfs_) {
     // Publish all the resulting tfs (main sensor to all frames)
     // This will probably destroy the current tf tree so proceed with auction
-    auto cv_to_eigen_pose = [](const cv::Affine3d & pose_cv) -> Eigen::Affine3d {
-      Eigen::Matrix4d matrix;
-      cv::cv2eigen(pose_cv.matrix, matrix);
-      return Eigen::Affine3d(matrix);
-    };
-
     auto main_sensor_uid = getMainSensorUID();
 
     for (const auto & [sensor_uid, pose] : data_->optimized_sensor_poses_map) {
       geometry_msgs::msg::TransformStamped transform_stamped_msg;
-      transform_stamped_msg = tf2::eigenToTransform(cv_to_eigen_pose(*pose));
+      transform_stamped_msg = tf2::eigenToTransform(cvToEigenPose(*pose));
       transform_stamped_msg.header.frame_id = main_calibration_sensor_frame_;
 
       if (sensor_uid == main_sensor_uid) {
@@ -968,6 +969,13 @@ UID ExtrinsicTagBasedBaseCalibrator::getMainSensorUID() const
   }
 
   return main_sensor_uid;
+}
+
+Eigen::Isometry3d ExtrinsicTagBasedBaseCalibrator::cvToEigenPose(const cv::Affine3d & pose)
+{
+  Eigen::Matrix4d matrix;
+  cv::cv2eigen(pose.matrix, matrix);
+  return Eigen::Isometry3d(matrix);
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
@@ -1405,14 +1413,39 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
   data_->optimized_sensor_poses_map = data_->initial_sensor_poses_map;
   data_->optimized_tag_poses_map = data_->initial_tag_poses_map;
 
+  if (ba_fixed_ground_plane_model_) {
+    Eigen::Isometry3d initial_lidar_to_base_link_eigen;
+
+    try {
+      rclcpp::Time t = rclcpp::Time(0);
+      rclcpp::Duration timeout = rclcpp::Duration::from_seconds(1.0);
+
+      auto initial_lidar_to_base_link_msg =
+        tf_buffer_->lookupTransform(main_calibration_sensor_frame_, base_frame_, t, timeout)
+          .transform;
+
+      initial_lidar_to_base_link_eigen = tf2::transformToEigen(initial_lidar_to_base_link_msg);
+    } catch (tf2::TransformException & ex) {
+      RCLCPP_ERROR(this->get_logger(), "Could not get the necessary tfs for calibration");
+      return false;
+    }
+
+    Eigen::Vector4d ground_model =
+      tier4_ground_plane_utils::poseToPlaneModel(initial_lidar_to_base_link_eigen);
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Going to use the initial calibration to derive the ground plane used during calibration");
+    RCLCPP_INFO(this->get_logger(), "\ta=%.4f", ground_model.x());
+    RCLCPP_INFO(this->get_logger(), "\tb=%.4f", ground_model.y());
+    RCLCPP_INFO(this->get_logger(), "\tc=%.4f", ground_model.z());
+    RCLCPP_INFO(this->get_logger(), "\td=%.4f", ground_model.w());
+
+    calibration_problem_.setFixedSharedGroundPlane(ba_fixed_ground_plane_model_, ground_model);
+  }
+
   calibration_problem_.setOptimizeIntrinsics(ba_optimize_intrinsics_);
   calibration_problem_.setShareIntrinsics(ba_share_intrinsics_);
   calibration_problem_.setForceSharedGroundPlane(ba_force_shared_ground_plane_);
-  calibration_problem_.setFixedSharedGroundPlane(
-    ba_fixed_ground_plane_model_,
-    Eigen::Vector4d(
-      ba_fixed_ground_plane_model_a_, ba_fixed_ground_plane_model_b_,
-      ba_fixed_ground_plane_model_c_, ba_fixed_ground_plane_model_d_));
   calibration_problem_.setCalibrationLidarIntrinsics(virtual_lidar_f_);
   calibration_problem_.setOptimizationWeights(
     calibration_camera_optimization_weight_, calibration_lidar_optimization_weight_,

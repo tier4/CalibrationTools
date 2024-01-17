@@ -1,4 +1,4 @@
-# Copyright 2020 Tier IV, Inc. All rights reserved.
+# Copyright 2024 Tier IV, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,12 +36,11 @@ def launch_setup(context, *args, **kwargs):
     )
 
     families = yaml.safe_load(LaunchConfiguration("families").perform(context))
-    sizes = yaml.safe_load(LaunchConfiguration("sizes").perform(context))
 
     nodes = []
 
-    for family, size in zip(families, sizes):
-        param_dict = {"family": family, "size": size, **common_param_dict}
+    for family in families:
+        param_dict = {"family": family, **common_param_dict}
 
         composable_node = ComposableNode(
             name=f"apriltag_{family}",
@@ -88,7 +87,6 @@ def generate_launch_description():
     add_launch_arg("apriltag_detections_topic", "apriltag/detection_array")
     add_launch_arg("image_transport", "raw")
     add_launch_arg("families", "[16h5]")
-    add_launch_arg("sizes", "[0.162]")
     add_launch_arg("max_hamming", "0")
     add_launch_arg("z_up", "True")
 

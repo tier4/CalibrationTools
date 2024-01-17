@@ -115,6 +115,12 @@ protected:
   UID getMainSensorUID() const;
 
   /*!
+   * @param pose the pose as an opencv isometry
+   * @return the pose as an eigen isometry
+   */
+  Eigen::Isometry3d cvToEigenPose(const cv::Affine3d & pose);
+
+  /*!
    * Attempts to add external camera images to the scene
    * @param request A vector of files to be added as external images
    * @param response Whether or not the service callback succeeded
@@ -308,10 +314,6 @@ protected:
   double calibration_camera_optimization_weight_;
   double calibration_lidar_optimization_weight_;
   double external_camera_optimization_weight_;
-  double ba_fixed_ground_plane_model_a_;
-  double ba_fixed_ground_plane_model_b_;
-  double ba_fixed_ground_plane_model_c_;
-  double ba_fixed_ground_plane_model_d_;
   double virtual_lidar_f_;
 
   // Detections

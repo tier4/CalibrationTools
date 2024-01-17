@@ -8,14 +8,14 @@
   <arg name="fixed_ground_plane_model" default="false"/>
 
   <!-- Frame configuration -->
-  <arg name="base_frame" value="base_link"/>
-  <arg name="main_calibration_sensor_frame" default="pandar_top"/>
+  <let name="base_frame" value="base_link"/>
+  <let name="main_calibration_sensor_frame" value="pandar_top"/>
 
   <!-- Lidar configuration -->
-  <arg name="calibration_lidar_model" default="pandar64"/>
+  <let name="calibration_lidar_model" value="pandar64"/>
 
   <!-- Topic configuration -->
-  <arg name="calibration_lidar_topic" default="/sensing/lidar/top/pointcloud_raw"/>
+  <let name="calibration_lidar_topic" value="/sensing/lidar/top/pointcloud_raw"/>
 
   <arg
     name="auxiliar_tag_ids"
@@ -33,7 +33,6 @@
   <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/calibrator.launch.xml">
     <arg name="calibration_service_name" value="calibrate_base_lidar"/>
     <arg name="publish_tfs" value="$(var publish_tfs)"/>
-    <arg name="fixed_ground_plane_model" value="$(var fixed_ground_plane_model)"/>
 
     <arg name="base_frame" value="$(var base_frame)"/>
     <arg name="main_calibration_sensor_frame" value="$(var main_calibration_sensor_frame)"/>

@@ -106,8 +106,7 @@ ApriltagDetection ApriltagDetection::fromApriltagDetectionMsg(
   detection.size = size;
   detection.computeTemplateCorners();
   detection.computeObjectCorners();
-  double reprojection_error = detection.computePose(intrinsics);
-  CV_UNUSED(reprojection_error);
+  [[maybe_unused]] double reprojection_error = detection.computePose(intrinsics);
 
   return detection;
 }

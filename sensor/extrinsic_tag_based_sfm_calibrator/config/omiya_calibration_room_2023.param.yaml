@@ -49,10 +49,6 @@
       external_camera_optimization_weight: 0.6
 
       fixed_ground_plane_model: false
-      fixed_ground_plane_model_a: -0.015014
-      fixed_ground_plane_model_b: 0.028632
-      fixed_ground_plane_model_c: 0.999477
-      fixed_ground_plane_model_d: 2.849738
 
 
     # Initial intrinsics calibration

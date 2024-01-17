@@ -133,7 +133,7 @@ std::vector<cv::Point3d> ApriltagHypothesis::getPoints3d(
     pinhole_camera_model_.distortionCoeffs(), rvec, tvec, false, cv::SOLVEPNP_SQPNP);
 
   if (!success) {
-    RCLCPP_ERROR(rclcpp::get_logger("teir4_tag_utils"), "PNP failed");
+    RCLCPP_ERROR(rclcpp::get_logger("tier4_tag_utils"), "PNP failed");
     return object_points;
   }
 

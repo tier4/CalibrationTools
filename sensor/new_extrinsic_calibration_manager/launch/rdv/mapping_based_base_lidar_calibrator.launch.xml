@@ -7,6 +7,8 @@
   <arg name="lost_frame_max_acceleration" default="10.0"/>
   <arg name="calibration_skip_keyframes" default="7"/>
   <arg name="mapping_registrator" default="ndt" description="ndt or gicp"/>
+  <arg name="mapping_min_range" default="5.0" description="minimum distance to use for mapping"/>
+  <arg name="mapping_max_range" default="80.0" description="maximum distance to use for mapping"/>
 
   <let name="calibrate_base_frame" value="true"/>
   <arg name="base_lidar_crop_box_min_x" default="-5.0"/>
@@ -57,6 +59,8 @@
     <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
 
     <arg name="mapping_registrator" value="$(var mapping_registrator)"/>
+    <arg name="mapping_min_range" value="$(var mapping_min_range)"/>
+    <arg name="mapping_max_range" value="$(var mapping_max_range)"/>
     <arg name="lost_frame_max_acceleration" value="$(var lost_frame_max_acceleration)"/>
     <arg name="calibration_skip_keyframes" value="$(var calibration_skip_keyframes)"/>
 

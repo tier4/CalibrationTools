@@ -149,7 +149,7 @@ class InteractiveCalibratorUI(QMainWindow):
         self.make_data_collection_options()
 
         # Visualization group
-        self.make_vizualization_options()
+        self.make_visualization_options()
 
         # self.menu_layout.addWidget(label)
         self.left_menu_layout.addWidget(self.calibration_api_group)
@@ -423,7 +423,7 @@ class InteractiveCalibratorUI(QMainWindow):
         data_collection_options_layout.addStretch(1)
         self.data_collection_options_group.setLayout(data_collection_options_layout)
 
-    def make_vizualization_options(self):
+    def make_visualization_options(self):
         self.visualization_options_group = QGroupBox("Visualization options")
         self.visualization_options_group.setFlat(True)
 

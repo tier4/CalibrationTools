@@ -209,6 +209,7 @@ class TfPlot(QWidget):
         # cspell: ignore imgdata
         imgdata = graph.create_svg()
 
+        # cSpell:ignore savefig
         # imgdata = StringIO()
         # figure.savefig(imgdata, format='svg')
         # imgdata.seek(0)

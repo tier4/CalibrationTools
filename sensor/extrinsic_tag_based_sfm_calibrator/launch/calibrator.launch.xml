@@ -9,6 +9,7 @@
   <let name="param_path" value="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/config/$(var config_file)"/>
 
   <arg name="publish_tfs" default="true"/>
+  <arg name="fixed_ground_plane_model" default="false"/>
 
   <!-- Frame configuration -->
   <arg name="base_frame" default="base_link"/>
@@ -90,23 +91,32 @@
   <arg name="calibration_camera_info_6_topic" default=""/>
   <arg name="calibration_camera_info_7_topic" default=""/>
 
-  <arg name="calibration_image_0_topic" default=""/>
-  <arg name="calibration_image_1_topic" default=""/>
-  <arg name="calibration_image_2_topic" default=""/>
-  <arg name="calibration_image_3_topic" default=""/>
-  <arg name="calibration_image_4_topic" default=""/>
-  <arg name="calibration_image_5_topic" default=""/>
-  <arg name="calibration_image_6_topic" default=""/>
-  <arg name="calibration_image_7_topic" default=""/>
+  <arg name="calibration_compressed_image_0_topic" default=""/>
+  <arg name="calibration_compressed_image_1_topic" default=""/>
+  <arg name="calibration_compressed_image_2_topic" default=""/>
+  <arg name="calibration_compressed_image_3_topic" default=""/>
+  <arg name="calibration_compressed_image_4_topic" default=""/>
+  <arg name="calibration_compressed_image_5_topic" default=""/>
+  <arg name="calibration_compressed_image_6_topic" default=""/>
+  <arg name="calibration_compressed_image_7_topic" default=""/>
 
-  <arg name="calibration_image_0_detections_topic" default=""/>
-  <arg name="calibration_image_1_detections_topic" default=""/>
-  <arg name="calibration_image_2_detections_topic" default=""/>
-  <arg name="calibration_image_3_detections_topic" default=""/>
-  <arg name="calibration_image_4_detections_topic" default=""/>
-  <arg name="calibration_image_5_detections_topic" default=""/>
-  <arg name="calibration_image_6_detections_topic" default=""/>
-  <arg name="calibration_image_7_detections_topic" default=""/>
+  <arg name="calibration_camera_0_detections_topic" default=""/>
+  <arg name="calibration_camera_1_detections_topic" default=""/>
+  <arg name="calibration_camera_2_detections_topic" default=""/>
+  <arg name="calibration_camera_3_detections_topic" default=""/>
+  <arg name="calibration_camera_4_detections_topic" default=""/>
+  <arg name="calibration_camera_5_detections_topic" default=""/>
+  <arg name="calibration_camera_6_detections_topic" default=""/>
+  <arg name="calibration_camera_7_detections_topic" default=""/>
+
+  <let name="calibration_camera_0_detections_topic" value="camera0/detections_array" if="$(eval &quot;'$(var calibration_camera_0_frame)' != '' &quot;)"/>
+  <let name="calibration_camera_1_detections_topic" value="camera1/detections_array" if="$(eval &quot;'$(var calibration_camera_1_frame)' != '' &quot;)"/>
+  <let name="calibration_camera_2_detections_topic" value="camera2/detections_array" if="$(eval &quot;'$(var calibration_camera_2_frame)' != '' &quot;)"/>
+  <let name="calibration_camera_3_detections_topic" value="camera3/detections_array" if="$(eval &quot;'$(var calibration_camera_3_frame)' != '' &quot;)"/>
+  <let name="calibration_camera_4_detections_topic" value="camera4/detections_array" if="$(eval &quot;'$(var calibration_camera_4_frame)' != '' &quot;)"/>
+  <let name="calibration_camera_5_detections_topic" value="camera5/detections_array" if="$(eval &quot;'$(var calibration_camera_5_frame)' != '' &quot;)"/>
+  <let name="calibration_camera_6_detections_topic" value="camera6/detections_array" if="$(eval &quot;'$(var calibration_camera_6_frame)' != '' &quot;)"/>
+  <let name="calibration_camera_7_detections_topic" value="camera7/detections_array" if="$(eval &quot;'$(var calibration_camera_7_frame)' != '' &quot;)"/>
 
   <let
     name="calibration_lidar_topics"
@@ -121,12 +131,12 @@
     value="['$(var calibration_camera_info_0_topic)', '$(var calibration_camera_info_1_topic)', '$(var calibration_camera_info_2_topic)', '$(var calibration_camera_info_3_topic)', '$(var calibration_camera_info_4_topic)', '$(var calibration_camera_info_5_topic)', '$(var calibration_camera_info_6_topic)', '$(var calibration_camera_info_7_topic)']"
   />
   <let
-    name="calibration_image_topics"
-    value="['$(var calibration_image_0_topic)', '$(var calibration_image_1_topic)', '$(var calibration_image_2_topic)', '$(var calibration_image_3_topic)', '$(var calibration_image_4_topic)', '$(var calibration_image_5_topic)', '$(var calibration_image_6_topic)', '$(var calibration_image_7_topic)']"
+    name="calibration_compressed_image_topics"
+    value="['$(var calibration_compressed_image_0_topic)', '$(var calibration_compressed_image_1_topic)', '$(var calibration_compressed_image_2_topic)', '$(var calibration_compressed_image_3_topic)', '$(var calibration_compressed_image_4_topic)', '$(var calibration_compressed_image_5_topic)', '$(var calibration_compressed_image_6_topic)', '$(var calibration_compressed_image_7_topic)']"
   />
   <let
-    name="calibration_image_detections_topics"
-    value="['$(var calibration_image_0_detections_topic)', '$(var calibration_image_1_detections_topic)', '$(var calibration_image_2_detections_topic)', '$(var calibration_image_3_detections_topic)', '$(var calibration_image_4_detections_topic)', '$(var calibration_image_5_detections_topic)', '$(var calibration_image_6_detections_topic)', '$(var calibration_image_7_detections_topic)']"
+    name="calibration_camera_detections_topics"
+    value="['$(var calibration_camera_0_detections_topic)', '$(var calibration_camera_1_detections_topic)', '$(var calibration_camera_2_detections_topic)', '$(var calibration_camera_3_detections_topic)', '$(var calibration_camera_4_detections_topic)', '$(var calibration_camera_5_detections_topic)', '$(var calibration_camera_6_detections_topic)', '$(var calibration_camera_7_detections_topic)']"
   />
 
   <arg
@@ -141,6 +151,11 @@
   <arg name="left_wheel_tag_id" default="22"/>
   <arg name="right_wheel_tag_id" default="26"/>
 
+  <!-- these should not be commited -->
+  <let name="apriltag_detector_families" value="[16h5, 36h11]"/>
+  <!--let name="apriltag_detector_sizes" value="[0.6, 0.22]"/>
+  <let name="min_apriltag_filter_margin" value="30.0"/-->
+
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
     <node pkg="extrinsic_tag_based_sfm_calibrator" exec="extrinsic_tag_based_sfm_calibrator" name="extrinsic_tag_based_sfm_calibrator" output="screen">
@@ -148,6 +163,7 @@
       <remap from="extrinsic_calibration" to="$(var calibration_service_name)"/>
 
       <param name="publish_tfs" value="$(var publish_tfs)"/>
+      <param name="ba.fixed_ground_plane_model" value="$(var fixed_ground_plane_model)"/>
 
       <!-- Frame configuration -->
       <param name="base_frame" value="$(var base_frame)"/>
@@ -157,9 +173,9 @@
 
       <!-- Topic configuration -->
       <param name="calibration_lidar_detections_topics" value="$(var calibration_lidar_detections_topics)"/>
-      <param name="calibration_image_detections_topics" value="$(var calibration_image_detections_topics)"/>
+      <param name="calibration_camera_detections_topics" value="$(var calibration_camera_detections_topics)"/>
       <param name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
-      <param name="calibration_image_topics" value="$(var calibration_image_topics)"/>
+      <param name="calibration_compressed_image_topics" value="$(var calibration_compressed_image_topics)"/>
 
       <!-- Tag configuration-->
       <param name="waypoint_tag.ids" value="$(var waypoint_tag_ids)"/>
@@ -238,6 +254,62 @@
       <arg name="ns" value="lidar7"/>
       <arg name="lidar_model" value="$(var calibration_lidar_7_model)"/>
       <arg name="pointcloud_topic" value="$(var calibration_lidar_7_topic)"/>
+      <arg name="filtered_detections_topic" value="detections_array"/>
+    </include>
+
+    <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/apriltag_detector.launch.xml" if="$(eval &quot;'$(var calibration_camera_0_frame)' != '' &quot;)">
+      <arg name="ns" value="camera0"/>
+      <arg name="image_compressed_topic" value="$(var calibration_compressed_image_0_topic)"/>
+      <arg name="camera_info_topic" value="$(var calibration_camera_info_0_topic)"/>
+      <arg name="apriltag_detector_families" value="$(var apriltag_detector_families)"/>
+      <arg name="filtered_detections_topic" value="detections_array"/>
+    </include>
+
+    <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/apriltag_detector.launch.xml" if="$(eval &quot;'$(var calibration_camera_1_frame)' != '' &quot;)">
+      <arg name="ns" value="camera1"/>
+      <arg name="image_compressed_topic" value="$(var calibration_compressed_image_1_topic)"/>
+      <arg name="camera_info_topic" value="$(var calibration_camera_info_1_topic)"/>
+      <arg name="apriltag_detector_families" value="$(var apriltag_detector_families)"/>
+      <arg name="filtered_detections_topic" value="detections_array"/>
+    </include>
+
+    <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/apriltag_detector.launch.xml" if="$(eval &quot;'$(var calibration_camera_2_frame)' != '' &quot;)">
+      <arg name="ns" value="camera2"/>
+      <arg name="image_compressed_topic" value="$(var calibration_compressed_image_2_topic)"/>
+      <arg name="camera_info_topic" value="$(var calibration_camera_info_2_topic)"/>
+      <arg name="apriltag_detector_families" value="$(var apriltag_detector_families)"/>
+      <arg name="filtered_detections_topic" value="detections_array"/>
+    </include>
+
+    <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/apriltag_detector.launch.xml" if="$(eval &quot;'$(var calibration_camera_3_frame)' != '' &quot;)">
+      <arg name="ns" value="camera3"/>
+      <arg name="image_compressed_topic" value="$(var calibration_compressed_image_3_topic)"/>
+      <arg name="camera_info_topic" value="$(var calibration_camera_info_3_topic)"/>
+      <arg name="apriltag_detector_families" value="$(var apriltag_detector_families)"/>
+      <arg name="filtered_detections_topic" value="detections_array"/>
+    </include>
+
+    <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/apriltag_detector.launch.xml" if="$(eval &quot;'$(var calibration_camera_4_frame)' != '' &quot;)">
+      <arg name="ns" value="camera4"/>
+      <arg name="image_compressed_topic" value="$(var calibration_compressed_image_4_topic)"/>
+      <arg name="camera_info_topic" value="$(var calibration_camera_info_4_topic)"/>
+      <arg name="apriltag_detector_families" value="$(var apriltag_detector_families)"/>
+      <arg name="filtered_detections_topic" value="detections_array"/>
+    </include>
+
+    <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/apriltag_detector.launch.xml" if="$(eval &quot;'$(var calibration_camera_5_frame)' != '' &quot;)">
+      <arg name="ns" value="camera5"/>
+      <arg name="image_compressed_topic" value="$(var calibration_compressed_image_5_topic)"/>
+      <arg name="camera_info_topic" value="$(var calibration_camera_info_5_topic)"/>
+      <arg name="apriltag_detector_families" value="$(var apriltag_detector_families)"/>
+      <arg name="filtered_detections_topic" value="detections_array"/>
+    </include>
+
+    <include file="$(find-pkg-share extrinsic_tag_based_sfm_calibrator)/launch/apriltag_detector.launch.xml" if="$(eval &quot;'$(var calibration_camera_6_frame)' != '' &quot;)">
+      <arg name="ns" value="camera6"/>
+      <arg name="image_compressed_topic" value="$(var calibration_compressed_image_6_topic)"/>
+      <arg name="camera_info_topic" value="$(var calibration_camera_info_6_topic)"/>
+      <arg name="apriltag_detector_families" value="$(var apriltag_detector_families)"/>
       <arg name="filtered_detections_topic" value="detections_array"/>
     </include>
   </group>

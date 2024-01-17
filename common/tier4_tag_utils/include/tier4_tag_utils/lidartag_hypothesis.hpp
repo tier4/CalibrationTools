@@ -56,7 +56,8 @@ public:
 
   void setMinConvergenceTime(double convergence_time);
   void setMaxNoObservationTime(double time);
-  void setMaxConvergenceThreshold(double transl, double tansl_dot, double angle, double angle_dot);
+  void setMaxConvergenceThreshold(
+    double transl, double translation_dot, double angle, double angle_dot);
   void setNewHypothesisThreshold(double transl, double angle);
   void setMeasurementNoise(double transl, double angle);
   void setProcessNoise(double transl, double transl_dot, double rot, double rot_dot);

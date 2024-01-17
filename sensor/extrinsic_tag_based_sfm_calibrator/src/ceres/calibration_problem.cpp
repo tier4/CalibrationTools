@@ -1007,13 +1007,19 @@ void CalibrationProblem::writeDebugImages()
       // Need to make sure all the cameras are in the map
       UID calibration_camera_uid = UID::makeSensorUID(SensorType::CalibrationCamera, camera_id);
 
+      if (!scene.calibration_cameras_detections[camera_id].calibration_image) {
+        RCLCPP_ERROR(
+          rclcpp::get_logger("calibration_problem"), "scene=%lu camera_id=%lu is invalid",
+          scene_index, camera_id);
+        continue;
+      }
+
       cv_bridge::CvImagePtr cv_ptr;
       cv_ptr = cv_bridge::toCvCopy(
         *scene.calibration_cameras_detections[camera_id].calibration_image,
         sensor_msgs::image_encodings::BGR8);
 
-      cv::Mat undistorted_img = cv_ptr->image;
-      ;  // we assume we use the undistorted image
+      cv::Mat undistorted_img = cv_ptr->image;  // we assume we use the undistorted image
 
       writeDebugImage(
         scene_index, calibration_camera_uid, undistorted_img,

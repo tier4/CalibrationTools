@@ -82,7 +82,7 @@ struct cloud_point_index_idx_triplets
   {
     return (idx0 < p.idx0) || (idx0 == p.idx0 && idx1 < p.idx1) ||
            (idx0 == p.idx0 && idx1 == p.idx1 && idx2 < p.idx2);
-  }  // test brancheless agains branched version with a dataset at some point \ along with some sort
+  }  // test branchless against branched version with a dataset at some point \ along with some sort
      // implementations
 };
 
@@ -102,7 +102,7 @@ public:
   using VoxelGrid<PointT>::min_b_;
   using VoxelGrid<PointT>::max_b_;
   using VoxelGrid<PointT>::div_b_;
-  using VoxelGrid<PointT>::divb_mul_;
+  using VoxelGrid<PointT>::divb_mul_;  // cSpell:ignore divb
   using VoxelGrid<PointT>::min_points_per_voxel_;
   using VoxelGrid<PointT>::save_leaf_layout_;
   using VoxelGrid<PointT>::leaf_layout_;

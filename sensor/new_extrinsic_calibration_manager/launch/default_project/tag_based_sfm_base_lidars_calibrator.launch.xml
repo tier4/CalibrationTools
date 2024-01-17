@@ -8,25 +8,25 @@
   <arg name="fixed_ground_plane_model" default="false"/>
 
   <!-- Frame configuration -->
-  <let name="base_frame" value="base_link"/>
-  <let name="main_calibration_sensor_frame" value="pandar_top"/>
+  <arg name="base_frame" default="base_link"/>
+  <arg name="main_calibration_sensor_frame" default="pandar_top"/>
 
-  <let name="calibration_lidar_0_frame" value="pandar_top"/>
-  <let name="calibration_lidar_1_frame" value="pandar_front"/>
-  <let name="calibration_lidar_2_frame" value="pandar_left"/>
-  <let name="calibration_lidar_3_frame" value="pandar_right"/>
+  <arg name="calibration_lidar_0_frame" default="pandar_top"/>
+  <arg name="calibration_lidar_1_frame" default="pandar_front"/>
+  <arg name="calibration_lidar_2_frame" default="pandar_left"/>
+  <arg name="calibration_lidar_3_frame" default="pandar_right"/>
 
   <!-- Lidar configuration -->
-  <let name="calibration_lidar_0_model" value="pandar64"/>
-  <let name="calibration_lidar_1_model" value="at128"/>
-  <let name="calibration_lidar_2_model" value="pandar_xt32"/>
-  <let name="calibration_lidar_3_model" value="pandar_xt32"/>
+  <arg name="calibration_lidar_0_model" default="pandar64"/>
+  <arg name="calibration_lidar_1_model" default="at128"/>
+  <arg name="calibration_lidar_2_model" default="pandar_xt32"/>
+  <arg name="calibration_lidar_3_model" default="pandar_xt32"/>
 
   <!-- Topic configuration -->
-  <let name="calibration_lidar_0_topic" value="/sensing/lidar/top/pointcloud_raw"/>
-  <let name="calibration_lidar_1_topic" value="/sensing/lidar/front/pointcloud_raw"/>
-  <let name="calibration_lidar_2_topic" value="/sensing/lidar/left/pointcloud_raw"/>
-  <let name="calibration_lidar_3_topic" value="/sensing/lidar/right/pointcloud_raw"/>
+  <arg name="calibration_lidar_0_topic" default="/sensing/lidar/top/pointcloud_raw"/>
+  <arg name="calibration_lidar_1_topic" default="/sensing/lidar/front/pointcloud_raw"/>
+  <arg name="calibration_lidar_2_topic" default="/sensing/lidar/left/pointcloud_raw"/>
+  <arg name="calibration_lidar_3_topic" default="/sensing/lidar/right/pointcloud_raw"/>
 
   <arg
     name="auxiliar_tag_ids"
