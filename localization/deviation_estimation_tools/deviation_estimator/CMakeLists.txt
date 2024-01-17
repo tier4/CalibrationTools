@@ -13,13 +13,17 @@ ament_auto_add_library(deviation_estimator_lib SHARED
   src/validation_module.cpp
 )
 
+# as a ros2 node
 ament_auto_add_executable(deviation_estimator src/deviation_estimator_node.cpp)
-
 target_compile_options(deviation_estimator PUBLIC -g -Wall -Wextra -Wpedantic -Werror)
-
 target_link_libraries(deviation_estimator deviation_estimator_lib)
 target_include_directories(deviation_estimator PUBLIC include)
 
+# as a static tool
+ament_auto_add_executable(deviation_estimator_unit_tool src/deviation_estimator_main.cpp)
+target_compile_options(deviation_estimator_unit_tool PUBLIC -g -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(deviation_estimator_unit_tool deviation_estimator_lib)
+target_include_directories(deviation_estimator_unit_tool PUBLIC include)
 
 if(BUILD_TESTING)
   function(add_testcase filepath)

@@ -21,6 +21,8 @@
   <depend>tf2_ros</depend>
   <depend>tier4_autoware_utils</depend>
   <depend>tier4_debug_msgs</depend>
+  <depend>rosbag2</depend>
+  <depend>rosbag2_cpp</depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>
