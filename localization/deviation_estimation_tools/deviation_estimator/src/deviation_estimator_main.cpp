@@ -65,7 +65,7 @@ int main(int argc, char ** argv)
   rclcpp::Serialization<geometry_msgs::msg::PoseWithCovarianceStamped> serialization_pose;
 
   // Prepare tf_buffer
-  rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
+  rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
   tf2_ros::Buffer tf_buffer(clock);
 
   // Prepare variables
