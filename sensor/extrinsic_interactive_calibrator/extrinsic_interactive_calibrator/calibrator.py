@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+from typing import List
+from typing import Optional
+
 import cv2
-from extrinsic_interactive_calibrator.utils import cv_to_transformation_matrix
-from extrinsic_interactive_calibrator.utils import tf_message_to_transform_matrix
-from extrinsic_interactive_calibrator.utils import transform_matrix_to_cv
 import numpy as np
+from tier4_calibration_views.utils import cv_to_transformation_matrix
+from tier4_calibration_views.utils import tf_message_to_transform_matrix
+from tier4_calibration_views.utils import transform_matrix_to_cv
 
 
 class Calibrator:
@@ -81,7 +85,7 @@ class Calibrator:
                 object_points, image_points, self.k, self.d, flags=self.flags
             )
         except Exception as e:
-            print(e)
+            logging.error(e)
 
         camera_to_lidar_transform = cv_to_transformation_matrix(tvec, rvec)
 
@@ -105,10 +109,10 @@ class Calibrator:
                     object_points_iter, image_points_iter, self.k, self.d, flags=self.flags
                 )
             except Exception as e:
-                print(e)
+                logging.error(e)
                 continue
 
-            reproj_error_iter, inliers = self.calculate_reproj_error(
+            reproj_error_iter, inliers = self.calculate_reproj_error(  # cSpell:ignore reproj
                 object_points, image_points, tvec=iter_tvec, rvec=iter_rvec
             )
 
@@ -125,7 +129,13 @@ class Calibrator:
         return camera_to_lidar_transform
 
     def calculate_reproj_error(
-        self, object_points, image_points, tvec=None, rvec=None, tf_msg=None, transform_matrix=None
+        self,
+        object_points: List[np.array],
+        image_points: List[np.array],
+        tvec: Optional[np.array] = None,
+        rvec: Optional[np.array] = None,
+        tf_msg=None,
+        transform_matrix=None,
     ):
         if isinstance(object_points, list) and isinstance(image_points, list):
             if len(object_points) == 0:

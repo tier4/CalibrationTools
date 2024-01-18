@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from functools import reduce
+import logging
 from typing import Dict
 
 from PySide2.QtCore import Signal
@@ -71,13 +71,13 @@ class LauncherConfigurationView(QWidget):
             + ".launch.xml"
         )
 
-        print(f"Reading xml from: {launcher_path}")
+        logging.info(f"Reading xml from: {launcher_path}")
 
         try:
             with open(launcher_path) as f:
                 root_entity, parser = Parser.load(f)
         except Exception as e:
-            print("Failed reading xml file. Either not-existent or invalid")
+            logging.error("Failed reading xml file. Either not-existent or invalid")
             raise e
 
         ld: LaunchDescription = parser.parse_description(root_entity)
@@ -214,7 +214,7 @@ class LauncherConfigurationView(QWidget):
                 ],
             )
         )
-        print("check_argument_status", flush=True)
+        logging.debug("check_argument_status")
 
     def on_click(self):
         args_dict: Dict[str, str] = {
@@ -233,8 +233,6 @@ class LauncherConfigurationView(QWidget):
                     item.strip() for item in value.strip("[]").split(",")
                 ]
                 args_dict[key] = [int(v2) if v2.isnumeric() else v2 for v2 in args_dict[key]]
-
-        print(args_dict, flush=True)
 
         self.launcher_parameters.emit(args_dict)
         self.close()

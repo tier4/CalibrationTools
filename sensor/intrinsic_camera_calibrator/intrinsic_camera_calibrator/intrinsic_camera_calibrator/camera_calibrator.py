@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 from collections import defaultdict
 import copy
+import logging
 from optparse import OptionParser
 import os
 import signal
@@ -281,13 +282,13 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 delayed_change()
 
         def on_training_sample_changed(index):
-            print(f"on_training_sample_changed={index}")
+            logging.debug(f"on_training_sample_changed={index}")
             self.training_sample_label.setText(f"Training sample: {index}")
             img = self.data_collector.get_training_image(index)
             self.process_db_data(img)
 
         def on_evaluation_sample_changed(index):
-            print(f"on_evaluation_sample_changed={index}")
+            logging.info(f"on_evaluation_sample_changed={index}")
             self.evaluation_sample_label.setText(f"Evaluation sample: {index}")
             img = self.data_collector.get_evaluation_image(index)
             self.process_db_data(img)
@@ -316,7 +317,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_group.setFlat(True)
 
         self.calibrator_type_combobox = QComboBox()
-        self.calibrator_type_combobox.setEnabled(False)  # TODO(knzo25): implement this later
+        self.calibrator_type_combobox.setEnabled(False)  # TODO: implement this later
 
         self.calibration_parameters_button = QPushButton("Calibration parameters")
         self.calibration_button = QPushButton("Calibrate")
@@ -338,7 +339,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_evaluation_inlier_rms_label = QLabel("\trms error (inlier):")
 
         def on_parameters_view_closed():
-            # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
+            # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
             self.calibration_parameters_button.setEnabled(True)
 
         def on_parameters_button_clicked():
@@ -401,7 +402,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                     CalibratorEnum.from_name(self.cfg["calibrator_type"]).get_id()
                 )
             except Exception as e:
-                print(f"Invalid calibration_type: {e}")
+                logging.error(f"Invalid calibration_type: {e}")
         else:
             self.calibrator_type_combobox.setCurrentIndex(0)
 
@@ -429,7 +430,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
     def make_detector_group(self):
         def detector_parameters_button_callback():
-            print("detector_parameters_button_callback")
+            logging.info("detector_parameters_button_callback")
             self.detector_parameters_view = ParameterView(self.detector)
             self.detector_parameters_view.parameter_changed.connect(self.on_parameter_changed)
 
@@ -509,7 +510,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 else self.calibrated_camera_model
             )
 
-            print("view_data_collection_statistics_callback")
+            logging.info("view_data_collection_statistics_callback")
             data_collection_statistics_view = DataCollectorView(
                 self.data_collector.clone_without_images(), camera_model
             )
@@ -521,7 +522,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         def data_collection_parameters_callback():
             self.data_collection_parameters_button.setEnabled(False)
 
-            print("data_collection_parameters_callback")
+            logging.debug("data_collection_parameters_callback")
             data_collection_parameters_view = ParameterView(self.data_collector)
             data_collection_parameters_view.closed.connect(
                 data_collection_parameters_closed_callback
@@ -647,10 +648,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         self.setWindowTitle(f"Camera intrinsics calibrator ({self.data_source.get_camera_name()})")
 
-        print("Init")
-        print(f"\tmode : {mode}")
-        print(f"\tdata_source : {data_source}")
-        print(f"\tboard_type : {board_type}")
+        logging.info("Init")
+        logging.info(f"\tmode : {mode}")
+        logging.info(f"\tdata_source : {data_source}")
+        logging.info(f"\tboard_type : {board_type}")
 
         detector_cfg = self.cfg[self.board_type.value["name"] + "_detector"]
 
@@ -718,7 +719,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"
         )
 
-        # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
+        # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(True)
         self.evaluation_button.setEnabled(True)
@@ -768,7 +769,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"
         )
 
-        # self.calibrator_type_combobox.setEnabled(True) TODO(knzo25): implement this later
+        # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(self.operation_mode == OperationMode.CALIBRATION)
         self.evaluation_button.setEnabled(True)
@@ -788,7 +789,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         if output_folder is None or output_folder == "":
             return
 
-        print(f"Saving calibration results to {output_folder}")
+        logging.info(f"Saving calibration results to {output_folder}")
 
         save_intrinsics(
             self.calibrated_camera_model,
@@ -1095,7 +1096,7 @@ def main(args=None):
         with open(options.config_file, "r") as stream:
             cfg = yaml.safe_load(stream)
     except Exception as e:
-        print(f"Could not load the parameters from the YAML file ({e})")
+        logging.error(f"Could not load the parameters from the YAML file ({e})")
 
     try:
         signal.signal(signal.SIGINT, sigint_handler)
@@ -1103,7 +1104,7 @@ def main(args=None):
         ui = CameraIntrinsicsCalibratorUI(cfg)  # noqa: F841
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quitting...")
+        logging.info("Received sigint. Quitting...")
         rclpy.shutdown()
 
 

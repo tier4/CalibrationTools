@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+
+# Copyright 2024 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Dict
 
 from new_extrinsic_calibration_manager.calibrator_base import CalibratorBase
@@ -41,8 +57,6 @@ class TagBasedPNPCalibrator(CalibratorBase):
             ]
         )
 
-        print("X2::TagBasedPNPCalibrator")
-
         self.add_calibrator(
             service_name="calibrate_camera_lidar",
             expected_calibration_frames=[
@@ -55,27 +69,19 @@ class TagBasedPNPCalibrator(CalibratorBase):
             f"{self.camera_name}/camera_optical_link"
         ][self.lidar_frame]
 
-        print(f"camera_to_lidar_transform={camera_to_lidar_transform}", flush=True)
-
         sensor_kit_to_lidar_transform = self.get_transform_matrix(
             self.sensor_kit_frame, self.lidar_frame
         )
 
-        print(f"sensor_kit_to_lidar_transform={sensor_kit_to_lidar_transform}", flush=True)
-
         camera_to_optical_link_transform = self.get_transform_matrix(
             f"{self.camera_name}/camera_link", f"{self.camera_name}/camera_optical_link"
         )
-
-        print(f"camera_to_optical_link_transform={camera_to_optical_link_transform}", flush=True)
 
         sensor_kit_camera_link_transform = np.linalg.inv(
             camera_to_optical_link_transform
             @ camera_to_lidar_transform
             @ np.linalg.inv(sensor_kit_to_lidar_transform)
         )
-
-        print(f"sensor_kit_camera_link_transform={sensor_kit_camera_link_transform}", flush=True)
 
         result = {
             self.sensor_kit_frame: {

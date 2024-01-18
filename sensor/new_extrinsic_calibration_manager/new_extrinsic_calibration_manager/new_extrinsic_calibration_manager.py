@@ -17,6 +17,7 @@
 from collections import defaultdict
 import copy
 from functools import partial
+import logging
 import os
 import signal
 import subprocess
@@ -128,15 +129,13 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         self.hide()
 
     def on_selected_calibrator(self, project_name, calibrator_name):
-        print(
-            f"on_selected_calibrator: project_name={project_name} calibrator_name={calibrator_name}",
-            flush=True,
+        logging.info(
+            f"on_selected_calibrator: project_name={project_name} calibrator_name={calibrator_name}"
         )
         self.launcher_configuration_view = LauncherConfigurationView(project_name, calibrator_name)
         self.launcher_configuration_view.launcher_parameters.connect(
             partial(self.launch_calibrators, project_name, calibrator_name)
         )
-        pass
 
     def launch_calibrators(
         self, project_name: str, calibrator_name: str, launch_argument_dict: Dict
@@ -145,7 +144,6 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         self.show()
 
         # Execute the launcher
-        print(launch_argument_dict, flush=True)
         argument_list = [f"{k}:={v}" for k, v in launch_argument_dict.items()]
 
         package_share_directory = get_package_share_directory("new_extrinsic_calibration_manager")
@@ -159,7 +157,7 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         )
 
         command_list = ["ros2", "launch", launcher_path] + argument_list
-        print(f"Launching calibrator with the following command: {command_list}", flush=True)
+        logging.info(f"Launching calibrator with the following command: {command_list}")
         self.process = subprocess.Popen(command_list)
 
         # Recover all the launcher arguments (in addition to user defined in launch_arguments)
@@ -167,7 +165,7 @@ class NewExtrinsicCalibrationManager(QMainWindow):
             with open(launcher_path) as f:
                 root_entity, parser = Parser.load(f)
         except Exception as e:
-            print("Failed reading xml file. Either not-existent or invalid")
+            logging.error("Failed reading xml file. Either not-existent or invalid")
             raise e
 
         ld: LaunchDescription = parser.parse_description(root_entity)
@@ -177,8 +175,6 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         for e in ld.entities:
             if isinstance(e, (DeclareLaunchArgument, SetLaunchConfiguration)):
                 e.visit(context)
-
-        print(context.launch_configurations)
 
         # Start the ROS interface
         self.ros_interface = RosInterface()
@@ -225,7 +221,7 @@ class NewExtrinsicCalibrationManager(QMainWindow):
             self.action_button.setEnabled(False)
 
     def on_calibration_request(self):
-        print("on_calibration_request", flush=True)
+        logging.debug("on_calibration_request")
         self.calibrator.start_calibration()
 
     def on_calibration_finished(self):
@@ -265,20 +261,20 @@ class NewExtrinsicCalibrationManager(QMainWindow):
             )
 
     def on_save_request(self):
-        print("on_save_request", flush=True)
+        logging.debug("on_save_request")
 
         output_path = QFileDialog.getSaveFileName(
             None, "Save File", f"{os.getcwd()}/calibration_results.yaml", "YAML files (*.yaml)"
         )
 
-        print(output_path, flush=True)
+        logging.debug(output_path)
         output_path = output_path[0]
 
         if output_path is None or output_path == "":
-            print("Invalid path", flush=True)
+            logging.error("Invalid path")
             return
 
-        print(f"Saving calibration results to {output_path}")
+        logging.info(f"Saving calibration results to {output_path}")
         self.calibrator.save_results(output_path, use_rpy=True)
 
     def tfs_graph_callback(self, tfs_dict):
@@ -298,11 +294,6 @@ class NewExtrinsicCalibrationManager(QMainWindow):
             self.initial_tfs_view.setTfs(
                 self.tfs_dict, required_frames=self.calibrator.required_frames
             )
-        # self.calibration_tfs_view.setTfs(self.tfs_dict)
-        # self.final_tfs_view.setTfs(self.tfs_dict)
-
-        # self.tf_view.plot.setTfs(self.tfs_msg.transforms)
-        # print("SECOND", flush=True)
 
 
 def main(args=None):
@@ -317,7 +308,7 @@ def main(args=None):
 
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quitting...")
+        logging.info("Received sigint. Quitting...")
         rclpy.shutdown()
 
 

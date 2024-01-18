@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,8 +72,6 @@ class RosInterface(Node):
         self.tfs_graph_ui_callback = callback
 
     def tf_callback(self, msg):
-        # print("TF MSG", flush=True)
-
         for transform in msg.transforms:
             self.tf_msg[transform.header.frame_id][transform.child_frame_id] = transform.transform
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,72 +14,87 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import array
+from copy import deepcopy
+
 import cv2
-from geometry_msgs.msg import TransformStamped
 import numpy as np
-import transforms3d
+from sensor_msgs.msg import CameraInfo
 
 
-def tf_message_to_transform_matrix(msg):
-    transform_matrix = np.eye(4)
+def get_calibration_flags(
+    fix_principal_point=False, fix_aspect_ratio=False, zero_tangent_dist=True, num_ks=2
+):
+    calib_flags = 0
 
-    q = msg.transform.rotation
-    rot_matrix = transforms3d.quaternions.quat2mat((q.w, q.x, q.y, q.z))
+    if fix_principal_point:
+        calib_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+    if fix_aspect_ratio:
+        calib_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+    if zero_tangent_dist:
+        calib_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+    if num_ks > 3:
+        calib_flags |= cv2.CALIB_RATIONAL_MODEL
+    if num_ks < 6:
+        calib_flags |= cv2.CALIB_FIX_K6
+    if num_ks < 5:
+        calib_flags |= cv2.CALIB_FIX_K5
+    if num_ks < 4:
+        calib_flags |= cv2.CALIB_FIX_K4
+    if num_ks < 3:
+        calib_flags |= cv2.CALIB_FIX_K3
+    if num_ks < 2:
+        calib_flags |= cv2.CALIB_FIX_K2
+    if num_ks < 1:
+        calib_flags |= cv2.CALIB_FIX_K1
+    calib_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
 
-    transform_matrix[0:3, 0:3] = rot_matrix
-    transform_matrix[0, 3] = msg.transform.translation.x
-    transform_matrix[1, 3] = msg.transform.translation.y
-    transform_matrix[2, 3] = msg.transform.translation.z
-
-    return transform_matrix
-
-
-def transform_matrix_to_tf_message(transform_matrix):
-    q = transforms3d.quaternions.mat2quat(transform_matrix[0:3, 0:3])
-
-    msg = TransformStamped()
-    msg.transform.translation.x = transform_matrix[0, 3]
-    msg.transform.translation.y = transform_matrix[1, 3]
-    msg.transform.translation.z = transform_matrix[2, 3]
-    msg.transform.rotation.x = q[1]
-    msg.transform.rotation.y = q[2]
-    msg.transform.rotation.z = q[3]
-    msg.transform.rotation.w = q[0]
-
-    return msg
-
-
-def transform_matrix_to_cv(transform_matrix):
-    rotation_matrix = transform_matrix[0:3, 0:3]
-    rvec, _ = cv2.Rodrigues(rotation_matrix)
-    tvec = transform_matrix[0:3, 3].reshape(3, 1)
-
-    return tvec, rvec
+    return calib_flags
 
 
-def cv_to_transformation_matrix(tvec, rvec):
-    transform_matrix = np.eye(4)
+def camera_lidar_calibrate_intrinsics(
+    object_points: np.array, image_points: np.array, initial_camera_info: CameraInfo
+):
+    object_points = object_points.astype(np.float32)
+    image_points = image_points.astype(np.float32)
 
-    rotation_matrix, _ = cv2.Rodrigues(rvec)
+    num_object_points, object_dim = object_points.shape
+    num_image_points, image_dim = image_points.shape
 
-    transform_matrix[0:3, 0:3] = rotation_matrix
-    transform_matrix[0:3, 3] = tvec.reshape(
-        3,
+    assert num_object_points == num_image_points
+    assert object_dim == 3
+    assert image_dim == 2
+
+    initial_k = np.array(initial_camera_info.k).reshape(3, 3)
+    initial_d = np.array(initial_camera_info.d).flatten()
+
+    calib_flags = get_calibration_flags()
+
+    _, new_k, new_d, _, _ = cv2.calibrateCamera(
+        [object_points.reshape(-1, 3)],
+        [image_points.reshape(-1, 1, 2)],
+        (initial_camera_info.width, initial_camera_info.height),
+        cameraMatrix=initial_k,
+        distCoeffs=initial_d,
+        flags=calib_flags,
     )
 
-    return transform_matrix
+    optimized_camera_info = deepcopy(initial_camera_info)
+    optimized_camera_info.k = new_k.reshape(-1)
+    optimized_camera_info.d = array.array("d", new_d)
 
+    ncm, _ = cv2.getOptimalNewCameraMatrix(
+        np.array(optimized_camera_info.k).reshape(3, 3),
+        np.array(optimized_camera_info.d).reshape(-1),
+        (optimized_camera_info.width, optimized_camera_info.height),
+        0.0,
+    )
 
-def decompose_transformation_matrix(transformation):
-    return transformation[0:3, 3].reshape(3, 1), transformation[0:3, 0:3]
+    p = np.zeros((3, 4), dtype=np.float64)
 
+    for j in range(3):
+        for i in range(3):
+            p[j, i] = ncm[j, i]
 
-def transform_points(translation_vector, rotation_matrix, point_array):
-    num_points, dim = point_array.shape
-    assert dim == 3
-
-    return np.dot(point_array, np.transpose(rotation_matrix)) + translation_vector.reshape(1, 3)
-
-
-def stamp_to_seconds(time):
-    return time.sec + 1e-9 * time.nanosec
+    optimized_camera_info.p = p.reshape(-1)
+    return optimized_camera_info

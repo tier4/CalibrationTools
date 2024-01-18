@@ -7,6 +7,7 @@
   <arg name="pointcloud_topic" default="/sensing/lidar/top/pointcloud_raw"/>
   <arg name="lidar_model" default="velodyne_vls128" description="this lidar must be supported by the lidartag package"/>
   <arg name="use_rectified_image" default="true" description="image_rect vs. raw"/>
+  <arg name="view_only_ui" default="true" description="By default we use a minimal UI"/>
 
   <let name="rviz_profile" value=""/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
@@ -29,18 +30,24 @@
   </include>
 
   <!-- interactive calibrator -->
-  <node pkg="extrinsic_interactive_calibrator" exec="interactive_calibrator" name="interactive_calibrator" output="screen">
+  <node pkg="extrinsic_interactive_calibrator" exec="interactive_calibrator" name="interactive_calibrator" output="screen" if="$(eval &quot;'$(var view_only_ui)' == 'false' &quot;)">
     <remap from="pointcloud" to="$(var pointcloud_topic)"/>
     <remap from="image" to="$(var image_compressed_topic)"/>
     <remap from="camera_info" to="$(var camera_info_topic)"/>
     <remap from="calibration_points_input" to="calibration_points"/>
 
-    <param name="camera_frame" value="$(var camera_optical_link_frame)"/>
+    <param name="camera_frame" value="$(var camera_frame)"/>
     <param name="use_calibration_api" value="false"/>
     <param name="can_publish_tf" value="false"/>
   </node>
 
-  <include file="$(find-pkg-share intrinsic_camera_calibration)/launch/optimizer.launch.xml"/>
+  <!-- camera view -->
+  <node pkg="tier4_calibration_views" exec="image_view_node.py" name="image_view_node_py" output="screen" if="$(eval &quot;'$(var view_only_ui)' == 'true' &quot;)">
+    <remap from="pointcloud" to="$(var pointcloud_topic)"/>
+    <remap from="image" to="$(var image_compressed_topic)"/>
+    <remap from="camera_info" to="$(var camera_info_topic)"/>
+    <remap from="calibration_points_input" to="calibration_points"/>
+  </node>
 
   <!-- create a placeholder lidar frame to make the rviz profile generic -->
   <node pkg="tf2_ros" exec="static_transform_publisher" name="estimated_base_link_broadcaster" output="screen" args="0 0 0 0 0 0 $(var lidar_frame) lidar_frame"/>

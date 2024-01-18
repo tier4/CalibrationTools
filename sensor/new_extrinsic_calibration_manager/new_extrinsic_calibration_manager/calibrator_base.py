@@ -1,10 +1,23 @@
-# from abc import ABC
-# from abc import abstractmethod
+#!/usr/bin/env python3
+
+# Copyright 2024 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from abc import ABCMeta
 from abc import abstractproperty
-
-# from collections import OrderedDict
 from collections import defaultdict
+import logging
 from typing import Dict
 from typing import List
 
@@ -30,7 +43,7 @@ class CalibratorBase(QObject):
     calibration_finished_signal = Signal()
 
     def __init__(self, ros_interface: RosInterface):
-        print("CalibratorBase: constructor start", flush=True)
+        logging.debug("CalibratorBase: constructor start")
         super().__init__()
         self.ros_interface = ros_interface
         self.calibrators: List[CalibratorServiceWrapper] = []
@@ -43,14 +56,14 @@ class CalibratorBase(QObject):
         self.check_tf_timer = QTimer()
         self.check_tf_timer.timeout.connect(self.on_check_tf_timer)
         self.check_tf_timer.start(500)
-        print("CalibratorBase: constructor end", flush=True)
+        logging.debug("CalibratorBase: constructor end")
 
     def init():
-        print("CalibratorBase: Calibrator init?", flush=True)
+        logging.debug("CalibratorBase: Calibrator init?")
         pass
 
     def on_check_tf_timer(self):
-        print("CalibratorBase: on_check_tf_timer", flush=True)
+        logging.debug("CalibratorBase: on_check_tf_timer")
         assert self.state == CalibratorState.WAITING_TFS
         tfs_ready = all(
             self.ros_interface.can_transform(self.required_frames[0], frame)
@@ -61,11 +74,11 @@ class CalibratorBase(QObject):
             self.state = CalibratorState.WAITING_SERVICES
             self.state_changed_signal.emit(self.state)
             self.check_tf_timer.stop()
-            print("CalibratorBase: on_check_tf_timer stop", flush=True)
+            logging.debug("CalibratorBase: on_check_tf_timer stop")
         else:
             for frame in self.required_frames[1:]:
                 if not self.ros_interface.can_transform(self.required_frames[0], frame):
-                    print(f"could not transform {self.required_frames[0]} to {frame}")
+                    logging.debug(f"could not transform {self.required_frames[0]} to {frame}")
 
     def get_transform_matrix(self, parent: str, child: str) -> np.array:
         if parent not in self.required_frames or child not in self.required_frames:
@@ -74,7 +87,7 @@ class CalibratorBase(QObject):
         return tf_message_to_transform_matrix(tf_msg)
 
     def add_calibrator(self, service_name: str, expected_calibration_frames: List[FramePair]):
-        print("CalibratorBase: add_calibrator", flush=True)
+        logging.debug("CalibratorBase: add_calibrator")
 
         for pair in expected_calibration_frames:
             assert (
@@ -101,7 +114,7 @@ class CalibratorBase(QObject):
                 self.state_changed_signal.emit(self.state)
 
     def on_calibration_result(self):
-        print("CalibratorBase: on_calibration_result", flush=True)
+        logging.debug("CalibratorBase: on_calibration_result")
 
         for calibrator in self.calibrators:
             d = calibrator.get_calibration_results()
@@ -146,10 +159,10 @@ class CalibratorBase(QObject):
         pass
 
     def post_process_internal(self):
-        print("Before post_process")
+        logging.debug("Before post_process")
         for parent, children_and_transforms in self.calibration_result_tfs.items():
             for child, transform in children_and_transforms.items():
-                print(f"{parent}->{child}:\n{transform}")
+                logging.debug(f"{parent}->{child}:\n{transform}")
 
         calibration_transforms = {
             parent: {
@@ -167,10 +180,10 @@ class CalibratorBase(QObject):
             for parent, children_and_transforms in calibration_transforms.items()
         }
 
-        print("After post_process")
+        logging.debug("After post_process")
         for parent, children_and_transforms in self.processed_calibration_result_tfs.items():
             for child, transform in children_and_transforms.items():
-                print(f"{parent}->{child}:\n{transform}")
+                logging.debug(f"{parent}->{child}:\n{transform}")
 
     def post_process(self, calibration_transforms) -> Dict[str, Dict[str, np.array]]:
         return calibration_transforms

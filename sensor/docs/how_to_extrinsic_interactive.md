@@ -274,8 +274,8 @@ The `Data collection tools` implement several optional functionalities meant to 
 The `Calibration status` implement shows several numerical results of the calibration process and also implements save/load capabilities.
 
 1. `Calibration points`: The current number of image-object pairs of points.
-2. `Reproj error`: The reprojection error of the current pairs of points. On the left, the reprojection of the calibrated extrinsics is displayed, whereas on the right, the reprojection of the extrinsics used for visualization is displayed (this allows, for example, to compare the reprojection error of the current calibration with the initial one).
-3. `Inliers`: The number of points that are considered to be inliers for a specific calibration. Same as with `Reproj error`, the inliers for the calibrated and visualization extrinsics are displayed.
+2. `Reprojection error`: The reprojection error of the current pairs of points. On the left, the reprojection of the calibrated extrinsics is displayed, whereas on the right, the reprojection of the extrinsics used for visualization is displayed (this allows, for example, to compare the reprojection error of the current calibration with the initial one).
+3. `Inliers`: The number of points that are considered to be inliers for a specific calibration. Same as with `Reprojection error`, the inliers for the calibrated and visualization extrinsics are displayed.
 4. `Save calibration`: Selects a folder to save the current calibration. It outputs the image-object calibration pairs of points, the camera-lidar extrinsics (not the one requested by the `Calibration tools`, which is usually the `sensor_kit` to `camera`), and the optimized intrinsics (when they are computed).
 5. `Load calibration`: Selects a folder to load a previous calibration from the Interactive calibration tool. This only loads the image-object pairs of points (not the intrinsics/extrinsics).
 

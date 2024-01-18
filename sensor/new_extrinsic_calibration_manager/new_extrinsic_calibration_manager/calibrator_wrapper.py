@@ -1,4 +1,21 @@
+#!/usr/bin/env python3
+
+# Copyright 2024 Tier IV, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from collections import defaultdict
+import logging
 import threading
 import time
 from typing import Dict
@@ -28,7 +45,6 @@ class CalibratorServiceWrapper(QObject):
     ):
         super().__init__()
 
-        # TODO: Consider making timer to display the elapsed time
         self.ros_interface = ros_interface
         self.service_name = service_name
         self.expected_calibration_frames = expected_calibration_frames
@@ -102,18 +118,16 @@ class CalibratorServiceWrapper(QObject):
             child_frame = calibration_result.transform_stamped.child_frame_id
 
             if parent_frame not in self.parents or child_frame not in self.children:
-                print(
-                    f"Calibration result {parent_frame} -> {child_frame} was not expected. This is probably a configuration error in the launchers",
-                    flush=True,
+                logging.error(
+                    f"Calibration result {parent_frame} -> {child_frame} was not expected. This is probably a configuration error in the launchers"
                 )
                 continue
 
             i = self.children_to_id[child_frame]
 
             if self.parents[i] != parent_frame:
-                print(
-                    f"Calibration result {parent_frame} -> {child_frame} was not expected. This is probably a configuration error in the launchers",
-                    flush=True,
+                logging.error(
+                    f"Calibration result {parent_frame} -> {child_frame} was not expected. This is probably a configuration error in the launchers"
                 )
                 continue
 
@@ -135,12 +149,8 @@ class CalibratorServiceWrapper(QObject):
         self.data_changed.emit()
 
     def on_status(self, status: bool):
-        # print(f"on_status: self.service_status={self.service_status} new_status={status}", flush=True)
-        # print(f"{threading.get_ident() }: on_status")
-
         if self.service_status != status:
             self.service_status = status
-            # print(f"emitting data changed", flush=True)
             self.data_changed.emit()
             self.status_changed_signal.emit()
 
@@ -151,7 +161,7 @@ class CalibratorServiceWrapper(QObject):
         return all(self.finished_list)
 
     def result_ros_callback(self, result: NewExtrinsicCalibrator.Response):
-        print(f"{threading.get_ident() }: result_ros_callback", flush=True)
+        logging.debug(f"{threading.get_ident() }: result_ros_callback")
         self.result_signal.emit(result.results)
 
     def status_ros_callback(self, status: bool):
@@ -161,7 +171,6 @@ class CalibratorServiceWrapper(QObject):
     def get_data(self, index) -> list:
         if not self.service_called:
             status_message = "Service ready" if self.service_status else "Service not available"
-            # print(f"getData: status_message={status_message}")
         else:
             status_message = self.status_messages[index]
 

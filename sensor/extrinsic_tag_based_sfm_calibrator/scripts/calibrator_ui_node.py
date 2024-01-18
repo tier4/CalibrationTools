@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import signal
 import sys
 
@@ -38,7 +39,7 @@ def main(args=None):
         sys.exit(app.exec_())
 
     except (KeyboardInterrupt, SystemExit):
-        print("Received sigint. Quitting...", flush=True)
+        logging.info("Received sigint. Quitting...")
         rclpy.shutdown()
 
 

@@ -15,6 +15,7 @@
 # limitations under the License.
 
 from collections import defaultdict
+import logging
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -216,7 +217,6 @@ class TfPlot(QWidget):
         xmlreader = QXmlStreamReader(imgdata)
         self.renderer = QSvgRenderer(xmlreader)
         self.renderer.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
-        # print(f"bits post savefig= {len(imgdata.getvalue())}", flush=True)
 
     def paintEvent(self, event):
         if self.renderer is None:
@@ -227,7 +227,6 @@ class TfPlot(QWidget):
         self.renderer.render(p)
         p.end()
         # print(self.geometry())
-        # print(f"PAINTED", flush=True)
 
 
 class TfView(QGraphicsView):
@@ -257,17 +256,14 @@ class TfView(QGraphicsView):
         self.plot.setTfs(tfs_dict, changed_frames_dict, required_frames)
         # Reset the view
         self.fitInView(0, 0, self.plot.width(), self.plot.height(), Qt.KeepAspectRatio)
-        # print(f"=======Tf plot size: {self.plot.size()}", flush=True)
 
     def resizeEvent(self, event):
-        print(
-            f"PRE resizeEvent: event.size()={event.size()} event.oldSize()={event.oldSize()}",
-            flush=True,
+        logging.debug(
+            f"PRE resizeEvent: event.size()={event.size()} event.oldSize()={event.oldSize()}"
         )
         super().resizeEvent(event)
-        print(
-            f"POST resizeEvent: event.size()={event.size()} event.oldSize()={event.oldSize()}",
-            flush=True,
+        logging.debug(
+            f"POST resizeEvent: event.size()={event.size()} event.oldSize()={event.oldSize()}"
         )
 
         # scaled_pix_size = self.pix.size()

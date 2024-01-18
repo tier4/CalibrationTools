@@ -1,6 +1,7 @@
 <launch>
   <arg name="camera_name" description="E.g., camera0, camera1, etc"/>
 
+  <arg name="view_only_ui" default="true" description="By default we use a minimal UI"/>
   <arg name="calibration_pairs" default="9" description="Number of lidar-image pairs for the calibration to converge"/>
   <arg name="calibration_pairs_min_distance" default="1.5" description="Minimum allowed between a new detection and current pairs"/>
 
@@ -50,7 +51,7 @@
     </include>
 
     <!-- interactive calibrator -->
-    <node pkg="extrinsic_interactive_calibrator" exec="interactive_calibrator" name="interactive_calibrator" output="screen">
+    <node pkg="extrinsic_interactive_calibrator" exec="interactive_calibrator" name="interactive_calibrator" output="screen" if="$(eval &quot;'$(var view_only_ui)' == 'false' &quot;)">
       <remap from="pointcloud" to="$(var pointcloud_topic)"/>
       <remap from="image" to="$(var image_compressed_topic)"/>
       <remap from="camera_info" to="$(var camera_info_topic)"/>
@@ -61,7 +62,13 @@
       <param name="can_publish_tf" value="false"/>
     </node>
 
-    <include file="$(find-pkg-share intrinsic_camera_calibration)/launch/optimizer.launch.xml"/>
+    <!-- camera view -->
+    <node pkg="tier4_calibration_views" exec="image_view_node.py" name="image_view_node_py" output="screen" if="$(eval &quot;'$(var view_only_ui)' == 'true' &quot;)">
+      <remap from="pointcloud" to="$(var pointcloud_topic)"/>
+      <remap from="image" to="$(var image_compressed_topic)"/>
+      <remap from="camera_info" to="$(var camera_info_topic)"/>
+      <remap from="calibration_points_input" to="calibration_points"/>
+    </node>
 
     <!-- create a placeholder lidar frame to make the rviz profile generic -->
     <node pkg="tf2_ros" exec="static_transform_publisher" name="estimated_base_link_broadcaster" output="screen" args="0 0 0 0 0 0 $(var lidar_frame) lidar_frame"/>

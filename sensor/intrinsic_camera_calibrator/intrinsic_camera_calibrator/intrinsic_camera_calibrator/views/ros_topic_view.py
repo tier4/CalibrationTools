@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import logging
 
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
@@ -112,7 +114,7 @@ class RosTopicView(QWidget):
 
     def closeEvent(self, event):
         """When the widget is closed it should be marked for deletion and notify the event."""
-        print("Ros topic data view: closeEvent")
+        logging.debug("Ros topic data view: closeEvent")
         if not self.topic_selected:
             self.failed.emit()
             self.data_source.stop()
