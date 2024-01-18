@@ -74,7 +74,9 @@ int main(int argc, char ** argv)
   const double time_window = param_map.at("time_window").as_double();
   std::string imu_frame_id;
 
-  // Read rosbag
+  // ----------- //
+  // Read rosbag //
+  // ----------- //
   while (reader.has_next()) {
     const rosbag2_storage::SerializedBagMessageSharedPtr serialized_message = reader.read_next();
     const std::string topic_name = serialized_message->topic_name;
@@ -146,6 +148,9 @@ int main(int argc, char ** argv)
     }
   }
 
+  // ------------------ //
+  // Estimate deviation //
+  // ------------------ //
   const double wz_threshold = param_map.at("wz_threshold").as_double();
   const double vx_threshold = param_map.at("vx_threshold").as_double();
   const double accel_threshold = param_map.at("accel_threshold").as_double();
