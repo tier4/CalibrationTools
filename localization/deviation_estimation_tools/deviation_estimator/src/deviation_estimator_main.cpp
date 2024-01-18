@@ -267,4 +267,8 @@ int main(int argc, char ** argv)
 
     std::cout << "saved to ./" << std::endl;
   }
+
+  std::cout << "count for velocity : " << traj_data_list_for_velocity.size() << std::endl;
+  std::cout << "count for gyro : " << traj_data_list_for_gyro.size() << std::endl;
+  std::cout << "Finished." << std::endl;
 }
