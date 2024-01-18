@@ -1,22 +1,16 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>intrinsic_camera_calibrator</name>
+  <name>sensor_calibration_manager</name>
   <version>0.0.0</version>
-  <description>The intrinsic camera calibrator</description>
+  <description>the sensor_calibration_manager package</description>
   <maintainer email="kenzo.lobos@tier4.jp">Kenzo Lobos Tsunekawa</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache License 2.0</license>
 
-  <exec_depend>python-dt-apriltags-pip</exec_depend>
-  <exec_depend>python3-matplotlib</exec_depend>
   <exec_depend>python3-pyside2.qtquick</exec_depend>
-  <exec_depend>python3-ruamel.yaml</exec_depend>
   <exec_depend>python3-transforms3d</exec_depend>
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>tier4_calibration_msgs</exec_depend>
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>python3-pytest</test_depend>
 
   <export>
     <build_type>ament_python</build_type>
