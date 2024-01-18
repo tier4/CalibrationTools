@@ -146,91 +146,90 @@ int main(int argc, char ** argv)
     }
   }
 
-  const double wz_threshold_ = param_map.at("wz_threshold").as_double();
-  const double vx_threshold_ = param_map.at("vx_threshold").as_double();
-  const double accel_threshold_ = param_map.at("accel_threshold").as_double();
-  const bool gyro_only_use_straight_ = param_map.at("gyro_estimation.only_use_straight").as_bool();
-  const bool gyro_only_use_moving_ = param_map.at("gyro_estimation.only_use_moving").as_bool();
-  const bool gyro_only_use_constant_velocity_ =
+  const double wz_threshold = param_map.at("wz_threshold").as_double();
+  const double vx_threshold = param_map.at("vx_threshold").as_double();
+  const double accel_threshold = param_map.at("accel_threshold").as_double();
+  const bool gyro_only_use_straight = param_map.at("gyro_estimation.only_use_straight").as_bool();
+  const bool gyro_only_use_moving = param_map.at("gyro_estimation.only_use_moving").as_bool();
+  const bool gyro_only_use_constant_velocity =
     param_map.at("gyro_estimation.only_use_constant_velocity").as_bool();
-  const bool gyro_add_bias_uncertainty_ =
+  const bool gyro_add_bias_uncertainty =
     param_map.at("gyro_estimation.add_bias_uncertainty").as_bool();
-  const bool velocity_only_use_straight_ =
+  const bool velocity_only_use_straight =
     param_map.at("velocity_estimation.only_use_straight").as_bool();
-  const bool velocity_only_use_moving_ =
+  const bool velocity_only_use_moving =
     param_map.at("velocity_estimation.only_use_moving").as_bool();
-  const bool velocity_only_use_constant_velocity_ =
+  const bool velocity_only_use_constant_velocity =
     param_map.at("velocity_estimation.only_use_constant_velocity").as_bool();
-  const bool velocity_add_bias_uncertainty_ =
+  const bool velocity_add_bias_uncertainty =
     param_map.at("velocity_estimation.add_bias_uncertainty").as_bool();
-  std::unique_ptr<GyroBiasModule> gyro_bias_module_ = std::make_unique<GyroBiasModule>();
-  std::unique_ptr<VelocityCoefModule> vel_coef_module_ = std::make_unique<VelocityCoefModule>();
-  std::vector<TrajectoryData> traj_data_list_for_velocity_;
-  std::vector<TrajectoryData> traj_data_list_for_gyro_;
+  std::unique_ptr<GyroBiasModule> gyro_bias_module = std::make_unique<GyroBiasModule>();
+  std::unique_ptr<VelocityCoefModule> vel_coef_module = std::make_unique<VelocityCoefModule>();
+  std::vector<TrajectoryData> traj_data_list_for_velocity;
+  std::vector<TrajectoryData> traj_data_list_for_gyro;
 
-  if (gyro_add_bias_uncertainty_) {
+  if (gyro_add_bias_uncertainty) {
     std::cerr << "gyro_add_bias_uncertainty is not supported yet." << std::endl;
     std::exit(1);
   }
-  if (velocity_add_bias_uncertainty_) {
+  if (velocity_add_bias_uncertainty) {
     std::cerr << "velocity_add_bias_uncertainty is not supported yet." << std::endl;
     std::exit(1);
   }
 
-  std::unique_ptr<ValidationModule> validation_module_ = std::make_unique<ValidationModule>(
+  std::unique_ptr<ValidationModule> validation_module = std::make_unique<ValidationModule>(
     param_map.at("thres_coef_vx").as_double(), param_map.at("thres_stddev_vx").as_double(),
     param_map.at("thres_bias_gyro").as_double(), param_map.at("thres_stddev_gyro").as_double(), 5);
 
-  Logger results_logger_(".");
+  Logger results_logger(".");
 
   for (const TrajectoryData & traj_data : trajectory_data_list) {
     std::cout << "traj_data.pose_list.size(): " << traj_data.pose_list.size() << std::endl;
     std::cout << "traj_data.gyro_list.size(): " << traj_data.gyro_list.size() << std::endl;
     std::cout << "traj_data.vx_list.size(): " << traj_data.vx_list.size() << std::endl;
 
-    const bool is_straight = get_mean_abs_wz(traj_data.gyro_list) < wz_threshold_;
-    const bool is_moving = get_mean_abs_vx(traj_data.vx_list) > vx_threshold_;
-    const bool is_constant_velocity =
-      std::abs(get_mean_accel(traj_data.vx_list)) < accel_threshold_;
+    const bool is_straight = get_mean_abs_wz(traj_data.gyro_list) < wz_threshold;
+    const bool is_moving = get_mean_abs_vx(traj_data.vx_list) > vx_threshold;
+    const bool is_constant_velocity = std::abs(get_mean_accel(traj_data.vx_list)) < accel_threshold;
 
     const bool use_gyro = whether_to_use_data(
-      is_straight, is_moving, is_constant_velocity, gyro_only_use_straight_, gyro_only_use_moving_,
-      gyro_only_use_constant_velocity_);
+      is_straight, is_moving, is_constant_velocity, gyro_only_use_straight, gyro_only_use_moving,
+      gyro_only_use_constant_velocity);
     const bool use_velocity = whether_to_use_data(
-      is_straight, is_moving, is_constant_velocity, velocity_only_use_straight_,
-      velocity_only_use_moving_, velocity_only_use_constant_velocity_);
+      is_straight, is_moving, is_constant_velocity, velocity_only_use_straight,
+      velocity_only_use_moving, velocity_only_use_constant_velocity);
     if (use_velocity) {
-      vel_coef_module_->update_coef(traj_data);
-      traj_data_list_for_velocity_.push_back(traj_data);
+      vel_coef_module->update_coef(traj_data);
+      traj_data_list_for_velocity.push_back(traj_data);
     }
     if (use_gyro) {
-      gyro_bias_module_->update_bias(traj_data);
-      traj_data_list_for_gyro_.push_back(traj_data);
+      gyro_bias_module->update_bias(traj_data);
+      traj_data_list_for_gyro.push_back(traj_data);
     }
 
     double stddev_vx =
-      estimate_stddev_velocity(traj_data_list_for_velocity_, vel_coef_module_->get_coef());
+      estimate_stddev_velocity(traj_data_list_for_velocity, vel_coef_module->get_coef());
 
     auto stddev_angvel_base = estimate_stddev_angular_velocity(
-      traj_data_list_for_gyro_, gyro_bias_module_->get_bias_base_link());
+      traj_data_list_for_gyro, gyro_bias_module->get_bias_base_link());
 
     // print
-    const geometry_msgs::msg::Vector3 curr_gyro_bias = gyro_bias_module_->get_bias_base_link();
+    const geometry_msgs::msg::Vector3 curr_gyro_bias = gyro_bias_module->get_bias_base_link();
 
-    std::cout << std::fixed                                                         //
-              << "is_straight=" << is_straight                                      //
-              << ", is_moving=" << is_moving                                        //
-              << ", is_constant_velocity=" << is_constant_velocity                  //
-              << ", use_gyro=" << use_gyro                                          //
-              << ", use_velocity=" << use_velocity                                  //
-              << ", vel_coef_module_->get_coef()=" << vel_coef_module_->get_coef()  //
-              << ", curr_gyro_bias.x=" << curr_gyro_bias.x                          //
-              << ", curr_gyro_bias.y=" << curr_gyro_bias.y                          //
-              << ", curr_gyro_bias.z=" << curr_gyro_bias.z                          //
-              << ", stddev_vx=" << stddev_vx                                        //
-              << ", stddev_angvel_base.x=" << stddev_angvel_base.x                  //
-              << ", stddev_angvel_base.y=" << stddev_angvel_base.y                  //
-              << ", stddev_angvel_base.z=" << stddev_angvel_base.z                  //
+    std::cout << std::fixed                                                       //
+              << "is_straight=" << is_straight                                    //
+              << ", is_moving=" << is_moving                                      //
+              << ", is_constant_velocity=" << is_constant_velocity                //
+              << ", use_gyro=" << use_gyro                                        //
+              << ", use_velocity=" << use_velocity                                //
+              << ", vel_coef_module->get_coef()=" << vel_coef_module->get_coef()  //
+              << ", curr_gyro_bias.x=" << curr_gyro_bias.x                        //
+              << ", curr_gyro_bias.y=" << curr_gyro_bias.y                        //
+              << ", curr_gyro_bias.z=" << curr_gyro_bias.z                        //
+              << ", stddev_vx=" << stddev_vx                                      //
+              << ", stddev_angvel_base.x=" << stddev_angvel_base.x                //
+              << ", stddev_angvel_base.y=" << stddev_angvel_base.y                //
+              << ", stddev_angvel_base.z=" << stddev_angvel_base.z                //
               << std::endl;
 
     // For IMU link standard deviation, we use the yaw standard deviation in base_link.
@@ -245,14 +244,14 @@ int main(int argc, char ** argv)
     const geometry_msgs::msg::TransformStamped transform =
       tf_buffer.lookupTransform(imu_frame_id, "base_link", tf2::TimePointZero);
     geometry_msgs::msg::Vector3 bias_angvel_imu;
-    tf2::doTransform(gyro_bias_module_->get_bias_base_link(), bias_angvel_imu, transform);
+    tf2::doTransform(gyro_bias_module->get_bias_base_link(), bias_angvel_imu, transform);
 
-    validation_module_->set_velocity_data(vel_coef_module_->get_coef(), stddev_vx);
-    validation_module_->set_gyro_data(bias_angvel_imu, stddev_angvel_imu_msg);
+    validation_module->set_velocity_data(vel_coef_module->get_coef(), stddev_vx);
+    validation_module->set_gyro_data(bias_angvel_imu, stddev_angvel_imu_msg);
 
-    results_logger_.log_estimated_result_section(
-      stddev_vx, vel_coef_module_->get_coef(), stddev_angvel_imu_msg, bias_angvel_imu);
-    results_logger_.log_validation_result_section(*validation_module_);
+    results_logger.log_estimated_result_section(
+      stddev_vx, vel_coef_module->get_coef(), stddev_angvel_imu_msg, bias_angvel_imu);
+    results_logger.log_validation_result_section(*validation_module);
 
     std::cout << "saved to ./" << std::endl;
   }
