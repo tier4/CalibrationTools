@@ -118,6 +118,19 @@ Topic information: Topic: /localization/pose_estimator/pose_with_covariance | Ty
 <p>
 </details>
 
+<details><summary>unit tool</summary>
+
+If you build normally, a binary will be generated under `install/deviation_estimator/lib/`.
+
+```sh
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-up-to deviation_estimator
+source ~/autoware/install/setup.bash
+~/autoware/install/deviation_estimator/lib/deviation_estimator/deviation_estimator_unit_tool <path_to_rosbag>
+```
+
+<p>
+</details>
+
 ### B. Evaluation step
 
 Here, you can evaluate the estimated standard deviation and bias using a package `deviation_evaluator`.
