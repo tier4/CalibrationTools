@@ -12,22 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <rclcpp/time.hpp>
-#include <tier4_tag_utils/lidartag_filter.hpp>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#endif
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <rclcpp/time.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
+#include <tier4_tag_utils/lidartag_filter.hpp>
+
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace tier4_tag_utils
 {

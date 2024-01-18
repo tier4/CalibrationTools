@@ -15,15 +15,10 @@
 #include <extrinsic_mapping_based_calibrator/filters/object_detection_filter.hpp>
 #include <extrinsic_mapping_based_calibrator/utils.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 #include <pcl/common/transforms.h>
 #include <pcl/filters/crop_box.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
 
 #include <array>
 #include <limits>

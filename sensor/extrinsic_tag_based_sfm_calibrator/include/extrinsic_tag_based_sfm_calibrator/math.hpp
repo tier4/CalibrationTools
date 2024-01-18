@@ -48,7 +48,7 @@ std::array<cv::Vec3d, 4> tagPoseToCorners(const cv::Affine3d & pose, double size
  * Computes a pose to the ground plane by fitting a plane to a set of points and then projecting the
  * origin to said plane
  * @param[in] points the points used to calculate the ground pose from
- * @returns the ground dpose
+ * @returns the ground pose
  */
 std::optional<cv::Affine3d> computeGroundPlane(const std::vector<cv::Vec3d> & points);
 

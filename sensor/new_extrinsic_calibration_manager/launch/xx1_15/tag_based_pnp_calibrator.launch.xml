@@ -26,6 +26,7 @@
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
   <let name="lidar_model" value="velodyne_vls128"/>
   <let name="lidar_frame" value="velodyne_top"/>
+  <let name="use_rectified_image" value="false"/>
 
   <group if="$(var calibrate_sensor)">
     <!-- image decompressor -->
@@ -43,6 +44,7 @@
       <arg name="lidar_model" value="$(var lidar_model)"/>
       <arg name="calibration_service_name" value="calibrate_camera_lidar"/>
 
+      <arg name="use_rectified_image" value="$(var use_rectified_image)"/>
       <arg name="calibration_pairs" value="$(var calibration_pairs)"/>
       <arg name="calibration_pairs_min_distance" value="$(var calibration_pairs_min_distance)"/>
     </include>

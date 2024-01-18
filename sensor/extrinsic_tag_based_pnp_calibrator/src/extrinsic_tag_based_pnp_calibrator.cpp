@@ -16,18 +16,13 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <rclcpp/time.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 #include <tier4_calibration_msgs/msg/calibration_result.hpp>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf2/utils.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-#endif
 
 ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::NodeOptions & options)
 : Node("extrinsic_tag_based_pnp_calibrator_node", options),
