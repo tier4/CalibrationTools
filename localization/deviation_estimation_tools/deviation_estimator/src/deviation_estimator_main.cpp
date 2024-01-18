@@ -193,6 +193,13 @@ int main(int argc, char ** argv)
     std::cout << "traj_data.gyro_list.size(): " << traj_data.gyro_list.size() << std::endl;
     std::cout << "traj_data.vx_list.size(): " << traj_data.vx_list.size() << std::endl;
 
+    // Skip if there is too little data such as terminal data
+    if (
+      traj_data.pose_list.size() < 2 || traj_data.gyro_list.size() < 2 ||
+      traj_data.vx_list.size() < 2) {
+      continue;
+    }
+
     const bool is_straight = get_mean_abs_wz(traj_data.gyro_list) < wz_threshold;
     const bool is_moving = get_mean_abs_vx(traj_data.vx_list) > vx_threshold;
     const bool is_constant_velocity = std::abs(get_mean_accel(traj_data.vx_list)) < accel_threshold;
