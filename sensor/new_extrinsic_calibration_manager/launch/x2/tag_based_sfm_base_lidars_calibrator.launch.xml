@@ -11,22 +11,22 @@
   <let name="base_frame" value="base_link"/>
   <let name="main_calibration_sensor_frame" value="pandar_40p_left"/>
 
-  <let name="calibration_lidar_0_frame" value="pandar_top"/>
-  <let name="calibration_lidar_1_frame" value="pandar_front"/>
-  <let name="calibration_lidar_2_frame" value="pandar_left"/>
-  <let name="calibration_lidar_3_frame" value="pandar_right"/>
+  <let name="calibration_lidar_0_frame" value="pandar_40p_left"/>
+  <let name="calibration_lidar_1_frame" value="pandar_40p_right"/>
+  <let name="calibration_lidar_2_frame" value="pandar_40p_front"/>
+  <let name="calibration_lidar_3_frame" value="pandar_40p_rear"/>
 
   <!-- Lidar configuration -->
-  <let name="calibration_lidar_0_model" value="pandar64"/>
-  <let name="calibration_lidar_1_model" value="at128"/>
-  <let name="calibration_lidar_2_model" value="pandar_xt32"/>
-  <let name="calibration_lidar_3_model" value="pandar_xt32"/>
+  <let name="calibration_lidar_0_model" value="pandar_40p"/>
+  <let name="calibration_lidar_1_model" value="pandar_40p"/>
+  <let name="calibration_lidar_2_model" value="pandar_40p"/>
+  <let name="calibration_lidar_3_model" value="pandar_40p"/>
 
   <!-- Topic configuration -->
-  <let name="calibration_lidar_0_topic" value="/sensing/lidar/top/pointcloud_raw"/>
-  <let name="calibration_lidar_1_topic" value="/sensing/lidar/front/pointcloud_raw"/>
-  <let name="calibration_lidar_2_topic" value="/sensing/lidar/left/pointcloud_raw"/>
-  <let name="calibration_lidar_3_topic" value="/sensing/lidar/right/pointcloud_raw"/>
+  <let name="calibration_lidar_0_topic" value="/sensing/lidar/left_upper/pointcloud_raw"/>
+  <let name="calibration_lidar_1_topic" value="/sensing/lidar/right_upper/pointcloud_raw"/>
+  <let name="calibration_lidar_2_topic" value="/sensing/lidar/front_lower/pointcloud_raw"/>
+  <let name="calibration_lidar_3_topic" value="/sensing/lidar/rear_lower/pointcloud_raw"/>
 
   <arg
     name="auxiliar_tag_ids"

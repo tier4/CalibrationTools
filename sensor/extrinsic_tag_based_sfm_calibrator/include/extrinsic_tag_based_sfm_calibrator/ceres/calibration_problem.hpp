@@ -230,10 +230,10 @@ protected:
   UID left_wheel_tag_uid_;
   UID right_wheel_tag_uid_;
 
-  bool optimize_intrinsics_;
-  bool share_intrinsics_;
-  bool force_shared_ground_plane_;
-  bool force_fixed_ground_plane_;
+  bool optimize_intrinsics_{true};
+  bool share_intrinsics_{true};
+  bool force_shared_ground_plane_{true};
+  bool force_fixed_ground_plane_{false};
   cv::Affine3d fixed_ground_pose_;
 
   double calibration_camera_optimization_weight_;

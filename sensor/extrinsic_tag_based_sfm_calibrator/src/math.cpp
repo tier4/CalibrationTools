@@ -94,12 +94,12 @@ std::array<cv::Vec3d, 4> tagPoseToCorners(const cv::Affine3d & pose, double size
     pose * (0.5 * size * templates[2]), pose * (0.5 * size * templates[3])};
 }
 
-bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & ground_pose)
+std::optional<cv::Affine3d> computeGroundPlane(const std::vector<cv::Vec3d> & points)
 {
   int num_points = static_cast<int>(points.size());
 
   if (num_points == 0) {
-    return false;
+    return std::nullopt;
   }
 
   cv::Mat_<double> pca_input = cv::Mat_<double>(num_points, 3);
@@ -126,7 +126,7 @@ bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & gr
 
   assert(std::abs(det - 1.0) < 1e5);
 
-  ground_pose = cv::Affine3d(rotation, translation);
+  cv::Affine3d ground_pose(rotation, translation);
 
   // Fix the ground origin to be the projection of the origin into the ground plane
   cv::Vec3d initial_ground_to_origin = ground_pose.inv() * cv::Vec3d(0.0, 0.0, 0.0);
@@ -152,18 +152,17 @@ bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & gr
     assert(std::abs(det - 1.0) < 1e5);
 
     if (std::abs(det - 1.0) > 1e5) {
-      return false;
+      return std::nullopt;
     }
   }
 
   ground_pose = cv::Affine3d(rotation, origin_to_new_ground);
 
-  return true;
+  return ground_pose;
 }
 
-bool computeGroundPlane(
-  const std::map<UID, std::shared_ptr<cv::Affine3d>> & poses_map, double tag_size,
-  cv::Affine3d & ground_pose)
+std::optional<cv::Affine3d> computeGroundPlane(
+  const std::map<UID, std::shared_ptr<cv::Affine3d>> & poses_map, double tag_size)
 {
   std::vector<cv::Vec3d> points;
 
@@ -172,7 +171,7 @@ bool computeGroundPlane(
     points.insert(points.end(), corners.begin(), corners.end());
   }
 
-  return computeGroundPlane(points, ground_pose);
+  return computeGroundPlane(points);
 }
 
 cv::Affine3d computeBaseLink(

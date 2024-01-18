@@ -44,9 +44,8 @@ namespace serialization
 {
 
 template <class Archive>
-void save(Archive & ar, const cv::Mat & m, const unsigned int version)
+void save(Archive & ar, const cv::Mat & m, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   size_t elem_size = m.elemSize();
   size_t elem_type = m.type();
 
@@ -60,9 +59,8 @@ void save(Archive & ar, const cv::Mat & m, const unsigned int version)
 }
 
 template <class Archive>
-void load(Archive & ar, cv::Mat & m, const unsigned int version)
+void load(Archive & ar, cv::Mat & m, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   int cols, rows;
   size_t elem_size, elem_type;
 
@@ -78,9 +76,8 @@ void load(Archive & ar, cv::Mat & m, const unsigned int version)
 }
 
 template <class Archive, typename _Tp>
-void save(Archive & ar, const cv::Mat_<_Tp> & m, const unsigned int version)
+void save(Archive & ar, const cv::Mat_<_Tp> & m, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   size_t elem_size = m.elemSize();
 
   ar & m.cols;
@@ -92,9 +89,8 @@ void save(Archive & ar, const cv::Mat_<_Tp> & m, const unsigned int version)
 }
 
 template <class Archive, typename _Tp>
-void load(Archive & ar, cv::Mat_<_Tp> & m, const unsigned int version)
+void load(Archive & ar, cv::Mat_<_Tp> & m, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   int cols, rows;
   size_t elem_size;
 
@@ -109,53 +105,48 @@ void load(Archive & ar, cv::Mat_<_Tp> & m, const unsigned int version)
 }
 
 template <class Archive, typename _Tp>
-inline void serialize(Archive & ar, cv::Size_<_Tp> & size, const unsigned int version)
+inline void serialize(
+  Archive & ar, cv::Size_<_Tp> & size, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
-
   ar & size.height;
   ar & size.width;
 }
 
 template <class Archive, typename _Tp>
-inline void serialize(Archive & ar, cv::Point_<_Tp> & p, const unsigned int version)
+inline void serialize(
+  Archive & ar, cv::Point_<_Tp> & p, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
-
   ar & p.x;
   ar & p.y;
 }
 
 template <class Archive, typename _Tp>
-inline void serialize(Archive & ar, cv::Point3_<_Tp> & p, const unsigned int version)
+inline void serialize(
+  Archive & ar, cv::Point3_<_Tp> & p, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
-
   ar & p.x;
   ar & p.y;
   ar & p.z;
 }
 
 template <class Archive, typename _Tp, int _m, int _n>
-inline void serialize(Archive & ar, cv::Matx<_Tp, _m, _n> & m, const unsigned int version)
+inline void serialize(
+  Archive & ar, cv::Matx<_Tp, _m, _n> & m, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & m.val;
 }
 
 template <class Archive, typename _Tp>
-void serialize(Archive & ar, cv::Affine3<_Tp> & pose, const unsigned int version)
+void serialize(Archive & ar, cv::Affine3<_Tp> & pose, [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & pose.matrix;
 }
 
 template <class Archive>
 void serialize(
   Archive & ar, extrinsic_tag_based_sfm_calibrator::ApriltagDetection & detection,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & detection.family;
   ar & detection.id;
   ar & detection.image_corners;
@@ -169,9 +160,8 @@ void serialize(
 template <class Archive>
 void serialize(
   Archive & ar, extrinsic_tag_based_sfm_calibrator::ApriltagGridDetection & detection,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & detection.cols;
   ar & detection.rows;
   ar & detection.sub_detections;
@@ -188,9 +178,8 @@ void serialize(
 template <class Archive>
 void serialize(
   Archive & ar, extrinsic_tag_based_sfm_calibrator::LidartagDetection & detection,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & detection.id;
   ar & detection.object_corners;
   ar & detection.template_corners;
@@ -201,9 +190,8 @@ void serialize(
 template <class Archive>
 void serialize(
   Archive & ar, extrinsic_tag_based_sfm_calibrator::ExternalCameraFrame & frame,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & frame.image_filename;
   ar & frame.detections;
 }
@@ -212,9 +200,8 @@ template <class Archive>
 void serialize(
   Archive & ar,
   extrinsic_tag_based_sfm_calibrator::SingleCalibrationLidarDetections & lidar_detections,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & lidar_detections.calibration_frame;
   ar & lidar_detections.calibration_lidar_id;
   ar & lidar_detections.detections;
@@ -224,9 +211,8 @@ template <class Archive>
 void serialize(
   Archive & ar,
   extrinsic_tag_based_sfm_calibrator::SingleCalibrationCameraDetections & camera_detections,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & camera_detections.calibration_frame;
   ar & camera_detections.calibration_camera_id;
   ar & camera_detections.grouped_detections;
@@ -236,9 +222,8 @@ void serialize(
 template <class Archive>
 void serialize(
   Archive & ar, extrinsic_tag_based_sfm_calibrator::CalibrationScene & scene,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & scene.calibration_cameras_detections;
   ar & scene.calibration_lidars_detections;
   ar & scene.external_camera_frames;
@@ -246,9 +231,9 @@ void serialize(
 
 template <class Archive>
 void serialize(
-  Archive & ar, extrinsic_tag_based_sfm_calibrator::UID & uid, const unsigned int version)
+  Archive & ar, extrinsic_tag_based_sfm_calibrator::UID & uid,
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & uid.type;
   ar & uid.sensor_type;
   ar & uid.tag_type;
@@ -262,9 +247,8 @@ void serialize(
 template <class Archive>
 void serialize(
   Archive & ar, extrinsic_tag_based_sfm_calibrator::IntrinsicParameters & intrinsics,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & intrinsics.size;
   ar & intrinsics.camera_matrix;
   ar & intrinsics.dist_coeffs;
@@ -274,9 +258,8 @@ void serialize(
 template <class Archive>
 void serialize(
   Archive & ar, extrinsic_tag_based_sfm_calibrator::CalibrationData & data,
-  const unsigned int version)
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & data.scenes;
   ar & data.main_calibration_sensor_uid;
   ar & data.uid_connections_map;
@@ -300,9 +283,10 @@ void serialize(
 }
 
 template <class Archive>
-void serialize(Archive & ar, sensor_msgs::msg::CompressedImage & msg, const unsigned int version)
+void serialize(
+  Archive & ar, sensor_msgs::msg::CompressedImage & msg,
+  [[maybe_unused]] const unsigned int version)
 {
-  (void)version;
   ar & msg.format;
   ar & msg.data;
 }

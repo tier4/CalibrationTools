@@ -3,6 +3,7 @@
 
     # Tag configuration
     lidartag_to_apriltag_scale: 0.75
+    write_debug_images: true
 
     waypoint_tag:
       family: "tag16h5"

@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <optional>
 
 namespace extrinsic_tag_based_sfm_calibrator
 {
@@ -127,13 +128,13 @@ void CalibrationProblem::setData(CalibrationData::Ptr & data) { data_ = data; }
 void CalibrationProblem::dataToPlaceholders()
 {
   // Compute the initial ground plane !
-  cv::Affine3d ground_pose;
-  computeGroundPlane(data_->initial_ground_tag_poses_map, 0.0, ground_pose);
+  std::optional<cv::Affine3d> ground_pose;
 
   if (force_fixed_ground_plane_) {
     ground_pose = fixed_ground_pose_;
   } else {
-    computeGroundPlane(data_->initial_ground_tag_poses_map, 0.0, ground_pose);
+    ground_pose = computeGroundPlane(data_->initial_ground_tag_poses_map, 0.0);
+    assert(ground_pose.has_value());
   }
 
   // Prepare the placeholders
@@ -190,7 +191,7 @@ void CalibrationProblem::dataToPlaceholders()
       placeholderToPose3d(pose_opt_map[uid], data_->optimized_tag_poses_map[uid], false);
     } else {
       pose3dToGroundTagPlaceholder(
-        uid, *pose, ground_pose, shrd_ground_tag_pose_opt,
+        uid, *pose, ground_pose.value(), shrd_ground_tag_pose_opt,
         indep_ground_tag_pose_opt_map[uid]);  // cSpell:ignore shrd
       groundTagPlaceholderToPose3d(
         shrd_ground_tag_pose_opt, indep_ground_tag_pose_opt_map[uid],

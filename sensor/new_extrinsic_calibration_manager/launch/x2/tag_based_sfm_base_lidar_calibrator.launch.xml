@@ -8,14 +8,14 @@
   <arg name="fixed_ground_plane_model" default="false"/>
 
   <!-- Frame configuration -->
-  <let name="base_frame" value="base_link"/>
-  <let name="main_calibration_sensor_frame" value="pandar_top"/>
+  <arg name="base_frame" default="base_link"/>
+  <arg name="main_calibration_sensor_frame" default="pandar_40p_left"/>
 
   <!-- Lidar configuration -->
-  <let name="calibration_lidar_model" value="pandar64"/>
+  <arg name="calibration_lidar_model" default="pandar_40p"/>
 
   <!-- Topic configuration -->
-  <let name="calibration_lidar_topic" value="/sensing/lidar/top/pointcloud_raw"/>
+  <arg name="calibration_lidar_topic" default="/sensing/lidar/left_upper/pointcloud_raw"/>
 
   <arg
     name="auxiliar_tag_ids"

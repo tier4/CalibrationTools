@@ -58,6 +58,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   publish_tfs_ = this->declare_parameter<bool>("publish_tfs");
+  write_debug_images_ = this->declare_parameter<bool>("write_debug_images");
   base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
 
   main_calibration_sensor_frame_ =
@@ -798,30 +799,31 @@ void ExtrinsicTagBasedBaseCalibrator::visualizationTimerCallback()
   visualization_msgs::msg::Marker optimized_base_link_base_marker = base_marker;
   optimized_base_link_base_marker.ns = "optimized_base_link";
 
-  cv::Affine3d initial_ground_pose, optimized_ground_pose;
-  if (computeGroundPlane(
-        data_->initial_ground_tag_poses_map, ground_tag_parameters_.size, initial_ground_pose)) {
-    addGrid(markers, initial_ground_pose, 100, 0.2, initial_ground_base_marker);
-    addAxesMarkers(markers, 0.5, initial_ground_pose, initial_ground_base_marker);
+  std::optional<cv::Affine3d> initial_ground_pose =
+    computeGroundPlane(data_->initial_ground_tag_poses_map, ground_tag_parameters_.size);
+  std::optional<cv::Affine3d> optimized_ground_pose =
+    computeGroundPlane(data_->optimized_ground_tag_poses_map, ground_tag_parameters_.size);
+
+  if (initial_ground_pose.has_value()) {
+    addGrid(markers, initial_ground_pose.value(), 100, 0.2, initial_ground_base_marker);
+    addAxesMarkers(markers, 0.5, initial_ground_pose.value(), initial_ground_base_marker);
 
     if (data_->initial_left_wheel_tag_pose && data_->initial_right_wheel_tag_pose) {
       cv::Affine3d initial_base_link_pose = computeBaseLink(
         *data_->initial_left_wheel_tag_pose, *data_->initial_right_wheel_tag_pose,
-        initial_ground_pose);
+        initial_ground_pose.value());
       addAxesMarkers(markers, 0.5, initial_base_link_pose, initial_base_link_base_marker);
     }
   }
 
-  if (computeGroundPlane(
-        data_->optimized_ground_tag_poses_map, ground_tag_parameters_.size,
-        optimized_ground_pose)) {
-    addGrid(markers, optimized_ground_pose, 100, 0.2, optimized_ground_base_marker);
-    addAxesMarkers(markers, 1.0, optimized_ground_pose, optimized_ground_base_marker);
+  if (optimized_ground_pose.has_value()) {
+    addGrid(markers, optimized_ground_pose.value(), 100, 0.2, optimized_ground_base_marker);
+    addAxesMarkers(markers, 1.0, optimized_ground_pose.value(), optimized_ground_base_marker);
 
     if (data_->optimized_left_wheel_tag_pose && data_->optimized_right_wheel_tag_pose) {
       cv::Affine3d optimized_base_link_pose = computeBaseLink(
         *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose,
-        optimized_ground_pose);
+        optimized_ground_pose.value());
       addAxesMarkers(markers, 1.0, optimized_base_link_pose, optimized_base_link_base_marker);
     }
   }
@@ -1441,6 +1443,9 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
     RCLCPP_INFO(this->get_logger(), "\td=%.4f", ground_model.w());
 
     calibration_problem_.setFixedSharedGroundPlane(ba_fixed_ground_plane_model_, ground_model);
+  } else {
+    calibration_problem_.setFixedSharedGroundPlane(
+      ba_fixed_ground_plane_model_, Eigen::Vector4d::Zero());
   }
 
   calibration_problem_.setOptimizeIntrinsics(ba_optimize_intrinsics_);
@@ -1461,24 +1466,28 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
   calibration_problem_.solve();
   calibration_problem_.placeholdersToData();
   calibration_problem_.evaluate();
-  calibration_problem_.writeDebugImages();
+  if (write_debug_images_) {
+    calibration_problem_.writeDebugImages();
+  }
+
   calibration_problem_.printCalibrationResults();
   RCLCPP_INFO(this->get_logger(), "Finished optimization");
 
   // Derive the base link pose
-  cv::Affine3d ground_pose;
+  std::optional<cv::Affine3d> ground_pose =
+    computeGroundPlane(data_->optimized_ground_tag_poses_map, ground_tag_parameters_.size);
 
   if (
-    !computeGroundPlane(
-      data_->optimized_ground_tag_poses_map, ground_tag_parameters_.size, ground_pose) ||
-    !data_->optimized_left_wheel_tag_pose || !data_->optimized_right_wheel_tag_pose) {
+    !ground_pose.has_value() || !data_->optimized_left_wheel_tag_pose ||
+    !data_->optimized_right_wheel_tag_pose) {
     RCLCPP_ERROR(this->get_logger(), "Could not compute the base link");
     response->success = false;
     return false;
   }
 
   calibrated_main_sensor_to_base_link_pose_ = computeBaseLink(
-    *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose, ground_pose);
+    *data_->optimized_left_wheel_tag_pose, *data_->optimized_right_wheel_tag_pose,
+    ground_pose.value());
 
   calibration_done_ = true;
   response->success = true;

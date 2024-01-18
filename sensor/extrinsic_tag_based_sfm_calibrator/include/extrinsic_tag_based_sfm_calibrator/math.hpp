@@ -22,6 +22,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace extrinsic_tag_based_sfm_calibrator
@@ -47,22 +48,19 @@ std::array<cv::Vec3d, 4> tagPoseToCorners(const cv::Affine3d & pose, double size
  * Computes a pose to the ground plane by fitting a plane to a set of points and then projecting the
  * origin to said plane
  * @param[in] points the points used to calculate the ground pose from
- * @param[out] ground_pose the ground pose
- * @returns whether or not the algorithm succeeded
+ * @returns the ground dpose
  */
-bool computeGroundPlane(const std::vector<cv::Vec3d> & points, cv::Affine3d & ground_pose);
+std::optional<cv::Affine3d> computeGroundPlane(const std::vector<cv::Vec3d> & points);
 
 /*!
  * Computes a pose to the ground plane by fitting a plane to a set of tag poses and then projecting
  * the origin to said plane
  * @param[in] poses the tag poses to use to compute the ground plane
  * @param[in] tag_size the sized of the tags
- * @param[out] ground_pose the ground pose
- * @returns whether or not the algorithm succeeded
+ * @returns the ground pose
  */
-bool computeGroundPlane(
-  const std::map<UID, std::shared_ptr<cv::Affine3d>> & poses, double tag_size,
-  cv::Affine3d & ground_pose);
+std::optional<cv::Affine3d> computeGroundPlane(
+  const std::map<UID, std::shared_ptr<cv::Affine3d>> & poses, double tag_size);
 
 /*!
  * Computes the base link pose by projecting the mid point between the left and right wheel poses

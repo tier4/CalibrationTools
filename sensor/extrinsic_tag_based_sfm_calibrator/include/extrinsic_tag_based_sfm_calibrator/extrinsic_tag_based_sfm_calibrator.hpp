@@ -261,6 +261,7 @@ protected:
   // Calibration API parameters and variables
   std::string base_frame_;
   bool publish_tfs_;
+  bool write_debug_images_;
   std::mutex mutex_;
   tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
