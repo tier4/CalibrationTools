@@ -131,7 +131,7 @@ Calibrating a camera-lidar pair (i.e., finding the extrinsics) makes the lidar p
 The difference between a point in the image (p<sub>image</sub>), and the projection (p<sub>projected</sub>) in the image of its corresponding object point in lidar coordinates (p<sub>object</sub>) is denoted as the reprojection error and can be observed graphically in Figure 5.
 
 <figure align="center">
-   <img src="images/camera-lidar/reprojerror.svg" width="500">
+   <img src="images/camera-lidar/reprojection_error.svg" width="500">
    <figcaption align="center">Fig 5. Reprojection error</figcaption>
 </figure>
 

@@ -151,10 +151,7 @@
   <arg name="left_wheel_tag_id" default="22"/>
   <arg name="right_wheel_tag_id" default="26"/>
 
-  <!-- these should not be commited -->
   <let name="apriltag_detector_families" value="[16h5, 36h11]"/>
-  <!--let name="apriltag_detector_sizes" value="[0.6, 0.22]"/>
-  <let name="min_apriltag_filter_margin" value="30.0"/-->
 
   <group>
     <push-ros-namespace namespace="$(var ns)"/>

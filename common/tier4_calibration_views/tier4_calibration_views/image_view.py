@@ -484,8 +484,8 @@ class ImageView(QGraphicsItem, QObject):
             ),
         )
 
-        # Transform (rescale) into the widet coordinate system
-        pointdloud_z = pointcloud_ccs[indexes, 2]
+        # Transform (rescale) into the widget coordinate system
+        pointcloud_z = pointcloud_ccs[indexes, 2]
         pointcloud_i = self.data_renderer.pointcloud_intensity[indexes]
 
         if self.data_renderer.marker_units == "meters":
@@ -494,10 +494,10 @@ class ImageView(QGraphicsItem, QObject):
                 * self.data_renderer.marker_size_meters
                 * self.width_image_to_widget_factor
             )
-            scale_px = factor / pointdloud_z
+            scale_px = factor / pointcloud_z
         else:
             factor = self.data_renderer.marker_size_pixels * self.width_image_to_widget_factor
-            scale_px = factor * np.ones_like(pointdloud_z)
+            scale_px = factor * np.ones_like(pointcloud_z)
 
         pointcloud_wcs = pointcloud_ics[indexes, :] * self.image_to_widget_factor
 
@@ -514,7 +514,7 @@ class ImageView(QGraphicsItem, QObject):
             elif self.data_renderer.color_channel == "y":
                 color_scalars = pointcloud_ccs[indexes, 1][indexes2]
             elif self.data_renderer.color_channel == "z":
-                color_scalars = pointdloud_z[indexes2]
+                color_scalars = pointcloud_z[indexes2]
             elif self.data_renderer.color_channel == "intensity":
                 color_scalars = pointcloud_i[indexes2]
                 min_value = color_scalars.min()
@@ -598,7 +598,7 @@ class ImageView(QGraphicsItem, QObject):
 
         repr_err = np.linalg.norm(object_points_ics - image_points, axis=1)
 
-        # Transform (rescale) into the widet coordinate system
+        # Transform (rescale) into the widget coordinate system
         object_points_wcs = object_points_ics * self.image_to_widget_factor
 
         radius = 10 * self.width_image_to_widget_factor
@@ -669,7 +669,7 @@ class ImageView(QGraphicsItem, QObject):
         )
         object_points_ics = object_points_ics.reshape(-1, 2)
 
-        # Transform (rescale) into the widet coordinate system
+        # Transform (rescale) into the widget coordinate system
         object_points_wcs = object_points_ics * self.image_to_widget_factor
 
         radius = 10 * self.width_image_to_widget_factor
@@ -776,7 +776,7 @@ class ImageView(QGraphicsItem, QObject):
         )
         object_point_ics = object_point_ics.reshape(1, 2)
 
-        # Transform (rescale) into the widet coordinate system
+        # Transform (rescale) into the widget coordinate system
         object_point_wcs = object_point_ics * self.image_to_widget_factor
         object_point_wcs = object_point_wcs.reshape(
             2,

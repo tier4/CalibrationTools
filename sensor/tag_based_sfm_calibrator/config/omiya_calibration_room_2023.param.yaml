@@ -79,6 +79,6 @@
       max_homography_error: 0.5
       quad_decimate: 1.0
       quad_sigma: 0.0
-      nthreads: 12
+      nthreads: 12 # cSpell:ignore nthreads
       debug: false
       refine_edges: true

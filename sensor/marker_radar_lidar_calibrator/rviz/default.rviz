@@ -124,7 +124,7 @@ Visualization Manager:
       Max Intensity: 4096
       Min Color: 0; 0; 0
       Min Intensity: 0
-      Name: lidar_forground_pointcloud
+      Name: lidar_foreground_pointcloud
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3

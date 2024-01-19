@@ -566,7 +566,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /lidartag/intesection_markers
+        Value: /lidartag/intersection_markers
       Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false

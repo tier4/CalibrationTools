@@ -20,7 +20,6 @@
   <depend>kalman_filter</depend>
   <depend>libboost-filesystem</depend>
   <depend>libboost-serialization</depend>
-  <depend>libg2o</depend>
   <depend>libpcl-all-dev</depend>
   <depend>nav_msgs</depend>
   <depend>ndt_omp</depend>

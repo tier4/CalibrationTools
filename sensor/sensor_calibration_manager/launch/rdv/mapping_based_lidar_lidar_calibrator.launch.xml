@@ -8,7 +8,7 @@
   <arg name="mapping_max_range" default="80.0" description="maximum distance to use for mapping"/>
   <arg name="lidar_calibration_max_frames" default="3" description="Number of frames to use for calibration"/>
   <arg name="solver_iterations" default="50" description="Number of iterations for the calibration solver"/>
-  <arg name="calibration_skip_keyframes" default="3" description="How many keyframes to skip at the beginnign when selecting calibration keyframes"/>
+  <arg name="calibration_skip_keyframes" default="3" description="How many keyframes to skip at the beginning when selecting calibration keyframes"/>
   <arg name="rviz" default="true"/>
 
   <let name="calibration_camera_optical_link_frames" value="['']"/>
