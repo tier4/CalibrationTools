@@ -26,8 +26,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/FilesSrv.srv"
   "srv/FilesListSrv.srv"
   "srv/CalibrationDatabase.srv"
-  "srv/ExtrinsicCalibrationManager.srv"
-  "srv/ExtrinsicCalibrator.srv"
   "srv/Frame.srv"
   "srv/IntrinsicsOptimizer.srv"
   "srv/NewExtrinsicCalibrator.srv"
