@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# cspell:words lowerbound
+
 from pathlib import Path
 from threading import Thread
 
