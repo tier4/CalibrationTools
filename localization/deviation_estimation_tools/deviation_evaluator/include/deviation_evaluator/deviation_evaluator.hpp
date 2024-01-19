@@ -89,6 +89,7 @@ private:
 
   void callbackNDTPoseWithCovariance(const PoseWithCovarianceStamped::SharedPtr msg);
 
+  // cspell:words EKFDR, EKFGT
   void callbackEKFDROdom(const Odometry::SharedPtr msg);
 
   void callbackEKFGTOdom(const Odometry::SharedPtr msg);

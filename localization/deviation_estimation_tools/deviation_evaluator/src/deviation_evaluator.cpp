@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// cspell:words EKFDR, EKFGT
+
 #include "deviation_evaluator/deviation_evaluator.hpp"
 
 #include "rclcpp/logging.hpp"
@@ -154,7 +156,7 @@ void DeviationEvaluator::callbackEKFDROdom(const Odometry::SharedPtr msg)
       rclcpp::Time(dr_pose_queue_.back()->header.stamp).seconds() >
       rclcpp::Time(pose_ptr->header.stamp).seconds()) {
       dr_pose_queue_.clear();
-      RCLCPP_ERROR_STREAM(this->get_logger(), "Timestampe jump detected!");
+      RCLCPP_ERROR_STREAM(this->get_logger(), "Timestamp jump detected!");
     }
   }
   dr_pose_queue_.push_back(pose_ptr);
