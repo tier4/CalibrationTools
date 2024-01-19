@@ -49,7 +49,7 @@ private:
   {
     double lateral;
     double long_radius;
-    Errors() : lateral(0), long_radius(0){};
+    Errors() : lateral(0), long_radius(0) {}
   };
 
 public:

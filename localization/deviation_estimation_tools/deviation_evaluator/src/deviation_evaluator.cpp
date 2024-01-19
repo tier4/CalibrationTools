@@ -31,7 +31,7 @@
 // clang-format on
 using std::placeholders::_1;
 
-using namespace std::chrono_literals;
+using std::chrono_literals::operator""s;
 
 double double_round(const double x, const int n) { return std::round(x * pow(10, n)) / pow(10, n); }
 
