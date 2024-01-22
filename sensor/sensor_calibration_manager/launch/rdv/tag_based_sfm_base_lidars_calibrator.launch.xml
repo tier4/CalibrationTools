@@ -9,7 +9,7 @@
 
   <!-- Frame configuration -->
   <let name="base_frame" value="base_link"/>
-  <let name="main_calibration_sensor_frame" value="pandar_40p_left"/>
+  <let name="main_calibration_sensor_frame" value="pandar_top"/>
 
   <let name="calibration_lidar_0_frame" value="pandar_top"/>
   <let name="calibration_lidar_1_frame" value="pandar_front"/>
