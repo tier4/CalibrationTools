@@ -206,6 +206,8 @@ void ExtrinsicGroundPlaneCalibrator::pointCloudCallback(
   }
 
   // Extract the ground plane model
+  ground_plane_extractor_parameters_.initial_base_to_lidar_transform_ =
+    initial_base_to_lidar_transform_;
   auto [ground_plane_result, ground_plane_model, inliers_pointcloud] =
     tier4_ground_plane_utils::extractGroundPlane(
       pointcloud, ground_plane_extractor_parameters_, outlier_models_);
