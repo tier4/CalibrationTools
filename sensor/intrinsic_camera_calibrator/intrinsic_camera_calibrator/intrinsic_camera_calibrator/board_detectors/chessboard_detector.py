@@ -32,11 +32,15 @@ class ChessBoardDetector(BoardDetector):
         self.refine = Parameter(bool, value=True, min_value=False, max_value=True)
         pass
 
-    def detect(self, img):
+    def detect(self, img: np.array, stamp: float):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""
+        print("detect:1", flush=True)
+
         if img is None:
             self.detection_results_signal.emit(None, None)
             return
+
+        print("detect:2", flush=True)
 
         with self.lock:
             h, w = img.shape[0:2]
@@ -53,8 +57,11 @@ class ChessBoardDetector(BoardDetector):
 
         (ok, corners) = cv2.findChessboardCorners(grayscale, (cols, rows), flags=flags)
 
+        print("detect:3", flush=True)
+
         if not ok:
-            self.detection_results_signal.emit(img, None)
+            print("detect:3.1", flush=True)
+            self.detection_results_signal.emit(img, None, stamp)
             return
 
         if ok and refine:
@@ -82,4 +89,6 @@ class ChessBoardDetector(BoardDetector):
             image_points=image_points,
         )
 
-        self.detection_results_signal.emit(img, detection)
+        print("detect:4", flush=True)
+
+        self.detection_results_signal.emit(img, detection, stamp)

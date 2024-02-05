@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 from PySide2.QtCore import QObject
 from PySide2.QtCore import QThread
 from PySide2.QtCore import Signal
@@ -73,4 +75,5 @@ class ImageFilesDataSource(DataSource, QObject):
     def send_data(self, image_path):
         """Send a image message to the consumer prior transformation to a numpy array."""
         image = cv2.imread(image_path)
-        self.data_callback(image)
+        stamp = time.time()
+        self.data_callback(image, stamp)

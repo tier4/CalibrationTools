@@ -40,7 +40,7 @@ class DotBoardDetector(BoardDetector):
         )
         pass
 
-    def detect(self, img: np.array):
+    def detect(self, img: np.array, stamp: float):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""
         if img is None:
             self.detection_results_signal.emit(None, None)
@@ -88,7 +88,7 @@ class DotBoardDetector(BoardDetector):
                 corners = corners_transposed.reshape(-1, 1, 2)
 
         if not ok:
-            self.detection_results_signal.emit(img, None)
+            self.detection_results_signal.emit(img, None, stamp)
             return
 
         # reverse the corners if needed
@@ -109,4 +109,4 @@ class DotBoardDetector(BoardDetector):
             image_points=image_points,
         )
 
-        self.detection_results_signal.emit(img, detection)
+        self.detection_results_signal.emit(img, detection, stamp)

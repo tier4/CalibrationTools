@@ -136,9 +136,11 @@ class RosBagDataSource(DataSource, QObject):
         # cSpell:ignore imgmsg
         if isinstance(msg, Image):
             image_data = self.bridge.imgmsg_to_cv2(msg)
-            self.data_callback(image_data)
+            stamp = msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec
+            self.data_callback(image_data, stamp)
 
         elif isinstance(msg, CompressedImage):
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
-            self.data_callback(image_data)
+            stamp = msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec
+            self.data_callback(image_data, stamp)
