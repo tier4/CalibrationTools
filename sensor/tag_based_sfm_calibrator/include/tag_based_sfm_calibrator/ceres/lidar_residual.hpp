@@ -125,8 +125,8 @@ struct LidarResidual : public SensorResidual
       {T(detection_.template_corners[3].x), T(detection_.template_corners[3].y),
        T(detection_.template_corners[3].z)}};
 
-    Vector3<T> corners_wcs[NUM_CORNERS];
-    Vector3<T> corners_lcs[NUM_CORNERS];
+    Vector3<T> corners_wcs[NUM_CORNERS];   // wcs=world coordinate system
+    Vector3<T> corners_lcs[NUM_CORNERS];   // lcs=lidar coordinate system
     Vector3<T> corners_lrcs[NUM_CORNERS];  // cSpell:ignore lrcs
 
     auto transform_corners =

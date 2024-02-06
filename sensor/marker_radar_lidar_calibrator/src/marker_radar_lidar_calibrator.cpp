@@ -1174,6 +1174,7 @@ std::tuple<
 ExtrinsicReflectorBasedCalibrator::getPointsSetAndDelta()
 {
   // Define two sets of 2D points (just 3D points with z=0)
+  // Note: pcs=paralell cordinate system rcs=radar coordinate system
   pcl::PointCloud<PointType>::Ptr lidar_points_pcs(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr radar_points_rcs(new pcl::PointCloud<PointType>);
   lidar_points_pcs->reserve(converged_tracks_.size());
@@ -1251,6 +1252,7 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformation(
   pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
   pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum)
 {
+  // Note: pcs=paralell cordinate system rcs=radar coordinate system
   // Estimate full transformation using SVD
   pcl::registration::TransformationEstimationSVD<PointType, PointType> estimator;
   Eigen::Matrix4f full_radar_to_radar_parallel_transformation;
@@ -1403,6 +1405,7 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
   pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
   pcl::PointCloud<PointType>::Ptr radar_points_rcs)
 {
+  // Note: pcs=paralell cordinate system rcs=radar coordinate system
   int tracks_size = static_cast<int>(converged_tracks_.size());
   if (tracks_size <= 3) return;
 
@@ -1527,6 +1530,7 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
 
   output_metrics_.clear();
 
+  // Note: pcs=paralell cordinate system rcs=radar coordinate system
   auto [lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum] = getPointsSetAndDelta();
   estimateTransformation(lidar_points_pcs, radar_points_rcs, delta_cos_sum, delta_sin_sum);
   crossValEvaluation(lidar_points_pcs, radar_points_rcs);

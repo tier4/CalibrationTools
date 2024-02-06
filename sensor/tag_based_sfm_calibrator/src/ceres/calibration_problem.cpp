@@ -957,6 +957,7 @@ void CalibrationProblem::writeDebugImage(
         auto project_corners = [this, &sensor_uid](
                                  ApriltagDetection & detection, const cv::Affine3d & camera_pose,
                                  const cv::Affine3d & tag_pose, bool use_optimized_intrinsics) {
+          // Note: wcs=world coordinate system. ccs=camera coordinate system
           std::vector<cv::Vec3d> corners_wcs{
             tag_pose * detection.template_corners[0], tag_pose * detection.template_corners[1],
             tag_pose * detection.template_corners[2], tag_pose * detection.template_corners[3]};

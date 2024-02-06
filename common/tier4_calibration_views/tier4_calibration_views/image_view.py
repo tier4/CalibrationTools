@@ -454,6 +454,7 @@ class ImageView(QGraphicsItem, QObject):
         ):
             return
 
+        # Note: ccs=camera coordinate system
         pointcloud_ccs = transform_points(
             self.data_renderer.image_to_lidar_translation,
             self.data_renderer.image_to_lidar_rotation,
@@ -580,8 +581,10 @@ class ImageView(QGraphicsItem, QObject):
 
         image_points = np.array(self.data_renderer.image_points)
 
+        # Note: lcs=lidar coordinate system
         object_points_lcs = np.array(self.data_renderer.object_points)
 
+        # Note: ccs=camera coordinate system
         object_points_ccs = transform_points(
             self.data_renderer.image_to_lidar_translation,
             self.data_renderer.image_to_lidar_rotation,
@@ -653,6 +656,7 @@ class ImageView(QGraphicsItem, QObject):
         ):
             return
 
+        # Note: lcs=lidar coordinate system, ccs=camera coordinate system. ics=image coordinate system
         object_points_lcs = np.array(self.data_renderer.external_object_points)
 
         object_points_ccs = transform_points(
@@ -762,6 +766,7 @@ class ImageView(QGraphicsItem, QObject):
         ):
             return
 
+        # Note: wcs=widget coordinate system, ccs=camera coordinate system. ics=image coordinate system
         object_point_ccs = transform_points(
             self.data_renderer.image_to_lidar_translation,
             self.data_renderer.image_to_lidar_rotation,

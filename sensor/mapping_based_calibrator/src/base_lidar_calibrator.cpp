@@ -133,6 +133,7 @@ void BaseLidarCalibrator::publishResults(
   const pcl::PointCloud<PointType>::Ptr & ground_plane_inliers_lcs_ptr,
   const pcl::PointCloud<PointType>::Ptr & augmented_pointcloud_lcs_ptr)
 {
+  // Note: lcs=lidar coordinate system. mcs=map coordinate system
   PointcloudType::Ptr ground_plane_inliers_mcs_ptr(new PointcloudType());
   PointcloudType::Ptr augmented_pointcloud_mcs_ptr(new PointcloudType());
 

@@ -179,6 +179,7 @@ void CameraCalibrator::publishResults(
   cv::Point3d corner4 = parameters_->pc_features_max_distance_ *
                         pinhole_camera_model_.projectPixelTo3dRay(cv::Point2d(0.0, size.height));
 
+  // Note: ccs=camera coordinate system
   std::array<Eigen::Vector4f, 4> corners_ccs{
     Eigen::Vector4f(corner1.x, corner1.y, corner1.z, 1.f),
     Eigen::Vector4f(corner2.x, corner2.y, corner2.z, 1.f),

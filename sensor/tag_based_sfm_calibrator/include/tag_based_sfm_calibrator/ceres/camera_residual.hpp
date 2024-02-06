@@ -122,6 +122,7 @@ struct CameraResidual : public SensorResidual
       {T(detection_.template_corners[3].x), T(detection_.template_corners[3].y),
        T(detection_.template_corners[3].z)}};
 
+    // Note: wcs=world coordinate system. ccs=camera coordinate system
     Vector3<T> corners_wcs[NUM_CORNERS];
     Vector3<T> corners_ccs[NUM_CORNERS];
 

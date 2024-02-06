@@ -137,6 +137,7 @@ void TagCalibratorVisualizer::drawLidartagHypotheses(
     assert(corners.size() == 4);
 
     visualization_msgs::msg::Marker line_strip_lcs, id_marker_lcs, center_marker_bcs;
+    // Note: lcs=lidar coordinate system. bcs=base coordinate system
 
     line_strip_lcs.id = i;
     line_strip_lcs.header.frame_id = lidar_frame_;
@@ -208,6 +209,7 @@ void TagCalibratorVisualizer::drawApriltagHypotheses(
     const auto & center = h->getCenter3d();
     int id = h->getId();
 
+    // Note: lcs=lidar coordinate system
     cv::Matx31d center_lcs(center.x, center.y, center.z);
     center_lcs = lidar_camera_rotation_matrix * center_lcs + lidar_camera_translation_vector;
 
@@ -315,6 +317,7 @@ void TagCalibratorVisualizer::drawCalibrationZone(
     p_msg.z = 0.0;
   };
 
+  // Note: bcs=base coordinate system. ccs=camera coordinate system
   geometry_msgs::msg::Point p_msg_bcs;
   cv::Matx31d p_cv_ccs, p_cv_bcs;
   double angle = min_angle;
@@ -481,6 +484,7 @@ void TagCalibratorVisualizer::drawAprilTagDetections(
       continue;
     }
 
+    // Note: ccs=camera coordinate system. ics=image coordinate system
     visualization_msgs::msg::Marker line_strip_ics, id_marker_ics, corners_id_marker_ics;
     visualization_msgs::msg::Marker line_strip_ccs, /*id_marker_ccs, */ corners_id_marker_ccs;
 
@@ -582,6 +586,7 @@ void TagCalibratorVisualizer::drawLidarTagDetections(
     std::vector<cv::Point2d> projected_points;
     std::vector<cv::Point3d> source_points;
 
+    // Note: lcs=lidar coordinate system. ccs=camera coordinate system. ics=image coordinate system
     visualization_msgs::msg::Marker line_strip_ccs, line_strip_ics, line_strip_lcs;
     visualization_msgs::msg::Marker id_marker_ccs, corners_id_marker_ccs, id_marker_ics,
       corners_id_marker_ics;
