@@ -8,7 +8,7 @@
   <arg name="fixed_ground_plane_model" default="false"/>
 
   <!-- Frame configuration -->
-  <arg name="base_frame" value="base_link"/>
+  <arg name="base_frame" default="base_link"/>
   <arg name="main_calibration_sensor_frame" default="pandar_top"/>
 
   <!-- Lidar configuration -->
