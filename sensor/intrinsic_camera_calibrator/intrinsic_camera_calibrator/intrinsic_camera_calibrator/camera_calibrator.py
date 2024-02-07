@@ -1001,6 +1001,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.setWindowTitle(
             f"Camera intrinsics calibrator ({self.data_source.get_camera_name()}). Data delay={detection_delay:.2f} Detection time={detection_time:.2f} fps={self.estimated_fps:.2f} Data time={img_stamp:.2f}"
         )
+
         self.image_view.update()
         self.graphics_view.update()
 
@@ -1028,8 +1029,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
     def process_data(self):
         """Request the detector to process the image (the detector itself runs in another thread). Depending on the ImageViewMode selected, the image is also rectified."""
-        print("process_data", flush=True)
-
         stamp = self.unprocessed_stamp
 
         if self.image_view_type_combobox.currentData() in {
@@ -1069,8 +1068,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         """Attempt to request the detector to process an image. However, if it there is an image being processed, does not enqueue them indefinitely. Instead, only leave the last one."""
         if self.paused:
             return
-
-        print("process_new_data", flush=True)
 
         if self.image_view_type_combobox.currentData() not in set(
             {ImageViewMode.SOURCE_RECTIFIED, ImageViewMode.SOURCE_UNRECTIFIED}
