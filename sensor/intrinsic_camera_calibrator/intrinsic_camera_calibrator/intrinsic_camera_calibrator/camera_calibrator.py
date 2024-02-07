@@ -818,8 +818,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
     def process_detection_results(self, img: np.array, detection: BoardDetection, img_stamp: float):
         """Process the results from an object detection."""
-        print("process_detection_results", flush=True)
-
         # Signal that the detector is free
         self.consumed_data_signal.emit()
 
