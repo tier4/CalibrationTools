@@ -1,0 +1,45 @@
+repositories:
+  calibration_tools:
+    type: git
+    url: https://github.com/knzo25/CalibrationTools.git
+    version: feature/new_api_documentation
+  autoware/auto_msgs:
+    type: git
+    url: https://github.com/tier4/autoware_auto_msgs.git
+    version: tier4/main
+  autoware/tier4_autoware_msgs:
+    type: git
+    url: https://github.com/tier4/tier4_autoware_msgs.git
+    version: tier4/universe
+  autoware/universe:
+    type: git
+    url: https://github.com/autowarefoundation/autoware.universe.git
+    version: main
+  vendor/autoware_common:
+    type: git
+    url: https://github.com/autowarefoundation/autoware_common.git
+    version: main
+  vendor/lidartag:
+    type: git
+    url: https://github.com/tier4/LiDARTag.git
+    version: humble
+  vendor/lidartag_msgs:
+    type: git
+    url: https://github.com/tier4/LiDARTag_msgs.git
+    version: tier4/universe
+  vendor/apriltag_msgs:
+    type: git
+    url: https://github.com/christianrauch/apriltag_msgs.git
+    version: 2.0.0
+  vendor/apriltag_ros:
+    type: git
+    url: https://github.com/christianrauch/apriltag_ros.git
+    version: e814e9e5d5f1bfb60a4aa685d30977c632bbc540
+  vendor/ros2_numpy:
+    type: git
+    url: https://github.com/Box-Robotics/ros2_numpy.git
+    version: humble
+  vendor/ndt_omp:
+    type: git
+    url: https://github.com/tier4/ndt_omp.git
+    version: tier4/main
