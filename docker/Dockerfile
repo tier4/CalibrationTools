@@ -1,10 +1,13 @@
 
 FROM osrf/ros:humble-desktop-jammy
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN apt-get update && apt-get install --no-install-recommends -y \
     python3-pip \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+    wget
+
+RUN echo "source /opt/ros/humble/setup.bash" >> /etc/bash.bashrc
 
 WORKDIR /workspace
 
@@ -14,8 +17,10 @@ RUN wget https://raw.githubusercontent.com/knzo25/CalibrationTools/feature/new_a
 
 RUN vcs import src < calibration_tools_standalone.repos
 
-RUN cd /workspace && rosdep install -y --from-paths `colcon list --packages-up-to sensor_calibration_tools -p` --ignore-src
+RUN rosdep install -y --from-paths `colcon list --packages-up-to sensor_calibration_tools -p` --ignore-src
 
-RUN colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-up-to sensor_calibration_tools
+RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-up-to sensor_calibration_tools
+
+RUN rm -rf /var/lib/apt/lists/*
 
 RUN echo "source /workspace/install/setup.bash" >> /etc/bash.bashrc

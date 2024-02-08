@@ -19,8 +19,8 @@ Calibration tools for sensors used in autonomous driving and robotics (camera, l
 
 ### Requirement
 
-- Ubuntu22.04
-- Ros Humble
+- Ubuntu 22.04
+- ROS2 Humble
 
 ### Installation alongside Autoware
 
@@ -54,6 +54,18 @@ rosdep install -y --from-paths `colcon list --packages-up-to sensor_calibration_
 
 # Build the sensor calibration tools
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-up-to sensor_calibration_tools
+```
+
+### Standalone installation using Docker (for non-autoware users)
+
+With a similar motivation than the previous Section, in some cases a native build is not possible or convenient. In order to accomodate to those situations, we also offer the sensor calibration tools as a docker image:
+
+```bash
+# Build
+DOCKER_BUILDKIT=1 docker build --ssh default -t ghcr.io/tier4/calibration-tools:2.0 -f docker/Dockerfile ..
+
+# Run - Modify if needed
+docker run --gpus all --net=host -e ROS_DOMAIN_ID=$ROS_DOMAIN_ID -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --device=/dev/dri:/dev/dri -it ghcr.io/tier4/calibration-tools:2.0 /bin/bash
 ```
 
 ## Available calibration tools
