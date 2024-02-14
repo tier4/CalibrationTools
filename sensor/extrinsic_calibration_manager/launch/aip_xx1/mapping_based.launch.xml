@@ -75,7 +75,7 @@
     velodyne_rear]"/>
 
   <let name="mapping_lidar_frame" value="velodyne_top"/>
-  <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud"/>
+  <let name="mapping_pointcloud" value="/sensing/lidar/top/pointcloud"/>
   <!--let name="predicted_objects" value="/perception/object_recognition/objects" /-->
   <let name="detected_objects" value="/perception/object_recognition/detection/objects"/>
 
