@@ -103,13 +103,10 @@
     /sensing/camera/traffic_light/image_rect_color/compressed]"
   />
 
-  <let
-    name="calibration_pointcloud_topics"
-    value="[
+  <let name="calibration_pointcloud_topics" value="[
     /sensing/lidar/left/pointcloud,
     /sensing/lidar/right/pointcloud,
-    /sensing/lidar/rear/pointcloud]"
-  />
+    /sensing/lidar/rear/pointcloud]"/>
 
   <arg name="rviz"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/xx1.rviz"/>
