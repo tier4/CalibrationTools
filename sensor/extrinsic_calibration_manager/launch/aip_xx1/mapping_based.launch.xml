@@ -106,9 +106,9 @@
   <let
     name="calibration_pointcloud_topics"
     value="[
-    /sensing/lidar/left/outlier_filtered/pointcloud,
-    /sensing/lidar/right/outlier_filtered/pointcloud,
-    /sensing/lidar/rear/outlier_filtered/pointcloud]"
+    /sensing/lidar/left/pointcloud,
+    /sensing/lidar/right/pointcloud,
+    /sensing/lidar/rear/pointcloud]"
   />
 
   <arg name="rviz"/>
