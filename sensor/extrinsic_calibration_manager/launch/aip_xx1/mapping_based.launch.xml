@@ -75,7 +75,7 @@
     velodyne_rear]"/>
 
   <let name="mapping_lidar_frame" value="velodyne_top"/>
-  <let name="mapping_pointcloud" value="/sensing/lidar/top/outlier_filtered/pointcloud"/>
+  <let name="mapping_pointcloud" value="/sensing/lidar/top/pointcloud"/>
   <!--let name="predicted_objects" value="/perception/object_recognition/objects" /-->
   <let name="detected_objects" value="/perception/object_recognition/detection/objects"/>
 
@@ -103,13 +103,10 @@
     /sensing/camera/traffic_light/image_rect_color/compressed]"
   />
 
-  <let
-    name="calibration_pointcloud_topics"
-    value="[
-    /sensing/lidar/left/outlier_filtered/pointcloud,
-    /sensing/lidar/right/outlier_filtered/pointcloud,
-    /sensing/lidar/rear/outlier_filtered/pointcloud]"
-  />
+  <let name="calibration_pointcloud_topics" value="[
+    /sensing/lidar/left/pointcloud,
+    /sensing/lidar/right/pointcloud,
+    /sensing/lidar/rear/pointcloud]"/>
 
   <arg name="rviz"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_mapping_based_calibrator)/rviz/xx1.rviz"/>
