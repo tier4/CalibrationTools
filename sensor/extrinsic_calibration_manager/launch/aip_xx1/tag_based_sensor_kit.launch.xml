@@ -8,14 +8,14 @@
   <arg name="rviz"/>
 
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
-  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
-  <let name="image_decompressed_topic" value="/sensing/camera/traffic_light/image_raw/decompressed" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_rect_color/decompressed"/>
+  <let name="image_decompressed_topic" value="/sensing/camera/camera6/image_raw/decompressed" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
 
-  <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
-  <let name="image_compressed_topic" value="/sensing/camera/traffic_light/image_raw/compressed" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_rect_color/compressed"/>
+  <let name="image_compressed_topic" value="/sensing/camera/camera6/image_raw/compressed" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
 
   <let name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
-  <let name="camera_info_topic" value="/sensing/camera/traffic_light/camera_info" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <let name="camera_info_topic" value="/sensing/camera/camera6/camera_info" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
 
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera1' &quot;)"/>
@@ -23,7 +23,7 @@
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera3' &quot;)"/>
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
-  <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
 
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
@@ -32,7 +32,7 @@
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera3' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
-  <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
 
   <let name="camera_frame" value=""/>
   <let name="camera_frame" value="camera0/camera_link" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
@@ -41,7 +41,7 @@
   <let name="camera_frame" value="camera3/camera_link" if="$(eval &quot;'$(var camera_name)' == 'camera3' &quot;)"/>
   <let name="camera_frame" value="camera4/camera_link" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="camera_frame" value="camera5/camera_link" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
-  <let name="camera_frame" value="traffic_light_left_camera/camera_link" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
+  <let name="camera_frame" value="camera6/camera_link" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
 
   <let name="rviz_profile" value=""/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera0_velodyne_top.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
@@ -52,8 +52,8 @@
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera5_velodyne_top.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
   <let
     name="rviz_profile"
-    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_traffic_light_left_camera_velodyne_top.rviz"
-    if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"
+    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera6_velodyne_top.rviz"
+    if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"
   />
   <let name="lidar_model" value="velodyne_vls128"/>
 
