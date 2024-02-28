@@ -50,11 +50,7 @@
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera3_velodyne_top.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera3' &quot;)"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera4_velodyne_top.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera4' &quot;)"/>
   <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera5_velodyne_top.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera5' &quot;)"/>
-  <let
-    name="rviz_profile"
-    value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera6_velodyne_top.rviz"
-    if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"
-  />
+  <let name="rviz_profile" value="$(find-pkg-share extrinsic_tag_based_calibrator)/rviz/tag_calib_camera6_velodyne_top.rviz" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
   <let name="lidar_model" value="velodyne_vls128"/>
 
   <!-- extrinsic_calibration_client -->
