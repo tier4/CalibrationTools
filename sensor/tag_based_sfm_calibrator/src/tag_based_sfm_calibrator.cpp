@@ -293,7 +293,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   // The service servers runs in a dedicated threads since they are blocking
   calibration_api_srv_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  calibration_api_srv_ = this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
+  calibration_api_srv_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
     "/extrinsic_calibration",
     std::bind(
       &ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback, this, std::placeholders::_1,
@@ -377,11 +377,9 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 }
 
 void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
     response)
 {
   using std::chrono_literals::operator""s;

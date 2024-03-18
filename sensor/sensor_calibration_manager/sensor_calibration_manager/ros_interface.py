@@ -24,7 +24,7 @@ from rclpy.node import Node
 from tf2_msgs.msg import TFMessage
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from tier4_calibration_msgs.srv import NewExtrinsicCalibrator
+from tier4_calibration_msgs.srv import ExtrinsicCalibrator
 
 
 class RosInterface(Node):
@@ -110,7 +110,7 @@ class RosInterface(Node):
     def register_calibration_service(self, service_name, result_callback, status_callback):
         with self.lock:
             self.calibration_services_dict[service_name] = self.create_client(
-                NewExtrinsicCalibrator, service_name
+                ExtrinsicCalibrator, service_name
             )
 
             self.calibration_result_callback_dict[service_name] = result_callback
@@ -119,7 +119,7 @@ class RosInterface(Node):
 
     def call_calibration_service(self, service_name):
         with self.lock:
-            req = NewExtrinsicCalibrator.Request()
+            req = ExtrinsicCalibrator.Request()
             future = self.calibration_services_dict[service_name].call_async(req)
             self.calibration_futures_dict[service_name] = future
             self.calibration_service_start_dict[service_name] = True

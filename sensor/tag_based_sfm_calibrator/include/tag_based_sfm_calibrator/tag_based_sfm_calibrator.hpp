@@ -31,9 +31,9 @@
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tier4_calibration_msgs/srv/empty.hpp>
+#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/files_list_srv.hpp>
 #include <tier4_calibration_msgs/srv/files_srv.hpp>
-#include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <tf2/convert.h>
@@ -64,8 +64,8 @@ protected:
    * @param response the calibration response
    */
   void calibrationRequestCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
   /*!
    * Callback method for the image of the calibration cameras
@@ -233,8 +233,7 @@ protected:
 
   // Calibration API related services
   rclcpp::CallbackGroup::SharedPtr calibration_api_srv_group_;
-  rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr
-    calibration_api_srv_;
+  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr calibration_api_srv_;
 
   // Scene related services
   rclcpp::Service<tier4_calibration_msgs::srv::FilesListSrv>::SharedPtr

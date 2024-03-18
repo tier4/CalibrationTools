@@ -323,7 +323,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &ExtrinsicMappingBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -507,10 +507,9 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
 }
 
 void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
 

@@ -28,7 +28,7 @@ from geometry_msgs.msg import Transform
 from sensor_calibration_manager.ros_interface import RosInterface
 from sensor_calibration_manager.types import FramePair
 from tier4_calibration_msgs.msg import CalibrationResult
-from tier4_calibration_msgs.srv import NewExtrinsicCalibrator
+from tier4_calibration_msgs.srv import ExtrinsicCalibrator
 
 
 class CalibratorServiceWrapper(QObject):
@@ -160,7 +160,7 @@ class CalibratorServiceWrapper(QObject):
     def finished(self):
         return all(self.finished_list)
 
-    def result_ros_callback(self, result: NewExtrinsicCalibrator.Response):
+    def result_ros_callback(self, result: ExtrinsicCalibrator.Response):
         logging.debug(f"{threading.get_ident() }: result_ros_callback")
         self.result_signal.emit(result.results)
 

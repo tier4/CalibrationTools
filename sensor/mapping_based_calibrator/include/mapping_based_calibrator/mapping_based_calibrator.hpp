@@ -32,8 +32,8 @@
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tier4_calibration_msgs/srv/calibration_database.hpp>
+#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <tier4_calibration_msgs/srv/frame.hpp>
-#include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
 
 #include <tf2/convert.h>
 #include <tf2_ros/buffer.h>
@@ -67,8 +67,8 @@ protected:
    * @param response A vector of calibration results
    */
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
   /*!
    * Message callback for detected objects
@@ -116,7 +116,7 @@ protected:
   rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr
     predicted_objects_sub_;
 
-  rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr service_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
   rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   std::map<std::string, FrameService::SharedPtr> single_lidar_calibration_server_map_;
   std::map<std::string, FrameService::SharedPtr> multiple_lidar_calibration_server_map_;

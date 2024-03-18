@@ -261,7 +261,7 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     std::bind(&ExtrinsicReflectorBasedCalibrator::paramCallback, this, std::placeholders::_1));
 
   calibration_request_server_ =
-    this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
+    this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
       "extrinsic_calibration",
       std::bind(
         &ExtrinsicReflectorBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -281,10 +281,9 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
 }
 
 void ExtrinsicReflectorBasedCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
 

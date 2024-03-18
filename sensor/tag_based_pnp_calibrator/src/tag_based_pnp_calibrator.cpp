@@ -146,7 +146,7 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
   // initialize service server
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -276,10 +276,9 @@ void ExtrinsicTagBasedPNPCalibrator::cameraInfoCallback(
 }
 
 void ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
   RCLCPP_INFO(this->get_logger(), "Received calibration request");
