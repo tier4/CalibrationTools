@@ -55,37 +55,38 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   std::vector<int64_t> tag_ids = this->declare_parameter<std::vector<int64_t>>("tag_ids");
   std::vector<double> tag_sizes = this->declare_parameter<std::vector<double>>("tag_sizes");
 
-  double lidartag_max_convergence_transl =
+  double lidartag_max_convergence_translation =
     this->declare_parameter<double>("lidartag_max_convergence_translation");
   double lidartag_max_convergence_translation_dot =
     this->declare_parameter<double>("lidartag_max_convergence_translation_dot");
-  double lidartag_max_convergence_rot =
-    this->declare_parameter<double>("lidartag_max_convergence_rot");
-  double lidartag_max_convergence_rot_dot =
-    this->declare_parameter<double>("lidartag_max_convergence_rot_dot");
-  double lidartag_new_hypothesis_transl =
+  double lidartag_max_convergence_rotation =
+    this->declare_parameter<double>("lidartag_max_convergence_rotation");
+  double lidartag_max_convergence_rotation_dot =
+    this->declare_parameter<double>("lidartag_max_convergence_rotation_dot");
+  double lidartag_new_hypothesis_translation =
     this->declare_parameter<double>("lidartag_new_hypothesis_translation");
-  double lidartag_new_hypothesis_rot =
-    this->declare_parameter<double>("lidartag_new_hypothesis_rot");
-  double lidartag_measurement_noise_transl =
+  double lidartag_new_hypothesis_rotation =
+    this->declare_parameter<double>("lidartag_new_hypothesis_rotation");
+  double lidartag_measurement_noise_translation =
     this->declare_parameter<double>("lidartag_measurement_noise_translation");
-  double lidartag_measurement_noise_rot =
-    this->declare_parameter<double>("lidartag_measurement_noise_rot");
-  double lidartag_process_noise_transl =
+  double lidartag_measurement_noise_rotation =
+    this->declare_parameter<double>("lidartag_measurement_noise_rotation");
+  double lidartag_process_noise_translation =
     this->declare_parameter<double>("lidartag_process_noise_translation");
   double lidartag_process_noise_translation_dot =
     this->declare_parameter<double>("lidartag_process_noise_translation_dot");
-  double lidartag_process_noise_rot = this->declare_parameter<double>("lidartag_process_noise_rot");
-  double lidartag_process_noise_rot_dot =
-    this->declare_parameter<double>("lidartag_process_noise_rot_dot");
+  double lidartag_process_noise_rotation =
+    this->declare_parameter<double>("lidartag_process_noise_rotation");
+  double lidartag_process_noise_rotation_dot =
+    this->declare_parameter<double>("lidartag_process_noise_rotation_dot");
 
-  double apriltag_max_convergence_transl =
+  double apriltag_max_convergence_translation =
     this->declare_parameter<double>("apriltag_max_convergence_translation");
-  double apriltag_new_hypothesis_transl =
+  double apriltag_new_hypothesis_translation =
     this->declare_parameter<double>("apriltag_new_hypothesis_translation");
-  double apriltag_measurement_noise_transl =
+  double apriltag_measurement_noise_translation =
     this->declare_parameter<double>("apriltag_measurement_noise_translation");
-  double apriltag_process_noise_transl =
+  double apriltag_process_noise_translation =
     this->declare_parameter<double>("apriltag_process_noise_translation");
 
   camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
@@ -120,20 +121,20 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   estimator_.setTagSizes(tag_ids, tag_sizes);
 
   estimator_.setLidartagMaxConvergenceThreshold(
-    lidartag_max_convergence_transl, lidartag_max_convergence_translation_dot,
-    lidartag_max_convergence_rot, lidartag_max_convergence_rot_dot);
+    lidartag_max_convergence_translation, lidartag_max_convergence_translation_dot,
+    lidartag_max_convergence_rotation, lidartag_max_convergence_rotation_dot);
   estimator_.setLidartagNewHypothesisThreshold(
-    lidartag_new_hypothesis_transl, lidartag_new_hypothesis_rot);
+    lidartag_new_hypothesis_translation, lidartag_new_hypothesis_rotation);
   estimator_.setLidartagMeasurementNoise(
-    lidartag_measurement_noise_transl, lidartag_measurement_noise_rot);
+    lidartag_measurement_noise_translation, lidartag_measurement_noise_rotation);
   estimator_.setLidartagProcessNoise(
-    lidartag_process_noise_transl, lidartag_process_noise_translation_dot,
-    lidartag_process_noise_rot, lidartag_process_noise_rot_dot);
+    lidartag_process_noise_translation, lidartag_process_noise_translation_dot,
+    lidartag_process_noise_rotation, lidartag_process_noise_rotation_dot);
 
-  estimator_.setApriltagMaxConvergenceThreshold(apriltag_max_convergence_transl);
-  estimator_.setApriltagNewHypothesisThreshold(apriltag_new_hypothesis_transl);
-  estimator_.setApriltagMeasurementNoise(apriltag_measurement_noise_transl);
-  estimator_.setApriltagProcessNoise(apriltag_process_noise_transl);
+  estimator_.setApriltagMaxConvergenceThreshold(apriltag_max_convergence_translation);
+  estimator_.setApriltagNewHypothesisThreshold(apriltag_new_hypothesis_translation);
+  estimator_.setApriltagMeasurementNoise(apriltag_measurement_noise_translation);
+  estimator_.setApriltagProcessNoise(apriltag_process_noise_translation);
 
   tf_timer_ = rclcpp::create_timer(
     this, get_clock(), std::chrono::duration<double>(1.0 / calib_rate_),
@@ -161,9 +162,9 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   visualizer_->setMinConvergenceTime(min_convergence_time);
   visualizer_->setMaxNoObservationTime(max_no_observation_time);
   visualizer_->setLidartagMaxConvergenceThreshold(
-    lidartag_max_convergence_transl, lidartag_max_convergence_translation_dot,
-    lidartag_max_convergence_rot, lidartag_max_convergence_rot_dot);
-  visualizer_->setApriltagMaxConvergenceThreshold(apriltag_max_convergence_transl);
+    lidartag_max_convergence_translation, lidartag_max_convergence_translation_dot,
+    lidartag_max_convergence_rotation, lidartag_max_convergence_rotation_dot);
+  visualizer_->setApriltagMaxConvergenceThreshold(apriltag_max_convergence_translation);
 }
 
 void ExtrinsicTagBasedPNPCalibrator::lidarTagDetectionsCallback(
@@ -333,17 +334,17 @@ void ExtrinsicTagBasedPNPCalibrator::tfTimerCallback()
       fromMsg(base_to_lidar_transform_msg.transform, base_to_lidar_tf2_);
 
       // Set the fixed base-lidar tf to the visualizers
-      cv::Matx33d base_lidar_rot_matrix;
+      cv::Matx33d base_lidar_rotation_matrix;
       cv::Matx31d base_lidar_trans_vector;
 
       Eigen::Isometry3d base_lidar_transform_eigen =
         tf2::transformToEigen(tf2::toMsg(base_to_lidar_tf2_));
       Eigen::Matrix3d base_lidar_rotation_eigen = base_lidar_transform_eigen.rotation();
       Eigen::Vector3d base_lidar_translation_eigen = base_lidar_transform_eigen.translation();
-      cv::eigen2cv(base_lidar_rotation_eigen, base_lidar_rot_matrix);
+      cv::eigen2cv(base_lidar_rotation_eigen, base_lidar_rotation_matrix);
       cv::eigen2cv(base_lidar_translation_eigen, base_lidar_trans_vector);
 
-      visualizer_->setBaseLidarTransform(base_lidar_trans_vector, base_lidar_rot_matrix);
+      visualizer_->setBaseLidarTransform(base_lidar_trans_vector, base_lidar_rotation_matrix);
 
       got_initial_transform = true;
     } catch (tf2::TransformException & ex) {
@@ -380,27 +381,27 @@ void ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback()
 
   if (estimator_.calibrate()) {
     // Visualization
-    cv::Matx33d initial_rot_matrix;
+    cv::Matx33d initial_rotation_matrix;
     cv::Matx31d initial_trans_vector;
 
-    auto [current_trans_vector, current_rot_matrix] = estimator_.getCurrentPose();
-    auto [filtered_trans_vector, filtered_rot_matrix] = estimator_.getFilteredPose();
+    auto [current_trans_vector, current_rotation_matrix] = estimator_.getCurrentPose();
+    auto [filtered_trans_vector, filtered_rotation_matrix] = estimator_.getFilteredPose();
 
     Eigen::Isometry3d initial_transform_eigen =
       tf2::transformToEigen(tf2::toMsg(initial_optical_axis_to_lidar_tf2_));
     Eigen::Matrix3d initial_rotation_eigen = initial_transform_eigen.rotation();
     Eigen::Vector3d initial_translation_eigen = initial_transform_eigen.translation();
-    cv::eigen2cv(initial_rotation_eigen, initial_rot_matrix);
+    cv::eigen2cv(initial_rotation_eigen, initial_rotation_matrix);
     cv::eigen2cv(initial_translation_eigen, initial_trans_vector);
 
     // Calculate the reprojection errors
     cv::Matx31d initial_rvec, current_rvec, filtered_rvec;
 
-    cv::Rodrigues(initial_rot_matrix, initial_rvec);
-    cv::Rodrigues(current_rot_matrix, current_rvec);
-    cv::Rodrigues(filtered_rot_matrix, filtered_rvec);
+    cv::Rodrigues(initial_rotation_matrix, initial_rvec);
+    cv::Rodrigues(current_rotation_matrix, current_rvec);
+    cv::Rodrigues(filtered_rotation_matrix, filtered_rvec);
 
-    visualizer_->setCameraLidarTransform(filtered_trans_vector, filtered_rot_matrix);
+    visualizer_->setCameraLidarTransform(filtered_trans_vector, filtered_rotation_matrix);
 
     std::vector<cv::Point2d> current_projected_points, initial_projected_points,
       filtered_projected_points;

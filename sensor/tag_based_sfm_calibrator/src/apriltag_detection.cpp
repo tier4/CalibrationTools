@@ -39,7 +39,7 @@ LidartagDetection LidartagDetection::fromLidartagDetectionMsg(
   // 0, -1],
   //      [1,  0, 0],
   //      [0, -1, 0]]
-  // Rot_{apriltag} = R^{T} * Rot_{lidartag}
+  // rotation_{apriltag} = R^{T} * rotation_{lidartag}
 
   LidartagDetection detection;
   detection.id = msg.id;
@@ -51,10 +51,10 @@ LidartagDetection LidartagDetection::fromLidartagDetectionMsg(
   Eigen::Vector3d translation_eigen = pose_eigen.translation();
   Eigen::Matrix3d rotation_eigen = pose_eigen.rotation();
 
-  Eigen::Matrix3d apriltag_to_lidartag_rot;
-  apriltag_to_lidartag_rot << 0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0;
+  Eigen::Matrix3d apriltag_to_lidartag_rotation;
+  apriltag_to_lidartag_rotation << 0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0;
 
-  rotation_eigen = rotation_eigen * apriltag_to_lidartag_rot;
+  rotation_eigen = rotation_eigen * apriltag_to_lidartag_rotation;
 
   cv::Vec3d translation_cv;
   cv::Matx33d rotation_cv;

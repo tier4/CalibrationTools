@@ -80,10 +80,10 @@ public:
 
   void setLidartagMaxConvergenceThreshold(
     double translation, double translation_dot, double angle, double angle_dot);
-  void setLidartagNewHypothesisThreshold(double transl, double angle);
-  void setLidartagMeasurementNoise(double transl, double angle);
+  void setLidartagNewHypothesisThreshold(double translation, double angle);
+  void setLidartagMeasurementNoise(double translation, double angle);
   void setLidartagProcessNoise(
-    double translation, double translation_dot, double rot, double rot_dot);
+    double translation, double translation_dot, double rotation, double rotation_dot);
 
   void setApriltagMaxConvergenceThreshold(double translation);
   void setApriltagNewHypothesisThreshold(double translation);
@@ -128,17 +128,17 @@ private:
   // Lidartag estimation parameters
   double lidartag_convergence_translation_;
   double lidartag_convergence_translation_dot_;
-  double lidartag_convergence_rot_;
-  double lidartag_convergence_rot_dot_;
+  double lidartag_convergence_rotation_;
+  double lidartag_convergence_rotation_dot_;
   double lidartag_new_hypothesis_translation_;
-  double lidartag_new_hypothesis_rot_;
+  double lidartag_new_hypothesis_rotation_;
 
   double lidartag_process_noise_translation_;
   double lidartag_process_noise_translation_dot_;
-  double lidartag_process_noise_rot_;
-  double lidartag_process_noise_rot_dot_;
+  double lidartag_process_noise_rotation_;
+  double lidartag_process_noise_rotation_dot_;
   double lidartag_measurement_noise_translation_;
-  double lidartag_measurement_noise_rot_;
+  double lidartag_measurement_noise_rotation_;
 
   // Apriltag estimation parameters
   double apriltag_convergence_translation_;

@@ -60,7 +60,8 @@ public:
     double translation, double translation_dot, double angle, double angle_dot);
   void setNewHypothesisThreshold(double translation, double angle);
   void setMeasurementNoise(double translation, double angle);
-  void setProcessNoise(double translation, double translation_dot, double rot, double rot_dot);
+  void setProcessNoise(
+    double translation, double translation_dot, double rotation, double rotation_dot);
 
 protected:
   void reset();
@@ -83,10 +84,10 @@ protected:
 
   double convergence_translation_;
   double convergence_translation_dot_;
-  double convergence_rot_;
-  double convergence_rot_dot_;
+  double convergence_rotation_;
+  double convergence_rotation_dot_;
   double new_hypothesis_translation_;
-  double new_hypothesis_rot_;
+  double new_hypothesis_rotation_;
   double min_convergence_time_;
   double max_no_observation_time_;
 
@@ -94,11 +95,11 @@ protected:
   cv::KalmanFilter kalman_filter_;
   double process_noise_translation_;
   double process_noise_translation_dot_;
-  double process_noise_rot_;
-  double process_noise_rot_dot_;
+  double process_noise_rotation_;
+  double process_noise_rotation_dot_;
 
   double measurement_noise_translation_;
-  double measurement_noise_rot_;
+  double measurement_noise_rotation_;
 
   // General variables
   int id_;

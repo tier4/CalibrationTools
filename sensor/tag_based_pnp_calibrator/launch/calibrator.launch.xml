@@ -49,16 +49,16 @@
 
     <param name="lidartag_max_convergence_translation" value="0.05"/>
     <param name="lidartag_max_convergence_translation_dot" value="0.03"/>
-    <param name="lidartag_max_convergence_rot" value="3.0"/>
-    <param name="lidartag_max_convergence_rot_dot" value="2.5"/>
+    <param name="lidartag_max_convergence_rotation" value="3.0"/>
+    <param name="lidartag_max_convergence_rotation_dot" value="2.5"/>
     <param name="lidartag_new_hypothesis_translation" value="0.1"/>
-    <param name="lidartag_new_hypothesis_rot" value="15.0"/>
+    <param name="lidartag_new_hypothesis_rotation" value="15.0"/>
     <param name="lidartag_measurement_noise_translation" value="0.05"/>
-    <param name="lidartag_measurement_noise_rot" value="5.0"/>
+    <param name="lidartag_measurement_noise_rotation" value="5.0"/>
     <param name="lidartag_process_noise_translation" value="0.01"/>
     <param name="lidartag_process_noise_translation_dot" value="0.001"/>
-    <param name="lidartag_process_noise_rot" value="1.0"/>
-    <param name="lidartag_process_noise_rot_dot" value="0.1"/>
+    <param name="lidartag_process_noise_rotation" value="1.0"/>
+    <param name="lidartag_process_noise_rotation_dot" value="0.1"/>
 
     <param name="apriltag_max_convergence_translation" value="2.0"/>
     <param name="apriltag_new_hypothesis_translation" value="20.0"/>

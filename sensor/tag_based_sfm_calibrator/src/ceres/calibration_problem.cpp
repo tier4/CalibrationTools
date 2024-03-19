@@ -89,13 +89,13 @@ void CalibrationProblem::setFixedSharedGroundPlane(
   rot.col(1) = base_y.normalized();
   rot.col(2) = base_z.normalized();
 
-  cv::Matx33d cv_rot;
-  cv::Vec3d cv_transl;
+  cv::Matx33d cv_rotation;
+  cv::Vec3d cv_translation;
 
-  cv::eigen2cv(x0, cv_transl);
-  cv::eigen2cv(rot, cv_rot);
+  cv::eigen2cv(x0, cv_translation);
+  cv::eigen2cv(rot, cv_rotation);
 
-  fixed_ground_pose_ = cv::Affine3d(cv_rot, cv_transl);
+  fixed_ground_pose_ = cv::Affine3d(cv_rotation, cv_translation);
 }
 
 void CalibrationProblem::setOptimizationWeights(
@@ -1092,12 +1092,12 @@ void CalibrationProblem::placeholderToPose3d(
 
   Eigen::Matrix3d rotation = quat.toRotationMatrix();
 
-  cv::Matx33d cv_rot;
-  cv::Vec3d cv_transl;
-  cv::eigen2cv(translation, cv_transl);
-  cv::eigen2cv(rotation, cv_rot);
+  cv::Matx33d cv_rotation;
+  cv::Vec3d cv_translation;
+  cv::eigen2cv(translation, cv_translation);
+  cv::eigen2cv(rotation, cv_rotation);
 
-  pose = std::make_shared<cv::Affine3d>(cv_rot, cv_transl);
+  pose = std::make_shared<cv::Affine3d>(cv_rotation, cv_translation);
 
   if (invert) {
     *pose = pose->inv();
@@ -1196,12 +1196,12 @@ void CalibrationProblem::groundTagPlaceholderToPose3d(
   Eigen::Matrix3d pose_rotation = pose_matrix.block<3, 3>(0, 0);
   Eigen::Vector3d pose_translation = pose_matrix.block<3, 1>(0, 3);
 
-  cv::Matx33d cv_rot;
-  cv::Vec3d cv_transl;
-  cv::eigen2cv(pose_translation, cv_transl);
-  cv::eigen2cv(pose_rotation, cv_rot);
+  cv::Matx33d cv_rotation;
+  cv::Vec3d cv_translation;
+  cv::eigen2cv(pose_translation, cv_translation);
+  cv::eigen2cv(pose_rotation, cv_rotation);
 
-  pose = std::make_shared<cv::Affine3d>(cv_rot, cv_transl);
+  pose = std::make_shared<cv::Affine3d>(cv_rotation, cv_translation);
 }
 
 void CalibrationProblem::printCalibrationResults()

@@ -206,9 +206,9 @@ void ApriltagHypothesis::setMaxConvergenceThreshold(double translation)
   convergence_translation_ = translation;
 }
 
-void ApriltagHypothesis::setNewHypothesisThreshold(double max_transl)
+void ApriltagHypothesis::setNewHypothesisThreshold(double max_translation)
 {
-  new_hypothesis_translation_ = max_transl;
+  new_hypothesis_translation_ = max_translation;
 }
 
 void ApriltagHypothesis::setMaxNoObservationTime(double time) { max_no_observation_time_ = time; }

@@ -47,13 +47,13 @@ protected:
   double max_no_observation_time_;
   double new_hypothesis_distance_;
   double new_hypothesis_translation_;
-  double new_hypothesis_rot_;
+  double new_hypothesis_rotation_;
   double measurement_noise_translation_;
-  double measurement_noise_rot_;
+  double measurement_noise_rotation_;
   double process_noise_translation_;
   double process_noise_translation_dot_;
-  double process_noise_rot_;
-  double process_noise_rot_dot_;
+  double process_noise_rotation_;
+  double process_noise_rotation_dot_;
 
   // ROS Interface
   rclcpp::Publisher<lidartag_msgs::msg::LidarTagDetectionArray>::SharedPtr pub_;

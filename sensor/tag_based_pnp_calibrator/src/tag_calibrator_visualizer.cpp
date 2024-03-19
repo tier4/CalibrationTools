@@ -424,7 +424,7 @@ void TagCalibratorVisualizer::drawCalibrationStatusText(
     const double time_since_last_observation = h->timeSinceLastObservation(stamp);
 
     const double trans_cov = h->getTransCov();
-    const double rot_cov = h->getRotCov();
+    const double rotation_cov = h->getRotCov();
     const double speed = h->getSpeed();
 
     cv::Matx31d center_base(center.x, center.y, center.z);
@@ -441,11 +441,11 @@ void TagCalibratorVisualizer::drawCalibrationStatusText(
                        "/" + to_string_with_precision(max_no_observation_time_) +
                        "\ntrans_cov=" + to_string_with_precision(trans_cov, 3) + "/" +
                        to_string_with_precision(lidartag_convergence_translation_, 3) +
-                       "\nrot_cov=" + to_string_with_precision(rot_cov, 3) + "/" +
-                       to_string_with_precision(lidartag_convergence_rot_, 3) +
+                       "\nrotation_cov=" + to_string_with_precision(rotation_cov, 3) + "/" +
+                       to_string_with_precision(lidartag_convergence_rotation_, 3) +
                        "\nspeed=" + to_string_with_precision(speed, 3) + "/" +
                        to_string_with_precision(lidartag_convergence_translation_dot_, 3) +
-                       to_string_with_precision(lidartag_convergence_rot_dot_, 3);
+                       to_string_with_precision(lidartag_convergence_rotation_dot_, 3);
 
     text_marker.pose.position.x = center_base(0);
     text_marker.pose.position.y = center_base(1);
@@ -903,12 +903,12 @@ void TagCalibratorVisualizer::setMaxNoObservationTime(double time)
 }
 
 void TagCalibratorVisualizer::setLidartagMaxConvergenceThreshold(
-  double translation, double translation_dot, double rot, double rot_dot)
+  double translation, double translation_dot, double rotation, double rotation_dot)
 {
   lidartag_convergence_translation_ = translation;
   lidartag_convergence_translation_dot_ = translation_dot;
-  lidartag_convergence_rot_ = CV_PI * rot / 180.0;
-  lidartag_convergence_rot_dot_ = CV_PI * rot_dot / 180.0;
+  lidartag_convergence_rotation_ = CV_PI * rotation / 180.0;
+  lidartag_convergence_rotation_dot_ = CV_PI * rotation_dot / 180.0;
 }
 
 void TagCalibratorVisualizer::setApriltagMaxConvergenceThreshold(double translation)
