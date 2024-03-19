@@ -149,7 +149,8 @@ protected:
 
   struct Parameters
   {
-    std::string radar_parallel_frame;
+    std::string radar_parallel_frame;  // frame that is assumed to be parallel to the radar (needed
+                                       // for radars that do not provide elevation)
     bool use_lidar_initial_crop_box_filter;
     double lidar_initial_crop_box_min_x;
     double lidar_initial_crop_box_min_y;
