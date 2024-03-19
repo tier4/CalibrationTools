@@ -218,9 +218,9 @@ class LauncherConfigurationView(QWidget):
 
     def on_click(self):
         args_dict: Dict[str, str] = {
-            arg_name: args_widget.text()
-            if hasattr(args_widget, "text")
-            else args_widget.currentText()
+            arg_name: (
+                args_widget.text() if hasattr(args_widget, "text") else args_widget.currentText()
+            )
             for arg_name, args_widget in self.arguments_widgets_dict.items()
         }
 
