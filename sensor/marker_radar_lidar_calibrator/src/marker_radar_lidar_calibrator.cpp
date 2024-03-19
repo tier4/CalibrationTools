@@ -1260,7 +1260,7 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformation(
   Eigen::Isometry3d calibrated_2d_radar_to_radar_parallel_transformation(
     full_radar_to_radar_parallel_transformation.cast<double>());
 
-  // Check that is is actually a 2D transformation
+  // Check that it is actually a 2D transformation
   auto calibrated_2d_radar_to_radar_parallel_rpy = tier4_autoware_utils::getRPY(
     tf2::toMsg(calibrated_2d_radar_to_radar_parallel_transformation).orientation);
   double calibrated_2d_radar_to_radar_parallel_z =
