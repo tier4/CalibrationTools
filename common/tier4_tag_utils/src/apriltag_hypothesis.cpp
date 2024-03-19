@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ bool ApriltagHypothesis::update(
     cv::Point2d filtered_center = getCenter2d(filtered_corner_points_2d_);
     cv::Point2d current_center = getCenter2d(corners);
 
-    if (cv::norm(filtered_center - current_center) > new_hypothesis_transl_) {
+    if (cv::norm(filtered_center - current_center) > new_hypothesis_translation_) {
       first_observation_timestamp_ = stamp;
       filtered_corner_points_2d_ = corners;
 
@@ -184,9 +184,9 @@ bool ApriltagHypothesis::converged() const
     // decide based on the variance
     const cv::Mat & cov = kalman_filter.errorCovPost;
 
-    double max_transl_cov = std::max({cov.at<double>(0, 0), cov.at<double>(1, 1)});
+    double max_translation_cov = std::max({cov.at<double>(0, 0), cov.at<double>(1, 1)});
 
-    if (std::sqrt(max_transl_cov) > convergence_transl_) {
+    if (std::sqrt(max_translation_cov) > convergence_translation_) {
       converged = false;
 
       break;
@@ -201,18 +201,27 @@ void ApriltagHypothesis::setMinConvergenceTime(double convergence_time)
   min_convergence_time_ = convergence_time;
 }
 
-void ApriltagHypothesis::setMaxConvergenceThreshold(double transl) { convergence_transl_ = transl; }
+void ApriltagHypothesis::setMaxConvergenceThreshold(double translation)
+{
+  convergence_translation_ = translation;
+}
 
 void ApriltagHypothesis::setNewHypothesisThreshold(double max_transl)
 {
-  new_hypothesis_transl_ = max_transl;
+  new_hypothesis_translation_ = max_transl;
 }
 
 void ApriltagHypothesis::setMaxNoObservationTime(double time) { max_no_observation_time_ = time; }
 
-void ApriltagHypothesis::setMeasurementNoise(double transl) { measurement_noise_transl_ = transl; }
+void ApriltagHypothesis::setMeasurementNoise(double translation)
+{
+  measurement_noise_translation_ = translation;
+}
 
-void ApriltagHypothesis::setProcessNoise(double transl) { process_noise_transl_ = transl; }
+void ApriltagHypothesis::setProcessNoise(double translation)
+{
+  process_noise_translation_ = translation;
+}
 
 void ApriltagHypothesis::setTagSize(double size) { tag_size_ = size; }
 
@@ -222,19 +231,20 @@ void ApriltagHypothesis::initKalman(const std::vector<cv::Point2d> & corners)
     cv::KalmanFilter & kalman_filter = kalman_filters_[i];
     kalman_filter.init(2, 2, 0, CV_64F);  // states x observations
 
-    const double process_cov_transl = process_noise_transl_ * process_noise_transl_;
+    const double process_cov_translation = process_noise_translation_ * process_noise_translation_;
 
     cv::setIdentity(kalman_filter.processNoiseCov, cv::Scalar::all(1.0));
 
-    kalman_filter.processNoiseCov.at<double>(0, 0) = process_cov_transl;
-    kalman_filter.processNoiseCov.at<double>(1, 1) = process_cov_transl;
+    kalman_filter.processNoiseCov.at<double>(0, 0) = process_cov_translation;
+    kalman_filter.processNoiseCov.at<double>(1, 1) = process_cov_translation;
 
-    const double measurement_cov_transl = measurement_noise_transl_ * measurement_noise_transl_;
+    const double measurement_cov_translation =
+      measurement_noise_translation_ * measurement_noise_translation_;
 
     cv::setIdentity(kalman_filter.measurementNoiseCov, cv::Scalar::all(1.0));
 
-    kalman_filter.measurementNoiseCov.at<double>(0, 0) = measurement_cov_transl;
-    kalman_filter.measurementNoiseCov.at<double>(1, 1) = measurement_cov_transl;
+    kalman_filter.measurementNoiseCov.at<double>(0, 0) = measurement_cov_translation;
+    kalman_filter.measurementNoiseCov.at<double>(1, 1) = measurement_cov_translation;
 
     cv::setIdentity(kalman_filter.errorCovPost, cv::Scalar::all(1.0));
     cv::setIdentity(kalman_filter.transitionMatrix, cv::Scalar::all(1.0));

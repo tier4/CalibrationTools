@@ -34,11 +34,11 @@
       <param name="new_hypothesis_distance" value="1.5"/>
       <param name="tag_families" value="$(var apriltag_detector_families)"/>
       <!-- the sizes of tag_ids -->
-      <param name="max_convergence_transl" value="2.0"/>
-      <param name="new_hypothesis_transl" value="20.0"/>
+      <param name="max_convergence_translation" value="2.0"/>
+      <param name="new_hypothesis_translation" value="20.0"/>
 
-      <param name="measurement_noise_transl" value="0.2"/>
-      <param name="process_noise_transl" value="0.02"/>
+      <param name="measurement_noise_translation" value="0.2"/>
+      <param name="process_noise_translation" value="0.02"/>
     </node>
   </group>
 </launch>

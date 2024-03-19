@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,22 +30,22 @@ CalibrationEstimator::CalibrationEstimator()
 : min_pnp_pairs_(4),
   min_convergence_time_(5.0),
   max_no_observation_time_(2.0),
-  lidartag_convergence_transl_(0.05),
-  lidartag_convergence_transl_dot_(0.001),
+  lidartag_convergence_translation_(0.05),
+  lidartag_convergence_translation_dot_(0.001),
   lidartag_convergence_rot_(),
   lidartag_convergence_rot_dot_(0.0001),
-  lidartag_new_hypothesis_transl_(0.2),
+  lidartag_new_hypothesis_translation_(0.2),
   lidartag_new_hypothesis_rot_(CV_PI * 45 / 180.0),
-  lidartag_process_noise_transl_(0.005),
-  lidartag_process_noise_transl_dot_(0.005),
+  lidartag_process_noise_translation_(0.005),
+  lidartag_process_noise_translation_dot_(0.005),
   lidartag_process_noise_rot_(CV_PI * 0.5 / 180.0),
   lidartag_process_noise_rot_dot_(CV_PI * 0.5 / 180.0),
-  lidartag_measurement_noise_transl_(0.05),
+  lidartag_measurement_noise_translation_(0.05),
   lidartag_measurement_noise_rot_(CV_PI * 5 / 180.0),
-  apriltag_convergence_transl_(0.5),
-  apriltag_new_hypothesis_transl_(10.0),
-  apriltag_process_noise_transl_(0.5),
-  apriltag_measurement_noise_transl_(2.0),
+  apriltag_convergence_translation_(0.5),
+  apriltag_new_hypothesis_translation_(10.0),
+  apriltag_process_noise_translation_(0.5),
+  apriltag_measurement_noise_translation_(2.0),
   crossvalidation_reprojection_error_(std::numeric_limits<double>::infinity()),
   valid_(false)
 {
@@ -81,12 +81,12 @@ void CalibrationEstimator::update(
   // 1) Create a new hypothesis for comparison convenience
   auto new_h =
     std::make_shared<tier4_tag_utils::ApriltagHypothesis>(detection.id, pinhole_camera_model_);
-  new_h->setMaxConvergenceThreshold(apriltag_convergence_transl_);
+  new_h->setMaxConvergenceThreshold(apriltag_convergence_translation_);
   new_h->setMaxNoObservationTime(max_no_observation_time_);
-  new_h->setMeasurementNoise(apriltag_measurement_noise_transl_);
+  new_h->setMeasurementNoise(apriltag_measurement_noise_translation_);
   new_h->setMinConvergenceTime(min_convergence_time_);
-  new_h->setNewHypothesisThreshold(apriltag_new_hypothesis_transl_);
-  new_h->setProcessNoise(apriltag_process_noise_transl_);
+  new_h->setNewHypothesisThreshold(apriltag_new_hypothesis_translation_);
+  new_h->setProcessNoise(apriltag_process_noise_translation_);
   new_h->setTagSize(tag_sizes_map_[detection.id]);
   new_h->update(corners, stamp);
 
@@ -138,13 +138,15 @@ void CalibrationEstimator::update(
   new_h->setMinConvergenceTime(min_convergence_time_);
 
   new_h->setMaxConvergenceThreshold(
-    lidartag_convergence_transl_, lidartag_convergence_transl_dot_, lidartag_convergence_rot_,
-    lidartag_convergence_rot_dot_);
-  new_h->setMeasurementNoise(lidartag_measurement_noise_transl_, lidartag_measurement_noise_rot_);
-  new_h->setNewHypothesisThreshold(lidartag_new_hypothesis_transl_, lidartag_new_hypothesis_rot_);
+    lidartag_convergence_translation_, lidartag_convergence_translation_dot_,
+    lidartag_convergence_rot_, lidartag_convergence_rot_dot_);
+  new_h->setMeasurementNoise(
+    lidartag_measurement_noise_translation_, lidartag_measurement_noise_rot_);
+  new_h->setNewHypothesisThreshold(
+    lidartag_new_hypothesis_translation_, lidartag_new_hypothesis_rot_);
   new_h->setProcessNoise(
-    lidartag_process_noise_transl_, lidartag_process_noise_transl_dot_, lidartag_process_noise_rot_,
-    lidartag_process_noise_rot_dot_);
+    lidartag_process_noise_translation_, lidartag_process_noise_translation_dot_,
+    lidartag_process_noise_rot_, lidartag_process_noise_rot_dot_);
   new_h->update(translation_cv, rotation_cv, detection.size, stamp);
 
   // 2) Compare with converged hypotheses
@@ -686,53 +688,53 @@ void CalibrationEstimator::setTagSizes(
 }
 
 void CalibrationEstimator::setLidartagMaxConvergenceThreshold(
-  double transl, double transl_dot, double rot, double rot_dot)
+  double translation, double transl_dot, double rot, double rot_dot)
 {
-  lidartag_convergence_transl_ = transl;
-  lidartag_convergence_transl_dot_ = transl_dot;
+  lidartag_convergence_translation_ = translation;
+  lidartag_convergence_translation_dot_ = transl_dot;
   lidartag_convergence_rot_ = CV_PI * rot / 180.0;
   lidartag_convergence_rot_dot_ = CV_PI * rot_dot / 180.0;
 }
 
 void CalibrationEstimator::setLidartagNewHypothesisThreshold(double max_transl, double max_rot)
 {
-  lidartag_new_hypothesis_transl_ = max_transl;
+  lidartag_new_hypothesis_translation_ = max_transl;
   lidartag_new_hypothesis_rot_ = CV_PI * max_rot / 180.0;
 }
 
-void CalibrationEstimator::setLidartagMeasurementNoise(double transl, double rot)
+void CalibrationEstimator::setLidartagMeasurementNoise(double translation, double rot)
 {
-  lidartag_measurement_noise_transl_ = transl;
+  lidartag_measurement_noise_translation_ = translation;
   lidartag_measurement_noise_rot_ = CV_PI * rot / 180.0;
 }
 
 void CalibrationEstimator::setLidartagProcessNoise(
-  double transl, double transl_dot, double rot, double rot_dot)
+  double translation, double translation_dot, double rot, double rot_dot)
 {
-  lidartag_process_noise_transl_ = transl;
-  lidartag_process_noise_transl_dot_ = transl_dot;
+  lidartag_process_noise_translation_ = translation;
+  lidartag_process_noise_translation_dot_ = translation_dot;
   lidartag_process_noise_rot_ = CV_PI * rot / 180.0;
   lidartag_process_noise_rot_dot_ = CV_PI * rot_dot / 180.0;
 }
 
-void CalibrationEstimator::setApriltagMaxConvergenceThreshold(double transl)
+void CalibrationEstimator::setApriltagMaxConvergenceThreshold(double translation)
 {
-  apriltag_convergence_transl_ = transl;
+  apriltag_convergence_translation_ = translation;
 }
 
 void CalibrationEstimator::setApriltagNewHypothesisThreshold(double max_transl)
 {
-  apriltag_new_hypothesis_transl_ = max_transl;
+  apriltag_new_hypothesis_translation_ = max_transl;
 }
 
-void CalibrationEstimator::setApriltagMeasurementNoise(double transl)
+void CalibrationEstimator::setApriltagMeasurementNoise(double translation)
 {
-  apriltag_measurement_noise_transl_ = transl;
+  apriltag_measurement_noise_translation_ = translation;
 }
 
-void CalibrationEstimator::setApriltagProcessNoise(double transl)
+void CalibrationEstimator::setApriltagProcessNoise(double translation)
 {
-  apriltag_process_noise_transl_ = transl;
+  apriltag_process_noise_translation_ = translation;
 }
 
 double CalibrationEstimator::getNewHypothesisDistance() const { return new_hypothesis_distance_; }

@@ -47,24 +47,24 @@
     <param name="tag_sizes" value="[0.6, 0.6, 0.6, 0.6, 0.6, 0.6]"/>
     <!-- the sizes of the corresponding tag_ids - size of the black frame only  -->
 
-    <param name="lidartag_max_convergence_transl" value="0.05"/>
-    <param name="lidartag_max_convergence_transl_dot" value="0.03"/>
+    <param name="lidartag_max_convergence_translation" value="0.05"/>
+    <param name="lidartag_max_convergence_translation_dot" value="0.03"/>
     <param name="lidartag_max_convergence_rot" value="3.0"/>
     <param name="lidartag_max_convergence_rot_dot" value="2.5"/>
-    <param name="lidartag_new_hypothesis_transl" value="0.1"/>
+    <param name="lidartag_new_hypothesis_translation" value="0.1"/>
     <param name="lidartag_new_hypothesis_rot" value="15.0"/>
-    <param name="lidartag_measurement_noise_transl" value="0.05"/>
+    <param name="lidartag_measurement_noise_translation" value="0.05"/>
     <param name="lidartag_measurement_noise_rot" value="5.0"/>
-    <param name="lidartag_process_noise_transl" value="0.01"/>
-    <param name="lidartag_process_noise_transl_dot" value="0.001"/>
+    <param name="lidartag_process_noise_translation" value="0.01"/>
+    <param name="lidartag_process_noise_translation_dot" value="0.001"/>
     <param name="lidartag_process_noise_rot" value="1.0"/>
     <param name="lidartag_process_noise_rot_dot" value="0.1"/>
 
-    <param name="apriltag_max_convergence_transl" value="2.0"/>
-    <param name="apriltag_new_hypothesis_transl" value="20.0"/>
+    <param name="apriltag_max_convergence_translation" value="2.0"/>
+    <param name="apriltag_new_hypothesis_translation" value="20.0"/>
 
-    <param name="apriltag_measurement_noise_transl" value="0.2"/>
-    <param name="apriltag_process_noise_transl" value="0.02"/>
+    <param name="apriltag_measurement_noise_translation" value="0.2"/>
+    <param name="apriltag_process_noise_translation" value="0.02"/>
 
     <remap from="image" to="$(var image_topic)"/>
     <remap from="camera_info" to="$(var camera_info_topic)"/>

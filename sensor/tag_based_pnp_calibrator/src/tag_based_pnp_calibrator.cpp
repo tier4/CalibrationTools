@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,37 +56,37 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   std::vector<double> tag_sizes = this->declare_parameter<std::vector<double>>("tag_sizes");
 
   double lidartag_max_convergence_transl =
-    this->declare_parameter<double>("lidartag_max_convergence_transl");
-  double lidartag_max_convergence_transl_dot =
-    this->declare_parameter<double>("lidartag_max_convergence_transl_dot");
+    this->declare_parameter<double>("lidartag_max_convergence_translation");
+  double lidartag_max_convergence_translation_dot =
+    this->declare_parameter<double>("lidartag_max_convergence_translation_dot");
   double lidartag_max_convergence_rot =
     this->declare_parameter<double>("lidartag_max_convergence_rot");
   double lidartag_max_convergence_rot_dot =
     this->declare_parameter<double>("lidartag_max_convergence_rot_dot");
   double lidartag_new_hypothesis_transl =
-    this->declare_parameter<double>("lidartag_new_hypothesis_transl");
+    this->declare_parameter<double>("lidartag_new_hypothesis_translation");
   double lidartag_new_hypothesis_rot =
     this->declare_parameter<double>("lidartag_new_hypothesis_rot");
   double lidartag_measurement_noise_transl =
-    this->declare_parameter<double>("lidartag_measurement_noise_transl");
+    this->declare_parameter<double>("lidartag_measurement_noise_translation");
   double lidartag_measurement_noise_rot =
     this->declare_parameter<double>("lidartag_measurement_noise_rot");
   double lidartag_process_noise_transl =
-    this->declare_parameter<double>("lidartag_process_noise_transl");
-  double lidartag_process_noise_transl_dot =
-    this->declare_parameter<double>("lidartag_process_noise_transl_dot");
+    this->declare_parameter<double>("lidartag_process_noise_translation");
+  double lidartag_process_noise_translation_dot =
+    this->declare_parameter<double>("lidartag_process_noise_translation_dot");
   double lidartag_process_noise_rot = this->declare_parameter<double>("lidartag_process_noise_rot");
   double lidartag_process_noise_rot_dot =
     this->declare_parameter<double>("lidartag_process_noise_rot_dot");
 
   double apriltag_max_convergence_transl =
-    this->declare_parameter<double>("apriltag_max_convergence_transl");
+    this->declare_parameter<double>("apriltag_max_convergence_translation");
   double apriltag_new_hypothesis_transl =
-    this->declare_parameter<double>("apriltag_new_hypothesis_transl");
+    this->declare_parameter<double>("apriltag_new_hypothesis_translation");
   double apriltag_measurement_noise_transl =
-    this->declare_parameter<double>("apriltag_measurement_noise_transl");
+    this->declare_parameter<double>("apriltag_measurement_noise_translation");
   double apriltag_process_noise_transl =
-    this->declare_parameter<double>("apriltag_process_noise_transl");
+    this->declare_parameter<double>("apriltag_process_noise_translation");
 
   camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
     "camera_info", rclcpp::QoS(1).best_effort(),
@@ -120,15 +120,15 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   estimator_.setTagSizes(tag_ids, tag_sizes);
 
   estimator_.setLidartagMaxConvergenceThreshold(
-    lidartag_max_convergence_transl, lidartag_max_convergence_transl_dot,
+    lidartag_max_convergence_transl, lidartag_max_convergence_translation_dot,
     lidartag_max_convergence_rot, lidartag_max_convergence_rot_dot);
   estimator_.setLidartagNewHypothesisThreshold(
     lidartag_new_hypothesis_transl, lidartag_new_hypothesis_rot);
   estimator_.setLidartagMeasurementNoise(
     lidartag_measurement_noise_transl, lidartag_measurement_noise_rot);
   estimator_.setLidartagProcessNoise(
-    lidartag_process_noise_transl, lidartag_process_noise_transl_dot, lidartag_process_noise_rot,
-    lidartag_process_noise_rot_dot);
+    lidartag_process_noise_transl, lidartag_process_noise_translation_dot,
+    lidartag_process_noise_rot, lidartag_process_noise_rot_dot);
 
   estimator_.setApriltagMaxConvergenceThreshold(apriltag_max_convergence_transl);
   estimator_.setApriltagNewHypothesisThreshold(apriltag_new_hypothesis_transl);
@@ -161,7 +161,7 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   visualizer_->setMinConvergenceTime(min_convergence_time);
   visualizer_->setMaxNoObservationTime(max_no_observation_time);
   visualizer_->setLidartagMaxConvergenceThreshold(
-    lidartag_max_convergence_transl, lidartag_max_convergence_transl_dot,
+    lidartag_max_convergence_transl, lidartag_max_convergence_translation_dot,
     lidartag_max_convergence_rot, lidartag_max_convergence_rot_dot);
   visualizer_->setApriltagMaxConvergenceThreshold(apriltag_max_convergence_transl);
 }
