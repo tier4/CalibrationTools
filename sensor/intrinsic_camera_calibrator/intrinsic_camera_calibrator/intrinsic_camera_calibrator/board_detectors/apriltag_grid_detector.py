@@ -86,10 +86,10 @@ class ApriltagGridDetector(BoardDetector):
         self.current_debug = None
         pass
 
-    def detect(self, img):
+    def detect(self, img, stamp):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""
         if img is None:
-            self.detection_results_signal.emit(None, None)
+            self.detection_results_signal.emit(None, None, None)
             return
 
         with self.lock:
@@ -149,7 +149,7 @@ class ApriltagGridDetector(BoardDetector):
         tags.sort(key=lambda tag: tag.tag_id)
 
         if len(tags) < rows * cols * min_detection_ratio:
-            self.detection_results_signal.emit(img, None)
+            self.detection_results_signal.emit(img, None, stamp)
             return
 
         detection = ApriltagGridDetection(
@@ -163,4 +163,4 @@ class ApriltagGridDetector(BoardDetector):
             tags=tags,
         )
 
-        self.detection_results_signal.emit(img, detection)
+        self.detection_results_signal.emit(img, detection, stamp)

@@ -24,12 +24,13 @@ from PySide2.QtCore import QObject
 from PySide2.QtCore import Signal
 from intrinsic_camera_calibrator.board_parameters.board_parameters import BoardParameters
 from intrinsic_camera_calibrator.parameter import ParameterizedClass
+import numpy as np
 
 
 class BoardDetector(ParameterizedClass, QObject):
     """Base class of board detectors."""
 
-    detection_results_signal = Signal(object, object)
+    detection_results_signal = Signal(object, object, float)
 
     def __init__(
         self, lock: threading.RLock, board_parameters: BoardParameters, cfg: Optional[Dict] = {}
@@ -40,7 +41,7 @@ class BoardDetector(ParameterizedClass, QObject):
 
         self.set_parameters(**cfg)
 
-    def detect(self, img):
+    def detect(self, img: np.array, stamp):
         """Slot to detect boards from an image. Subclasses must implement this method."""
         raise NotImplementedError
 

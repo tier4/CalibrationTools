@@ -116,7 +116,8 @@ class RosTopicDataSource(DataSource, Node):
         with self.lock:
             image_data = np.frombuffer(msg.data, np.uint8)
             image_data = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
-            self.data_callback(image_data)
+            stamp = msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec
+            self.data_callback(image_data, stamp)
 
     def image_callback(self, msg: Image):
         """Process a raw image."""
@@ -125,7 +126,8 @@ class RosTopicDataSource(DataSource, Node):
         # cSpell:ignore imgmsg
         with self.lock:
             image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-            self.data_callback(image_data)
+            stamp = msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec
+            self.data_callback(image_data, stamp)
 
     def spin(self):
         """Start a new thread for ROS to spin in."""
