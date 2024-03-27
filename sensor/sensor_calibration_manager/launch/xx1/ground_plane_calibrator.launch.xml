@@ -1,0 +1,54 @@
+<launch>
+  <let name="base_frame" value="base_link"/>
+  <let name="lidar_frame" value="velodyne_top"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw_ex"/>
+
+  <arg name="max_inlier_distance" default="0.03" description="Maximum distance in meters to consider inliers in plane estimation"/>
+  <arg name="min_plane_points" default="500" description="Minimum number of points for an hypothesis for be considered valid"/>
+  <arg name="min_plane_points_percentage" default="20.0" description="Minimum percentage of the total points to consider an hypothesis valid"/>
+  <arg name="max_cos_distance" default="0.2" description="Maximum cosine distance between an hypothesis and the initial calibration for an hypothesis to be considered valid"/>
+  <arg name="max_iterations" default="500" description="Number of maximum iterations in the plane estimation algorithm"/>
+  <arg name="verbose" default="true" description="Verbose mode"/>
+  <arg name="overwrite_xy_yaw" default="false" description="Overwrite x, y, and yaw values with the initial calibration"/>
+  <arg name="filter_estimations" default="true" description="Flag to enable filtering estimations"/>
+
+  <arg name="use_crop_box_filter" default="true" description="Use an optional crop box filter to accelerate processing and ignore walls or other planes"/>
+  <arg name="crop_box_min_x" default="-50.0" description="Minimum x value of the crop box filter"/>
+  <arg name="crop_box_min_y" default="-50.0" description="Minimum y value of the crop box filter"/>
+  <arg name="crop_box_min_z" default="-50.0" description="Minimum z value of the crop box filter"/>
+  <arg name="crop_box_max_x" default="50.0" description="Maximum x value of the crop box filter"/>
+  <arg name="crop_box_max_y" default="50.0" description="Maximum y value of the crop box filter"/>
+  <arg name="crop_box_max_z" default="50.0" description="Maximum z value of the crop box filter"/>
+  <arg name="use_pca_rough_normal" default="false" description="Whether to use PCA or the initial calibration for normal plane estimation"/>
+
+  <arg name="rviz" default="true" description="Launch rviz"/>
+
+  <!-- base-lidar calibrator -->
+  <include file="$(find-pkg-share ground_plane_calibrator)/launch/calibrator.launch.xml">
+    <arg name="calibration_service_name" value="calibrate_base_lidar"/>
+
+    <arg name="rviz" value="$(var rviz)"/>
+    <arg name="base_frame" value="$(var base_frame)"/>
+    <arg name="lidar_frame" value="$(var lidar_frame)"/>
+    <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
+    <arg name="calibration_service_name" value="$(var calibration_service_name)"/>
+
+    <arg name="max_inlier_distance" value="$(var max_inlier_distance)"/>
+    <arg name="min_plane_points" value="$(var min_plane_points)"/>
+    <arg name="min_plane_points_percentage" value="$(var min_plane_points_percentage)"/>
+    <arg name="max_cos_distance" value="$(var max_cos_distance)"/>
+    <arg name="max_iterations" value="$(var max_iterations)"/>
+    <arg name="verbose" value="$(var verbose)"/>
+    <arg name="overwrite_xy_yaw" value="$(var overwrite_xy_yaw)"/>
+    <arg name="filter_estimations" value="$(var filter_estimations)"/>
+
+    <arg name="use_crop_box_filter" value="$(var use_crop_box_filter)"/>
+    <arg name="crop_box_min_x" value="$(var crop_box_min_x)"/>
+    <arg name="crop_box_min_y" value="$(var crop_box_min_y)"/>
+    <arg name="crop_box_min_z" value="$(var crop_box_min_z)"/>
+    <arg name="crop_box_max_x" value="$(var crop_box_max_x)"/>
+    <arg name="crop_box_max_y" value="$(var crop_box_max_y)"/>
+    <arg name="crop_box_max_z" value="$(var crop_box_max_z)"/>
+    <arg name="use_pca_rough_normal" value="$(var use_pca_rough_normal)"/>
+  </include>
+</launch>

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
-#include <tier4_tag_utils/types.hpp>
 
 #include <image_geometry/pinhole_camera_model.h>
 
@@ -57,39 +56,33 @@ public:
 
   bool converged() const;
 
-  void setDynamicsModel(DynamicsModel dynamics_model);
   void setMinConvergenceTime(double convergence_time);
   void setMaxNoObservationTime(double time);
-  void setMaxConvergenceThreshold(double transl);
-  void setNewHypothesisThreshold(double transl);
-  void setMeasurementNoise(double transl);
-  void setProcessNoise(double transl);
+  void setMaxConvergenceThreshold(double translation);
+  void setNewHypothesisThreshold(double translation);
+  void setMeasurementNoise(double translation);
+  void setProcessNoise(double translation);
   void setTagSize(double size);
 
 protected:
   void reset();
-
   void initKalman(const std::vector<cv::Point2d> & corners);
-
-  void initStaticKalman(const std::vector<cv::Point2d> & corners);
-
   cv::Mat toState(const cv::Point2d & corner);
 
-  double convergence_transl_;
-  double new_hypothesis_transl_;
+  double convergence_translation_;
+  double new_hypothesis_translation_;
   double min_convergence_time_;
   double max_no_observation_time_;
   double tag_size_;
 
   // Kalman related
   cv::KalmanFilter kalman_filters_[4];
-  double process_noise_transl_;
+  double process_noise_translation_;
 
-  double measurement_noise_transl_;
+  double measurement_noise_translation_;
 
   // General variables
   bool first_observation_;
-  DynamicsModel dynamics_model_;
   int id_;
   rclcpp::Time first_observation_timestamp_;
   rclcpp::Time last_observation_timestamp_;

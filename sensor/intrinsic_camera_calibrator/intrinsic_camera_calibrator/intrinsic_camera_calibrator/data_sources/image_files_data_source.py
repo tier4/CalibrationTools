@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import logging
 
 from PySide2.QtCore import QObject
 from PySide2.QtCore import QThread
@@ -60,7 +62,7 @@ class ImageFilesDataSource(DataSource, QObject):
     def on_consumed(self):
         """Acts on the consumer having consumed an image. This method is executed in he source thread as it is connected to a local signal."""
         if self.image_index == len(self.image_files_path) and not self.loop_images:
-            print("Produced all images!")
+            logging.info("Produced all images!")
             return
 
         if self.paused:

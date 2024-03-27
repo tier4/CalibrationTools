@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ protected:
   std::unordered_map<std::string, double> tag_sizes_map_;
 
   double max_no_observation_time_;
-  double new_hypothesis_transl_;
-  double measurement_noise_transl_;
-  double process_noise_transl_;
+  double new_hypothesis_translation_;
+  double measurement_noise_translation_;
+  double process_noise_translation_;
   double min_tag_size_;
   double max_tag_distance_;
   double max_allowed_homography_error_;

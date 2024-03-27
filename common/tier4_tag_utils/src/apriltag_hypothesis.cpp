@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <rclcpp/rclcpp.hpp>
 #include <tier4_tag_utils/apriltag_hypothesis.hpp>
-#include <tier4_tag_utils/cv/sqpnp.hpp>
 
 namespace tier4_tag_utils
 {
 
 ApriltagHypothesis::ApriltagHypothesis(
   int id, image_geometry::PinholeCameraModel & pinhole_camera_model)
-: first_observation_(true),
-  dynamics_model_(tier4_tag_utils::DynamicsModel::Static),
-  id_(id),
-  pinhole_camera_model_(pinhole_camera_model)
+: first_observation_(true), id_(id), pinhole_camera_model_(pinhole_camera_model)
 {
 }
 
@@ -46,7 +43,7 @@ bool ApriltagHypothesis::update(
     cv::Point2d filtered_center = getCenter2d(filtered_corner_points_2d_);
     cv::Point2d current_center = getCenter2d(corners);
 
-    if (cv::norm(filtered_center - current_center) > new_hypothesis_transl_) {
+    if (cv::norm(filtered_center - current_center) > new_hypothesis_translation_) {
       first_observation_timestamp_ = stamp;
       filtered_corner_points_2d_ = corners;
 
@@ -58,29 +55,13 @@ bool ApriltagHypothesis::update(
   for (int i = 0; i < 4; ++i) {
     cv::KalmanFilter & kalman_filter = kalman_filters_[i];
 
-    if (dynamics_model_ == DynamicsModel::Static) {
-      cv::Mat prediction = kalman_filter.predict();
-      cv::Mat observation = toState(corners[i]);
+    cv::Mat prediction = kalman_filter.predict();
+    cv::Mat observation = toState(corners[i]);
 
-      cv::Mat estimated = kalman_filter.correct(observation);
+    cv::Mat estimated = kalman_filter.correct(observation);
 
-      filtered_corner_points_2d_[i].x = estimated.at<double>(0);
-      filtered_corner_points_2d_[i].y = estimated.at<double>(1);
-    } else {
-      // non-fixed timestep
-      double dt = (stamp - last_observation_timestamp_).seconds();
-      kalman_filter.transitionMatrix.at<double>(0, 3) = dt;
-      kalman_filter.transitionMatrix.at<double>(1, 4) = dt;
-      kalman_filter.transitionMatrix.at<double>(2, 5) = dt;
-      kalman_filter.transitionMatrix.at<double>(6, 9) = dt;
-
-      cv::Mat prediction = kalman_filter.predict();
-      cv::Mat observation = toState(corners[i]);
-      cv::Mat estimated = kalman_filter.correct(observation);
-
-      filtered_corner_points_2d_[i].x = estimated.at<double>(0);
-      filtered_corner_points_2d_[i].y = estimated.at<double>(1);
-    }
+    filtered_corner_points_2d_[i].x = estimated.at<double>(0);
+    filtered_corner_points_2d_[i].y = estimated.at<double>(1);
   }
 
   return true;
@@ -137,7 +118,6 @@ std::vector<cv::Point3d> ApriltagHypothesis::getFilteredPoints3d() const
 std::vector<cv::Point3d> ApriltagHypothesis::getPoints3d(
   const std::vector<cv::Point2d> & image_points) const
 {
-  std::vector<cv::Point2d> undistorted_points;
   std::vector<cv::Point3d> object_points;
 
   std::vector<cv::Point3d> apriltag_template_points = {
@@ -146,22 +126,16 @@ std::vector<cv::Point3d> ApriltagHypothesis::getPoints3d(
     cv::Point3d(0.5 * tag_size_, -0.5 * tag_size_, 0.0),
     cv::Point3d(-0.5 * tag_size_, -0.5 * tag_size_, 0.0)};
 
-  cv::undistortPoints(
-    image_points, undistorted_points, pinhole_camera_model_.intrinsicMatrix(),
-    pinhole_camera_model_.distortionCoeffs());
+  cv::Mat rvec, tvec;
 
-  cv::sqpnp::PoseSolver solver;
-  std::vector<cv::Mat> rvec_vec, tvec_vec;
-  solver.solve(apriltag_template_points, undistorted_points, rvec_vec, tvec_vec);
+  bool success = cv::solvePnP(
+    apriltag_template_points, image_points, pinhole_camera_model_.intrinsicMatrix(),
+    pinhole_camera_model_.distortionCoeffs(), rvec, tvec, false, cv::SOLVEPNP_SQPNP);
 
-  if (tvec_vec.size() == 0) {
-    assert(false);
+  if (!success) {
+    RCLCPP_ERROR(rclcpp::get_logger("tier4_tag_utils"), "PNP failed");
     return object_points;
   }
-
-  assert(rvec_vec.size() == 1);
-  cv::Mat rvec = rvec_vec[0];
-  cv::Mat tvec = tvec_vec[0];
 
   cv::Matx31d translation_vector = tvec;
   cv::Matx33d rotation_matrix;
@@ -210,9 +184,9 @@ bool ApriltagHypothesis::converged() const
     // decide based on the variance
     const cv::Mat & cov = kalman_filter.errorCovPost;
 
-    double max_transl_cov = std::max({cov.at<double>(0, 0), cov.at<double>(1, 1)});
+    double max_translation_cov = std::max({cov.at<double>(0, 0), cov.at<double>(1, 1)});
 
-    if (std::sqrt(max_transl_cov) > convergence_transl_) {
+    if (std::sqrt(max_translation_cov) > convergence_translation_) {
       converged = false;
 
       break;
@@ -222,60 +196,55 @@ bool ApriltagHypothesis::converged() const
   return converged;
 }
 
-void ApriltagHypothesis::setDynamicsModel(DynamicsModel dynamics_model)
-{
-  dynamics_model_ = dynamics_model;
-}
-
 void ApriltagHypothesis::setMinConvergenceTime(double convergence_time)
 {
   min_convergence_time_ = convergence_time;
 }
 
-void ApriltagHypothesis::setMaxConvergenceThreshold(double transl) { convergence_transl_ = transl; }
-
-void ApriltagHypothesis::setNewHypothesisThreshold(double max_transl)
+void ApriltagHypothesis::setMaxConvergenceThreshold(double translation)
 {
-  new_hypothesis_transl_ = max_transl;
+  convergence_translation_ = translation;
+}
+
+void ApriltagHypothesis::setNewHypothesisThreshold(double max_translation)
+{
+  new_hypothesis_translation_ = max_translation;
 }
 
 void ApriltagHypothesis::setMaxNoObservationTime(double time) { max_no_observation_time_ = time; }
 
-void ApriltagHypothesis::setMeasurementNoise(double transl) { measurement_noise_transl_ = transl; }
+void ApriltagHypothesis::setMeasurementNoise(double translation)
+{
+  measurement_noise_translation_ = translation;
+}
 
-void ApriltagHypothesis::setProcessNoise(double transl) { process_noise_transl_ = transl; }
+void ApriltagHypothesis::setProcessNoise(double translation)
+{
+  process_noise_translation_ = translation;
+}
 
 void ApriltagHypothesis::setTagSize(double size) { tag_size_ = size; }
 
 void ApriltagHypothesis::initKalman(const std::vector<cv::Point2d> & corners)
 {
-  if (dynamics_model_ == DynamicsModel::Static) {
-    initStaticKalman(corners);
-  } else {
-    assert(false);
-    // initConstantVelocityKalman(corners);
-  }
-}
-
-void ApriltagHypothesis::initStaticKalman(const std::vector<cv::Point2d> & corners)
-{
   for (int i = 0; i < 4; ++i) {
     cv::KalmanFilter & kalman_filter = kalman_filters_[i];
     kalman_filter.init(2, 2, 0, CV_64F);  // states x observations
 
-    const double process_cov_transl = process_noise_transl_ * process_noise_transl_;
+    const double process_cov_translation = process_noise_translation_ * process_noise_translation_;
 
     cv::setIdentity(kalman_filter.processNoiseCov, cv::Scalar::all(1.0));
 
-    kalman_filter.processNoiseCov.at<double>(0, 0) = process_cov_transl;
-    kalman_filter.processNoiseCov.at<double>(1, 1) = process_cov_transl;
+    kalman_filter.processNoiseCov.at<double>(0, 0) = process_cov_translation;
+    kalman_filter.processNoiseCov.at<double>(1, 1) = process_cov_translation;
 
-    const double measurement_cov_transl = measurement_noise_transl_ * measurement_noise_transl_;
+    const double measurement_cov_translation =
+      measurement_noise_translation_ * measurement_noise_translation_;
 
     cv::setIdentity(kalman_filter.measurementNoiseCov, cv::Scalar::all(1.0));
 
-    kalman_filter.measurementNoiseCov.at<double>(0, 0) = measurement_cov_transl;
-    kalman_filter.measurementNoiseCov.at<double>(1, 1) = measurement_cov_transl;
+    kalman_filter.measurementNoiseCov.at<double>(0, 0) = measurement_cov_translation;
+    kalman_filter.measurementNoiseCov.at<double>(1, 1) = measurement_cov_translation;
 
     cv::setIdentity(kalman_filter.errorCovPost, cv::Scalar::all(1.0));
     cv::setIdentity(kalman_filter.transitionMatrix, cv::Scalar::all(1.0));
@@ -287,22 +256,12 @@ void ApriltagHypothesis::initStaticKalman(const std::vector<cv::Point2d> & corne
 
 cv::Mat ApriltagHypothesis::toState(const cv::Point2d & corner)
 {
-  if (dynamics_model_ == DynamicsModel::Static) {
-    cv::Mat kalman_state(2, 1, CV_64F);
+  cv::Mat kalman_state(2, 1, CV_64F);
 
-    kalman_state.at<double>(0, 0) = corner.x;
-    kalman_state.at<double>(1, 0) = corner.y;
+  kalman_state.at<double>(0, 0) = corner.x;
+  kalman_state.at<double>(1, 0) = corner.y;
 
-    return kalman_state;
-  } else {
-    cv::Mat kalman_state(2, 1, CV_64F);
-    kalman_state.setTo(cv::Scalar(0.0));
-
-    kalman_state.at<double>(0, 0) = corner.x;
-    kalman_state.at<double>(1, 0) = corner.y;
-
-    return kalman_state;
-  }
+  return kalman_state;
 }
 
 }  // namespace tier4_tag_utils

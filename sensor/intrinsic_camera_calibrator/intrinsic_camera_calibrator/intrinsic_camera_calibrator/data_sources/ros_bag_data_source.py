@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from pathlib import Path
 
 from PySide2.QtCore import QObject
@@ -125,7 +126,7 @@ class RosBagDataSource(DataSource, QObject):
             (topic, data, t) = self.reader.read_next()
             self.send_data(topic, data)
         else:
-            print("bag ended !", flush=True)
+            logging.info("bag ended !")
 
     def send_data(self, topic, data):
         """Send a image message to the consumer prior transformation to a numpy array."""

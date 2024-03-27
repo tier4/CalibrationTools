@@ -131,11 +131,11 @@ Calibrating a camera-lidar pair (i.e., finding the extrinsics) makes the lidar p
 The difference between a point in the image (p<sub>image</sub>), and the projection (p<sub>projected</sub>) in the image of its corresponding object point in lidar coordinates (p<sub>object</sub>) is denoted as the reprojection error and can be observed graphically in Figure 5.
 
 <figure align="center">
-   <img src="images/camera-lidar/reprojerror.svg" width="500">
+   <img src="images/camera-lidar/reprojection_error.svg" width="500">
    <figcaption align="center">Fig 5. Reprojection error</figcaption>
 </figure>
 
-It follows that to calibrate the extrinsics of the camera-lidar pair of sensors, the reprojection error must be minimized in a set of corresponding pairs of points. The acquisition of the calibration pairs of points can be performed either automatically via a computer vision system or manually, and in this case, the pairs are computed automatically from the corners of the lidartag placeds in the field of view of the sensors
+It follows that to calibrate the extrinsics of the camera-lidar pair of sensors, the reprojection error must be minimized in a set of corresponding pairs of points. The acquisition of the calibration pairs of points can be performed either automatically via a computer vision system or manually, and in this case, the pairs are computed automatically from the corners of the lidartag placed in the field of view of the sensors
 
 ## 5. Tag based Calibration Process
 
@@ -145,11 +145,11 @@ The `apriltag` node detects the corners of the tags in the image, the `lidartag`
 
 However, in addition to the automatic calibration process, this tool also launches the Interactive calibrator UI, mainly for visualization purposes, but can also be used to use different optimization options, add additional calibration points, etc. However, the calibrations obtained through the UI can not be sent to the `Calibration manager` and instead must be saved manually (refer to the UI manual for more details).
 
-| ![tagbased-1.jpg](images/camera-lidar/tagbased-1.jpg) | ![tagbased-2.jpg](images/camera-lidar/tagbased-2.jpg) |
-| :---------------------------------------------------: | :---------------------------------------------------: |
-|              Fig 6. Initial calibration               |        Fig 7. Automatic tag-based calibration         |
+| ![tag_based-1.jpg](images/camera-lidar/tag_based-1.jpg) | ![tag_based-2.jpg](images/camera-lidar/tag_based-2.jpg) |
+| :-----------------------------------------------------: | :-----------------------------------------------------: |
+|               Fig 6. Initial calibration                |         Fig 7. Automatic tag-based calibration          |
 
-The calibration tool is compatible with one or multiple tags, but a certain amount of camera-lidar detections is needed in order to obtain a correct calibration. In case that the number of tags at hand is not sufficient, the user can move a single tag to multiple locations in order to collect more detections akin to the camera calibration process. The parameters that determine how many detections are required in order for the algorithm to finish and output the final extrinsica are located in the `sensor/extrinsic_tag_based_calibrator/launch/tag_calibrator.launch.xml` launch file and below is an example of the related paramers:
+The calibration tool is compatible with one or multiple tags, but a certain amount of camera-lidar detections is needed in order to obtain a correct calibration. In case that the number of tags at hand is not sufficient, the user can move a single tag to multiple locations in order to collect more detections akin to the camera calibration process. The parameters that determine how many detections are required in order for the algorithm to finish and output the final extrinsics are located in the `sensor/extrinsic_tag_based_calibrator/launch/tag_calibrator.launch.xml` launch file and below is an example of the related parameters:
 
 ```yaml
 <param name="calibration_convergence_min_pairs" value="9" />

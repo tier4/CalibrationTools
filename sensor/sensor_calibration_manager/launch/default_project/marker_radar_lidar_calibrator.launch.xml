@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="rviz" default="true"/>
+
+  <arg name="radar_parallel_frame"/>
+  <arg name="radar_frame"/>
+  <arg name="lidar_frame"/>
+
+  <arg name="input_radar_objects"/>
+  <arg name="input_lidar_pointcloud"/>
+
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="lidar_broadcaster" output="screen" args="0 0 0 0 0 0 $(var radar_frame) radar_frame"/>
+
+  <!-- marker radar-lidar calibrator -->
+  <include file="$(find-pkg-share marker_radar_lidar_calibrator)/launch/calibrator.launch.xml">
+    <arg name="rviz" value="$(var rviz)"/>
+    <arg name="calibration_service_name" value="calibrate_radar_lidar"/>
+    <arg name="radar_parallel_frame" value="$(var radar_parallel_frame)"/>
+    <arg name="input_lidar_pointcloud" value="$(var input_lidar_pointcloud)"/>
+    <arg name="input_radar_objects" value="$(var input_radar_objects)"/>
+  </include>
+</launch>

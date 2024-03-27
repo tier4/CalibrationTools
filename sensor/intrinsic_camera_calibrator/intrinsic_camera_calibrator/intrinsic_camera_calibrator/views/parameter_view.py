@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 
 from functools import partial
+import logging
 
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QCheckBox
@@ -48,7 +49,7 @@ class ParameterView(QWidget):
             self.layout.addWidget(label, i, 0)
 
             def on_value_changed(new_k, new_v):
-                print(f"on_value_changed {new_k}={new_v}")
+                logging.info(f"on_value_changed {new_k}={new_v}")
                 self.parameterized_class.set_parameters(**{new_k: new_v})
                 self.parameter_changed.emit()
 

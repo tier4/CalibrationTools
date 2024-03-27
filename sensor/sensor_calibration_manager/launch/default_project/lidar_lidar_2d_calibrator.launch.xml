@@ -1,0 +1,43 @@
+<launch>
+  <arg name="base_frame" default="base_link" description="Frame in which to perform the 2D calibration"/>
+  <arg name="source_frame" default="livox_front_left" description="Frame of the source pointcloud"/>
+  <!--Do not delete. This tag is required by the UI -->
+  <arg name="target_frame" default="velodyne" description="Frame of the target pointcloud"/>
+  <!--Do not delete. This tag is required by the UI -->
+  <arg name="source_pointcloud_topic" default="/sensing/lidar/front_left/livox/lidar" description="Topic of the source pointcloud"/>
+  <arg name="target_pointcloud_topic" default="/velodyne_points" description="Topic of the target"/>
+
+  <arg name="broadcast_calibration_tf" default="false" description="Broadcast the calibration TF"/>
+  <arg name="filter_estimations" default="true" description="Filter estimations using as simple filter"/>
+
+  <arg name="max_calibration_range" default="60.0" description="Max range of the pointcloud to use during calibration"/>
+  <arg name="max_corr_distance" default="0.5" description="Maximum accepted distance for correspondences"/>
+  <arg name="max_iterations" default="100" description="Maximum number of ICP iterations for calibration"/>
+
+  <arg
+    name="min_z"
+    default="0.5"
+    description="Minimum z-value to use for calibration (in base coordinates). Wide ranges induce more error due to flattening, but narrower ranges may not have enough information"
+  />
+  <arg name="max_z" default="1.5" description="Maximum z-value to use for calibration (in base coordinates)"/>
+
+  <arg name="rviz" default="true" description="Launch rviz"/>
+
+  <!-- lidar-lidar calibrator -->
+  <include file="$(find-pkg-share lidar_to_lidar_2d_calibrator)/launch/calibrator.launch.xml">
+    <arg name="base_frame" value="$(var base_frame)"/>
+    <arg name="calibration_service_name" value="calibrate_lidar_lidar"/>
+
+    <arg name="broadcast_calibration_tf" value="$(var broadcast_calibration_tf)"/>
+    <arg name="filter_estimations" value="$(var filter_estimations)"/>
+
+    <arg name="max_calibration_range" value="$(var max_calibration_range)"/>
+    <arg name="max_corr_distance" value="$(var max_corr_distance)"/>
+    <arg name="max_iterations" value="$(var max_iterations)"/>
+
+    <arg name="source_pointcloud_topic" value="$(var source_pointcloud_topic)"/>
+    <arg name="target_pointcloud_topic" value="$(var target_pointcloud_topic)"/>
+
+    <arg name="rviz" value="true"/>
+  </include>
+</launch>
