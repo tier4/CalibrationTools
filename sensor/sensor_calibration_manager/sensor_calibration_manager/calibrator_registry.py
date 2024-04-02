@@ -71,6 +71,7 @@ class CalibratorRegistry:
 
         Args:
             name (str): The name of the executor to create.
+
         Returns:
             An instance of the executor that is created.
         """
