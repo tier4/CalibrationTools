@@ -45,8 +45,11 @@ class CalibratorRegistry:
         Args:
             project_name (str): The name of the calibration project.
             calibrator_name (str): The name of the calibrator.
-        Returns:
+
+        Returns
+        -------
             wrapper
+
         """
 
         def inner_wrapper(wrapped_class: CalibratorBase) -> CalibratorBase:
@@ -72,8 +75,10 @@ class CalibratorRegistry:
         Args:
             name (str): The name of the executor to create.
 
-        Returns:
+        Returns
+        -------
             An instance of the executor that is created.
+
         """
         if project_name not in cls.registry or calibrator_name not in cls.registry[project_name]:
             cls.logger.error(
