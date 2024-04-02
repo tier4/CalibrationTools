@@ -357,7 +357,6 @@ class ImageViewUI(QMainWindow):
         # This method is executed in the ROS spin thread
         with self.lock:
             self.transform_tmp = transform
-            pass
 
         self.transform_signal.emit()
 

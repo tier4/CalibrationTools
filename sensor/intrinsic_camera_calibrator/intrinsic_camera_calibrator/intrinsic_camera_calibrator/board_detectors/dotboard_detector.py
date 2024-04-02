@@ -38,7 +38,6 @@ class DotBoardDetector(BoardDetector):
         self.min_dist_between_blobs_percentage = Parameter(
             float, value=1.0, min_value=0.1, max_value=10.0
         )
-        pass
 
     def detect(self, img: np.array):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""

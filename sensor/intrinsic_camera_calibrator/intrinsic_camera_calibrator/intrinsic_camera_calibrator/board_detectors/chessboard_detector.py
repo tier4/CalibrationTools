@@ -30,7 +30,6 @@ class ChessBoardDetector(BoardDetector):
         self.normalize_image = Parameter(bool, value=True, min_value=False, max_value=True)
         self.fast_check = Parameter(bool, value=True, min_value=False, max_value=True)
         self.refine = Parameter(bool, value=True, min_value=False, max_value=True)
-        pass
 
     def detect(self, img):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""

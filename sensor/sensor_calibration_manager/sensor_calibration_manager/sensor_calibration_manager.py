@@ -194,7 +194,6 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         self.calibrators_view.setFixedWidth(800)
 
         self.ros_interface.spin()
-        pass
 
     def on_calibrator_state_changed(self, state: CalibratorState):
         text_dict = {

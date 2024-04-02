@@ -84,7 +84,6 @@ class ApriltagGridDetector(BoardDetector):
         self.current_refine_edges = None
         self.current_decode_sharpening = None
         self.current_debug = None
-        pass
 
     def detect(self, img):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""

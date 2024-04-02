@@ -166,7 +166,6 @@ class CalibratorServiceWrapper(QObject):
 
     def status_ros_callback(self, status: bool):
         self.status_signal.emit(status)
-        pass
 
     def get_data(self, index) -> list:
         if not self.service_called:

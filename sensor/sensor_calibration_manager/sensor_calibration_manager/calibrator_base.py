@@ -60,7 +60,6 @@ class CalibratorBase(QObject):
 
     def init():
         logging.debug("CalibratorBase: Calibrator init?")
-        pass
 
     def on_check_tf_timer(self):
         logging.debug("CalibratorBase: on_check_tf_timer")

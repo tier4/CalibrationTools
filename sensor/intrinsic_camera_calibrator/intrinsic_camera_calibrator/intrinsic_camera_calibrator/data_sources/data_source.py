@@ -36,7 +36,6 @@ class DataSource:
         self.pending_data_not_consumed = False
         self.camera_name = "camera"
         self.paused = False
-        pass
 
     def set_data_callback(self, callback):
         """Set a callback method for the DataSource to call when an image is produced."""
