@@ -293,7 +293,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   // The service servers runs in a dedicated threads since they are blocking
   calibration_api_srv_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  calibration_api_srv_ = this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
+  calibration_api_srv_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
     "/extrinsic_calibration",
     std::bind(
       &ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback, this, std::placeholders::_1,
@@ -377,11 +377,9 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 }
 
 void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
     response)
 {
   using std::chrono_literals::operator""s;
@@ -455,18 +453,18 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
   // Display the correction in calibration
   Eigen::Isometry3d initial_base_link_to_calibrated_base_link_pose =
     initial_base_link_to_lidar_pose * base_link_to_lidar_pose.inverse();
-  Eigen::Matrix3d initial_base_link_to_calibrated_base_link_rot =
+  Eigen::Matrix3d initial_base_link_to_calibrated_base_link_rotation =
     initial_base_link_to_calibrated_base_link_pose.rotation();
   Eigen::Vector3d initial_base_link_to_calibrated_base_link_translation =
     initial_base_link_to_calibrated_base_link_pose.translation();
 
   Eigen::Vector3d initial_normal(0.0, 0.0, 1.0);
   Eigen::Vector3d optimized_norm =
-    initial_base_link_to_calibrated_base_link_rot * Eigen::Vector3d(0.0, 0.0, 1.0);
+    initial_base_link_to_calibrated_base_link_rotation * Eigen::Vector3d(0.0, 0.0, 1.0);
   const double normal_angle_diff = std::acos(initial_normal.dot(optimized_norm));
   const double yaw_angle_diff = std::atan2(
-    initial_base_link_to_calibrated_base_link_rot(1, 0),
-    initial_base_link_to_calibrated_base_link_rot(0, 0));
+    initial_base_link_to_calibrated_base_link_rotation(1, 0),
+    initial_base_link_to_calibrated_base_link_rotation(0, 0));
 
   RCLCPP_INFO(this->get_logger(), "base_link: initial to calibrated statistics");
   RCLCPP_INFO(

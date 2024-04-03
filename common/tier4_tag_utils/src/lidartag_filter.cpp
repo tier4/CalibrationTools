@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,14 +31,14 @@ LidartagFilter::LidartagFilter(const rclcpp::NodeOptions & options)
   max_no_observation_time_ = this->declare_parameter<double>("max_no_observation_time");
   new_hypothesis_distance_ = this->declare_parameter<double>("new_hypothesis_distance");
 
-  new_hypothesis_transl_ = this->declare_parameter<double>("new_hypothesis_transl");
-  new_hypothesis_rot_ = this->declare_parameter<double>("new_hypothesis_rot");
-  measurement_noise_transl_ = this->declare_parameter<double>("measurement_noise_transl");
-  measurement_noise_rot_ = this->declare_parameter<double>("measurement_noise_rot");
-  process_noise_transl_ = this->declare_parameter<double>("process_noise_transl");
-  process_noise_transl_dot_ = this->declare_parameter<double>("process_noise_transl_dot");
-  process_noise_rot_ = this->declare_parameter<double>("process_noise_rot");
-  process_noise_rot_dot_ = this->declare_parameter<double>("process_noise_rot_dot");
+  new_hypothesis_translation_ = this->declare_parameter<double>("new_hypothesis_translation");
+  new_hypothesis_rotation_ = this->declare_parameter<double>("new_hypothesis_rotation");
+  measurement_noise_translation_ = this->declare_parameter<double>("measurement_noise_translation");
+  measurement_noise_rotation_ = this->declare_parameter<double>("measurement_noise_rotation");
+  process_noise_translation_ = this->declare_parameter<double>("process_noise_translation");
+  process_noise_translation_dot_ = this->declare_parameter<double>("process_noise_translation_dot");
+  process_noise_rotation_ = this->declare_parameter<double>("process_noise_rotation");
+  process_noise_rotation_dot_ = this->declare_parameter<double>("process_noise_rotation_dot");
 
   sub_ = this->create_subscription<lidartag_msgs::msg::LidarTagDetectionArray>(
     "lidartag/detections_array", 1,
@@ -99,10 +99,11 @@ void LidartagFilter::updateHypothesis(
     h.setMinConvergenceTime(std::numeric_limits<double>::max());
 
     h.setMaxConvergenceThreshold(0.0, 0.0, 0.0, 0.0);
-    h.setMeasurementNoise(measurement_noise_transl_, measurement_noise_rot_);
-    h.setNewHypothesisThreshold(new_hypothesis_transl_, new_hypothesis_rot_);
+    h.setMeasurementNoise(measurement_noise_translation_, measurement_noise_rotation_);
+    h.setNewHypothesisThreshold(new_hypothesis_translation_, new_hypothesis_rotation_);
     h.setProcessNoise(
-      process_noise_transl_, process_noise_transl_dot_, process_noise_rot_, process_noise_rot_dot_);
+      process_noise_translation_, process_noise_translation_dot_, process_noise_rotation_,
+      process_noise_rotation_dot_);
     h.update(translation_cv, rotation_cv, detection.size, timestamp);
   } else {
     hypotheses_map_[detection.id].update(translation_cv, rotation_cv, detection.size, timestamp);

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,8 +73,8 @@ public:
   void setMinConvergenceTime(double convergence_time);
   void setMaxNoObservationTime(double time);
   void setLidartagMaxConvergenceThreshold(
-    double transl, double transl_dot, double angle, double angle_dot);
-  void setApriltagMaxConvergenceThreshold(double transl);
+    double translation, double transl_dot, double angle, double angle_dot);
+  void setApriltagMaxConvergenceThreshold(double translation);
 
 private:
   void drawLidartagHypotheses(
@@ -94,11 +94,11 @@ private:
 
   double min_convergence_time_;
   double max_no_observation_time_;
-  double lidartag_convergence_transl_;
-  double lidartag_convergence_transl_dot_;
-  double lidartag_convergence_rot_;
-  double lidartag_convergence_rot_dot_;
-  double apriltag_convergence_transl_;
+  double lidartag_convergence_translation_;
+  double lidartag_convergence_translation_dot_;
+  double lidartag_convergence_rotation_;
+  double lidartag_convergence_rotation_dot_;
+  double apriltag_convergence_translation_;
 
   bool valid_base_lidar_transform_;
   bool valid_camera_lidar_transform_;

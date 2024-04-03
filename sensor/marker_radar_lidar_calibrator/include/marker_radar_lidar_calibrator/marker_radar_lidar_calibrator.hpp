@@ -28,7 +28,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
+#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/pcl_base.h>
@@ -63,8 +63,8 @@ public:
 
 protected:
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
   void timerCallback();
 
@@ -149,7 +149,8 @@ protected:
 
   struct Parameters
   {
-    std::string radar_parallel_frame;
+    std::string radar_parallel_frame;  // frame that is assumed to be parallel to the radar (needed
+                                       // for radars that do not provide elevation)
     bool use_lidar_initial_crop_box_filter;
     double lidar_initial_crop_box_min_x;
     double lidar_initial_crop_box_min_y;
@@ -214,7 +215,7 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
   rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
 
-  rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr
+  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
     calibration_request_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr background_model_service_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr tracking_service_server_;

@@ -528,7 +528,6 @@ class ImageView(QGraphicsItem, QObject):
                 raise NotImplementedError
         except Exception as e:
             logging.error(e)
-            pass
 
         line_pen = QPen()
         line_pen.setWidth(2)

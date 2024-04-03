@@ -22,6 +22,8 @@
 #include <fmt/core.h>
 
 #include <limits>
+#include <map>
+#include <string>
 #include <utility>
 #include <vector>
 

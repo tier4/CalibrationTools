@@ -39,13 +39,17 @@ class CalibratorRegistry:
 
     @classmethod
     def register_calibrator(cls, project_name: str, calibrator_name: str) -> Callable:
-        """Class method to register implementations of the CalibratorBase class into the internal registry.
+        """
+        Class method to register implementations of the CalibratorBase class into the internal registry.
 
         Args:
             project_name (str): The name of the calibration project.
             calibrator_name (str): The name of the calibrator.
-        Returns:
-            The Executor class itself. TODO: write correct
+
+        Returns
+        -------
+            wrapper
+
         """
 
         def inner_wrapper(wrapped_class: CalibratorBase) -> CalibratorBase:
@@ -61,7 +65,8 @@ class CalibratorRegistry:
 
     @classmethod
     def create_calibrator(cls, project_name: str, calibrator_name: str, **kwargs) -> CalibratorBase:
-        """Create the executor using a factory pattern.
+        """
+        Create the executor using a factory pattern.
 
         This method gets the appropriate Executor class from the registry
         and creates an instance of it, while passing in the parameters
@@ -69,8 +74,11 @@ class CalibratorRegistry:
 
         Args:
             name (str): The name of the executor to create.
-        Returns:
+
+        Returns
+        -------
             An instance of the executor that is created.
+
         """
         if project_name not in cls.registry or calibrator_name not in cls.registry[project_name]:
             cls.logger.error(

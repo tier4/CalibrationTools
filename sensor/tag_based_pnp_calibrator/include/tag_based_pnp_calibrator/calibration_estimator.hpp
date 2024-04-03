@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,15 +79,16 @@ public:
   void setTagSizes(std::vector<int64_t> & tag_id, std::vector<double> & tag_sizes);
 
   void setLidartagMaxConvergenceThreshold(
-    double transl, double transl_dot, double angle, double angle_dot);
-  void setLidartagNewHypothesisThreshold(double transl, double angle);
-  void setLidartagMeasurementNoise(double transl, double angle);
-  void setLidartagProcessNoise(double transl, double transl_dot, double rot, double rot_dot);
+    double translation, double translation_dot, double angle, double angle_dot);
+  void setLidartagNewHypothesisThreshold(double translation, double angle);
+  void setLidartagMeasurementNoise(double translation, double angle);
+  void setLidartagProcessNoise(
+    double translation, double translation_dot, double rotation, double rotation_dot);
 
-  void setApriltagMaxConvergenceThreshold(double transl);
-  void setApriltagNewHypothesisThreshold(double transl);
-  void setApriltagMeasurementNoise(double transl);
-  void setApriltagProcessNoise(double transl);
+  void setApriltagMaxConvergenceThreshold(double translation);
+  void setApriltagNewHypothesisThreshold(double translation);
+  void setApriltagMeasurementNoise(double translation);
+  void setApriltagProcessNoise(double translation);
 
   double getNewHypothesisDistance() const;
   double getCalibrationCoveragePercentage() const;
@@ -125,25 +126,25 @@ private:
   double new_hypothesis_distance_;
 
   // Lidartag estimation parameters
-  double lidartag_convergence_transl_;
-  double lidartag_convergence_transl_dot_;
-  double lidartag_convergence_rot_;
-  double lidartag_convergence_rot_dot_;
-  double lidartag_new_hypothesis_transl_;
-  double lidartag_new_hypothesis_rot_;
+  double lidartag_convergence_translation_;
+  double lidartag_convergence_translation_dot_;
+  double lidartag_convergence_rotation_;
+  double lidartag_convergence_rotation_dot_;
+  double lidartag_new_hypothesis_translation_;
+  double lidartag_new_hypothesis_rotation_;
 
-  double lidartag_process_noise_transl_;
-  double lidartag_process_noise_transl_dot_;
-  double lidartag_process_noise_rot_;
-  double lidartag_process_noise_rot_dot_;
-  double lidartag_measurement_noise_transl_;
-  double lidartag_measurement_noise_rot_;
+  double lidartag_process_noise_translation_;
+  double lidartag_process_noise_translation_dot_;
+  double lidartag_process_noise_rotation_;
+  double lidartag_process_noise_rotation_dot_;
+  double lidartag_measurement_noise_translation_;
+  double lidartag_measurement_noise_rotation_;
 
   // Apriltag estimation parameters
-  double apriltag_convergence_transl_;
-  double apriltag_new_hypothesis_transl_;
-  double apriltag_process_noise_transl_;
-  double apriltag_measurement_noise_transl_;
+  double apriltag_convergence_translation_;
+  double apriltag_new_hypothesis_translation_;
+  double apriltag_process_noise_translation_;
+  double apriltag_measurement_noise_translation_;
 
   image_geometry::PinholeCameraModel pinhole_camera_model_;
 

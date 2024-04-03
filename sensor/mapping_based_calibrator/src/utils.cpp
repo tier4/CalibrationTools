@@ -110,19 +110,18 @@ Eigen::Matrix4f poseInterpolation(
     return poseInterpolationBase(t, t1, t2, m1, m2);
   }
 
+  // Extrapolation case
   double dt = t2 - t1;
-  double te = t - t2;
+  double t_rem = t - t2;
   Eigen::Matrix4f m = m2;
   Eigen::Matrix4f dm = m1.inverse() * m2;
 
-  while (te >= dt) {
+  while (t_rem >= dt) {
     m = m * dm;
-    te -= dt;
+    t_rem -= dt;
   }
 
-  auto rem = poseInterpolationBase(te, 0, dt, Eigen::Matrix4f::Identity(), dm);
-
-  return m * rem;
+  return m * poseInterpolationBase(t_rem, 0, dt, Eigen::Matrix4f::Identity(), dm);
 }
 
 template <class PointType>

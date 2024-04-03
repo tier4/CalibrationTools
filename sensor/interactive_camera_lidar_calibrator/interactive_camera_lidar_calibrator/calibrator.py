@@ -37,7 +37,6 @@ class Calibrator:
         # Camera parameters
         self.k = None
         self.d = None
-        pass
 
     def set_min_points(self, min_points):
         self.min_points = min_points

@@ -15,15 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+# cspell:words lowerbound
+
 from pathlib import Path
 from threading import Thread
 
 from bag_load_utils import BagFileEvaluator
-import matplotlib.pyplot as plt
 import numpy as np
 from plot_utils import plot_bag_compare
-from plot_utils import plot_thresholds
 import rclpy
 from rclpy.node import Node
 
@@ -41,7 +40,7 @@ def validate_threshold(
     recall: float, threshold: float, lowerbound: float, recall_threshold: float = 0.99
 ):
     if threshold < lowerbound:
-        print(f"Threshold is too small for this vehicle.")
+        print("Threshold is too small for this vehicle.")
     elif recall == np.inf:
         print(
             f"No error larger than {threshold:.3f} [m] observed. Provide more data on deviation_evaluator."
@@ -49,7 +48,7 @@ def validate_threshold(
     elif recall > recall_threshold:
         print("Valid threshold!")
     else:
-        print(f"Covariance seems to be too optimistic.")
+        print("Covariance seems to be too optimistic.")
         print("Consider increasing the covariances of the dead reckoning sensors.")
 
     if threshold > lowerbound:
@@ -58,7 +57,7 @@ def validate_threshold(
         print(f"  [NG] lowerbound = {lowerbound:.3f} > {threshold:.3f} = threshold [m]")
 
     if recall == np.inf:
-        print(f"  [NG] recall = INF")
+        print(f"  [NG] recall = {recall}")
     elif recall > recall_threshold:
         print(f"  [OK] recall = {recall:.3f} > {recall_threshold:.3f}")
     else:

@@ -49,7 +49,7 @@ private:
   {
     double lateral;
     double long_radius;
-    Errors() : lateral(0), long_radius(0){};
+    Errors() : lateral(0), long_radius(0) {}
   };
 
 public:
@@ -89,6 +89,7 @@ private:
 
   void callbackNDTPoseWithCovariance(const PoseWithCovarianceStamped::SharedPtr msg);
 
+  // cspell:words EKFDR, EKFGT
   void callbackEKFDROdom(const Odometry::SharedPtr msg);
 
   void callbackEKFGTOdom(const Odometry::SharedPtr msg);

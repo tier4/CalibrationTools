@@ -24,7 +24,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#include <tier4_calibration_msgs/srv/new_extrinsic_calibrator.hpp>
+#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/filters/passthrough.h>
@@ -77,8 +77,8 @@ protected:
    * @param response A vector of calibration results
    */
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
 
   /*!
    * Source pointcloud callback
@@ -174,7 +174,7 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr source_pointcloud_sub_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr target_pointcloud_sub_;
 
-  rclcpp::Service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>::SharedPtr service_server_;
+  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
 
   // Threading
   std::mutex mutex_;

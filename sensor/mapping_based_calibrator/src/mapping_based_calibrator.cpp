@@ -279,7 +279,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     keyframe_path_pub, keyframe_markers_pub, rosbag2_pause_client_, rosbag2_resume_client_,
     tf_buffer_);
 
-  // Set up lidar calibrators
+  // Set up camera calibrators
   for (std::size_t camera_id = 0;
        camera_id < mapping_data_->calibration_camera_optical_link_frame_names.size(); camera_id++) {
     const auto & frame_name = mapping_data_->calibration_camera_optical_link_frame_names[camera_id];
@@ -296,6 +296,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       target_markers_pub);
   }
 
+  // Set up lidar calibrators
   for (std::size_t lidar_id = 0; lidar_id < mapping_data_->calibration_lidar_frame_names_.size();
        lidar_id++) {
     const auto & frame_name = mapping_data_->calibration_lidar_frame_names_[lidar_id];
@@ -312,6 +313,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       initial_source_aligned_map_pub, calibrated_source_aligned_map_pub, target_map_pub);
   }
 
+  // Set up base calibrators
   auto base_lidar_augmented_pointcloud_pub =
     this->create_publisher<sensor_msgs::msg::PointCloud2>("base_lidar_augmented_pointcloud", 10);
   auto base_lidar_augmented_pub =
@@ -323,7 +325,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::NewExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &ExtrinsicMappingBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -507,10 +509,9 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
 }
 
 void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<
-    tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::NewExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
 

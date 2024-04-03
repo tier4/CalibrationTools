@@ -366,7 +366,6 @@ class InteractiveCalibratorUI(ImageViewUI):
                 f.write(json.dumps(d, indent=4, sort_keys=False))
 
         self.ros_interface.save_calibration_tfs(output_folder)
-        pass
 
     def load_calibration_callback(self):
         input_dir = QFileDialog.getExistingDirectory(
@@ -407,7 +406,6 @@ class InteractiveCalibratorUI(ImageViewUI):
         self.image_view.set_calibration_points(
             self.object_calibration_points, self.image_calibration_points
         )
-        pass
 
     def calibration_callback(self):
         if self.camera_info is None:

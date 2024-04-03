@@ -442,27 +442,28 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
   auto d1 = delta_pose1.translation().normalized();
   auto d2 = delta_pose2.translation().normalized();
 
-  float trans_angle_diff = (180.0 / M_PI) * std::acos(d1.dot(d2));
-  trans_angle_diff = delta_pose2.translation().norm() > parameters_->new_keyframe_min_distance_
-                       ? trans_angle_diff
-                       : 0.0;
+  float translation_angle_diff = (180.0 / M_PI) * std::acos(d1.dot(d2));
+  translation_angle_diff =
+    delta_pose2.translation().norm() > parameters_->new_keyframe_min_distance_
+      ? translation_angle_diff
+      : 0.0;
 
-  float rot_angle_diff =
+  float rotation_angle_diff =
     (180.0 / M_PI) *
     std::acos(std::min(
       1.0, 0.5 * ((delta_pose1.rotation().inverse() * delta_pose2.rotation()).trace() -
                   1.0)));  // Tr(R) = 1 + 2*cos(theta)
 
   if (
-    std::abs(trans_angle_diff) > parameters_->lost_frame_max_angle_diff_ ||
-    std::abs(trans_angle_diff) > parameters_->lost_frame_max_angle_diff_) {
+    std::abs(translation_angle_diff) > parameters_->lost_frame_max_angle_diff_ ||
+    std::abs(translation_angle_diff) > parameters_->lost_frame_max_angle_diff_) {
     keyframe->lost_ = true;
 
     RCLCPP_WARN(
       rclcpp::get_logger("calibration_mapper"),
       "Mapping failed. Angle between keyframes is too high. a1=%.2f (deg) a2=%.2f (deg) "
       "threshold=%.2f (deg)",
-      trans_angle_diff, rot_angle_diff, parameters_->lost_frame_max_angle_diff_);
+      translation_angle_diff, rotation_angle_diff, parameters_->lost_frame_max_angle_diff_);
 
     return;
   }
@@ -482,7 +483,7 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
     Eigen::Affine3f frame_pose(mid_frame->pose_);
 
     float trans_diff = (interpolated_pose.inverse() * frame_pose).translation().norm();
-    float rot_angle_diff =
+    float rotation_angle_diff =
       (180.0 / M_PI) *
       std::acos(std::min(
         1.0, 0.5 * ((interpolated_pose.rotation().inverse() * frame_pose.rotation()).trace() -
@@ -491,13 +492,13 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
     if (
       (!left_frame->stopped_ && !right_frame->stopped_) &&
       (trans_diff > parameters_->lost_frame_interpolation_error_ ||
-       std::abs(rot_angle_diff) > parameters_->lost_frame_max_angle_diff_)) {
+       std::abs(rotation_angle_diff) > parameters_->lost_frame_max_angle_diff_)) {
       keyframe->lost_ = true;
 
       RCLCPP_WARN(
         rclcpp::get_logger("calibration_mapper"),
         "Mapping failed. Interpolation error is too high. d=%.2f (m) a=%.2f (deg)", trans_diff,
-        rot_angle_diff);
+        rotation_angle_diff);
 
       return;
     }

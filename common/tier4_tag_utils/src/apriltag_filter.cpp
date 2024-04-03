@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,9 +36,9 @@ ApriltagFilter::ApriltagFilter(const rclcpp::NodeOptions & options)
   min_margin_ = this->declare_parameter<double>("min_margin");
   ;
   max_no_observation_time_ = this->declare_parameter<double>("max_no_observation_time");
-  new_hypothesis_transl_ = this->declare_parameter<double>("new_hypothesis_transl");
-  measurement_noise_transl_ = this->declare_parameter<double>("measurement_noise_transl");
-  process_noise_transl_ = this->declare_parameter<double>("process_noise_transl");
+  new_hypothesis_translation_ = this->declare_parameter<double>("new_hypothesis_translation");
+  measurement_noise_translation_ = this->declare_parameter<double>("measurement_noise_translation");
+  process_noise_translation_ = this->declare_parameter<double>("process_noise_translation");
 
   std::vector<std::string> tag_families =
     this->declare_parameter<std::vector<std::string>>("tag_families");
@@ -144,10 +144,10 @@ void ApriltagFilter::detectionsCallback(
       auto & h = hypotheses_map_[family_and_id];
       h.setMaxConvergenceThreshold(0.0);
       h.setMaxNoObservationTime(max_no_observation_time_);
-      h.setMeasurementNoise(measurement_noise_transl_);
+      h.setMeasurementNoise(measurement_noise_translation_);
       h.setMinConvergenceTime(std::numeric_limits<double>::max());
-      h.setNewHypothesisThreshold(new_hypothesis_transl_);
-      h.setProcessNoise(process_noise_transl_);
+      h.setNewHypothesisThreshold(new_hypothesis_translation_);
+      h.setProcessNoise(process_noise_translation_);
       h.setTagSize(tag_sizes_map_[detection.family]);
       h.update(corners, timestamp);
     } else {

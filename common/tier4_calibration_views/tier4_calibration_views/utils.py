@@ -24,9 +24,9 @@ def tf_message_to_transform_matrix(msg):
     transform_matrix = np.eye(4)
 
     q = msg.transform.rotation
-    rot_matrix = transforms3d.quaternions.quat2mat((q.w, q.x, q.y, q.z))
+    rotation_matrix = transforms3d.quaternions.quat2mat((q.w, q.x, q.y, q.z))
 
-    transform_matrix[0:3, 0:3] = rot_matrix
+    transform_matrix[0:3, 0:3] = rotation_matrix
     transform_matrix[0, 3] = msg.transform.translation.x
     transform_matrix[1, 3] = msg.transform.translation.y
     transform_matrix[2, 3] = msg.transform.translation.z

@@ -18,14 +18,14 @@
       <param name="max_no_observation_time" value="3.0"/>
       <param name="new_hypothesis_distance" value="1.5"/>
 
-      <param name="new_hypothesis_transl" value="0.1"/>
-      <param name="new_hypothesis_rot" value="15.0"/>
-      <param name="measurement_noise_transl" value="0.05"/>
-      <param name="measurement_noise_rot" value="5.0"/>
-      <param name="process_noise_transl" value="0.01"/>
-      <param name="process_noise_transl_dot" value="0.001"/>
-      <param name="process_noise_rot" value="1.0"/>
-      <param name="process_noise_rot_dot" value="0.1"/>
+      <param name="new_hypothesis_translation" value="0.1"/>
+      <param name="new_hypothesis_rotation" value="15.0"/>
+      <param name="measurement_noise_translation" value="0.05"/>
+      <param name="measurement_noise_rotation" value="5.0"/>
+      <param name="process_noise_translation" value="0.01"/>
+      <param name="process_noise_translation_dot" value="0.001"/>
+      <param name="process_noise_rotation" value="1.0"/>
+      <param name="process_noise_rotation_dot" value="0.1"/>
     </node>
   </group>
 </launch>

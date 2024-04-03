@@ -53,7 +53,7 @@ from sensor_calibration_manager.views.launcher_configuration_view import Launche
 from sensor_calibration_manager.views.tf_view import TfView
 
 
-class NewExtrinsicCalibrationManager(QMainWindow):
+class SensorCalibrationManager(QMainWindow):
     tfs_graph_signal = Signal(object)
 
     def __init__(self):
@@ -194,7 +194,6 @@ class NewExtrinsicCalibrationManager(QMainWindow):
         self.calibrators_view.setFixedWidth(800)
 
         self.ros_interface.spin()
-        pass
 
     def on_calibrator_state_changed(self, state: CalibratorState):
         text_dict = {
@@ -302,7 +301,7 @@ def main(args=None):
 
     try:
         signal.signal(signal.SIGINT, sigint_handler)
-        calibration_manager = NewExtrinsicCalibrationManager()  # noqa: F841
+        calibration_manager = SensorCalibrationManager()  # noqa: F841
 
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
