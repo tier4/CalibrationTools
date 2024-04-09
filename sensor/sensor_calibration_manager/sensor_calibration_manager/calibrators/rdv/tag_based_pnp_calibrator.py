@@ -44,7 +44,7 @@ class TagBasedPNPCalibrator(CalibratorBase):
         )
 
     def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
-        camera_to_lidar_transform = calibration_transforms[
+        optical_link_to_lidar_transform = calibration_transforms[
             f"{self.camera_name}/camera_optical_link"
         ]["pandar_top"]
 
@@ -58,7 +58,7 @@ class TagBasedPNPCalibrator(CalibratorBase):
 
         sensor_kit_camera_link_transform = np.linalg.inv(
             camera_to_optical_link_transform
-            @ camera_to_lidar_transform
+            @ optical_link_to_lidar_transform
             @ np.linalg.inv(sensor_kit_to_lidar_transform)
         )
 
