@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
-#include <tier4_tag_utils/types.hpp>
 
 #include <vector>
 
@@ -48,30 +47,26 @@ public:
   cv::Point3d getCenter() const;
 
   double getTransCov() const;
-  double getTransDotCov() const;
   double getRotCov() const;
-  double getRotDotCov() const;
   double getSpeed() const;
 
   bool converged() const;
   double timeSinceFirstObservation(const rclcpp::Time & stamp) const;
   double timeSinceLastObservation(const rclcpp::Time & stamp) const;
 
-  void setDynamicsModel(DynamicsModel dynamics_mode);
   void setMinConvergenceTime(double convergence_time);
   void setMaxNoObservationTime(double time);
-  void setMaxConvergenceThreshold(double transl, double tansl_dot, double angle, double angle_dot);
-  void setNewHypothesisThreshold(double transl, double angle);
-  void setMeasurementNoise(double transl, double angle);
-  void setProcessNoise(double transl, double transl_dot, double rot, double rot_dot);
+  void setMaxConvergenceThreshold(
+    double translation, double translation_dot, double angle, double angle_dot);
+  void setNewHypothesisThreshold(double translation, double angle);
+  void setMeasurementNoise(double translation, double angle);
+  void setProcessNoise(
+    double translation, double translation_dot, double rotation, double rotation_dot);
 
 protected:
   void reset();
 
   void initKalman(const cv::Matx31d & translation_vector, const cv::Matx33d & rotation_matrix);
-
-  void initStaticKalman(
-    const cv::Matx31d & translation_vector, const cv::Matx33d & rotation_matrix);
 
   void initConstantVelocityKalman(
     const cv::Matx31d & translation_vector, const cv::Matx33d & rotation_matrix);
@@ -87,26 +82,24 @@ protected:
   cv::Matx31d rot2euler(const cv::Matx33d & rotation_matrix);
   cv::Matx33d euler2rot(const cv::Matx31d & euler);
 
-  DynamicsModel dynamics_model_;
-
-  double convergence_transl_;
-  double convergence_transl_dot_;
-  double convergence_rot_;
-  double convergence_rot_dot_;
-  double new_hypothesis_transl_;
-  double new_hypothesis_rot_;
+  double convergence_translation_;
+  double convergence_translation_dot_;
+  double convergence_rotation_;
+  double convergence_rotation_dot_;
+  double new_hypothesis_translation_;
+  double new_hypothesis_rotation_;
   double min_convergence_time_;
   double max_no_observation_time_;
 
   // Kalman related
   cv::KalmanFilter kalman_filter_;
-  double process_noise_transl_;
-  double process_noise_transl_dot_;
-  double process_noise_rot_;
-  double process_noise_rot_dot_;
+  double process_noise_translation_;
+  double process_noise_translation_dot_;
+  double process_noise_rotation_;
+  double process_noise_rotation_dot_;
 
-  double measurement_noise_transl_;
-  double measurement_noise_rot_;
+  double measurement_noise_translation_;
+  double measurement_noise_rotation_;
 
   // General variables
   int id_;

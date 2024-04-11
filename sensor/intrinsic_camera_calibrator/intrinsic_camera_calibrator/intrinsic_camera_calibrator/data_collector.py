@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -133,7 +133,6 @@ class CollectedData:
         self.detections.append(detection)
 
         self.pre_compute_stats(camera_model)
-        pass
 
     def pre_compute_stats(self, camera_model: CameraModel):
         """Compute a tensorized version of the statistics of the database. Needs to be called whenever a sample is added to the database."""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ class DotBoardDetector(BoardDetector):
         self.min_dist_between_blobs_percentage = Parameter(
             float, value=1.0, min_value=0.1, max_value=10.0
         )
-        pass
 
     def detect(self, img: np.array):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""

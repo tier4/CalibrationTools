@@ -8,7 +8,6 @@ find_package(OpenCV REQUIRED)
 autoware_package()
 
 ament_auto_add_library(tier4_tag_utils_lib SHARED
-  src/cv/sqpnp.cpp
   src/lidartag_hypothesis.cpp
   src/apriltag_hypothesis.cpp
 )

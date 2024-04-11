@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,4 +21,3 @@ from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 class VideoFileDataSource(DataSource):
     def __init__():
         super().__init__()
-        pass
