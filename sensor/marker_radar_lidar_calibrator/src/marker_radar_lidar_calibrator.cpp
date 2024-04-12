@@ -68,7 +68,7 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicReflectorBasedCalibrator::para
   Parameters p = parameters_;
 
   try {
-    UPDATE_PARAM(p, radar_parallel_frame);
+    UPDATE_PARAM(p, radar_optimization_frame);
     UPDATE_PARAM(p, use_lidar_initial_crop_box_filter);
     UPDATE_PARAM(p, lidar_initial_crop_box_min_x);
     UPDATE_PARAM(p, lidar_initial_crop_box_min_y);
@@ -121,7 +121,8 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
 {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-  parameters_.radar_parallel_frame = this->declare_parameter<std::string>("radar_parallel_frame");
+  parameters_.radar_optimization_frame =
+    this->declare_parameter<std::string>("radar_optimization_frame");
 
   parameters_.use_lidar_initial_crop_box_filter =
     this->declare_parameter<bool>("use_lidar_initial_crop_box_filter", true);
@@ -1065,18 +1066,18 @@ bool ExtrinsicReflectorBasedCalibrator::checkInitialTransforms()
     initial_radar_to_lidar_eigen_ = tf2::transformToEigen(initial_radar_to_lidar_msg_);
     calibrated_radar_to_lidar_eigen_ = initial_radar_to_lidar_eigen_;
 
-    radar_parallel_to_lidar_msg_ =
-      tf_buffer_->lookupTransform(parameters_.radar_parallel_frame, lidar_frame_, t, timeout)
+    radar_optimization_to_lidar_msg_ =
+      tf_buffer_->lookupTransform(parameters_.radar_optimization_frame, lidar_frame_, t, timeout)
         .transform;
 
-    radar_parallel_to_lidar_eigen_ = tf2::transformToEigen(radar_parallel_to_lidar_msg_);
+    radar_optimization_to_lidar_eigen_ = tf2::transformToEigen(radar_optimization_to_lidar_msg_);
 
-    init_radar_to_radar_parallel_msg_ =
-      tf_buffer_->lookupTransform(radar_frame_, parameters_.radar_parallel_frame, t, timeout)
+    init_radar_to_radar_optimization_msg_ =
+      tf_buffer_->lookupTransform(radar_frame_, parameters_.radar_optimization_frame, t, timeout)
         .transform;
 
-    initial_radar_to_radar_parallel_eigen_ =
-      tf2::transformToEigen(init_radar_to_radar_parallel_msg_);
+    initial_radar_to_radar_optimization_eigen_ =
+      tf2::transformToEigen(init_radar_to_radar_optimization_msg_);
 
     got_initial_transform_ = true;
   } catch (tf2::TransformException & ex) {
@@ -1326,8 +1327,8 @@ ExtrinsicReflectorBasedCalibrator::getPointsSet()
     auto track = converged_tracks_[track_index];
     // lidar coordinates
     const auto & lidar_estimation = track.getLidarEstimation();
-    // to radar parallel coordinates
-    const auto & lidar_estimation_pcs = radar_parallel_to_lidar_eigen_ * lidar_estimation;
+    // to radar optimization coordinates
+    const auto & lidar_estimation_pcs = radar_optimization_to_lidar_eigen_ * lidar_estimation;
     // to radar coordinates
     const auto & lidar_transformed_estimation = initial_radar_to_lidar_eigen_ * lidar_estimation;
     const auto & radar_estimation_rcs = track.getRadarEstimation();
@@ -1377,8 +1378,8 @@ std::pair<double, double> ExtrinsicReflectorBasedCalibrator::computeCalibrationE
 void ExtrinsicReflectorBasedCalibrator::estimateTransformation()
 {
   TransformationEstimator estimator(
-    initial_radar_to_lidar_eigen_, initial_radar_to_radar_parallel_eigen_,
-    radar_parallel_to_lidar_eigen_);
+    initial_radar_to_lidar_eigen_, initial_radar_to_radar_optimization_eigen_,
+    radar_optimization_to_lidar_eigen_);
   Eigen::Isometry3d calibrated_radar_to_lidar_transformation;
   if (transformation_type_ == TransformationType::yaw_only_rotation_2d) {
     auto [delta_cos, delta_sin] = getDelta(converged_tracks_, false);
@@ -1527,8 +1528,8 @@ void ExtrinsicReflectorBasedCalibrator::doEvaluation(
   std::vector<std::vector<int>> & combinations, int num_of_samples)
 {
   TransformationEstimator crossval_estimator(
-    initial_radar_to_lidar_eigen_, initial_radar_to_radar_parallel_eigen_,
-    radar_parallel_to_lidar_eigen_);
+    initial_radar_to_lidar_eigen_, initial_radar_to_radar_optimization_eigen_,
+    radar_optimization_to_lidar_eigen_);
 
   pcl::PointCloud<PointType>::Ptr crossval_lidar_points_pcs(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr crossval_radar_points_rcs(new pcl::PointCloud<PointType>);

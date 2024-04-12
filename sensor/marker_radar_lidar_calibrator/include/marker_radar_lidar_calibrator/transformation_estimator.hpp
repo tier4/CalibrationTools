@@ -38,8 +38,8 @@ public:
   using PointType = pcl::PointXYZ;
   TransformationEstimator(
     Eigen::Isometry3d initial_radar_to_lidar_eigen,
-    Eigen::Isometry3d initial_radar_to_radar_parallel_eigen,
-    Eigen::Isometry3d radar_parallel_to_lidar_eigen);
+    Eigen::Isometry3d initial_radar_to_radar_optimization_eigen,
+    Eigen::Isometry3d radar_optimization_to_lidar_eigen);
   void setPoints(
     pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs);
@@ -57,8 +57,8 @@ public:
   Eigen::Isometry3d calibrated_radar_to_lidar_transformation_;
 
   Eigen::Isometry3d initial_radar_to_lidar_eigen_;
-  Eigen::Isometry3d initial_radar_to_radar_parallel_eigen_;
-  Eigen::Isometry3d radar_parallel_to_lidar_eigen_;
+  Eigen::Isometry3d initial_radar_to_radar_optimization_eigen_;
+  Eigen::Isometry3d radar_optimization_to_lidar_eigen_;
 };
 
 }  // namespace marker_radar_lidar_calibrator
