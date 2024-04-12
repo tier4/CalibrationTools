@@ -32,11 +32,13 @@ class MarkerRadarLidarCalibrator(CalibratorBase):
     def __init__(self, ros_interface: RosInterface, **kwargs):
         super().__init__(ros_interface)
 
-        self.radar_parallel_frame = kwargs["radar_parallel_frame"]
+        self.radar_optimization_frame = kwargs["radar_optimization_frame"]
         self.radar_frame = kwargs["radar_frame"]
         self.lidar_frame = kwargs["lidar_frame"]
 
-        self.required_frames.extend([self.radar_parallel_frame, self.radar_frame, self.lidar_frame])
+        self.required_frames.extend(
+            [self.radar_optimization_frame, self.radar_frame, self.lidar_frame]
+        )
 
         self.add_calibrator(
             service_name="calibrate_radar_lidar",
@@ -46,15 +48,17 @@ class MarkerRadarLidarCalibrator(CalibratorBase):
         )
 
     def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
-        lidar_to_radar_parallel_transform = self.get_transform_matrix(
-            self.lidar_frame, self.radar_parallel_frame
+        lidar_to_radar_optimization_transform = self.get_transform_matrix(
+            self.lidar_frame, self.radar_optimization_frame
         )
 
-        radar_parallel_to_radar_transform = np.linalg.inv(
+        radar_optimization_to_radar_transform = np.linalg.inv(
             calibration_transforms[self.radar_frame][self.lidar_frame]
-            @ lidar_to_radar_parallel_transform
+            @ lidar_to_radar_optimization_transform
         )
 
-        results = {self.radar_parallel_frame: {self.radar_frame: radar_parallel_to_radar_transform}}
+        results = {
+            self.radar_optimization_frame: {self.radar_frame: radar_optimization_to_radar_transform}
+        }
 
         return results

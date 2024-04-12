@@ -164,7 +164,9 @@ protected:
 
   struct Parameters
   {
-    std::string radar_parallel_frame;
+    std::string radar_optimization_frame;  // frame that is assumed to be parallel to the radar
+                                           // if estimating the transformation by 2d algorithms
+                                           // (needed for radars that do not provide elevation)
     bool use_lidar_initial_crop_box_filter;
     double lidar_initial_crop_box_min_x;
     double lidar_initial_crop_box_min_y;
@@ -248,11 +250,12 @@ protected:
   Eigen::Isometry3d initial_radar_to_lidar_eigen_;
   Eigen::Isometry3d calibrated_radar_to_lidar_eigen_;
 
-  geometry_msgs::msg::Transform radar_parallel_to_lidar_msg_;
-  Eigen::Isometry3d radar_parallel_to_lidar_eigen_;
+  // radar optimization is the frame that radar optimize the transformation to.
+  geometry_msgs::msg::Transform radar_optimization_to_lidar_msg_;
+  Eigen::Isometry3d radar_optimization_to_lidar_eigen_;
 
-  geometry_msgs::msg::Transform init_radar_to_radar_parallel_msg_;
-  Eigen::Isometry3d initial_radar_to_radar_parallel_eigen_;
+  geometry_msgs::msg::Transform init_radar_to_radar_optimization_msg_;
+  Eigen::Isometry3d initial_radar_to_radar_optimization_eigen_;
 
   bool got_initial_transform_{false};
   bool broadcast_tf_{false};

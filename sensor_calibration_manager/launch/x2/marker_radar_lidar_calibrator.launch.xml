@@ -23,12 +23,13 @@
 
   <arg name="rviz" default="true"/>
 
-  <let name="radar_parallel_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_left' &quot;)"/>
-  <let name="radar_parallel_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>
-  <let name="radar_parallel_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_right' &quot;)"/>
-  <let name="radar_parallel_frame" value="rear_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_left' &quot;)"/>
-  <let name="radar_parallel_frame" value="rear_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_center' &quot;)"/>
-  <let name="radar_parallel_frame" value="rear_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_right' &quot;)"/>
+  <let name="radar_optimization_frame" value="base_link"/>
+  <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_left' &quot;)"/>
+  <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>
+  <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_right' &quot;)"/>
+  <let name="radar_parent_frame" value="rear_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_left' &quot;)"/>
+  <let name="radar_parent_frame" value="rear_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_center' &quot;)"/>
+  <let name="radar_parent_frame" value="rear_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_right' &quot;)"/>
 
   <let name="radar_frame" value="$(var radar_name)/radar_link"/>
 
@@ -54,7 +55,7 @@
   <include file="$(find-pkg-share marker_radar_lidar_calibrator)/launch/calibrator.launch.xml">
     <arg name="rviz" value="$(var rviz)"/>
     <arg name="calibration_service_name" value="calibrate_radar_lidar"/>
-    <arg name="radar_parallel_frame" value="$(var radar_parallel_frame)"/>
+    <arg name="radar_optimization_frame" value="$(var radar_optimization_frame)"/>
     <arg name="input_lidar_pointcloud" value="$(var input_lidar_pointcloud)"/>
     <arg name="input_radar_msg" value="$(var input_radar_msg)"/>
     <arg name="msg_type" value="$(var msg_type)"/>

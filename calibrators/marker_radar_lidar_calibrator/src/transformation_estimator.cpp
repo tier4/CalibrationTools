@@ -23,12 +23,12 @@ namespace marker_radar_lidar_calibrator
 
 TransformationEstimator::TransformationEstimator(
   Eigen::Isometry3d initial_radar_to_lidar_eigen,
-  Eigen::Isometry3d initial_radar_to_radar_parallel_eigen,
-  Eigen::Isometry3d radar_parallel_to_lidar_eigen)
+  Eigen::Isometry3d initial_radar_to_radar_optimization_eigen,
+  Eigen::Isometry3d radar_optimization_to_lidar_eigen)
 {
   initial_radar_to_lidar_eigen_ = initial_radar_to_lidar_eigen;
-  initial_radar_to_radar_parallel_eigen_ = initial_radar_to_radar_parallel_eigen;
-  radar_parallel_to_lidar_eigen_ = radar_parallel_to_lidar_eigen;
+  initial_radar_to_radar_optimization_eigen_ = initial_radar_to_radar_optimization_eigen;
+  radar_optimization_to_lidar_eigen_ = radar_optimization_to_lidar_eigen;
 }
 
 void TransformationEstimator::setPoints(
@@ -69,40 +69,44 @@ void TransformationEstimator::estimateSVDTransformation(
   }
 
   pcl::registration::TransformationEstimationSVD<PointType, PointType> estimator;
-  Eigen::Matrix4f full_radar_to_radar_parallel_transformation;
+  Eigen::Matrix4f full_radar_to_radar_optimization_transformation;
   estimator.estimateRigidTransformation(
-    *lidar_points_pcs_, *radar_points_rcs_, full_radar_to_radar_parallel_transformation);
-  Eigen::Isometry3d calibrated_radar_to_radar_parallel_transformation(
-    full_radar_to_radar_parallel_transformation.cast<double>());
+    *lidar_points_pcs_, *radar_points_rcs_, full_radar_to_radar_optimization_transformation);
+  Eigen::Isometry3d calibrated_radar_to_radar_optimization_transformation(
+    full_radar_to_radar_optimization_transformation.cast<double>());
 
   if (transformation_type == ExtrinsicReflectorBasedCalibrator::TransformationType::svd_2d) {
     // Check that is is actually a 2D transformation
-    auto calibrated_radar_to_radar_parallel_rpy = tier4_autoware_utils::getRPY(
-      tf2::toMsg(calibrated_radar_to_radar_parallel_transformation).orientation);
-    double calibrated_radar_to_radar_parallel_z =
-      calibrated_radar_to_radar_parallel_transformation.translation().z();
-    double calibrated_radar_to_radar_parallel_roll = calibrated_radar_to_radar_parallel_rpy.x;
-    double calibrated_radar_to_radar_parallel_pitch = calibrated_radar_to_radar_parallel_rpy.y;
+    auto calibrated_radar_to_radar_optimization_rpy = tier4_autoware_utils::getRPY(
+      tf2::toMsg(calibrated_radar_to_radar_optimization_transformation).orientation);
+    double calibrated_radar_to_radar_optimization_z =
+      calibrated_radar_to_radar_optimization_transformation.translation().z();
+    double calibrated_radar_to_radar_optimization_roll =
+      calibrated_radar_to_radar_optimization_rpy.x;
+    double calibrated_radar_to_radar_optimization_pitch =
+      calibrated_radar_to_radar_optimization_rpy.y;
 
     if (
-      calibrated_radar_to_radar_parallel_z != 0.0 ||
-      calibrated_radar_to_radar_parallel_roll != 0.0 ||
-      calibrated_radar_to_radar_parallel_pitch != 0.0) {
+      calibrated_radar_to_radar_optimization_z != 0.0 ||
+      calibrated_radar_to_radar_optimization_roll != 0.0 ||
+      calibrated_radar_to_radar_optimization_pitch != 0.0) {
       RCLCPP_ERROR(
         rclcpp::get_logger("marker_radar_lidar_calibrator"),
         "The estimated 2D translation was not really 2D. Continue at your own risk. z=%.3f "
         "roll=%.3f "
         "pitch=%.3f",
-        calibrated_radar_to_radar_parallel_z, calibrated_radar_to_radar_parallel_roll,
-        calibrated_radar_to_radar_parallel_pitch);
+        calibrated_radar_to_radar_optimization_z, calibrated_radar_to_radar_optimization_roll,
+        calibrated_radar_to_radar_optimization_pitch);
     }
 
-    calibrated_radar_to_radar_parallel_transformation.translation().z() =
-      (initial_radar_to_lidar_eigen_ * radar_parallel_to_lidar_eigen_.inverse()).translation().z();
+    calibrated_radar_to_radar_optimization_transformation.translation().z() =
+      (initial_radar_to_lidar_eigen_ * radar_optimization_to_lidar_eigen_.inverse())
+        .translation()
+        .z();
   }
 
   calibrated_radar_to_lidar_transformation_ =
-    calibrated_radar_to_radar_parallel_transformation * radar_parallel_to_lidar_eigen_;
+    calibrated_radar_to_radar_optimization_transformation * radar_optimization_to_lidar_eigen_;
 }
 
 void TransformationEstimator::estimateRollZeroTransformation()
@@ -113,8 +117,8 @@ void TransformationEstimator::estimateRollZeroTransformation()
 
   ceres::Problem problem;
 
-  Eigen::Vector3d translation = initial_radar_to_radar_parallel_eigen_.translation();
-  Eigen::Matrix3d rotation = initial_radar_to_radar_parallel_eigen_.rotation();
+  Eigen::Vector3d translation = initial_radar_to_radar_optimization_eigen_.translation();
+  Eigen::Matrix3d rotation = initial_radar_to_radar_optimization_eigen_.rotation();
   Eigen::Vector3d euler_angle = rotation.eulerAngles(0, 1, 2);
 
   // params: x, y, z, pitch, yaw
@@ -161,18 +165,18 @@ void TransformationEstimator::estimateRollZeroTransformation()
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"), "%s", calibrated_params_msg.c_str());
 
-  Eigen::Isometry3d calibrated_3d_radar_to_radar_parallel_transformation =
+  Eigen::Isometry3d calibrated_3d_radar_to_radar_optimization_transformation =
     Eigen::Isometry3d::Identity();
-  calibrated_3d_radar_to_radar_parallel_transformation.pretranslate(
+  calibrated_3d_radar_to_radar_optimization_transformation.pretranslate(
     Eigen::Vector3d(params[0], params[1], params[2]));
   Eigen::Quaterniond q(
     Eigen::AngleAxisd(params[4], Eigen::Vector3d::UnitZ()) *
     Eigen::AngleAxisd(params[3], Eigen::Vector3d::UnitY()) *
     Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX()));
-  calibrated_3d_radar_to_radar_parallel_transformation.rotate(q);
+  calibrated_3d_radar_to_radar_optimization_transformation.rotate(q);
 
   calibrated_radar_to_lidar_transformation_ =
-    calibrated_3d_radar_to_radar_parallel_transformation * radar_parallel_to_lidar_eigen_;
+    calibrated_3d_radar_to_radar_optimization_transformation * radar_optimization_to_lidar_eigen_;
 }
 
 Eigen::Isometry3d TransformationEstimator::getTransformation()
