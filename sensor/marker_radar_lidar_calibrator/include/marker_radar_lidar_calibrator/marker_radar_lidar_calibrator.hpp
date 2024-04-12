@@ -24,6 +24,7 @@
 #include <std_srvs/srv/empty.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <radar_msgs/msg/radar_scan.hpp>
 #include <radar_msgs/msg/radar_tracks.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
@@ -58,6 +59,9 @@ class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 public:
   using PointType = pcl::PointXYZ;
   using index_t = std::uint32_t;
+  enum class TransformationType { svd_2d, yaw_only_rotation_2d, svd_3d, roll_zero_3d };
+
+  enum class MsgType { radar_tracks, radar_scan };
 
   explicit ExtrinsicReflectorBasedCalibrator(const rclcpp::NodeOptions & options);
 
@@ -85,11 +89,20 @@ protected:
     const std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
   void lidarCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  void radarCallback(const radar_msgs::msg::RadarTracks::SharedPtr msg);
+
+  void radarTracksCallback(const radar_msgs::msg::RadarTracks::SharedPtr msg);
+
+  void radarScanCallback(const radar_msgs::msg::RadarScan::SharedPtr msg);
+
+  pcl::PointCloud<PointType>::Ptr extractRadarPointcloud(
+    const radar_msgs::msg::RadarTracks::SharedPtr msg);
+  pcl::PointCloud<PointType>::Ptr extractRadarPointcloud(
+    const radar_msgs::msg::RadarScan::SharedPtr msg);
 
   std::vector<Eigen::Vector3d> extractReflectors(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  std::vector<Eigen::Vector3d> extractReflectors(const radar_msgs::msg::RadarTracks::SharedPtr msg);
+  std::vector<Eigen::Vector3d> extractReflectors(
+    pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr);
 
   void extractBackgroundModel(
     const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
@@ -119,19 +132,21 @@ protected:
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
     builtin_interfaces::msg::Time & time);
 
-  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr, double, double>
-  getPointsSetAndDelta();
+  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr> getPointsSet();
+  std::tuple<double, double> getDelta(std::vector<Track> converged_tracks, bool is_crossval);
+
   std::pair<double, double> computeCalibrationError(
     const Eigen::Isometry3d & radar_to_lidar_isometry);
-  void estimateTransformation(
-    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
-    pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
+  void estimateTransformation();
+  void calculateCalibrationError(Eigen::Isometry3d calibrated_radar_to_lidar_transformation);
+  void crossValEvaluation();
   void findCombinations(
     int n, int k, std::vector<int> & curr, int first_num,
     std::vector<std::vector<int>> & combinations);
-  void crossValEvaluation(
-    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
-    pcl::PointCloud<PointType>::Ptr radar_points_rcs);
+  void selectCombinations(
+    int tracks_size, int num_of_samples, std::vector<std::vector<int>> & combinations);
+  void doEvaluation(std::vector<std::vector<int>> & combinations, int num_of_samples);
+
   void publishMetrics();
   void calibrateSensors();
   void visualizationMarkers(
@@ -149,8 +164,7 @@ protected:
 
   struct Parameters
   {
-    std::string radar_parallel_frame;  // frame that is assumed to be parallel to the radar (needed
-                                       // for radars that do not provide elevation)
+    std::string radar_parallel_frame;
     bool use_lidar_initial_crop_box_filter;
     double lidar_initial_crop_box_min_x;
     double lidar_initial_crop_box_min_y;
@@ -213,7 +227,8 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr metrics_pub_;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
-  rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
+  rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_tracks_sub_;
+  rclcpp::Subscription<radar_msgs::msg::RadarScan>::SharedPtr radar_scan_sub_;
 
   rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
     calibration_request_server_;
@@ -237,6 +252,9 @@ protected:
   geometry_msgs::msg::Transform radar_parallel_to_lidar_msg_;
   Eigen::Isometry3d radar_parallel_to_lidar_eigen_;
 
+  geometry_msgs::msg::Transform init_radar_to_radar_parallel_msg_;
+  Eigen::Isometry3d initial_radar_to_radar_parallel_eigen_;
+
   bool got_initial_transform_{false};
   bool broadcast_tf_{false};
   bool calibration_valid_{false};
@@ -255,7 +273,8 @@ protected:
   BackgroundModel lidar_background_model_;
   BackgroundModel radar_background_model_;
 
-  radar_msgs::msg::RadarTracks::SharedPtr latest_radar_msgs_;
+  radar_msgs::msg::RadarTracks::SharedPtr latest_radar_tracks_msgs_;
+  radar_msgs::msg::RadarScan::SharedPtr latest_radar_scan_msgs_;
 
   // Tracking
   bool tracking_active_{false};
@@ -264,9 +283,15 @@ protected:
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
 
+  // Coverged points
+  pcl::PointCloud<PointType>::Ptr lidar_points_pcs_;
+  pcl::PointCloud<PointType>::Ptr radar_points_rcs_;
+
   // Metrics
   std::vector<float> output_metrics_;
 
+  MsgType msg_type_;
+  TransformationType transformation_type_;
   static constexpr int MARKER_SIZE_PER_TRACK = 8;
 };
 

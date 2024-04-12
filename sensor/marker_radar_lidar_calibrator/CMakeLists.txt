@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.5)
 project(marker_radar_lidar_calibrator)
 
 find_package(autoware_cmake REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(Ceres REQUIRED)
 
 autoware_package()
 
@@ -15,12 +17,14 @@ ament_export_include_directories(
 
 ament_auto_add_executable(marker_radar_lidar_calibrator
   src/marker_radar_lidar_calibrator.cpp
+  src/transformation_estimator.cpp
   src/track.cpp
   src/main.cpp
 )
 
 target_link_libraries(marker_radar_lidar_calibrator
   ${OpenCV_LIBS}
+  ${CERES_LIBRARIES}
 )
 
 install(PROGRAMS
