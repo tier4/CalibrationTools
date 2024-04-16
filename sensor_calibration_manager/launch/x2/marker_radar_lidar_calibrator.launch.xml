@@ -9,7 +9,7 @@
     <choice value="rear_right"/>
   </arg>
 
-  <arg name="msg_type" default="scan_raw">
+  <arg name="msg_type" default="radar_tracks">
     <choice value="radar_tracks"/>
     <choice value="radar_scan"/>
   </arg>
@@ -23,7 +23,7 @@
 
   <arg name="rviz" default="true"/>
 
-  <let name="radar_optimization_frame" value="base_link"/>
+  <let name="radar_optimization_frame" value="front_unit_base_link"/>
   <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_left' &quot;)"/>
   <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>
   <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_right' &quot;)"/>
@@ -40,7 +40,8 @@
   <let name="lidar_frame" value="pandar_40p_rear" if="$(eval &quot;'$(var radar_name)' == 'rear_center' &quot;)"/>
   <let name="lidar_frame" value="pandar_40p_rear" if="$(eval &quot;'$(var radar_name)' == 'rear_right' &quot;)"/>
 
-  <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/$(var msg_type)"/>
+  <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/objects_raw" if="$(eval &quot;'$(var msg_type)'=='radar_tracks'&quot;)"/>
+  <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/scan_raw" if="$(eval &quot;'$(var msg_type)'=='radar_scan'&quot;)"/>
 
   <let name="input_lidar_pointcloud" value="/sensing/lidar/front_lower/pointcloud_raw" if="$(eval &quot;'$(var radar_name)' == 'front_left' &quot;)"/>
   <let name="input_lidar_pointcloud" value="/sensing/lidar/front_lower/pointcloud_raw" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>
