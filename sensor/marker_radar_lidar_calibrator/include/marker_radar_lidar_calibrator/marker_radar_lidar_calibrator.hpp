@@ -286,7 +286,7 @@ protected:
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
 
-  // Coverged points
+  // Converged points
   pcl::PointCloud<PointType>::Ptr lidar_points_pcs_;
   pcl::PointCloud<PointType>::Ptr radar_points_rcs_;
 

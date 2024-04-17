@@ -30,7 +30,7 @@ struct SensorResidual
   template <class T>
   bool operator()(T const * const params, T * s_residuals) const
   {
-    // parmas: x, y, z, pitch, yaw.
+    // parameters: x, y, z, pitch, yaw.
     Eigen::Matrix<T, 4, 4> s_transformation = Eigen::Matrix<T, 4, 4>::Identity(4, 4);
     Eigen::Matrix<T, 3, 3> rotation_matrix;
 
