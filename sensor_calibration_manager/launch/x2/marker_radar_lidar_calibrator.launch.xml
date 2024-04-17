@@ -23,7 +23,7 @@
 
   <arg name="rviz" default="true"/>
 
-  <!-- For x2 project, do not change radar_optimization_frame to base_link, if you are estimateing transformation with svd_2d and yaw_only_rotation_2d-->
+  <!-- For x2 project, do not change radar_optimization_frame to base_link, if you are using radar that doesn't support elevation or z axis-->
   <let name="radar_optimization_frame" value="front_unit_base_link"/>
   <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_left' &quot;)"/>
   <let name="radar_parent_frame" value="front_unit_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>

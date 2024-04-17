@@ -30,7 +30,7 @@
   <!--Note: The OT128 should work with the same profile as the VLS128 -->
   <let name="lidar_frame" value="hesai_top"/>
   <let name="use_rectified_image" value="false"/>
-  <!-- We assume that LDC=OFF & we calibrate using the iamge coming from the driver -->
+  <!-- We assume that LDC=OFF & we calibrate using the image coming from the driver -->
 
   <group>
     <!-- image decompressor -->
