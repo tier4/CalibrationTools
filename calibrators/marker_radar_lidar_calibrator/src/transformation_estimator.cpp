@@ -161,7 +161,7 @@ void TransformationEstimator::estimateRollZeroTransformation()
     std::to_string(params.front()),  // Initialize with the first element
     [](const std::string & a, const auto & b) { return a + " " + std::to_string(b); });
   std::string calibrated_params_msg =
-    "calibrated params (x,y,z,pith,yaw): " + calibrated_params_str;
+    "calibrated params (x,y,z,pitch,yaw): " + calibrated_params_str;
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"), "%s", calibrated_params_msg.c_str());
 
