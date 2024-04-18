@@ -169,7 +169,6 @@ protected:
     double radar_background_model_leaf_size;
     double max_calibration_range;
     double background_model_timeout;
-    double max_match_yaw_distance;
     double min_foreground_distance;  // needs to be about at least double the leaf size
     double background_extraction_timeout;
     double ransac_threshold;

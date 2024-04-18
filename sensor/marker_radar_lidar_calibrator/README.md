@@ -59,12 +59,13 @@ Additionally, we provide a metric plotter that can indicate whether the calibrat
 
 ### Services
 
-| Name                       | Type                   | Description                                                               |
-| -------------------------- | ---------------------- | ------------------------------------------------------------------------- |
-| `extract_background_model` | `std_srvs::srv::Empty` | Strat to extract the background model from Radar and lidar                |
-| `add_lidar_radar_pair`     | `std_srvs::srv::Empty` | User is able to click this buttom to add LiDAR-Radar pair                 |
-| `delete_lidar_radar_pair`  | `std_srvs::srv::Empty` | User is able to click this button to delete the previous LiDAR-Radar pair |
-| `send_calibration`         | `std_srvs::srv::Empty` | Send the calibration result to the sensor calibration manager             |
+| Name                       | Type                                                  | Description                                                                              |
+| -------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `extrinsic_calibration`    | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes |
+| `extract_background_model` | `std_srvs::srv::Empty`                                | Strat to extract the background model from Radar and lidar                               |
+| `add_lidar_radar_pair`     | `std_srvs::srv::Empty`                                | User is able to click this buttom to add LiDAR-Radar pair                                |
+| `delete_lidar_radar_pair`  | `std_srvs::srv::Empty`                                | User is able to click this button to delete the previous LiDAR-Radar pair                |
+| `send_calibration`         | `std_srvs::srv::Empty`                                | Send the calibration result to the sensor calibration manager                            |
 
 ## Parameters
 

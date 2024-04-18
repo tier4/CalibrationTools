@@ -85,9 +85,9 @@ std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr> extractGround
   seg.setMaxIterations(parameters.max_iterations_);
 
   pcl::PointCloud<PointType>::Ptr iteration_cloud = pointcloud;
-  int iteration_size = iteration_cloud->height * iteration_cloud->width;
+  int iteration_cloud_size = iteration_cloud->height * iteration_cloud->width;
 
-  while (iteration_size > parameters.min_plane_points_) {
+  while (iteration_cloud_size > parameters.min_plane_points_) {
     seg.setInputCloud(iteration_cloud);
     seg.segment(*inliers, *coefficients);
 
@@ -176,7 +176,7 @@ std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr> extractGround
     extract.filter(next_cloud);
 
     iteration_cloud->swap(next_cloud);
-    iteration_size = iteration_cloud->height * iteration_cloud->width;
+    iteration_cloud_size = iteration_cloud->height * iteration_cloud->width;
   }
   return std::make_tuple(false, model, inliers_pointcloud);
 }
