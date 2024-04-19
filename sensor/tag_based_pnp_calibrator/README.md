@@ -8,19 +8,25 @@ The package `tag_based_pnp_calibrator` allows extrinsic calibration among Camera
 
 ## Inner-workings / Algorithms
 
-The apriltag node detects the corners of the tags in the image and publishes them as apriltag/detections_array. On the other hand, the lidartag detects the corners of the tags in the lidar and publishes them as lidartag/detections_array.
+The `tag_based_pnp_calibrator` utilize the PNP algorithm to calculate the transformation between LiDAR and Camera. To run this package, you also need to run `apriltag_ros` package and `lidartag` package to calculate the transformation.
 
-The tag_based_pap_calibrator subscribes to the apriltag/detections_array and lidartag/detections_array, and then matches the detections, filters the detections, and applies the SQPnP algorithm in the calibration process.
+The `apriltag_ros` package will detect the apriltag and output the apriltag detection. On the other hand, `lidartag` package will detect the lidartag and output the lidartag detection.
+
+The `tag_based_pnp_calibrator` utilize the detections from `apriltag_ros` and `lidartag`, and use Kalman Filter to track those detections. If the detections is converged, then the calibrator will apply SQPNP provided by OpenCV to estimate the transformation between image points from apriltag and object points from lidartag.
+
+Below, you can see the how the algorithm is implemented in the `tag_based_pnp_calibrator` package.
+
+![Alt text](tag_based_pnp_calibrator.drawio.png)
 
 ## ROS Interfaces
 
-### Input (Fix this)
+### Input
 
-| Name                          | Type                                         | Description                                                                                                    |
-| ----------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `{camera_info}`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the calibration cameras . `calibration_camera_info_topics` is provided via parameters |
-| `{lidartag/detections_array}` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections. `lidartag/detections_array` is provided via parameters                                    |
-| `{apriltag/detection_array}`  | `apriltag_msgs::msg::AprilTagDetectionArray` | Apriltag detections. `apriltag/detection_array` is provided via parameters                                     |
+| Name                        | Type                                         | Description                                                                                 |
+| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `{camera_info}`             | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the calibration cameras . `camera_info` is provided via parameters |
+| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections. `lidartag/detections_array` is defined in launcher.                    |
+| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | Apriltag detections. `apriltag/detection_array` is defined in launcher.                     |
 
 ### Output
 
@@ -78,6 +84,9 @@ The tag_based_pap_calibrator subscribes to the apriltag/detections_array and lid
 
 ### Tag
 
+In order the perform camera-lidar calibration using this tool, it is necessary to prepare lidartags and lidars with intensity measures. In order to assure that no objects difficult the tag detection and and obtain the most stable detection possible, it is highly recommended to also prepare fixed mounts for these tags as presented in Figure 1.
+![Alt text](../docs/images/camera-lidar/lidartag-mount.jpg)
+
 ## References
 
 References/External links
@@ -85,8 +94,9 @@ References/External links
 
 ## Known issues/limitations
 
-TODO
+Our version of lidartag only supports the family `16h5`
+Our codebase only supports apriltag detections for `36h11`
 
 ## Pro tips/recommendations
 
-TODO
+To evaluate the quality after the calibration, utilize the GUI and decrease the subsampling to 1.
