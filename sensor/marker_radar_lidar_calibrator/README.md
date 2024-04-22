@@ -123,7 +123,7 @@ Below, you can see the how the algorithm is implemented in the `marker_radar_lid
 
 This type of reflector is crucial for such calibrations because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
-![segment](../docs/images/marker_radar_lidar_calibrator/radar_reflector.jpg)
+![segment](../docs/images/marker_radar_lidar_calibrator/radar_reflector.png)
 
 ## Known issues/limitations
 
