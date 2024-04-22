@@ -33,8 +33,7 @@ After preparing data for the calibration, we can now run the registration algori
 #### Diagram
 
 Below, you can see the how the algorithm is implemented in the `mapping_based_calibrator` package.
-
-![Alt text](mapping_based_calibrator.drawio.png)
+![segment](../docs/images/mapping_based_calibrator/mapping_based_calibrator.jpg)
 
 ### base lidar calibration
 

@@ -18,7 +18,7 @@ The `tag_based_pnp_calibrator` utilize the detections from `apriltag_ros` and `l
 
 Below, you can see the how the algorithm is implemented in the `tag_based_pnp_calibrator` package.
 
-![Alt text](tag_based_pnp_calibrator.drawio.png)
+![segment](../docs/images/tag_based_pnp_calibrator/tag_based_pnp_calibrator.jpg)
 
 ## ROS Interfaces
 
