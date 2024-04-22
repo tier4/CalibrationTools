@@ -84,7 +84,7 @@ Below, you can see the how the algorithm is implemented in the `tag_based_pnp_ca
 
 ## Requirements
 
-### Tag
+### LiDARTag
 
 In order the perform camera-lidar calibration using this tool, it is necessary to prepare lidartags and lidars with intensity measures. In order to assure that no objects difficult the tag detection and and obtain the most stable detection possible, it is highly recommended to also prepare fixed mounts for these tags as presented in below.
 
