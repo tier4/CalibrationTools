@@ -4,11 +4,11 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_p
 
 ## Purpose
 
-The package `tag_based_pnp_calibrator` allows extrinsic calibration among Camera sensor and LiDAR sensor used in autonomous driving and robotics.
+The package `tag_based_pnp_calibrator` allows extrinsic calibration among Camera sensor and lidar sensor used in autonomous driving and robotics.
 
 ## Inner-workings / Algorithms
 
-The `tag_based_pnp_calibrator` utilize the PNP algorithm to calculate the transformation between LiDAR and Camera. To run this package, you also need to run `apriltag_ros` package and `lidartag` package to calculate the transformation.
+The `tag_based_pnp_calibrator` utilize the PNP algorithm to calculate the transformation between lidar and Camera. To run this package, you also need to run `apriltag_ros` package and `lidartag` package to calculate the transformation.
 
 The `apriltag_ros` package will detect the apriltag and output the apriltag detection. On the other hand, `lidartag` package will detect the lidartag and output the lidartag detection.
 
