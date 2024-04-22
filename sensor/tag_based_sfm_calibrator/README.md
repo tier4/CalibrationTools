@@ -210,7 +210,7 @@ Any board that can be used for this purpose is acceptable but circle-patterned c
 
 ## Known issues/limitations
 
-- Our version of lidartag only supports the family `16h5``
+- Our version of lidartag only supports the family `16h5`
 - Our codebase only supports apriltag detections for `36h11`
 - Ground tags are assumed to have no width. If that is not the base, you can directly compensate the width in the final extrinsic
 - We only use 2 wheel tags. The quality of the calibration could improve, mainly in the yaw component, if we were to use tags in the four wheels.
