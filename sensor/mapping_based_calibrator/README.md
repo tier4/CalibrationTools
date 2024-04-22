@@ -145,13 +145,13 @@ Note: target_markers is only used by camera calibrators (not using now)
 ### Calibration criteria parameters
 
 | Name                                         | Type     | Default Value | Description                                                                                                                       |
-| -------------------------------------------- | -------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------- | --- |
+| -------------------------------------------- | -------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `max_allowed_interpolated_time`              | `double` | `0.05`        | Maximum allowable time for frame interpolated time in standard criteria.                                                          |
 | `max_allowed_interpolated_distance`          | `double` | `0.05`        | Maximum allowable distance for frame interpolated distance in standard criteria.                                                  |
 | `max_allowed_interpolated_angle`             | `double` | `1.0`         | Maximum allowable angle for frame interpolated angle in standard criteria.                                                        |
 | `max_allowed_interpolated_speed`             | `double` | `3.0`         | Maximum allowable speed for frame interpolated speed in standard criteria.                                                        |
 | `max_allowed_interpolated_accel`             | `double` | `0.4`         | Maximum allowable acceleration for frame interpolated acceleration in standard criteria.                                          |
-| `max_allowed_interpolated_distance_straight` | `double` | `0.08`        | Maximum allowable distance for frame interpolated distance in straight criteria.                                                  |     |
+| `max_allowed_interpolated_distance_straight` | `double` | `0.08`        | Maximum allowable distance for frame interpolated distance in straight criteria.                                                  |
 | `max_allowed_interpolated_angle_straight`    | `double` | `0.5`         | Maximum allowable angle for frame interpolated angle in straight criteria.                                                        |
 | `max_allowed_interpolated_speed_straight`    | `double` | `5.0`         | Maximum allowable speed for frame interpolated speed in straight criteria.                                                        |
 | `max_allowed_interpolated_accel_straight`    | `double` | `0.1`         | Maximum allowable acceleration for frame interpolated acceleration in straight criteria.                                          |
