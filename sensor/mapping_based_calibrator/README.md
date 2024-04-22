@@ -16,19 +16,19 @@ Note: depending on how this tool is configured it can perform the following cali
 ### lidar-lidar calibration
 
 Overview
-This algorithm aims to calibrate multiple LiDARs by using registration algorithms. LiDARs are seperated in two categories. The main lidar is named `mapping lidar` which aims for build the map. The rest of the LiDARs are called `calibration lidars`, which are used for calibration, in other words, they are use for finding the transformations between themselves and the mapping lidar.
+This algorithm aims to calibrate multiple lidars by using registration algorithms. lidars are seperated in two categories. The main lidar is named `mapping lidar` which aims for build the map. The rest of the lidars are called `calibration lidars`, which are used for calibration, in other words, they are use for finding the transformations between themselves and the mapping lidar.
 
-#### Step 1: Mapping (using Mapping lidar)
+#### Step 1: Mapping (using mapping lidar)
 
-First of all, the calibrator will use one of the LiDARs (defined in the launch file) as the mapping lidar for mapping. Pointcloud from this lidar uses NDT of GICP algorithm to calculate the pose and also store pointcloud as a map for future usage.
+First of all, the calibrator will use one of the lidars (defined in the launch file) as the mapping lidar for mapping. Pointcloud from this lidar uses NDT of GICP algorithm to calculate the pose and also store pointcloud as a map for future usage.
 
-#### Step 2: Calibration data preparation (using Mapping lidar & Calibration lidars)
+#### Step 2: Calibration data preparation (using calibration lidars)
 
-After the mapping is done, we need to do some preprocessing before the calibration process. For instance, since we want to apply the registration algorithms on the pointcloud from the mapping lidar and the pointcloud from the calibration LiDARs to find the transformation between two lidar. We need to make sure both of the pointcloud are in the same timestamp. However, the calibration LiDARs may not be synchronized with the mapping lidar, so their respective pointclouds can not be used directly together under movement. To deal with this, we need to first interpolate the pose of the mapping lidar at the timestamp of the calibration LiDARs to get the pointcloud for applying registration algorithms.
+After the mapping is done, we need to do some preprocessing before the calibration process. For instance, since we want to apply the registration algorithms on the pointcloud from the mapping lidar and the pointcloud from the calibration lidars to find the transformation between two lidar. We need to make sure both of the pointcloud are in the same timestamp. However, the calibration lidars may not be synchronized with the mapping lidar, so their respective pointclouds can not be used directly together under movement. To deal with this, we need to first interpolate the pose of the mapping lidar at the timestamp of the calibration lidars to get the pointcloud for applying registration algorithms.
 
-#### Step 3: Calibrate (Mapping lidar & Calibration LiDARs)
+#### Step 3: Calibrate (mapping lidar & calibration lidars)
 
-After preparing data for the calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between two pointcloud (calibration LiDARs' pointcloud and mapping lidar's pointcloud), then we can get the transformation between two LiDARs.
+After preparing data for the calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between two pointcloud (calibration lidars' pointcloud and mapping lidar's pointcloud), then we can get the transformation between two lidars.
 
 #### Diagram
 
@@ -44,7 +44,7 @@ Therefore, step 1 would be the same as `lidar-lidar calibration`.
 
 #### Step 1: Mapping (Mapping lidar)
 
-First of all, the calibrator will use one of the LiDARs (defined in the launch file) as the mapping lidar for mapping. Pointcloud from this lidar uses NDT of GICP algorithm to calculate the pose and also store pointcloud as a map for future usage.
+First of all, the calibrator will use one of the lidars (defined in the launch file) as the mapping lidar for mapping. Pointcloud from this lidar uses NDT of GICP algorithm to calculate the pose and also store pointcloud as a map for future usage.
 
 #### Step 2: Extract ground from the pointcloud
 
