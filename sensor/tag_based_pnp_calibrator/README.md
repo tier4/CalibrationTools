@@ -14,6 +14,8 @@ The `apriltag_ros` package will detect the apriltag and output the apriltag dete
 
 The `tag_based_pnp_calibrator` utilize the detections from `apriltag_ros` and `lidartag`, and use Kalman Filter to track those detections. If the detections is converged, then the calibrator will apply SQPNP provided by OpenCV to estimate the transformation between image points from apriltag and object points from lidartag.
 
+### Diagram
+
 Below, you can see the how the algorithm is implemented in the `tag_based_pnp_calibrator` package.
 
 ![Alt text](tag_based_pnp_calibrator.drawio.png)

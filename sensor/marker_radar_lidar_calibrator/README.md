@@ -32,6 +32,12 @@ Finally, we can use the coordinate of the reflector detection pairs to calculate
 
 Additionally, we provide a metric plotter that can indicate whether the calibration errors are converged. Once the cross-validation errors are converged, users should be able to stop the calibration process.
 
+### Diagram
+
+Below, you can see the how the algorithm is implemented in the `marker_radar_lidar_calibrator` package.
+
+![Alt text](marker_radar_lidar_calibrator.drawio.png)
+
 ## ROS Interfaces
 
 ### Input
@@ -115,12 +121,12 @@ Additionally, we provide a metric plotter that can indicate whether the calibrat
 
 ### Radar reflector
 
-![Alt text](image.png)
+This type of reflector is crucial for such calibrations because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
+
+![Alt text](radar_reflector.png)
 
 ## Known issues/limitations
 
-TODO
-
 ## Pro tips/recommendations
 
-TODO
+While doing the calibration, try to set different height for the radar reflecotr by using the tripod and also place the reflector in differnt distance. Please also make sure the center of the radar reflecotr face to the radar sensor.
