@@ -15,7 +15,7 @@ After installing [autoware](https://github.com/tier4/autoware) (please see [sour
 cd autoware
 wget https://raw.githubusercontent.com/tier4/CalibrationTools/tier4/universe/calibration_tools.repos
 vcs import src < calibration_tools.repos
-rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
+rosdep install -y --from-path `colcon list --packages-up-to sensor_calibration_tools -p` --ignore-src --rosdistro $ROS_DISTRO
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
