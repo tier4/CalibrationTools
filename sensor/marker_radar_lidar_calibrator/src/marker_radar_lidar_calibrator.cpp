@@ -89,7 +89,6 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicReflectorBasedCalibrator::para
 
     UPDATE_PARAM(p, max_calibration_range);
     UPDATE_PARAM(p, background_model_timeout);
-    UPDATE_PARAM(p, max_match_yaw_distance);
     UPDATE_PARAM(p, min_foreground_distance);
     UPDATE_PARAM(p, background_extraction_timeout);
     UPDATE_PARAM(p, ransac_threshold);
@@ -217,8 +216,6 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     initial_lidar_cov, initial_radar_cov, lidar_measurement_cov, radar_measurement_cov,
     lidar_process_cov, radar_process_cov, lidar_convergence_thresh, radar_convergence_thresh,
     timeout_thresh, parameters_.max_matching_distance);
-
-  markers_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 10);
 
   lidar_background_pub_ =
     this->create_publisher<sensor_msgs::msg::PointCloud2>("lidar_background_pointcloud", 10);
