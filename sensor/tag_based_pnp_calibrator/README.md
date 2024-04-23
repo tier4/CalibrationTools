@@ -88,7 +88,7 @@ Below, you can see the how the algorithm is implemented in the `tag_based_pnp_ca
 
 In order the perform camera-lidar calibration using this tool, it is necessary to prepare lidartags and lidars with intensity measures. In order to assure that no objects difficult the tag detection and and obtain the most stable detection possible, it is highly recommended to also prepare fixed mounts for these tags as presented in below.
 
-![Alt text](../docs/images/camera-lidar/lidartag-mount.jpg)
+![segment](../docs/images/tag_based_pnp_calibrator/lidartag-mount.jpg)
 
 ## References
 
@@ -98,8 +98,15 @@ References/External links
 ## Known issues/limitations
 
 Our version of lidartag only supports the family `16h5`
+
 Our codebase only supports apriltag detections for `36h11`
 
 ## Pro tips/recommendations
 
-To evaluate the quality after the calibration, utilize the GUI and decrease the subsampling to 1.
+During calibration, ensure that the lidar scan cover the tag, similar to the first example shown in below image. However, if the tag resolution is low, as in the second example, and the lidar still detects the tag, it is acceptable. The third example demonstrates a scenario where the lidar scan fails to cover the tag, resulting in the inability to detect the lidartag.
+
+![segment](../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg)
+
+Also noted that when doing the calibration, it is necessary to rotate the tag in order to face to the camera like the image shown below.
+
+![segment](../docs/images/tag_based_pnp_calibrator/tag_position.jpg)

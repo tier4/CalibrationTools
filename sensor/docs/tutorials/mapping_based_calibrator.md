@@ -34,7 +34,7 @@ First, run the sensor calibration manager:
 ros2 run sensor_calibration_manager sensor_calibration_manager
 ```
 
-In `project`, select `rdv`, and in `calibrator`, select `tag_based_sfm_base_lidar_calibrator`. Then, press `Continue`.
+In `project`, select `rdv`, and in `calibrator`, select `mapping_based_calibrator`. Then, press `Continue`.
 
 ![segment](../images/mapping_based_calibrator/menu1.jpg)
 
@@ -115,8 +115,8 @@ User can also see the three different colors of pointcloud in the `rviz`. white 
 After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
 ![segment](../images/mapping_based_calibrator/menu4.jpg)
 
-To evaluate the calibration results, user can closely measure the static object in the pointcloud map. For instance, static vehicle, static traffic cones, wall .etc.
+To assess the calibration results, users can precisely measure static objects within the point cloud map, such as stationary vehicles, traffic cones, and walls.
 
-Pictures below show the calibration results for the tutorial, user can see that the initial pointcloud (red), is now calibrated (green), which is in the align with the mapping pointcloud (white)
+The image below displays the vehicle within the pointcloud, allowing for a comparison of results before and after calibration. It is evident that the initial point cloud from `calibration lidars` (shown in red) has been successfully calibrated (shown in green) and is now aligned with the `mapping lidar` (shown in white).
 
 ![segment](../images/mapping_based_calibrator/vehicle_calibrated.jpg)
