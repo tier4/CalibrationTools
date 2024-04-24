@@ -23,7 +23,7 @@ The required space for calibration depends on the vehicle and sensors used. For 
 
 ### Vehicle
 
-When doing the calibration, user needs to drive the vehicle in order to collect the pointcloud for buliding map. While recording the data during the experiment, slow down the vehicle speed as munch as possible. For instance, drive slower than 5 km/hr is a good speed for recording a good data. Also during the experiment, try to avoid people walking around the vehicle, try to make to surrounding static.
+When doing the calibration, the user needs to drive the vehicle to collect the point cloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 5 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
 
 ## Launching the tool
 
@@ -73,15 +73,15 @@ You can also see the log in the console showing that the map is building.
 [mapping_based_calibrator-1] [calibration_mapper]: New frame (id=28 | kid=-1). Distance=2.26 Delta_distance0.11 Delta_time0.10. Unprocessed=0 Frames=29 Keyframes=3
 ```
 
-When the roabag is finished playing, you should see the pointcloud map and the path of the lidar frames like the picture below.
+When the rosbag has finished playing, you should see the point cloud map and the path of the lidar frames, as shown in the picture below.
 
 ![mapping_based_calibrator](../images/mapping_based_calibrator/map2.jpg)
 
 ## Calibration
 
-Calibration starts anytime when the user send the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. User can also send this command before the rosbag ended if user think that the data collection is enough for calibration.
+Calibration starts anytime when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. User can also send this command before the rosbag ends if they think the data collected is sufficient for calibration.
 
-In this tutorial, we send the command after the rosbag run until the end. Once the command is sent, the displayed text should be as follows:
+In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 
 ```bash
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Mapper stopped through service (operator()())
@@ -89,9 +89,9 @@ In this tutorial, we send the command after the rosbag run until the end. Once t
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Beginning lidar calibration for pandar_front (operator()())
 ```
 
-The calibration process may take some time as it involves multiple lidars. Users should remain patient and monitor the console output to follow the calibration progress.
+The calibration process may take some time, as it involves multiple lidars. Users should remain patient and monitor the console output to track the progress of the calibration.
 
-Once the calibration process is completed, the displayed text should be as follows:
+Once the calibration process is complete, the displayed text should be as follows:
 
 ```bash
 [mapping_based_calibrator-1] [lidar_calibrator(pandar_left)]: Calibration result as a tf main lidar -> lidar_calibrator(pandar_left)

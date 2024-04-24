@@ -21,12 +21,12 @@ The rosabg includes four different topics including `camera_info`, `image_rect_c
 
 The required space for calibration depends on the vehicle and sensors used. For a normal consumer-level car, a space of `5m x 10m` should be sufficient.
 
-### Apriltag
+### AprilTag (LidarTag)
 
-Apriltag are the only moving elements during the calibration process and must detected by both camera and lidar.
-Depending on the lidar model and the available space, the required Apriltag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
+AprilTag are the only moving elements during the calibration process and must detected by both camera and lidar.
+Depending on the lidar model and the available space, the required AprilTag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
 
-In addition to the Apriltag size, which determines the physical positions in which a tag can be detected, it is of equal importance the structure in which the Apriltag is mounted. Depending on the structure's shape and size, it may interfere with the lidar detection algorithm, so it is recommended to prepare a mount that holds the tag in a way that is not visible to the sensor (see the provided example).
+In addition to the AprilTag size, which determines the physical positions in which a tag can be detected, it is of equal importance the structure in which the AprilTag is mounted. Depending on the structure's shape and size, it may interfere with the lidar detection algorithm, so it is recommended to prepare a mount that holds the tag in a way that is not visible to the sensor (see the provided example).
 
 ## Launching the tool
 
@@ -44,7 +44,7 @@ In `project`, select `x2`, and in `calibrator`, select `tag_based_pnp_calibrator
 </p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
-For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag have 8 Apriltag detection and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
+For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag have 8 AprilTag detections and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
 
 ![tag_based_pnp_calibrator](../images/tag_based_pnp_calibrator/menu2.jpg)
 
@@ -57,13 +57,13 @@ In this tutorial, since the `tf` are published by the provided rosbags, run the 
 
 ## Calibration
 
-The calibration start automatically after click the `Calibrate` button. It will keep calibrate the lidartag detection and apriltag detection until the number of the detection fit the user defined `calibratino_pairs` in the `Launcher configuration`.
+The calibration start automatically after click the `Calibrate` button. It will keep calibrate the LidarTag detections and AprilTag detections until the number of the detections fit the user defined `calibration_pairs` in the `Launcher configuration`.
 
 When user start the calibration, `rviz` and the `image view` should be displayed like below.
 
 ![segment](../images/tag_based_pnp_calibrator/visualization1.jpg)
 
-After the tools detect the lidartag and apriltag, it will shows the detectino markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of lidar detection and apriltag detection pairs.
+After the tools detect the LidarTag and AprilTag, it will shows the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of lidar detections and AprilTag detections.
 
 ![segment](../images/tag_based_pnp_calibrator/visualization2.jpg)
 
@@ -81,15 +81,15 @@ After the calibration process is finished, the sensor_calibration_manager will d
     <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
 </p>
 
-User can modify the `visualization options` in the right side of the `image view`. To compare the results easier, user can set the `Marker size (m)` to `0.04` and set the `PC subsample factor` to `1`.
+User can modify the `visualization options` in the right side of the `image view`. To compare the results, please set the `Marker size (m)` to `0.04` and set the `PC subsample factor` to `1`.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization_bar.jpg"  alt="visualization_bar" width="200">
 </p>
 
-After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf`. By doing this, user can easily measure the difference after the calibration.
+After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf`. By doing this, it is easier to measure the difference after the calibration.
 
-The images below show that with the calibrated tranformation, the projected pointcloud align better with the imaage.
+The images below show that with the calibrated transformation, the projected point cloud aligns better with the image.
 
 <table>
   <tr>

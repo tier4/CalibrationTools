@@ -12,13 +12,13 @@ The calibration process involves five steps: constructing a background model, de
 
 ### Step 1: Background model extraction (radar & lidar)
 
-Once the calibrator starts and the user presses the Extract background model, the calibrator will start to use the lidar pointcloud and radar message to create background models which include voxels that indicate whether it is background or not.
+Once the calibrator is initiated and the user presses the `Extract background model` button, the calibrator will begin using the lidar point cloud and radar messages to create background models. These models include voxels that indicate whether they represent the background or not.
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the lidar and radar’s background models are created. We can extract the foreground lidar and radar points from the incoming lidar pointcloud and radar message if they are not in the background voxels.
+After the background models for the lidar and radar are created, we can extract the foreground lidar and radar points from the incoming lidar point cloud and radar messages if they do not match the background voxels.
 
-All of the foreground radar points are defined as reflector detection. However, foreground lidar points need to apply a clustering algorithm, additional filter, and calculate the cluster's center to become a reflector detection.
+All of the foreground radar points are defined as reflector detections. However, to classify foreground lidar points as reflector detections, it is necessary to apply a clustering algorithm, implement additional filtering, and calculate the center of the cluster.
 
 ### Step 3: Matching and filtering
 
@@ -26,17 +26,17 @@ Afterward, we match the lidar’s reflector detection and the radar’s reflecti
 
 ### Step 4: Calibration
 
-Finally, we can use the coordinate of the reflector detection pairs to calculate the transformation based on e SVD-based estimation.
+Finally, we can use the coordinates of the reflector detection pairs to calculate the transformation based on the estimation algorithm selected by the user (e.g., SVD).
 
 ### Step 5: Evaluation
 
-Additionally, we provide a metric plotter that can indicate whether the calibration errors are converged. Once the cross-validation errors are converged, users should be able to stop the calibration process.
+Additionally, we provide a metric plotter that can indicate whether the calibration errors have converged. Once the cross-validation errors have converged, users should be able to stop the calibration process.
 
 ### Diagram
 
 Below, you can see the how the algorithm is implemented in the `marker_radar_lidar_calibrator` package.
 
-![segment](../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_calibrator.jpg)
+![marker_radar_lidar_calibrator](../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_calibrator.jpg)
 
 ## ROS Interfaces
 
@@ -123,10 +123,12 @@ Below, you can see the how the algorithm is implemented in the `marker_radar_lid
 
 This type of reflector is crucial for such calibrations because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
-![segment](../docs/images/marker_radar_lidar_calibrator/radar_reflector.png)
+<p align="center">
+    <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
+<p align="center">
 
 ## Known issues/limitations
 
 ## Pro tips/recommendations
 
-While doing the calibration, try to set different height for the radar reflecotr by using the tripod and also place the reflector in differnt distance. Please also make sure the center of the radar reflecotr face to the radar sensor.
+While performing the calibration, try setting the radar reflector at different heights using the tripod, and also place the reflector at various distances. Please also ensure that the center of the radar reflector faces the radar sensor.
