@@ -54,21 +54,21 @@ In this tutorial, since the `tf` are published by the provided rosbags, run the 
 
 Once the user starts running the tutorial rosbag, the point cloud will appear in `rviz` as shown in the example below. Press the `Extract Background Model button` in the UI to begin extracting the background.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
-</div>
+</p>
 
 Once user click the button, it will show like the image below.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz2.jpg" alt="rviz2" width="500">
-</div>
+</p>
 
 Once the background is extracted, it will show like the image below. User can see that there are the `Add lidar-radar pair` button is enabled.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz3.jpg" alt="rviz3" width="500">
-</div>
+</p>
 
 Also, following text should be shown in the console.
 
@@ -82,9 +82,9 @@ After the background model has been extracted, the user can carry the radar refl
 
 Also, the green points represent the lidar foreground points, while the purple points indicate radar foreground detections. The blue point is the estimated center of the radar reflector derived from the lidar point cloud.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/marker_radar_lidar_calibrator/add1.jpg" alt="add1" width="300" height="300">
-</div>
+</p>
 
 When the purple line connects the purple point (the radar estimation of the reflector) and the blue point (the lidar estimation of the reflector), the user can press the `Add lidar-radar pair` button to register them as a pair.
 
@@ -138,8 +138,8 @@ Once the `Send calibration` button are clicked, the result will be sent to the s
 
 After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/marker_radar_lidar_calibrator/menu4.jpg" alt="menu4"  width="500">
-</div>
+</p>
 
 To evaluate the calibration result, user can measure the calibrated radar points (green) are closer than the initial radar points (red) to the lidar points.
