@@ -107,6 +107,12 @@ Using the tutorial rosbag as an example, we can delete the latest radar and lida
   </tr>
 </table>
 
+The console should also show the following text.
+
+```bash
+[marker_radar_lidar_calibrator]: The last track was successfully deleted. Remaining converged tracks: 4
+```
+
 ### Metric plotter
 
 The tool also provides a metric plotter for real time visualization shown in below.
