@@ -54,15 +54,21 @@ In this tutorial, since the `tf` are published by the provided rosbags, run the 
 
 Once the user starts running the tutorial rosbag, the point cloud will appear in `rviz` as shown in the example below. Press the `Extract Background Model button` in the UI to begin extracting the background.
 
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/rviz1.jpg)
+<div style="text-align: center;">
+    <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
+</div>
 
 Once user click the button, it will show like the image below.
 
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/rviz2.jpg)
+<div style="text-align: center;">
+    <img src="../images/marker_radar_lidar_calibrator/rviz2.jpg" alt="rviz2" width="500">
+</div>
 
 Once the background is extracted, it will show like the image below. User can see that there are the `Add lidar-radar pair` button is enabled.
 
-![sensor/docs/tutorials/marker_radar_lidar_calibrator.md](../images/marker_radar_lidar_calibrator/rviz3.jpg)
+<div style="text-align: center;">
+    <img src="../images/marker_radar_lidar_calibrator/rviz3.jpg" alt="rviz3" width="500">
+</div>
 
 Also, following text should be shown in the console.
 
@@ -76,7 +82,9 @@ After the background model has been extracted, the user can carry the radar refl
 
 Also, the green points represent the lidar foreground points, while the purple points indicate radar foreground detections. The blue point is the estimated center of the radar reflector derived from the lidar point cloud.
 
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/add1.jpg)
+<div style="text-align: center;">
+    <img src="../images/marker_radar_lidar_calibrator/add1.jpg" alt="add1" width="300" height="300">
+</div>
 
 When the purple line connects the purple point (the radar estimation of the reflector) and the blue point (the lidar estimation of the reflector), the user can press the `Add lidar-radar pair` button to register them as a pair.
 
@@ -90,8 +98,8 @@ Using the tutorial rosbag as an example, we can delete the latest radar and lida
 
 <table>
   <tr>
-    <td><img src="../images/marker_radar_lidar_calibrator/delete1.jpg" alt="scene0" width = 400px ></td>
-    <td><img src="../images/marker_radar_lidar_calibrator/delete2.jpg" alt="scene1" width = 400px ></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/delete1.jpg" alt="delete1" width = 400px ></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/delete2.jpg" alt="delete2" width = 400px ></td>
    </tr>
    <tr>
     <td><p style="text-align: center;">Before deletion.</p></td>
@@ -117,8 +125,8 @@ Once the `Send calibration` button are clicked, the result will be sent to the s
 
 <table>
   <tr>
-    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration1.jpg"  width = 700px alt = marker_radar_lidar_calibrator></td>
-    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration2.jpg"  width = 700px alt = marker_radar_lidar_calibrator></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration1.jpg" alt = "end_calibration1" width = 700px></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration2.jpg" alt = "end_calibration2" width = 700px></td>
    </tr>
    <tr>
     <td><p style="text-align: center;">Rosbag ended.</p></td>
@@ -129,6 +137,9 @@ Once the `Send calibration` button are clicked, the result will be sent to the s
 ## Results
 
 After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/menu4.jpg)
+
+<div style="text-align: center;">
+    <img src="../images/marker_radar_lidar_calibrator/menu4.jpg" alt="menu4"  width="500">
+</div>
 
 To evaluate the calibration result, user can measure the calibrated radar points (green) are closer than the initial radar points (red) to the lidar points.

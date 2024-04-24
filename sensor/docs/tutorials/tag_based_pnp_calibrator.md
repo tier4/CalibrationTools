@@ -39,12 +39,14 @@ ros2 run sensor_calibration_manager sensor_calibration_manager
 
 In `project`, select `x2`, and in `calibrator`, select `tag_based_pnp_calibrator`. Then, press `Continue`.
 
-![segment](../images/tag_based_pnp_calibrator/menu1.jpg)
+<div style="text-align: center;">
+    <img src="../images/tag_based_pnp_calibrator/menu1.jpg"  alt="menu1" width="300">
+</div>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
 For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag have 8 Apriltag detection and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
 
-![segment](../images/tag_based_pnp_calibrator/menu2.jpg)
+![tag_based_pnp_calibrator](../images/tag_based_pnp_calibrator/menu2.jpg)
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
@@ -74,16 +76,28 @@ In the end of the calibration, we can get 8 detection pairs which shown as below
 ## Results
 
 After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
-![segment](../images/tag_based_pnp_calibrator/menu4.jpg)
+
+<div style="text-align: center;">
+    <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
+</div>
 
 User can modify the `visualization options` in the right side of the `image view`. To compare the results easier, user can set the `Marker size (m)` to `0.04` and set the `PC subsample factor` to `1`.
 
-![segment](../images/tag_based_pnp_calibrator/visualization_bar.jpg)
+<div style="text-align: center;">
+    <img src="../images/tag_based_pnp_calibrator/visualization_bar.jpg"  alt="visualization_bar" width="200">
+</div>
 
 After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf`. By doing this, user can easily measure the difference after the calibration.
 
 The images below show that with the calibrated tranformation, the projected pointcloud align better with the imaage.
 
-![segment](../images/tag_based_pnp_calibrator/init_tf.jpg)
-
-![segment](../images/tag_based_pnp_calibrator/calibrated_tf.jpg)
+<table>
+  <tr>
+    <td><img src="../images/tag_based_pnp_calibrator/init_tf.jpg" alt="init_tf" width = 500px ></td>
+    <td><img src="../images/tag_based_pnp_calibrator/calibrated_tf.jpg" alt="calibrated_tf" width = 500px ></td>
+   </tr>
+   <tr>
+    <td><p style="text-align: center;">Before Calibration.</p></td>
+    <td><p style="text-align: center;">After Calibration.</p></td>
+  </tr>
+</table>
