@@ -14,8 +14,8 @@ Calibration tools for sensors used in autonomous driving and robotics (camera, l
   - [Intrinsic calibration tools](#intrinsic-calibration-tools)
 - [Design](#design)
 - [Integration](#integration)
-  - Integrate the calibration tools to your own projects
-  - Integrate your own calibration tool
+  - [Create a new project](#create-a-new-project)
+  - [Integrate a new calibrator](#integrate-a-new-calibrator)
 
 ## Installation
 
@@ -74,25 +74,27 @@ docker run --gpus all --net=host -e ROS_DOMAIN_ID=$ROS_DOMAIN_ID -e DISPLAY=$DIS
 
 ### Extrinsic calibration tools
 
-| Name                                | Sensors calibrated | Feature type                | Calibration type   | Documentation                              | Tutorial                                           |
-| ----------------------------------- | ------------------ | --------------------------- | ------------------ | ------------------------------------------ | -------------------------------------------------- |
-| ground plane calibrator             | base-lidar         | ground                      | roll, pitch, z     | [Link](ground_plane_calibrator/README.md)  | Link                                               |
-| interactive camera-lidar calibrator | camera-lidar       | manual correspondences      | full pose          | Link                                       | Link                                               |
-| lidar-lidar 2d calibrator           | lidar-lidar        | natural features            | x, y, yaw          | Link                                       | Link                                               |
-| mapping calibrator (lidar-lidar)    | lidar-lidar        | natural features            | full pose          | Lik                                        | Link                                               |
-| mapping calibrator (base-lidar)     | base-lidar         | natural features and ground | roll, pitch, and z | Link                                       | Link                                               |
-| marker radar-lidar calibrator       | radar-lidar        | marker                      | x, y, yaw          | Link                                       | Link                                               |
-| tag-based pnp calibrator            | camera-lidar       | marker                      | full pose          | Link                                       | Link                                               |
-| tag-based SfM calibrator            | camera-lidar-base  | marker                      | full pose          | [Link](tag_based_sfm_calibrator/README.md) | [Link](docs/tutorials/tag_based_sfm_calibrator.md) |
+| Name                                | Sensors calibrated | Feature type                | Calibration type   | Documentation                                   | Tutorial                                                |
+| ----------------------------------- | ------------------ | --------------------------- | ------------------ | ----------------------------------------------- | ------------------------------------------------------- |
+| ground plane calibrator             | base-lidar         | ground                      | roll, pitch, z     | [Link](ground_plane_calibrator/README.md)       | N/A                                                     |
+| interactive camera-lidar calibrator | camera-lidar       | manual correspondences      | full pose          | Link                                            | N/A                                                     |
+| lidar-lidar 2d calibrator           | lidar-lidar        | natural features            | x, y, yaw          | Link                                            | N/A                                                     |
+| mapping calibrator (lidar-lidar)    | lidar-lidar        | natural features            | full pose          | [Link](mapping_based_calibrator/README.md)      | [Link](docs/tutorials/mapping_based_calibrator.md)      |
+| mapping calibrator (base-lidar)     | base-lidar         | natural features and ground | roll, pitch, and z | Link                                            | N/A                                                     |
+| marker radar-lidar calibrator       | radar-lidar        | marker                      | x, y, yaw          | [Link](marker_radar_lidar_calibrator/README.md) | [Link](docs/tutorials/marker_radar_lidar_calibrator.md) |
+| tag-based PnP calibrator            | camera-lidar       | marker                      | full pose          | [Link](tag_based_pnp_calibrator/README.md)      | [Link](docs/tutorials/tag_based_pnp_calibrator.md)      |
+| tag-based SfM calibrator            | camera-lidar-base  | marker                      | full pose          | [Link](tag_based_sfm_calibrator/README.md)      | [Link](docs/tutorials/tag_based_sfm_calibrator.md)      |
 
 ### Intrinsic calibration tools
 
 | Name                         | Sensors calibrated | Feature type       | Calibration type    | Demo |
 | ---------------------------- | ------------------ | ------------------ | ------------------- | ---- |
-| camera intrinsics calibrator | camera intrinsics  | calibration boards | OpenCV camera model | Link |
+| camera intrinsics calibrator | camera intrinsics  | calibration boards | OpenCV camera model | N/A  |
 
 ## Design
 
 ## Integration
 
-### sensor
+### Create a new project
+
+### Integrate a new calibrator
