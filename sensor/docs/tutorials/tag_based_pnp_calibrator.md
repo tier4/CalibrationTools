@@ -11,7 +11,7 @@ Installation instructions can be found [here](../../README.md)
 
 ## Data preparation
 
-Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1gFrrchW9mWM1huWMYuJ0nWB2n1BfCJag?usp=drive_link).
+Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1gFrrchW9mWM1huWMYuJ0nWB2n1BfCJag).
 
 The rosabg includes four different topics including `camera_info`, `image_rect_color/compressed`, `pointcloud_raw`, and `/tf_static`.
 
@@ -23,7 +23,7 @@ The required space for calibration depends on the vehicle and sensors used. For 
 
 ### Apriltag
 
-Apriltag are the only moving elements during the calibration process and must detected by both cameras and lidars.
+Apriltag are the only moving elements during the calibration process and must detected by both camera and lidar.
 Depending on the lidar model and the available space, the required Apriltag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
 
 In addition to the Apriltag size, which determines the physical positions in which a tag can be detected, it is of equal importance the structure in which the Apriltag is mounted. Depending on the structure's shape and size, it may interfere with the lidar detection algorithm, so it is recommended to prepare a mount that holds the tag in a way that is not visible to the sensor (see the provided example).
