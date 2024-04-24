@@ -40,7 +40,7 @@ ros2 run sensor_calibration_manager sensor_calibration_manager
 In `project`, select `x2`, and in `calibrator`, select `tag_based_pnp_calibrator`. Then, press `Continue`.
 
 <p align="center">
-    <img src="../images/tag_based_pnp_calibrator/menu1.jpg"  alt="menu1" width="300">
+    <img src="../images/tag_based_pnp_calibrator/menu1.jpg"  alt="menu1">
 </p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.

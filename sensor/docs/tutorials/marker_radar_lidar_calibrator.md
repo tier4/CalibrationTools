@@ -36,7 +36,9 @@ ros2 run sensor_calibration_manager sensor_calibration_manager
 
 In `project`, select `x2`, and in `calibrator`, select `marker_radar_lidar_calibrator`. Then, press `Continue`.
 
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/menu1.jpg)
+<p align="center">
+    <img src="../images/marker_radar_lidar_calibrator/menu1.jpg" alt="menu1">
+</p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
 For this tutorial, we will modify the default value `radar_name` from `front_left` to `front_center`. For the `msg_type` and `transformation_type`, as `object_raw` topic is type of `radar_tracks` and the radar type is 2D in this tutorial, we keep them as default. After configuring the parameters, click `Launch`.
