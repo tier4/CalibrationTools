@@ -39,9 +39,9 @@ ros2 run sensor_calibration_manager sensor_calibration_manager
 
 In `project`, select `x2`, and in `calibrator`, select `tag_based_pnp_calibrator`. Then, press `Continue`.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu1.jpg"  alt="menu1" width="300">
-</div>
+</p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
 For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag have 8 Apriltag detection and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
@@ -77,15 +77,15 @@ In the end of the calibration, we can get 8 detection pairs which shown as below
 
 After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
-</div>
+</p>
 
 User can modify the `visualization options` in the right side of the `image view`. To compare the results easier, user can set the `Marker size (m)` to `0.04` and set the `PC subsample factor` to `1`.
 
-<div style="text-align: center;">
+<p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization_bar.jpg"  alt="visualization_bar" width="200">
-</div>
+</p>
 
 After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf`. By doing this, user can easily measure the difference after the calibration.
 
