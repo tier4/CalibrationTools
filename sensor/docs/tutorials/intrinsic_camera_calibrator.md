@@ -19,7 +19,7 @@ ros2 launch intrinsic_camera_calibrator calibrator.launch.xml
 Once the tool has been launched, the initial configuration menu is displayed as presented in Figure 1.
 
 <p align="center">
-   <img src="images/camera-intrinsics/initial_menu_calibration.png" height="300" class="center">
+   <img src="../images/intrinsic_camera_calibrator/initial_menu_calibration.png" height="300" class="center" alt="initial_menu_calibration">
    <p align="center">Fig 1. Initial configuration menu</figcaption>
 </p>
 
@@ -28,7 +28,7 @@ The calibration mode is set by default, and both the data source and calibration
 Once the beforementioned configurations are set, by clicking the `Start` button, the main window is displayed as shown in Figure 2.
 
 <p align="center">
-   <img src="images/camera-intrinsics/main_window.jpg" width="80%" class="center">
+   <img src="../images/intrinsic_camera_calibrator/main_window.jpg" width="80%" class="center" alt="main_window">
    <p align="center">Fig 2. Main window</figcaption>
 </p>
 
@@ -40,11 +40,11 @@ The calibration is over when the `Calibration status` goes back to `Idle`, at wh
 A brief overview of the calibration results can always be observed in the main window as seen in Figure 3
 
 <p align="center">
-   <img src="images/camera-intrinsics/calibration_result.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/calibration_result.png" width="200" class="center" alt="calibration_result">
    <p align="center">Fig 3. Calibration results</figcaption>
 </p>
 
-After the calibration has finished, is possible to save the results by clicking the `Save` button and selecting and appropriate folder. The saved files correspond to the calibration itself (in the format used by ROS, as explained in [Section 2.5.1](#251-camera-intrinsics-model-and-output-format)) and the calibration images, in case they are needed for further processing.
+After the calibration has finished, is possible to save the results by clicking the `Save` button and selecting an appropriate folder. The saved files correspond to the calibration itself (in the format used by ROS, as explained in [Section 2.5.1](#251-camera-intrinsics-model-and-output-format)) and the calibration images, in case they are needed for further processing.
 
 ### 1.2 Evaluation
 
@@ -54,14 +54,14 @@ However, in this case, since the objective is to evaluate an existing set of int
 Once the intrinsics are loaded, the selection of the `evaluation` mode becomes available as shown in Figure 4.
 
 <p align="center">
-   <img src="images/camera-intrinsics/initial_menu_evaluation.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/initial_menu_evaluation.png" width="200" class="center" alt="initial_menu_evaluation">
    <p align="center">Fig 4. Initial configuration menu after loading a set of intrinsics</figcaption>
 </p>
 
 After selecting the `evaluation` and pressing `Start`, the process is analogous to the `Calibration` process, except that instead of using the `Calibrate` button, the `Evaluate` button is used, upon which the evaluation results are displayed in the same way as presented in Figure 5.
 
 <p align="center">
-   <img src="images/camera-intrinsics/initial_menu_evaluation.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/initial_menu_evaluation.png" width="200" class="center" alt="initial_menu_evaluation">
    <p align="center">Fig 5. Initial configuration menu after loading a set of intrinsics</figcaption>
 </p>
 
@@ -79,14 +79,14 @@ The desired data source can be chosen from the `Source options` in the initial c
 In the case of ROS2 topics or ROS2 bags, the window from Figure 6 is displayed, where the user can select the desired topic corresponding to the camera to be calibrated.
 
 <p align="center">
-   <img src="images/camera-intrinsics/topic_configuration_1.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/topic_configuration_1.png" width="200" class="center" alt="topic_configuration_1">
    <p align="center">Fig 6. ROS2 topic selection</figcaption>
 </p>
 
 Additionally, in the case that the default QoS profiles don't match, the user can also set them to suit their needs as can be observed in Figure 7.
 
 <p align="center">
-   <img src="images/camera-intrinsics/topic_configuration_2.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/topic_configuration_2.png" width="200" class="center" alt="topic_configuration_2">
    <p align="center">Fig 7. ROS2 topic QoS configuration</figcaption>
 </p>
 
@@ -95,11 +95,11 @@ Additionally, in the case that the default QoS profiles don't match, the user ca
 In order to calibrate camera intrinsics, objects with known geometry need to be seen from different views.
 The most established method to accomplish this is to print boards with easy-to-detect patterns and move them around the camera. The `intrinsic_camera_calibrator` provides support for three kinds of boards:
 
-- Chess boards ([6x8 example](resource/checkerboard_8x6.pdf))
-- Circle dot boards ([6x8 example](resource/circle_8x6.pdf))
-- Apriltag grid board ([3x4 example](resource/apriltag_grid_3x4.pdf))
+- Chess boards ([6x8 example](../resource/checkerboard_8x6.pdf))
+- Circle dot boards ([6x8 example](../resource/circle_8x6.pdf))
+- Apriltag grid board ([3x4 example](../resource/apriltag_grid_3x4.pdf))
 
-The choice of board can be set in the initial configuration menu from Figure 1, and the board parameters (size, cells, etc.) can be modified by clicking on the `Board parameters` button.
+The choice of the board can be set in the initial configuration menu from Figure 1, and the board parameters (size, cells, etc.) can be modified by clicking on the `Board parameters` button.
 
 \*In the case of the apriltag boards, a script from [kalibr](https://github.com/ethz-asl/kalibr) was modified to generate the pattern. The difference lies in the black squared between tags, which are not compatible with [Apriltag3](https://github.com/AprilRobotics/apriltag)
 
@@ -110,28 +110,28 @@ Each of the boards presented in [Section 2.2](#22-board-compatibility) requires 
 Each detector has several parameters which control its speed, detection rate, and precision. In case the user requires to change the default parameters, it can be done directly from the UI without the need to restart the tool by clicking `Detector parameters` placed in the main window. Once the user does so, the window from Figure 8 is displayed, where the user can freely modify the parameters.
 
 <p align="center">
-   <img src="images/camera-intrinsics/detection_parameters.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/detection_parameters.png" width="200" class="center" alt="detection_parameters">
    <p align="center">Fig 8. Detection parameters</figcaption>
 </p>
 
 If the detector is property configured, once a board is detected, the pattern's corners or centers are displayed as shown in Figure 9.
 
 <p align="center">
-   <img src="images/camera-intrinsics/detection.jpg" width="40%" class="center">
+   <img src="../images/intrinsic_camera_calibrator/detection.jpg" width="40%" class="center" alt="detection">
    <p align="center">Fig 9. Board detection</figcaption>
 </p>
 
 Additionally, if the user scrolls in the image, sub-pixel level visualization is also available (see Figure 10).
 
 <p align="center">
-   <img src="images/camera-intrinsics/sub_pixel_visualization.png" width="40%" class="center">
+   <img src="../images/intrinsic_camera_calibrator/sub_pixel_visualization.png" width="40%" class="center" alt="sub_pixel_visualization">
    <p align="center">Fig 10. Zoomed-in visualization</figcaption>
 </p>
 
 Finally, the detections' statistics are also displayed in the main window as shown in Figure 11.
 
 <p align="center">
-   <img src="images/camera-intrinsics/detection_results.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/detection_results.png" width="200" class="center" alt="detection_results">
    <p align="center">Fig 11. Detection results</figcaption>
 </p>
 
@@ -140,7 +140,7 @@ Finally, the detections' statistics are also displayed in the main window as sho
 Board detections can be used directly to form a database to optimize the camera intrinsics. However, bad detections, computational constraints, and redundant data need to be considered in order to produce the best calibration possible. In Sections 2.4.1 and 2.4.2 sections we detail how we implement these aspects, and the parameters that control these processes can be modified by clicking the `Data collection parameters` present in the main window as shown in Figure 12.
 
 <p align="center">
-   <img src="images/camera-intrinsics/data_collection_parameters.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/data_collection_parameters.png" width="200" class="center" alt="data_collection_parameters">
    <p align="center">Fig 12. Data collection parameters</figcaption>
 </p>
 
@@ -150,7 +150,7 @@ As shown in Figure 11, we compute several aspects related to the detection. In w
 
 - Far away boards may produce imprecise detections, so we set a limit to the max limit we accept board detections
 - Boards facing away from the image plane usually result in higher detection errors, so we also set a limit to the angle of the board with respect to the z-axis seen from the camera.
-- In some rare cases, the detectors mistake the order of the corners/centers. In order to filter out these cases, we compute the linear error, defined as the average line-point error from edges in the pattern and intermediate points (See figure 9), and set a threshold to it.
+- In some rare cases, the detectors mistake the order of the corners/centers. In order to filter out these cases, we compute the linear error, defined as the average line-point error from edges in the pattern and intermediate points (See Figure 9), and set a threshold to it.
 - A good detection should be able to be fitted correctly with a camera intrinsic calibrator. For this reason, we also calibrate the camera intrinsics with each detection, to evaluate how good the detection is by observing the reprojection error produced by this calibration.
 
 #### 2.4.2 Redundant detection rejection
@@ -170,37 +170,37 @@ In order to understand the data collection process, and guide the user to place 
 
 Figure 12 shows an example where few samples have been collected and Figure 13 shows an example where more samples have been collected. In order to improve the database, the user should move the board to areas in which the heatmap is displayed in blue.
 
-| ![data_collection_heatmap_1.png](images/camera-intrinsics/data_collection_heatmap_1.jpg) | ![data_collection_heatmap_2](images/camera-intrinsics/data_collection_heatmap_2.jpg) |
-| :--------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
-|                      Fig 12. Data collection heatmap (few samples)                       |                           Fig 13. Data collection heatmap                            |
+| ![data_collection_heatmap_1.png](../images/intrinsic_camera_calibrator/data_collection_heatmap_1.jpg) | ![data_collection_heatmap_2](../images/intrinsic_camera_calibrator/data_collection_heatmap_2.jpg) |
+| :---------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: |
+|                             Fig 12. Data collection heatmap (few samples)                             |                                  Fig 13. Data collection heatmap                                  |
 
 The status of the data collection can also be observed in the main window, where the number of samples collected and the occupancy rate of the previously mentioned heatmaps is displayed (See Figure 14).
 
 <p align="center">
-   <img src="images/camera-intrinsics/data_collection_results.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/data_collection_results.png" width="200" class="center" alt="data_collection_results">
    <p align="center">Fig 14. Detection results</figcaption>
 </p>
 
 Finally, we also provide a visualization for the database statistics, which can be enabled by clicking the `View data collection statistics` (an example can be observed in Figure 15).
 
 <p align="center">
-   <img src="images/camera-intrinsics/data_collection_statistics.png" width="80%" class="center">
+   <img src="../images/intrinsic_camera_calibrator/data_collection_statistics.png" width="80%" class="center" alt="data_collection_statistics">
    <p align="center">Fig 15. Detection results</figcaption>
 </p>
 
-### 2.5 Calibration and visualization
+### 2.5 Calibration and Visualization
 
 Once enough data is collected, the user can execute the calibration routine by pressing the `Calibrate` button. Additionally, the parameters of the calibration process can also be modified directly from the GUI by pressing the `Calibration parameters` button (See Figure 16).
 
 <p align="center">
-   <img src="images/camera-intrinsics/calibration_parameters.png" width="200" class="center">
+   <img src="../images/intrinsic_camera_calibrator/calibration_parameters.png" width="200" class="center" alt="calibration_parameters">
    <p align="center">Fig 16. Calibration parameters</figcaption>
 </p>
 
 The calibration routine consists of the following steps (most of these steps are optional and can be configured as explained previously):
 
 - Filter detection outliers using RANSAC
-- Subsample the inliers either via greedy entropy maximization or uniformingly in the case that the number of inliers is higher than the max calibration samples.
+- Subsample the inliers either via greedy entropy maximization or uniformly in the case that the number of inliers is higher than the max calibration samples.
 - Calibrate using the subsamples inliers
 - Filter out samples that have high reprojection error
 - Calibrate the model again using only the inliers from the last filter
@@ -209,25 +209,25 @@ Once the calibration process ends, visualizations of the results are launched au
 Figure 17 presents the statistics of the training set along the different steps in the calibration, allowing the user to identify any data issues along the pipeline. Then, Figure 18 displayed error statistics conditioned on the spatial position of the detections and their orientation angle, permitting the user to pinpoint errors in the resulting model and to identify potential outliers. Afterward, Figure 19 presents the reprojection errors for the different sets (training, calibration inliers, and evaluation). Finally, Figure 20 presents the final, summarized statistics of the calibration, which are displayed in the main window.
 
 <p align="center">
-   <img src="images/camera-intrinsics/calibration_data_sampling.png" width="80%" class="center">
+   <img src="../images/intrinsic_camera_calibrator/calibration_data_sampling.png" width="80%" class="center" alt="calibration_data_sampling">
    <p align="center">Fig 17. Data statistics during calibration</figcaption>
 </p>
 
 <p align="center">
-   <img src="images/camera-intrinsics/calibration_error.png" width="80%" class="center">
+   <img src="../images/intrinsic_camera_calibrator/calibration_error.png" width="80%" class="center" alt="calibration_error">
    <p align="center">Fig 18. Reprojection error by spatial location and board orientation</figcaption>
 </p>
 
 <p align="center">
-   <img src="images/camera-intrinsics/calibration_inliers.png" width="80%" class="center">
+   <img src="../images/intrinsic_camera_calibrator/calibration_inliers.png" width="80%" class="center" alt="calibration_inliers">
    <p align="center">Fig 19. Reprojection error among among different sets</figcaption>
 </p>
 
 <p align="center">
-   <img src="images/camera-intrinsics/calibration_result.png" width="200">
+   <img src="../images/intrinsic_camera_calibrator/calibration_result.png" width="200" alt="calibration_result">
    <p align="center">Fig 20. Detection results</p>
 </p>
 
 #### 2.5.1 Camera intrinsics model and output format
 
-The model used to represent the camera intrinsics correspond to the one used in [OpenCV](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html), which is adopted by ROS in its `image_pipeline` to perform [rectification](http://wiki.ros.org/image_pipeline/CameraInfo). The output format used by tool corresponds to the same one used in [ROS](http://wiki.ros.org/camera_calibration_parsers), so it can be used directly by most ROS camera drivers.
+The model used to represent the camera intrinsics corresponds to the one used in [OpenCV](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html), which is adopted by ROS in its `image_pipeline` to perform [rectification](http://wiki.ros.org/image_pipeline/CameraInfo). The output format used by the tool corresponds to the same one used in [ROS](http://wiki.ros.org/camera_calibration_parsers), so it can be used directly by most ROS camera drivers.

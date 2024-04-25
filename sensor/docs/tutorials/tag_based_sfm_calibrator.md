@@ -60,7 +60,7 @@ In addition to the waypoint size, which determines the physical positions in whi
 
 ### Vehicle
 
-Vehicles have suspension systems that make the `base_link` definition an ambiguous one from the point of view of the sensors. The pose of the `base_link` seen from the sensor will vary depending on the load present in the vehicle, and as such, the user will need to decide whether to calibrate either in a full/empty state. It is highly recommended that during the whole duration of the experiment no person enters or leaves the car!
+Vehicles have suspension systems that make the `base_link` definition an ambiguous one from the point of view of the sensors. The pose of the `base_link` seen from the sensor will vary depending on the load present in the vehicle, and as such, the user will need to decide whether to calibrate either in a full/empty state. It is highly recommended that during the whole duration of the experiment, no person enters or leaves the car!
 
 ### External camera
 
@@ -181,7 +181,7 @@ For the first scene, all the tags need to be placed. In the previous guidelines,
   </tr>
 </table>
 
-### Add calibration sensor detections to scene
+### Add calibration sensor detections to the scene
 
 In each scene, after the waypoint positions have been decided (they must not move for the rest of the scene), the user must confirm that they are being correctly observed by the sensors. This can be done by observing if a cyan frame appears as a marker in the position of the waypoint, as shown in the previous images.
 

@@ -165,7 +165,7 @@ Considerations:
 
 - The ground in which the vehicle and the ground tags are placed need to be as flat as possible (plane).
 - For this particular tag, the width of the tag is relevant. If it can not be assumed to be null, the final `base_link` pose needs to be offset manually.
-- The ground tags can be printed using normal paper and when attached via tape to the floor. The user needs to be careful no to move them during the experiment while talking.
+- The ground tags can be printed using normal paper and when attached via tape to the floor. The user needs to be careful not to move them during the experiment while talking.
 - The ground tags can be laminated for reuse, but the reflections caused by it can make it difficult or impossible to detect.
   Auxiliary tag
   Auxiliary tags are tags that do not have restrictions on their placement and use and were added to improve the observation distribution in the bundle adjustment graph. If it were not for the auxiliary tags, most of the tags would be on a single plane, save a few observations corresponding to the waypoints and the wheel tags.
