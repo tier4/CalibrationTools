@@ -11,7 +11,7 @@ Installation instructions can be found [here](../../README.md)
 
 ## Data preparation
 
-Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1e0rajkGfXrKl-6E5oouALdbjeva1c5X1?usp=drive_link).
+Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1e0rajkGfXrKl-6E5oouALdbjeva1c5X1).
 
 The rosbag includes four pointcloud topics published by different lidar sensors and also includes `/tf_static` information.
 
@@ -23,7 +23,7 @@ The required space for calibration depends on the vehicle and sensors used. For 
 
 ### Vehicle
 
-When doing the calibration, user needs to drive the vehicle in order to collect the pointcloud for buliding map. While recording the data during the experiment, slow down the vehicle speed as munch as possible. For instance, drive slower than 5 km/hr is a good speed for recording a good data. Also during the experiment, try to avoid people walking around the vehicle, try to make to surrounding static.
+When doing the calibration, the user needs to drive the vehicle to collect the point cloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 5 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
 
 ## Launching the tool
 
@@ -36,18 +36,20 @@ ros2 run sensor_calibration_manager sensor_calibration_manager
 
 In `project`, select `rdv`, and in `calibrator`, select `mapping_based_calibrator`. Then, press `Continue`.
 
-![segment](../images/mapping_based_calibrator/menu1.jpg)
+<p align="center">
+    <img src="../images/mapping_based_calibrator/menu1.jpg" alt="menu1">
+</p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient. However, for this tutorial, we will use the default values. After configuring the parameters, click `Launch`.
 
-![segment](../images/mapping_based_calibrator/menu2.jpg)
+![mapping_based_calibrator](../images/mapping_based_calibrator/menu2.jpg)
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
 In this tutorial, since the `tf` are published by the provided rosbags, run the rag (`ros2 bag play lidar_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
 
-![segment](../images/mapping_based_calibrator/menu3.jpg)
+![mapping_based_calibrator](../images/mapping_based_calibrator/menu3.jpg)
 
 Note: In the default values in the `/calibration_tools/sensor/sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml`, the RDV vehicle set the top_lidar as `mapping lidar`, and other lidars as `calibration lidars`.
 
@@ -55,7 +57,7 @@ Note: In the default values in the `/calibration_tools/sensor/sensor_calibration
 
 Once you have clicked the `Calibrate` button, the first step of calibration process will automatically start building the map by using NDT/GICP algorithm with the `mapping lidar`. You can visualize process of building the map on the `rviz`.
 
-![segment](../images/mapping_based_calibrator/map1.jpg)
+![mapping_based_calibrator](../images/mapping_based_calibrator/map1.jpg)
 
 You can also see the log in the console showing that the map is building.
 
@@ -71,15 +73,15 @@ You can also see the log in the console showing that the map is building.
 [mapping_based_calibrator-1] [calibration_mapper]: New frame (id=28 | kid=-1). Distance=2.26 Delta_distance0.11 Delta_time0.10. Unprocessed=0 Frames=29 Keyframes=3
 ```
 
-When the roabag is finished playing, you should see the pointcloud map and the path of the lidar frames like the picture below.
+When the rosbag has finished playing, you should see the point cloud map and the path of the lidar frames, as shown in the picture below.
 
-![segment](../images/mapping_based_calibrator/map2.jpg)
+![mapping_based_calibrator](../images/mapping_based_calibrator/map2.jpg)
 
 ## Calibration
 
-Calibration starts anytime when the user send the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. User can also send this command before the rosbag ended if user think that the data collection is enough for calibration.
+Calibration starts anytime when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. User can also send this command before the rosbag ends if they think the data collected is sufficient for calibration.
 
-In this tutorial, we send the command after the rosbag run until the end. Once the command is sent, the displayed text should be as follows:
+In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 
 ```bash
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Mapper stopped through service (operator()())
@@ -87,9 +89,9 @@ In this tutorial, we send the command after the rosbag run until the end. Once t
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Beginning lidar calibration for pandar_front (operator()())
 ```
 
-The calibration process may take some time as it involves multiple lidars. Users should remain patient and monitor the console output to follow the calibration progress.
+The calibration process may take some time, as it involves multiple lidars. Users should remain patient and monitor the console output to track the progress of the calibration.
 
-Once the calibration process is completed, the displayed text should be as follows:
+Once the calibration process is complete, the displayed text should be as follows:
 
 ```bash
 [mapping_based_calibrator-1] [lidar_calibrator(pandar_left)]: Calibration result as a tf main lidar -> lidar_calibrator(pandar_left)
@@ -108,15 +110,20 @@ Once the calibration process is completed, the displayed text should be as follo
 
 User can also see the three different colors of pointcloud in the `rviz`. white for the map from the `mapping lidar`, red for the initial map from the `calibration lidars`, and green for the calibrated map from the `calibration lidars`.
 
-![segment](../images/mapping_based_calibrator/map3.jpg)
+![mapping_based_calibrator](../images/mapping_based_calibrator/map3.jpg)
 
 ## Results
 
 After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
-![segment](../images/mapping_based_calibrator/menu4.jpg)
+
+<p align="center">
+    <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">
+</p>
 
 To assess the calibration results, users can precisely measure static objects within the point cloud map, such as stationary vehicles, traffic cones, and walls.
 
 The image below displays the vehicle within the pointcloud, allowing for a comparison of results before and after calibration. It is evident that the initial point cloud from `calibration lidars` (shown in red) has been successfully calibrated (shown in green) and is now aligned with the `mapping lidar` (shown in white).
 
-![segment](../images/mapping_based_calibrator/vehicle_calibrated.jpg)
+<p align="center">
+    <img src="../images/mapping_based_calibrator/vehicle_calibrated.jpg" alt="vehicle_calibrated" width="500">
+</p>

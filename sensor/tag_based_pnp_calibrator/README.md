@@ -8,11 +8,11 @@ The package `tag_based_pnp_calibrator` allows extrinsic calibration among Camera
 
 ## Inner-workings / Algorithms
 
-The `tag_based_pnp_calibrator` utilize the PNP algorithm to calculate the transformation between lidar and Camera. To run this package, you also need to run `apriltag_ros` package and `lidartag` package to calculate the transformation.
+The `tag_based_pnp_calibrator` utilizes the PnP algorithm to calculate the transformation between the lidar and camera. To run this package, you also need to operate the `apriltag_ros` package and the `lidartag` package to calculate the transformation.
 
-The `apriltag_ros` package will detect the apriltag and output the apriltag detection. On the other hand, `lidartag` package will detect the lidartag and output the lidartag detection.
+The `apriltag_ros` package detects the AprilTag and outputs the detection results. Conversely, the `lidartag` package detects the LidarTag and outputs its detection results.
 
-The `tag_based_pnp_calibrator` utilize the detections from `apriltag_ros` and `lidartag`, and use Kalman Filter to track those detections. If the detections is converged, then the calibrator will apply SQPNP provided by OpenCV to estimate the transformation between image points from apriltag and object points from lidartag.
+The `tag_based_pnp_calibrator` utilizes the detections from both apriltag_ros and lidartag, employing a Kalman Filter to track these detections. If the detections converge, the calibrator applies the SQPnP algorithm provided by OpenCV to estimate the transformation between the image points from AprilTag and the object points from LidarTag.
 
 ### Diagram
 
@@ -27,8 +27,8 @@ Below, you can see the how the algorithm is implemented in the `tag_based_pnp_ca
 | Name                        | Type                                         | Description                                                                                 |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `{camera_info}`             | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the calibration cameras . `camera_info` is provided via parameters |
-| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections. `lidartag/detections_array` is defined in launcher.                    |
-| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | Apriltag detections. `apriltag/detection_array` is defined in launcher.                     |
+| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | LidarTag detections. `lidartag/detections_array` is defined in launcher.                    |
+| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections. `apriltag/detection_array` is defined in launcher.                     |
 
 ### Output
 
@@ -51,13 +51,13 @@ Below, you can see the how the algorithm is implemented in the `tag_based_pnp_ca
 | --------------------------------------------- | --------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `calib_rate`                                  | `double`              |               | The rate at which the calibration callback is invoked. This controls the frequency of calibration updates.                          |
 | `base_frame`                                  | `std::string`         |               | The base_frame is used to compare the initial and calibrated values.                                                                |
-| `min_tag_size`                                | `double`              |               | The size of the Apriltag in meters                                                                                                  |
+| `min_tag_size`                                | `double`              |               | The size of the AprilTag in meters                                                                                                  |
 | `max_tag_distance`                            | `double`              |               | Maximum allowable distance from the camera to the tags.                                                                             |
-| `max_allowed_homography_error`                | `double`              |               | Discard the Apriltag detection if the homography error is larger than this value.                                                   |
+| `max_allowed_homography_error`                | `double`              |               | Discard the AprilTag detection if the homography error is larger than this value.                                                   |
 | `use_receive_time`                            | `bool`                |               | Flag to determine whether to use the receive time instead of the header timestamps.                                                 |
 | `use_rectified_image`                         | `bool`                |               | Flag to determine whether rectified images should be used in the calibration process.                                               |
 | `calibration_crossvalidation_training_ratio`  | `double`              |               | The ratio of data used for training versus testing during the calibration's cross-validation process.                               |
-| `calibration_convergence_min_pairs`           | `int`                 |               | The minimum number of Apriltag and LiDARtag detection pairs required to consider the calibration process as potentially converging. |
+| `calibration_convergence_min_pairs`           | `int`                 |               | The minimum number of AprilTag and LidarTag detection pairs required to consider the calibration process as potentially converging. |
 | `calibration_convergence_min_area_percentage` | `double`              |               | Minimum percentage of the area that needs to be covered by detection.                                                               |
 | `min_pnp_points`                              | `int`                 |               | Minimum number of points required for the Perspective-n-Point problem used in calibration to solve the pose estimation.             |
 | `min_convergence_time`                        | `double`              |               | Minimum time required for the calibration process to be considered as converged.                                                    |
@@ -86,9 +86,11 @@ Below, you can see the how the algorithm is implemented in the `tag_based_pnp_ca
 
 ### LiDARTag
 
-In order the perform camera-lidar calibration using this tool, it is necessary to prepare lidartags and lidars with intensity measures. In order to assure that no objects difficult the tag detection and and obtain the most stable detection possible, it is highly recommended to also prepare fixed mounts for these tags as presented in below.
+To perform camera-lidar calibration using this tool, it is necessary to prepare LidarTags and lidars with intensity measures. To ensure that no objects obstruct the tag detection and to achieve the most stable detection possible, it is highly recommended to also prepare fixed mounts for these tags, as shown below.
 
-![segment](../docs/images/tag_based_pnp_calibrator/lidartag-mount.jpg)
+<p align="center">
+    <img src="../docs/images/tag_based_pnp_calibrator/lidartag-mount.jpg"  alt="lidartag-mount" width="500">
+</p>
 
 ## References
 
@@ -97,16 +99,20 @@ References/External links
 
 ## Known issues/limitations
 
-Our version of lidartag only supports the family `16h5`
+Our version of LidarTag only supports the family `16h5`
 
-Our codebase only supports apriltag detections for `36h11`
+Our codebase only supports AprilTag detections for `36h11`
 
 ## Pro tips/recommendations
 
-During calibration, ensure that the lidar scan cover the tag, similar to the first example shown in below image. However, if the tag resolution is low, as in the second example, and the lidar still detects the tag, it is acceptable. The third example demonstrates a scenario where the lidar scan fails to cover the tag, resulting in the inability to detect the lidartag.
+During calibration, ensure that the lidar scan covers the tag, similar to the first example shown in the image below. However, if the tag resolution is low, as in the second example, and the lidar still detects the tag, it is acceptable. The third example demonstrates a scenario where the lidar scan fails to cover the tag, resulting in the inability to detect the LidarTag.
 
-![segment](../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg)
+<p align="center">
+    <img src="../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg"  alt="lidarscan_on_tag" width="500">
+</p>
 
 Also noted that when doing the calibration, it is necessary to rotate the tag in order to face to the camera like the image shown below.
 
-![segment](../docs/images/tag_based_pnp_calibrator/tag_position.jpg)
+<p align="center">
+    <img src="../docs/images/tag_based_pnp_calibrator/tag_position.jpg"  alt="tag_position" width="500">
+</p>

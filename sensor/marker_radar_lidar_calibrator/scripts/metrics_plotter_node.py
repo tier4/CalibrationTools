@@ -71,6 +71,10 @@ class MetricsPlotter:
         self.subplot3.set_xlabel("number of tracks")
         self.subplot3.set_ylabel("yaw error [deg]")
 
+        max_ylim0 = (
+            max(self.crossval_distance_error_list) if self.crossval_distance_error_list else 5
+        )
+        max_ylim1 = max(self.crossval_yaw_error_list) if self.crossval_yaw_error_list else 1
         max_ylim2 = (
             max(self.calibration_distance_error_list) if self.calibration_distance_error_list else 5
         )
@@ -92,6 +96,8 @@ class MetricsPlotter:
         self.subplot2.set_xlim(2.9, avg_xlim + 0.3)
         self.subplot3.set_xlim(2.9, avg_xlim + 0.3)
 
+        self.subplot0.set_ylim(0, max_ylim0 + 5)
+        self.subplot1.set_ylim(0, max_ylim1 + 0.1)
         self.subplot2.set_ylim(0, max_ylim2 + 5)
         self.subplot3.set_ylim(0, max_ylim3 + 0.1)
 
