@@ -30,7 +30,7 @@ The radar reflector is the only moving element during the calibration process an
 In this tutorial, we will use the X2 vehicle of Tier IV.
 First, run the sensor calibration manager:
 
-```bash
+```text
 ros2 run sensor_calibration_manager sensor_calibration_manager
 ```
 
@@ -43,14 +43,18 @@ In `project`, select `x2`, and in `calibrator`, select `marker_radar_lidar_calib
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
 For this tutorial, we will modify the default value `radar_name` from `front_left` to `front_center`. After configuring the parameters, click `Launch`.
 
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/menu2.jpg)
+<p align="center">
+    <img src="../images/marker_radar_lidar_calibrator/menu2.jpg" alt="menu2">
+</p>
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
 In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play radar_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
 
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/menu3.jpg)
+<p align="center">
+    <img src="../images/marker_radar_lidar_calibrator/menu3.jpg" alt="menu3">
+</p>
 
 ### Extract background model
 
@@ -74,7 +78,7 @@ Once the background is extracted, it will show like the image below. The user ca
 
 Also, the following text should be shown in the console.
 
-```bash
+```text
 [marker_radar_lidar_calibrator]: Finished background model initialization
 ```
 
@@ -100,8 +104,8 @@ Using the tutorial rosbag as an example, we can delete the latest radar and lida
 
 <table>
   <tr>
-    <td><img src="../images/marker_radar_lidar_calibrator/delete1.jpg" alt="delete1" width = 400px ></td>
-    <td><img src="../images/marker_radar_lidar_calibrator/delete2.jpg" alt="delete2" width = 400px ></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/delete1.jpg" alt="delete1" width = 700px ></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/delete2.jpg" alt="delete2" width = 700px ></td>
    </tr>
    <tr>
     <td><p style="text-align: center;">Before deletion.</p></td>
@@ -111,7 +115,7 @@ Using the tutorial rosbag as an example, we can delete the latest radar and lida
 
 The console should also show the following text.
 
-```bash
+```text
 [marker_radar_lidar_calibrator]: The last track was successfully deleted. Remaining converged tracks: 4
 ```
 
@@ -119,11 +123,13 @@ The console should also show the following text.
 
 The tool also provides a metric plotter for real-time visualization shown below.
 
-![marker_radar_lidar_calibrator](../images/marker_radar_lidar_calibrator/metric_plotter1.jpg)
+<p align="center">
+    <img src="../images/marker_radar_lidar_calibrator/metric_plotter1.jpg" alt="metric_plotter1" width="500">
+</p>
 
 The subplots at the top display the cross-validation errors, while the bottom subplot shows the average errors in the calibration procedure. Plotting for the average errors begins after three pairs have been collected. For the cross-validation errors, plotting starts after four pairs have been collected.
 
-Consider the left-top subplot, which plots the cross-validation errors for distance, as an example of how these errors are calculated. When the x-axis value is 3, it indicates that we estimate the transformation using 3 samples from the 5 converged tracks. We then calculate the distance errors using the remaining 2 samples. This process is repeated for 5 choose 3 (5C3) times, which totals 10 times, and the errors are then averaged. The light blue area represents the variance of the 10 calculated distance errors.
+Consider the left-top subplot, which plots the cross-validation errors for distance, as an example of how these errors are calculated. When the x-axis value is 3, it indicates that we estimate the transformation using 3 samples from the 5 converged tracks. We then calculate the distance errors using the remaining 2 samples. This process is repeated for 5 choose 3 (5C3) times, which totals 10 times, and the errors are then averaged. The light blue area represents the standard deviation of the 10 calculated distance errors.
 
 ### Send calibration
 
@@ -151,3 +157,9 @@ After the calibration process is finished, the sensor_calibration_manager will d
 </p>
 
 To evaluate the calibration result, the user can measure that the calibrated radar points (green) are closer than the initial radar points (red) to the lidar points.
+
+## FAQ
+
+- During the calibration, why the reflector detection didn't show on the rviz
+
+  1. Make sure the center of the reflector faces toward the radar sensor, and the height of the reflector is enough for the radar to detect.

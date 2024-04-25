@@ -33,7 +33,7 @@ In addition to the AprilTag size, which determines the physical positions in whi
 In this tutorial, we will use the X2 vehicle of Tier IV.
 First, run the sensor calibration manager:
 
-```bash
+```text
 ros2 run sensor_calibration_manager sensor_calibration_manager
 ```
 
@@ -44,28 +44,36 @@ In `project`, select `x2`, and in `calibrator`, select `tag_based_pnp_calibrator
 </p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
-For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag have 8 AprilTag detections and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
+For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag has 8 AprilTag detections and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
 
-![tag_based_pnp_calibrator](../images/tag_based_pnp_calibrator/menu2.jpg)
+<p align="center">
+    <img src="../images/tag_based_pnp_calibrator/menu2.jpg"  alt="menu2">
+</p>
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
 In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play camera_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
 
-![segment](../images/tag_based_pnp_calibrator/menu3.jpg)
+<p align="center">
+    <img src="../images/tag_based_pnp_calibrator/menu3.jpg"  alt="menu3">
+</p>
 
 ## Calibration
 
 The calibration starts automatically after clicking the `Calibrate` button. It will keep calibrating the LidarTag detections and AprilTag detections until the number of the detections fits the user-defined `calibration_pairs` in the `Launcher configuration`.
 
-When user start the calibration, `rviz` and the `image view` should be displayed like below.
+When the user starts the calibration, `rviz` and the `image view` should be displayed like below.
 
-![segment](../images/tag_based_pnp_calibrator/visualization1.jpg)
+<p align="center">
+    <img src="../images/tag_based_pnp_calibrator/visualization1.jpg"  alt="visualization1">
+</p>
 
 After the tools detect the LidarTag and AprilTag, it will show the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of lidar detections and AprilTag detections.
 
-![segment](../images/tag_based_pnp_calibrator/visualization2.jpg)
+<p align="center">
+    <img src="../images/tag_based_pnp_calibrator/visualization2.jpg"  alt="visualization2">
+</p>
 
 Once the user gets the converged detection, the user can start moving the tag to another position. Please make sure the moving distance is larger than the `calibration_min_pair_distance` and also make sure the tag is in the FOV of the lidar and camera.
 
@@ -101,3 +109,32 @@ The images below show that with the calibrated transformation, the projected poi
     <td><p style="text-align: center;">After Calibration.</p></td>
   </tr>
 </table>
+
+## FAQ
+
+- Why the calibrator doesn't add calibration pairs?
+
+  1. One possible reason is that the current pair is too close to previously collected data. In that case the current data is not accepted
+  2. The lidar and camera are not synchronized, this can be check with `ros2 topic echo [topic_name]`. Setting the parameter `use_receive_time` to `True` might help to solve the issue.
+  3. The detections are not stable enough (detections don’t converge)
+
+- Why the UI doesn't launch
+
+  1. Check with `ros2 node list` is the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments
+  2. If the UI crashed (see the console) it most probably is due to bad PySide installation, invalid intrinsics, or invalid extrinsics
+  3. Sensor data is not synchronized
+
+- Why the reprojection errors are so high
+
+  1. Check whether the intrinsic parameters are correct.
+
+- Why the reprojection error increases the more data is collected
+
+  1. When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting). The more data is collected, the error may increase to a certain extent, but that is the model trying to fit all the data, being unable to fit the noise. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling)
+
+- Why reprojection error does not seem low enough:
+
+  1. The intrinsics may not be accurate, thus limiting the performance of the method
+  2. The boards are not appropriate (are bent)
+  3. The boards moved too much while calibrating
+  4. The lidar detections were not very good. Try collecting detections in areas where there is more resolution.

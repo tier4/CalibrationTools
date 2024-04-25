@@ -99,15 +99,17 @@ References/External links
 
 ## Known issues/limitations
 
+- The tool is currently using the pinhole model for calibration. If the user is using the fisheye camera, the calibration result will not be perfect.
+
 ## Pro tips/recommendations
 
-During calibration, ensure that the lidar scan covers the tag, similar to the first example shown in the image below. However, if the tag resolution is low, as in the second example, and the lidar still detects the tag, it is acceptable. The third example demonstrates a scenario where the lidar scan fails to cover the tag, resulting in the inability to detect the LidarTag.
+- During calibration, ensure that the lidar scan covers the tag, similar to the first example shown in the image below. However, if the tag resolution is low, as in the second example, and the lidar still detects the tag, it is acceptable. The third example demonstrates a scenario where the lidar scan fails to cover the tag, resulting in the inability to detect the LidarTag.
 
 <p align="center">
     <img src="../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg"  alt="lidarscan_on_tag" width="500">
 </p>
 
-Also note that when doing the calibration, it is necessary to rotate the tag facing the camera like the image shown below.
+- Also note that when doing the calibration, it is necessary to rotate the tag facing the camera like the image shown below.
 
 <p align="center">
     <img src="../docs/images/tag_based_pnp_calibrator/tag_position.jpg"  alt="tag_position" width="500">

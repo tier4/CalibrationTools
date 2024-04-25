@@ -129,6 +129,8 @@ This type of reflector is crucial for such calibrations because it has a highly 
 
 ## Known issues/limitations
 
+- While performing the calibration, we have included a button to delete any mismatched pairs (e.g., an object detected by both radar and lidar). However, some outliers may not be easily detectable by human vision, leading to imperfect results as the calibration proceeds even with these anomalies present. Future enhancements will aim to improve outlier detection, thereby refining the calibration accuracy.
+
 ## Pro tips/recommendations
 
-While performing the calibration, try setting the radar reflector at different heights using the tripod, and also place the reflector at various distances. Please also ensure that the center of the radar reflector faces the radar sensor.
+- While performing the calibration, try setting the radar reflector at different heights using the tripod, and also place the reflector at various distances. Please also ensure that the center of the radar reflector faces the radar sensor.

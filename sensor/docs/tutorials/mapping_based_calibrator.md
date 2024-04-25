@@ -30,7 +30,7 @@ When doing the calibration, the user needs to drive the vehicle to collect the p
 In this tutorial, we will use the RDV of Tier IV (R&D Vehicle).
 First, run the sensor calibration manager:
 
-```bash
+```text
 ros2 run sensor_calibration_manager sensor_calibration_manager
 ```
 
@@ -42,26 +42,32 @@ In `project`, select `rdv`, and in `calibrator`, select `mapping_based_calibrato
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient. However, for this tutorial, we will use the default values. After configuring the parameters, click `Launch`.
 
-![mapping_based_calibrator](../images/mapping_based_calibrator/menu2.jpg)
+<p align="center">
+    <img src="../images/mapping_based_calibrator/menu2.jpg" alt="menu2">
+</p>
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
 In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play lidar_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
 
-![mapping_based_calibrator](../images/mapping_based_calibrator/menu3.jpg)
+<p align="center">
+    <img src="../images/mapping_based_calibrator/menu3.jpg" alt="menu3">
+</p>
 
 Note: In the default values in the `/calibration_tools/sensor/sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml`, the RDV vehicle set the top_lidar as `mapping lidar`, and other lidars as `calibration lidars`.
 
 ## Data collection (Mapping & Data paring)
 
-Once you have clicked the `Calibrate` button, the first step of the calibration process will automatically start building the map by using NDT/GICP algorithm with the `mapping lidar`. You can visualize the process of building the map on the `rviz`.
+Once you have clicked the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT/GICP algorithm with the `mapping lidar`. You can visualize the process of building the map on the `rviz`.
 
-![mapping_based_calibrator](../images/mapping_based_calibrator/map1.jpg)
+<p align="center">
+    <img src="../images/mapping_based_calibrator/map1.jpg" alt="menu3">
+</p>
 
 You can also see the log in the console showing that the map is building.
 
-```bash
+```text
 [mapping_based_calibrator-1] [calibration_mapper]: ROS: New pointcloud. Unprocessed=1 Frames=26 Keyframes=2
 [mapping_based_calibrator-1] [calibration_mapper]: Registrator innovation=0.00. Score=0.04
 [mapping_based_calibrator-1] [calibration_mapper]: New frame (id=26 | kid=-1). Distance=2.04 Delta_distance0.11 Delta_time0.10. Unprocessed=0 Frames=27 Keyframes=2 (mappingThreadWorker())
@@ -75,7 +81,9 @@ You can also see the log in the console showing that the map is building.
 
 When the rosbag has finished playing, you should see the point cloud map and the path of the lidar frames, as shown in the picture below.
 
-![mapping_based_calibrator](../images/mapping_based_calibrator/map2.jpg)
+<p align="center">
+    <img src="../images/mapping_based_calibrator/map2.jpg" alt="map2">
+</p>
 
 ## Calibration
 
@@ -83,7 +91,7 @@ Calibration starts anytime when the user sends the command `ros2 service call /s
 
 In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 
-```bash
+```text
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Mapper stopped through service (operator()())
 [mapping_based_calibrator-1] [calibration_mapper]: Mapping thread is exiting (mappingThreadWorker())
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Beginning lidar calibration for pandar_front (operator()())
@@ -93,7 +101,7 @@ The calibration process may take some time, as it involves multiple lidars. User
 
 Once the calibration process is complete, the displayed text should be as follows:
 
-```bash
+```text
 [mapping_based_calibrator-1] [lidar_calibrator(pandar_left)]: Calibration result as a tf main lidar -> lidar_calibrator(pandar_left)
 [mapping_based_calibrator-1] [lidar_calibrator(pandar_left)]:  translation:
 [mapping_based_calibrator-1] [lidar_calibrator(pandar_left)]:   x: -0.001519
@@ -108,13 +116,15 @@ Once the calibration process is complete, the displayed text should be as follow
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Sending the results to the calibrator manager
 ```
 
-User can also see the three different colors of pointcloud in the `rviz`. white for the map from the `mapping lidar`, red for the initial map from the `calibration lidars`, and green for the calibrated map from the `calibration lidars`.
+The user can also see the three different colors of pointcloud in the `rviz`. white for the map from the `mapping lidar`, red for the initial map from the `calibration lidars`, and green for the calibrated map from the `calibration lidars`.
 
-![mapping_based_calibrator](../images/mapping_based_calibrator/map3.jpg)
+<p align="center">
+    <img src="../images/mapping_based_calibrator/map3.jpg" alt="map3">
+</p>
 
 ## Results
 
-After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
+After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow the user to save the calibration data to a file.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">
@@ -127,3 +137,11 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
 <p align="center">
     <img src="../images/mapping_based_calibrator/vehicle_calibrated.jpg" alt="vehicle_calibrated" width="500">
 </p>
+
+## FAQ
+
+- Why does the calibration fail?
+
+  1. Check the console first to see the error message.
+  2. Check the rviz to see if any number on the path (keyframe number) is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. For instance, if the acceleration of the vehicle is too fast, the mapping might fail. Try to calibrate with more stable movement again.
+  3. Tune the parameters `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md).
