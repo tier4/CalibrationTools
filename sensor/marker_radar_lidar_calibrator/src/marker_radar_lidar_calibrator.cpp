@@ -1557,7 +1557,7 @@ void ExtrinsicReflectorBasedCalibrator::visualizationMarkers(
     marker.scale.y = parameters_.reflector_radius;
     marker.scale.z = parameters_.reflector_radius;
     marker.color.a = 0.6;
-    marker.color.r = 1.0;
+    marker.color.r = 0.0;
     marker.color.g = 0.0;
     marker.color.b = 1.0;
     lidar_detections_marker_array.markers.push_back(marker);

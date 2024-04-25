@@ -4,7 +4,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/marker_rada
 
 ## Purpose
 
-The package `marker_radar_lidar_calibrator` allows extrinsic calibration among radar sensor and lidar sensor used in autonomous driving and robotics.
+The package `marker_radar_lidar_calibrator` allows extrinsic calibration among the radar sensor and lidar sensor used in autonomous driving and robotics.
 
 ## Inner-workings / Algorithms
 
@@ -34,7 +34,7 @@ Additionally, we provide a metric plotter that can indicate whether the calibrat
 
 ### Diagram
 
-Below, you can see the how the algorithm is implemented in the `marker_radar_lidar_calibrator` package.
+Below, you can see how the algorithm is implemented in the `marker_radar_lidar_calibrator` package.
 
 ![marker_radar_lidar_calibrator](../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_calibrator.jpg)
 

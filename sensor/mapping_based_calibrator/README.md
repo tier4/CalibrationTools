@@ -4,7 +4,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/mapping_bas
 
 ## Purpose
 
-The package `mapping_based_calibrator` allows extrinsic calibration among lidar sensor and lidar sensor used in autonomous driving and robotics.
+The package `mapping_based_calibrator` allows extrinsic calibration among lidar sensors and lidar sensors used in autonomous driving and robotics.
 
 Note: depending on how this tool is configured it can perform the following calibrations:
 
@@ -19,7 +19,7 @@ This algorithm aims to calibrate multiple lidars by using registration algorithm
 
 #### Step 1: Mapping (using mapping lidar)
 
-First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the mapping lidar for mapping purposes. The point cloud from this lidar utilizes either the NDT or GICP algorithm to calculate the pose, and also stores the point cloud as a map for future usage.
+First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the mapping lidar for mapping purposes. The point cloud from this lidar utilizes either the NDT or GICP algorithm to calculate the pose and also stores the point cloud as a map for future usage.
 
 #### Step 2: Calibration data preparation (using calibration lidars)
 

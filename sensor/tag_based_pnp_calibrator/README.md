@@ -4,19 +4,19 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_p
 
 ## Purpose
 
-The package `tag_based_pnp_calibrator` allows extrinsic calibration among Camera sensor and lidar sensor used in autonomous driving and robotics.
+The package `tag_based_pnp_calibrator` allows extrinsic calibration among the camera sensor and lidar sensor used in autonomous driving and robotics.
 
 ## Inner-workings / Algorithms
 
-The `tag_based_pnp_calibrator` utilizes the PnP algorithm to calculate the transformation between the lidar and camera. To run this package, you also need to operate the `apriltag_ros` package and the `lidartag` package to calculate the transformation.
+The `tag_based_pnp_calibrator` utilizes the PnP algorithm to calculate the transformation between the camera and lidar. To run this package, you also need to operate the `apriltag_ros` package and the `lidartag` package to calculate the transformation.
 
 The `apriltag_ros` package detects the AprilTag and outputs the detection results. Conversely, the `lidartag` package detects the LidarTag and outputs its detection results.
 
-The `tag_based_pnp_calibrator` utilizes the detections from both apriltag_ros and lidartag, employing a Kalman Filter to track these detections. If the detections converge, the calibrator applies the SQPnP algorithm provided by OpenCV to estimate the transformation between the image points from AprilTag and the object points from LidarTag.
+The `tag_based_pnp_calibrator` utilizes the detections from both apriltag_ros and LidarTag, employing a Kalman Filter to track these detections. If the detections converge, the calibrator applies the SQPnP algorithm provided by OpenCV to estimate the transformation between the image points from AprilTag and the object points from LidarTag.
 
 ### Diagram
 
-Below, you can see the how the algorithm is implemented in the `tag_based_pnp_calibrator` package.
+Below, you can see how the algorithm is implemented in the `tag_based_pnp_calibrator` package.
 
 ![segment](../docs/images/tag_based_pnp_calibrator/tag_based_pnp_calibrator.jpg)
 
@@ -99,10 +99,6 @@ References/External links
 
 ## Known issues/limitations
 
-Our version of LidarTag only supports the family `16h5`
-
-Our codebase only supports AprilTag detections for `36h11`
-
 ## Pro tips/recommendations
 
 During calibration, ensure that the lidar scan covers the tag, similar to the first example shown in the image below. However, if the tag resolution is low, as in the second example, and the lidar still detects the tag, it is acceptable. The third example demonstrates a scenario where the lidar scan fails to cover the tag, resulting in the inability to detect the LidarTag.
@@ -111,7 +107,7 @@ During calibration, ensure that the lidar scan covers the tag, similar to the fi
     <img src="../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg"  alt="lidarscan_on_tag" width="500">
 </p>
 
-Also noted that when doing the calibration, it is necessary to rotate the tag in order to face to the camera like the image shown below.
+Also note that when doing the calibration, it is necessary to rotate the tag facing the camera like the image shown below.
 
 <p align="center">
     <img src="../docs/images/tag_based_pnp_calibrator/tag_position.jpg"  alt="tag_position" width="500">

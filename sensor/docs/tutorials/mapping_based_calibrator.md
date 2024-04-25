@@ -1,6 +1,6 @@
 # mapping_based_calibrator
 
-In this tutorial, we will present a hands-on tutorial of the `mapping_based_calibrator`, in particular, of its lidar-lidar calibration capabilities. Although we provide pre-recorded rosbags, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we will present a hands-on tutorial of the `mapping_based_calibrator`, in particular, of its lidar-lidar calibration capabilities. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../mapping_based_calibrator/README.md).
 
@@ -47,7 +47,7 @@ A menu titled `Launcher configuration` should appear in the UI, and the user may
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
-In this tutorial, since the `tf` are published by the provided rosbags, run the rag (`ros2 bag play lidar_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
+In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play lidar_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
 
 ![mapping_based_calibrator](../images/mapping_based_calibrator/menu3.jpg)
 
@@ -55,7 +55,7 @@ Note: In the default values in the `/calibration_tools/sensor/sensor_calibration
 
 ## Data collection (Mapping & Data paring)
 
-Once you have clicked the `Calibrate` button, the first step of calibration process will automatically start building the map by using NDT/GICP algorithm with the `mapping lidar`. You can visualize process of building the map on the `rviz`.
+Once you have clicked the `Calibrate` button, the first step of the calibration process will automatically start building the map by using NDT/GICP algorithm with the `mapping lidar`. You can visualize the process of building the map on the `rviz`.
 
 ![mapping_based_calibrator](../images/mapping_based_calibrator/map1.jpg)
 
@@ -79,7 +79,7 @@ When the rosbag has finished playing, you should see the point cloud map and the
 
 ## Calibration
 
-Calibration starts anytime when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. User can also send this command before the rosbag ends if they think the data collected is sufficient for calibration.
+Calibration starts anytime when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. The user can also send this command before the rosbag ends if they think the data collected is sufficient for calibration.
 
 In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 

@@ -1,6 +1,6 @@
 # tag_based_pnp_calibrator
 
-In this tutorial, we will present a hands-on tutorial of the `tag_based_pnp_calibrator`. Although we provide pre-recorded rosbags, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we will present a hands-on tutorial of the `tag_based_pnp_calibrator`. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../tag_based_pnp_calibrator/README.md).
 
@@ -51,37 +51,37 @@ For this tutorial, we will modify the default values `calibration_pairs` from `9
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
-In this tutorial, since the `tf` are published by the provided rosbags, run the rag (`ros2 bag play camera_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
+In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play camera_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
 
 ![segment](../images/tag_based_pnp_calibrator/menu3.jpg)
 
 ## Calibration
 
-The calibration start automatically after click the `Calibrate` button. It will keep calibrate the LidarTag detections and AprilTag detections until the number of the detections fit the user defined `calibration_pairs` in the `Launcher configuration`.
+The calibration starts automatically after clicking the `Calibrate` button. It will keep calibrating the LidarTag detections and AprilTag detections until the number of the detections fits the user-defined `calibration_pairs` in the `Launcher configuration`.
 
 When user start the calibration, `rviz` and the `image view` should be displayed like below.
 
 ![segment](../images/tag_based_pnp_calibrator/visualization1.jpg)
 
-After the tools detect the LidarTag and AprilTag, it will shows the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of lidar detections and AprilTag detections.
+After the tools detect the LidarTag and AprilTag, it will show the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of lidar detections and AprilTag detections.
 
 ![segment](../images/tag_based_pnp_calibrator/visualization2.jpg)
 
-Once user get the converged detection, user can start moving the tag to another position. Please make sure the moving distance is larger than the `calibration_min_pair_distance` and also make sure the tag is in the view of FOV of the lidar and camera.
+Once the user gets the converged detection, the user can start moving the tag to another position. Please make sure the moving distance is larger than the `calibration_min_pair_distance` and also make sure the tag is in the FOV of the lidar and camera.
 
-In the end of the calibration, we can get 8 detection pairs which shown as below.
+At the end of the calibration, we can get 8 detection pairs which are shown below.
 
 ![segment](../images/tag_based_pnp_calibrator/visualization3.jpg)
 
 ## Results
 
-After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow user to save the calibration data to a file.
+After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow the user to save the calibration data to a file.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
 </p>
 
-User can modify the `visualization options` in the right side of the `image view`. To compare the results, please set the `Marker size (m)` to `0.04` and set the `PC subsample factor` to `1`.
+The user can modify the `visualization options` on the right side of the `image view`. To compare the results, please set the `Marker size (m)` to `0.04` and set the `PC subsample factor` to `1`.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization_bar.jpg"  alt="visualization_bar" width="200">
