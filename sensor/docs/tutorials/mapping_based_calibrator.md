@@ -13,7 +13,7 @@ Installation instructions can be found [here](../../README.md)
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1e0rajkGfXrKl-6E5oouALdbjeva1c5X1).
 
-The rosbag includes four pointcloud topics published by different lidar sensors and also includes `/tf_static` information.
+The rosbag includes four pointcloud topics published by different lidar sensors and also includes `tf_static` information.
 
 ## Environment preparation
 
@@ -23,7 +23,7 @@ The required space for calibration depends on the vehicle and sensors used. For 
 
 ### Vehicle
 
-When doing the calibration, the user needs to drive the vehicle to collect the point cloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 5 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
+When doing the calibration, the user needs to drive the vehicle to collect the pointcloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 5 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
 
 ## Launching the tool
 
@@ -79,7 +79,7 @@ You can also see the log in the console showing that the map is building.
 [mapping_based_calibrator-1] [calibration_mapper]: New frame (id=28 | kid=-1). Distance=2.26 Delta_distance0.11 Delta_time0.10. Unprocessed=0 Frames=29 Keyframes=3
 ```
 
-When the rosbag has finished playing, you should see the point cloud map and the path of the lidar frames, as shown in the picture below.
+When the rosbag has finished playing, you should see the pointcloud map and the path of the lidar frames, as shown in the picture below.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map2.jpg" alt="map2">
@@ -124,15 +124,15 @@ The user can also see the three different colors of pointcloud in the `rviz`. wh
 
 ## Results
 
-After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow the user to save the calibration data to a file.
+After the calibration process is finished, the `sensor_calibration_manager` will display the results in the tf tree and allow the user to save the calibration data to a file.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">
 </p>
 
-To assess the calibration results, users can precisely measure static objects within the point cloud map, such as stationary vehicles, traffic cones, and walls.
+To assess the calibration results, users can precisely measure static objects within the pointcloud map, such as stationary vehicles, traffic cones, and walls.
 
-The image below displays the vehicle within the pointcloud, allowing for a comparison of results before and after calibration. It is evident that the initial point cloud from `calibration lidars` (shown in red) has been successfully calibrated (shown in green) and is now aligned with the `mapping lidar` (shown in white).
+The image below displays the vehicle within the pointcloud, allowing for a comparison of results before and after calibration. It is evident that the initial pointcloud from `calibration lidars` (shown in red) has been successfully calibrated (shown in green) and is now aligned with the `mapping lidar` (shown in white).
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/vehicle_calibrated.jpg" alt="vehicle_calibrated" width="500">
@@ -144,4 +144,4 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
 
   1. Check the console first to see the error message.
   2. Check the rviz to see if any number on the path (keyframe number) is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. For instance, if the acceleration of the vehicle is too fast, the mapping might fail. Try to calibrate with more stable movement again.
-  3. Tune the parameters `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md).
+  3. Tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md).

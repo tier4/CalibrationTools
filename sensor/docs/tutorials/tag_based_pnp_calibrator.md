@@ -13,7 +13,7 @@ Installation instructions can be found [here](../../README.md)
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1gFrrchW9mWM1huWMYuJ0nWB2n1BfCJag).
 
-The rosabg includes four different topics including `camera_info`, `image_rect_color/compressed`, `pointcloud_raw`, and `/tf_static`.
+The rosabg includes four different topics including `camera_info`, `image_rect_color/compressed`, `pointcloud_raw`, and `tf_static`.
 
 ## Environment preparation
 
@@ -26,7 +26,7 @@ The required space for calibration depends on the vehicle and sensors used. For 
 AprilTag are the only moving elements during the calibration process and must detected by both camera and lidar.
 Depending on the lidar model and the available space, the required AprilTag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
 
-In addition to the AprilTag size, which determines the physical positions in which a tag can be detected, it is of equal importance the structure in which the AprilTag is mounted. Depending on the structure's shape and size, it may interfere with the lidar detection algorithm, so it is recommended to prepare a mount that holds the tag in a way that is not visible to the sensor (see the provided example).
+In addition to the size of the AprilTag, which affects the physical positions where a tag can be detected, the structure on which the AprilTag is mounted is equally important. The shape and size of this structure may affect the lidar detection algorithm. Therefore, it is advisable to use a mount that positions the tag in such a way that it remains invisible to the sensor (refer to the provided example).
 
 ## Launching the tool
 
@@ -83,7 +83,7 @@ At the end of the calibration, we can get 8 detection pairs which are shown belo
 
 ## Results
 
-After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow the user to save the calibration data to a file.
+After the calibration process is finished, the `sensor_calibration_manager` will display the results in the tf tree and allow the user to save the calibration data to a file.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
@@ -97,7 +97,7 @@ The user can modify the `visualization options` on the right side of the `image 
 
 After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf`. By doing this, it is easier to measure the difference after the calibration.
 
-The images below show that with the calibrated transformation, the projected point cloud aligns better with the image.
+The images below show that with the calibrated transformation, the projected pointcloud aligns better with the image.
 
 <table>
   <tr>
@@ -114,27 +114,27 @@ The images below show that with the calibrated transformation, the projected poi
 
 - Why the calibrator doesn't add calibration pairs?
 
-  1. One possible reason is that the current pair is too close to previously collected data. In that case the current data is not accepted
-  2. The lidar and camera are not synchronized, this can be check with `ros2 topic echo [topic_name]`. Setting the parameter `use_receive_time` to `True` might help to solve the issue.
-  3. The detections are not stable enough (detections don’t converge)
+  1. One possible reason is that the current pair is too close to previously collected data. In that case, the current data is not accepted.
+  2. The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name]`. Setting the parameter `use_receive_time` to `True` might help to solve the issue.
+  3. The detections are not stable enough (detections don’t converge).
 
-- Why the UI doesn't launch
+- Why the UI doesn't launch?
 
-  1. Check with `ros2 node list` is the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments
-  2. If the UI crashed (see the console) it most probably is due to bad PySide installation, invalid intrinsics, or invalid extrinsics
-  3. Sensor data is not synchronized
+  1. Check with `ros2 node list` if the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments
+  2. If the UI crashes (see the console), it is probably due to bad PySide installation, invalid intrinsic parameters, or invalid extrinsic parameters.
+  3. The timestamps of the lidar and camera are not synchronized.
 
 - Why the reprojection errors are so high
 
   1. Check whether the intrinsic parameters are correct.
 
-- Why the reprojection error increases the more data is collected
+- Why the reprojection error increases when more data is collected?
 
-  1. When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting). The more data is collected, the error may increase to a certain extent, but that is the model trying to fit all the data, being unable to fit the noise. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling)
+  1. When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting). The more data is collected, the error may increase to a certain extent, but that is the model trying to fit all the data, being unable to fit the noise. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling).
 
-- Why reprojection error does not seem low enough:
+- Why reprojection error does not seem low enough?
 
-  1. The intrinsics may not be accurate, thus limiting the performance of the method
-  2. The boards are not appropriate (are bent)
-  3. The boards moved too much while calibrating
+  1. The intrinsics may not be accurate, thus limiting the performance of the method.
+  2. The boards are not appropriate (are bent).
+  3. The boards moved too much while calibrating.
   4. The lidar detections were not very good. Try collecting detections in areas where there is more resolution.

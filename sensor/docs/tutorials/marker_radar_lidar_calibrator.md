@@ -13,7 +13,7 @@ Installation instructions can be found [here](../../README.md)
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1S3Cz_VomvHBRgiCSt8JCOgN53UGz5TpZ).
 
-The rosabg includes four different topics including `object_raw`, `pointcloud_raw`, and `/tf_static`.
+The rosabg includes four different topics including `object_raw`, `pointcloud_raw`, and `tf_static`.
 
 ## Environment preparation
 
@@ -58,7 +58,7 @@ In this tutorial, since the `tf` are published by the provided rosbag, run the r
 
 ### Extract background model
 
-Once the user starts running the tutorial rosbag, the point cloud will appear in `rviz` as shown in the example below. Press the `Extract Background Model button` in the UI to begin extracting the background.
+Once the user starts running the tutorial rosbag, the pointcloud will appear in `rviz` as shown in the example below. Press the `Extract Background Model button` in the UI to begin extracting the background.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
@@ -86,7 +86,7 @@ Also, the following text should be shown in the console.
 
 After the background model has been extracted, the user can carry the radar reflector with the tripod and place it in front of the radar sensor. In the tutorial rosbag, the user will see that both the human and the radar reflector (with tripod) are identified as foreground objects in the image below.
 
-Also, the green points represent the lidar foreground points, while the purple points indicate radar foreground detections. The blue point is the estimated center of the radar reflector derived from the lidar point cloud.
+Also, the green points represent the lidar foreground points, while the purple points indicate radar foreground detections. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/add1.jpg" alt="add1" width="300" height="300">
@@ -95,6 +95,10 @@ Also, the green points represent the lidar foreground points, while the purple p
 When the purple line connects the purple point (the radar estimation of the reflector) and the blue point (the lidar estimation of the reflector), the user can press the `Add lidar-radar pair` button to register them as a pair.
 
 Afterward, if the pair that the user added converges, it will become a converged pair, which will then be used for calibration. Additionally, the colors of the markers will change: the white point indicates the lidar estimation, the red point marks the initial radar estimation, and the green point signifies the calibrated estimation."
+
+<p align="center">
+    <img src="../images/marker_radar_lidar_calibrator/add2.jpg" alt="add2" width="300" height="300">
+</p>
 
 ### Delete previous lidar-radar pair
 
@@ -150,16 +154,16 @@ Once the `Send calibration` button is clicked, the result will be sent to the se
 
 ## Results
 
-After the calibration process is finished, the sensor_calibration_manager will display the results in the tf tree and allow the user to save the calibration data to a file.
+After the calibration process is finished, the `sensor_calibration_manager` will display the results in the tf tree and allow the user to save the calibration data to a file.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/menu4.jpg" alt="menu4"  width="500">
 </p>
 
-To evaluate the calibration result, the user can measure that the calibrated radar points (green) are closer than the initial radar points (red) to the lidar points.
+To evaluate the calibration result, the user can measure that the calibrated radar points (green) are closer than the initial radar points (red) to the lidar points (white).
 
 ## FAQ
 
-- During the calibration, why the reflector detection didn't show on the rviz
+- During the calibration, why doesn't the reflector detection show on the rviz?
 
   1. Make sure the center of the reflector faces toward the radar sensor, and the height of the reflector is enough for the radar to detect.

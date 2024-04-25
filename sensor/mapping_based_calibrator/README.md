@@ -8,7 +8,7 @@ The package `mapping_based_calibrator` allows extrinsic calibration among lidar 
 
 Note: depending on how this tool is configured it can perform the following calibrations:
 
-- base-lidar(s)
+- base-lidar
 - lidar-lidar(s)
 
 ## Inner-workings / Algorithms
@@ -19,15 +19,15 @@ This algorithm aims to calibrate multiple lidars by using registration algorithm
 
 #### Step 1: Mapping (using mapping lidar)
 
-First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the mapping lidar for mapping purposes. The point cloud from this lidar utilizes either the NDT or GICP algorithm to calculate the pose and also stores the point cloud as a map for future usage.
+First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the `mapping lidar` for mapping purposes. The pointcloud from this lidar utilizes either the NDT or GICP algorithm to calculate the pose and also stores the pointcloud as a map for future usage.
 
 #### Step 2: Calibration data preparation (using calibration lidars)
 
-After the mapping is complete, some preprocessing is necessary before starting the calibration process. For instance, since we aim to apply registration algorithms on the point clouds from both the `mapping lidar` and the `calibration lidars` to find the transformation between the two, it's crucial to ensure that both point clouds share the same timestamp. However, the calibration lidars may not be synchronized with the `mapping lidar`, meaning their respective point clouds cannot be directly used together during movement. To address this, we first need to interpolate the pose of the mapping lidar at the timestamp of the calibration lidars. This step will allow us to correctly align the point clouds for the application of registration algorithms.
+After the mapping is complete, some preprocessing is necessary before starting the calibration process. For instance, since we aim to apply registration algorithms on the pointclouds from both the `mapping lidar` and the `calibration lidars` to find the transformation between the two, it's crucial to ensure that both pointclouds share the same timestamp. However, the calibration lidars may not be synchronized with the `mapping lidar`, meaning their respective pointclouds cannot be directly used together during movement. To address this, we first need to interpolate the pose of the mapping lidar at the timestamp of the calibration lidars. This step will allow us to correctly align the pointclouds for the application of registration algorithms.
 
 #### Step 3: Calibrate (mapping lidar & calibration lidars)
 
-After preparing the data for calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between the two point clouds (the calibration lidars' point cloud and the mapping lidar's point cloud). This process allows us to determine the transformation between the two lidars.
+After preparing the data for calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between the two pointclouds (the calibration lidars' pointcloud and the mapping lidar's pointcloud). This process allows us to determine the transformation between the two lidars.
 
 #### Diagram
 
@@ -43,11 +43,11 @@ Therefore, step 1 would be the same as `lidar-lidar calibration`.
 
 #### Step 1: Mapping (Mapping lidar)
 
-First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the `mapping lidar` for mapping purposes. The point cloud from this lidar utilizes either the NDT or GICP algorithm to calculate the pose and also stores the point cloud as a map for future usage.
+First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the `mapping lidar` for mapping purposes. The pointcloud from this lidar utilizes either the NDT or GICP algorithm to calculate the pose and also stores the pointcloud as a map for future usage.
 
 #### Step 2: Extract ground from the pointcloud
 
-After building the map, we obtain a dense point cloud from it. We then use PCA and `pcl::SACSegmentation` for ground extraction
+After building the map, we obtain a dense pointcloud from it. We then use PCA and `pcl::SACSegmentation` for ground extraction
 
 #### Step 3: Calibrate (using Mapping lidar & baselink)
 
