@@ -83,7 +83,7 @@ Camera selection and usage recommendations:
 In this tutorial, we will use the RDV of Tier IV (R&D Vehicle).
 First, run the sensor calibration manager:
 
-```bash
+```text
 ros2 run sensor_calibration_manager sensor_calibration_manager
 ```
 
@@ -135,7 +135,7 @@ Once enough images have been collected, transfer the images from the camera to t
 
 If there are no issues, the output in the console should be similar to the following one:
 
-```bash
+```text
 [tag_based_sfm_calibrator-1] [INFO] [1713488090.641210235] [intrinsics_calibrator]: Camera matrix:
 [tag_based_sfm_calibrator-1] [4816.165518235453, 0, 2160.348608760617;
 [tag_based_sfm_calibrator-1]  0, 4821.30868416463, 1552.554137385826;
@@ -236,7 +236,7 @@ Here we make a list of good and bad photos that the user must keep in mind.
 
 Once all the scenes have been collected (3 in this case), download the images from the camera to the computer, and organize them by scenes. The folder structure should be as follows:
 
-```bash
+```text
 scene0/....JPG
 scene1/....JPG
 scene2/....JPG
@@ -248,7 +248,7 @@ Then, press `Add external camera images to scene` and select the folder that con
   <img src="../images/tag_based_sfm_calibrator/menu2.png" alt="menu1"/>
 </p>
 
-```bash
+```text
 [tag_based_sfm_calibrator-1] [INFO] [1713488025.748589413] [tag_based_sfm_calibrator]: Attempting to add external camera images to scene id=0
 [tag_based_sfm_calibrator-1] [INFO] [1713488025.748655706] [tag_based_sfm_calibrator]: Added 67 external images to scene id=0 (scenes=3)
 [tag_based_sfm_calibrator-1] [INFO] [1713488025.748673405] [tag_based_sfm_calibrator]: Attempting to add external camera images to scene id=1
@@ -277,7 +277,7 @@ Calibration starts when the user presses `Calibrate base_link`. The process itse
 
 The output should be as follows:
 
-```bash
+```text
 ...
 [tag_based_sfm_calibrator-1] [INFO] [1713490703.054605510] [calibration_problem]: s2_e47 <-> a19 error: 0.42
 [tag_based_sfm_calibrator-1] [INFO] [1713490703.054614383] [calibration_problem]: s2_e47 <-> a18 error: 0.08
@@ -301,7 +301,7 @@ The output should be as follows:
 
 Reprojection errors are usually around the pixel unit. If there are suspiciously high reprojection errors, the user can identify which pair of sensor/tag produced it in an attempt to identify the reason.
 
-```bash
+```text
 [tag_based_sfm_calibrator-1] [INFO] [1713490739.584850939] [tag_based_sfm_calibrator]: Finished optimization
 [tag_based_sfm_calibrator-1] [INFO] [1713490739.715880844] [calibration_problem]: sensor_to_base_link: translation=[0.87021, 0.00364, -2.03938] quat=[0.00359, 0.00017, 0.99999, -0.00065]
 [tag_based_sfm_calibrator-1] [INFO] [1713490739.715944539] [tag_based_sfm_calibrator]: base_link: initial and calibrated statistics statistics
