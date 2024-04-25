@@ -48,7 +48,9 @@ class CalibratorBase(QObject):
         self.ros_interface = ros_interface
         self.calibrators: List[CalibratorServiceWrapper] = []
         self.expected_calibration_frames: List[FramePair] = []
-        self.state = CalibratorState.WAITING_TFS
+        self.state = CalibratorState.WAITING_SERVICES
+        self.services_available = False
+        self.tfs_ready = False
 
         self.calibration_result_tfs = defaultdict(lambda: defaultdict(Transform))
         self.calibration_result_transforms = defaultdict(lambda: defaultdict(Transform))
@@ -56,24 +58,44 @@ class CalibratorBase(QObject):
         self.check_tf_timer = QTimer()
         self.check_tf_timer.timeout.connect(self.on_check_tf_timer)
         self.check_tf_timer.start(500)
+        self.state_changed_signal.emit(self.state)
         logging.debug("CalibratorBase: constructor end")
 
-    def init():
-        logging.debug("CalibratorBase: Calibrator init?")
+    def update_status(self):
+
+        prev_state = self.state
+
+        if self.state in [CalibratorState.WAITING_SERVICES, CalibratorState.READY]:
+            if self.services_available and not self.tfs_ready:
+                self.state = CalibratorState.WAITING_TFS
+            elif self.services_available and self.tfs_ready:
+                self.state = CalibratorState.READY
+            elif not self.services_available and self.state == CalibratorState.READY:
+                self.state = CalibratorState.WAITING_SERVICES
+
+        if self.state == CalibratorState.WAITING_TFS and self.tfs_ready:
+            self.state = (
+                CalibratorState.READY
+                if self.services_available
+                else CalibratorState.WAITING_SERVICES
+            )
+
+        if prev_state != self.state:
+            self.state_changed_signal.emit(self.state)
+        pass
 
     def on_check_tf_timer(self):
         logging.debug("CalibratorBase: on_check_tf_timer")
-        assert self.state == CalibratorState.WAITING_TFS
-        tfs_ready = all(
+        assert self.state in [CalibratorState.WAITING_TFS, CalibratorState.WAITING_SERVICES]
+        self.tfs_ready = all(
             self.ros_interface.can_transform(self.required_frames[0], frame)
             for frame in self.required_frames[1:]
         )
 
-        if tfs_ready:
-            self.state = CalibratorState.WAITING_SERVICES
-            self.state_changed_signal.emit(self.state)
+        if self.tfs_ready:
             self.check_tf_timer.stop()
             logging.debug("CalibratorBase: on_check_tf_timer stop")
+            self.update_status()
         else:
             for frame in self.required_frames[1:]:
                 if not self.ros_interface.can_transform(self.required_frames[0], frame):
@@ -102,15 +124,10 @@ class CalibratorBase(QObject):
         self.calibrators.append(calibration_wrapper)
 
     def on_service_status_changed(self):
-        if self.state in [CalibratorState.WAITING_SERVICES, CalibratorState.READY]:
-            services_available = all([calibrator.is_available() for calibrator in self.calibrators])
-
-            if services_available and self.state == CalibratorState.WAITING_SERVICES:
-                self.state = CalibratorState.READY
-                self.state_changed_signal.emit(self.state)
-            elif not services_available and self.state == CalibratorState.READY:
-                self.state = CalibratorState.WAITING_SERVICES
-                self.state_changed_signal.emit(self.state)
+        self.services_available = all(
+            [calibrator.is_available() for calibrator in self.calibrators]
+        )
+        self.update_status()
 
     def on_calibration_result(self):
         logging.debug("CalibratorBase: on_calibration_result")
