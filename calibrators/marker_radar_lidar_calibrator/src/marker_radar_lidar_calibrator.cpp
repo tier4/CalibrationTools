@@ -213,8 +213,8 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     transformation_type_ = TransformationType::yaw_only_rotation_2d;
   } else if (transformation_type == "svd_3d") {
     transformation_type_ = TransformationType::svd_3d;
-  } else if (transformation_type == "roll_zero_3d") {
-    transformation_type_ = TransformationType::roll_zero_3d;
+  } else if (transformation_type == "zero_roll_3d") {
+    transformation_type_ = TransformationType::zero_roll_3d;
   } else {
     throw std::runtime_error("Invalid param value: " + transformation_type);
   }
@@ -1317,10 +1317,10 @@ std::tuple<
   pcl::PointCloud<ExtrinsicReflectorBasedCalibrator::PointType>::Ptr>
 ExtrinsicReflectorBasedCalibrator::getPointsSet()
 {
-  // Note: pcs=paralell cordinate system rcs=radar coordinate system
-  pcl::PointCloud<PointType>::Ptr lidar_points_pcs(new pcl::PointCloud<PointType>);
+  // Note: ocs=radar optimization coordinate system rcs=radar coordinate system
+  pcl::PointCloud<PointType>::Ptr lidar_points_ocs(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr radar_points_rcs(new pcl::PointCloud<PointType>);
-  lidar_points_pcs->reserve(converged_tracks_.size());
+  lidar_points_ocs->reserve(converged_tracks_.size());
   radar_points_rcs->reserve(converged_tracks_.size());
 
   auto eigen_to_pcl_2d = [](const auto & p) { return PointType(p.x(), p.y(), 0.0); };
@@ -1331,16 +1331,16 @@ ExtrinsicReflectorBasedCalibrator::getPointsSet()
     // lidar coordinates
     const auto & lidar_estimation = track.getLidarEstimation();
     // to radar optimization coordinates
-    const auto & lidar_estimation_pcs = radar_optimization_to_lidar_eigen_ * lidar_estimation;
+    const auto & lidar_estimation_ocs = radar_optimization_to_lidar_eigen_ * lidar_estimation;
     // to radar coordinates
     const auto & lidar_transformed_estimation = initial_radar_to_lidar_eigen_ * lidar_estimation;
     const auto & radar_estimation_rcs = track.getRadarEstimation();
 
     if (transformation_type_ == TransformationType::svd_2d) {
-      lidar_points_pcs->emplace_back(eigen_to_pcl_2d(lidar_estimation_pcs));
+      lidar_points_ocs->emplace_back(eigen_to_pcl_2d(lidar_estimation_ocs));
       radar_points_rcs->emplace_back(eigen_to_pcl_2d(radar_estimation_rcs));
     } else {
-      lidar_points_pcs->emplace_back(eigen_to_pcl_3d(lidar_estimation_pcs));
+      lidar_points_ocs->emplace_back(eigen_to_pcl_3d(lidar_estimation_ocs));
       radar_points_rcs->emplace_back(eigen_to_pcl_3d(radar_estimation_rcs));
     }
     // logging
@@ -1352,7 +1352,7 @@ ExtrinsicReflectorBasedCalibrator::getPointsSet()
       this->get_logger(), "radar_estimation_rcs:\n"
                             << radar_estimation_rcs.matrix());
   }
-  return {lidar_points_pcs, radar_points_rcs};
+  return {lidar_points_ocs, radar_points_rcs};
 }
 
 std::pair<double, double> ExtrinsicReflectorBasedCalibrator::computeCalibrationError(
@@ -1396,8 +1396,8 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformation()
       this->get_logger(), "Pure rotation calibration radar->lidar transform:\n"
                             << calibrated_radar_to_lidar_transformation.matrix());
   } else if (transformation_type_ == TransformationType::svd_2d) {
-    std::tie(lidar_points_pcs_, radar_points_rcs_) = getPointsSet();
-    estimator.setPoints(lidar_points_pcs_, radar_points_rcs_);
+    std::tie(lidar_points_ocs_, radar_points_rcs_) = getPointsSet();
+    estimator.setPoints(lidar_points_ocs_, radar_points_rcs_);
     estimator.estimateSVDTransformation(transformation_type_);
     calibrated_radar_to_lidar_transformation = estimator.getTransformation();
     RCLCPP_INFO_STREAM(
@@ -1408,12 +1408,12 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformation()
                             << calibrated_radar_to_lidar_transformation.matrix());
   } else if (
     transformation_type_ == TransformationType::svd_3d ||
-    transformation_type_ == TransformationType::roll_zero_3d) {
-    std::tie(lidar_points_pcs_, radar_points_rcs_) = getPointsSet();
-    estimator.setPoints(lidar_points_pcs_, radar_points_rcs_);
+    transformation_type_ == TransformationType::zero_roll_3d) {
+    std::tie(lidar_points_ocs_, radar_points_rcs_) = getPointsSet();
+    estimator.setPoints(lidar_points_ocs_, radar_points_rcs_);
 
-    if (transformation_type_ == TransformationType::roll_zero_3d)
-      estimator.estimateRollZeroTransformation();
+    if (transformation_type_ == TransformationType::zero_roll_3d)
+      estimator.estimateZeroRollTransformation();
     else if (transformation_type_ == TransformationType::svd_3d)
       estimator.estimateSVDTransformation(transformation_type_);
 
@@ -1534,10 +1534,10 @@ void ExtrinsicReflectorBasedCalibrator::doEvaluation(
     initial_radar_to_lidar_eigen_, initial_radar_to_radar_optimization_eigen_,
     radar_optimization_to_lidar_eigen_);
 
-  pcl::PointCloud<PointType>::Ptr crossval_lidar_points_pcs(new pcl::PointCloud<PointType>);
+  pcl::PointCloud<PointType>::Ptr crossval_lidar_points_ocs(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr crossval_radar_points_rcs(new pcl::PointCloud<PointType>);
   std::vector<Track> crossval_converged_tracks_;
-  crossval_lidar_points_pcs->reserve(num_of_samples);
+  crossval_lidar_points_ocs->reserve(num_of_samples);
   crossval_radar_points_rcs->reserve(num_of_samples);
   crossval_converged_tracks_.reserve(num_of_samples);
 
@@ -1558,17 +1558,17 @@ void ExtrinsicReflectorBasedCalibrator::doEvaluation(
       crossval_estimator.setDelta(delta_cos, delta_sin);
       crossval_estimator.estimateYawOnlyTransformation();
     } else {
-      crossval_lidar_points_pcs->clear();
+      crossval_lidar_points_ocs->clear();
       crossval_radar_points_rcs->clear();
 
       // calculate the transformation.
       for (std::size_t i = 0; i < combination.size(); i++) {
-        crossval_lidar_points_pcs->emplace_back(lidar_points_pcs_->points[combination[i]]);
+        crossval_lidar_points_ocs->emplace_back(lidar_points_ocs_->points[combination[i]]);
         crossval_radar_points_rcs->emplace_back(radar_points_rcs_->points[combination[i]]);
       }
-      crossval_estimator.setPoints(crossval_lidar_points_pcs, crossval_radar_points_rcs);
-      if (transformation_type_ == TransformationType::roll_zero_3d)
-        crossval_estimator.estimateRollZeroTransformation();
+      crossval_estimator.setPoints(crossval_lidar_points_ocs, crossval_radar_points_rcs);
+      if (transformation_type_ == TransformationType::zero_roll_3d)
+        crossval_estimator.estimateZeroRollTransformation();
       else
         crossval_estimator.estimateSVDTransformation(transformation_type_);
     }
