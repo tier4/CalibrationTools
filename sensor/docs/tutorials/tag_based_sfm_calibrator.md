@@ -1,6 +1,6 @@
 # tag_based_sfm_calibrator
 
-In this tutorial, we will present a hands-on tutorial of the `tag_based_sfm_calibrator`, in particular, of its base-lidar calibration capabilities. Although we provide pre-recorded rosbags, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we present a hands-on tutorial of the `tag_based_sfm_calibrator`, in particular, of its base-lidar calibration capabilities. Although we provide pre-recorded rosbags, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../tag_based_sfm_calibrator/README.md).
 
