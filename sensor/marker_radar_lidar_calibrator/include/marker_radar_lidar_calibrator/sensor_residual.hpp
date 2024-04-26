@@ -37,6 +37,9 @@ struct SensorResidual
     transformation_matrix(0, 3) = T(params[0]);
     transformation_matrix(1, 3) = T(params[1]);
     transformation_matrix(2, 3) = T(params[2]);
+
+    // This rotation matrix is rotate from radar to optimization frames (usually base_link).
+    // To avoid make sure that the Y axis does not approaches 90 degrees to avoid gimbal lock.
     rotation_matrix = (Eigen::AngleAxis<T>(T(params[4]), Eigen::Vector3<T>::UnitZ()) *
                        Eigen::AngleAxis<T>(T(params[3]), Eigen::Vector3<T>::UnitY()) *
                        Eigen::AngleAxis<T>(T(0), Eigen::Vector3<T>::UnitX()))

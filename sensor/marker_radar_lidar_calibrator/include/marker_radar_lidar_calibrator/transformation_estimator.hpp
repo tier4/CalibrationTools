@@ -41,18 +41,18 @@ public:
     Eigen::Isometry3d initial_radar_to_radar_optimization_eigen,
     Eigen::Isometry3d radar_optimization_to_lidar_eigen);
   void setPoints(
-    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
+    pcl::PointCloud<PointType>::Ptr lidar_points_ocs,
     pcl::PointCloud<PointType>::Ptr radar_points_rcs);
   void setDelta(double delta_cos, double delta_sin);
   void estimateYawOnlyTransformation();
   void estimateSVDTransformation(
     ExtrinsicReflectorBasedCalibrator::TransformationType transformation_type);
-  void estimateRollZeroTransformation();
+  void estimateZeroRollTransformation();
   Eigen::Isometry3d getTransformation();
 
   double delta_cos_;
   double delta_sin_;
-  pcl::PointCloud<PointType>::Ptr lidar_points_pcs_;
+  pcl::PointCloud<PointType>::Ptr lidar_points_ocs_;
   pcl::PointCloud<PointType>::Ptr radar_points_rcs_;
   Eigen::Isometry3d calibrated_radar_to_lidar_transformation_;
 

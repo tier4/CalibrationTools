@@ -18,7 +18,7 @@
     <choice value="svd_2d"/>
     <choice value="yaw_only_rotation_2d"/>
     <choice value="svd_3d"/>
-    <choice value="roll_zero_3d"/>
+    <choice value="zero_roll_3d"/>
   </arg>
 
   <arg name="rviz" default="true"/>

@@ -59,7 +59,7 @@ class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 public:
   using PointType = pcl::PointXYZ;
   using index_t = std::uint32_t;
-  enum class TransformationType { svd_2d, yaw_only_rotation_2d, svd_3d, roll_zero_3d };
+  enum class TransformationType { svd_2d, yaw_only_rotation_2d, svd_3d, zero_roll_3d };
 
   enum class MsgType { radar_tracks, radar_scan };
 
@@ -287,7 +287,7 @@ protected:
   std::vector<Track> converged_tracks_;
 
   // Converged points
-  pcl::PointCloud<PointType>::Ptr lidar_points_pcs_;
+  pcl::PointCloud<PointType>::Ptr lidar_points_ocs_;
   pcl::PointCloud<PointType>::Ptr radar_points_rcs_;
 
   // Metrics

@@ -32,10 +32,10 @@ TransformationEstimator::TransformationEstimator(
 }
 
 void TransformationEstimator::setPoints(
-  pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
+  pcl::PointCloud<PointType>::Ptr lidar_points_ocs,
   pcl::PointCloud<PointType>::Ptr radar_points_rcs)
 {
-  lidar_points_pcs_ = lidar_points_pcs;
+  lidar_points_ocs_ = lidar_points_ocs;
   radar_points_rcs_ = radar_points_rcs;
 }
 
@@ -71,7 +71,7 @@ void TransformationEstimator::estimateSVDTransformation(
   pcl::registration::TransformationEstimationSVD<PointType, PointType> estimator;
   Eigen::Matrix4f full_radar_to_radar_optimization_transformation;
   estimator.estimateRigidTransformation(
-    *lidar_points_pcs_, *radar_points_rcs_, full_radar_to_radar_optimization_transformation);
+    *lidar_points_ocs_, *radar_points_rcs_, full_radar_to_radar_optimization_transformation);
   Eigen::Isometry3d calibrated_radar_to_radar_optimization_transformation(
     full_radar_to_radar_optimization_transformation.cast<double>());
 
@@ -109,7 +109,7 @@ void TransformationEstimator::estimateSVDTransformation(
     calibrated_radar_to_radar_optimization_transformation * radar_optimization_to_lidar_eigen_;
 }
 
-void TransformationEstimator::estimateRollZeroTransformation()
+void TransformationEstimator::estimateZeroRollTransformation()
 {
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"),
@@ -133,8 +133,8 @@ void TransformationEstimator::estimateRollZeroTransformation()
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"), "%s", initial_params_msg.c_str());
 
-  for (size_t i = 0; i < lidar_points_pcs_->points.size(); i++) {
-    auto lidar_point = lidar_points_pcs_->points[i];
+  for (size_t i = 0; i < lidar_points_ocs_->points.size(); i++) {
+    auto lidar_point = lidar_points_ocs_->points[i];
     auto radar_point = radar_points_rcs_->points[i];
 
     Eigen::Vector4d radar_point_eigen(radar_point.x, radar_point.y, radar_point.z, 1);
