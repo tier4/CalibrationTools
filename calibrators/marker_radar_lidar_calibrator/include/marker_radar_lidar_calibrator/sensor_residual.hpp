@@ -22,7 +22,7 @@ namespace marker_radar_lidar_calibrator
 
 struct SensorResidual
 {
-  SensorResidual(const Eigen::Vector4d & radar_point, Eigen::Vector4d & lidar_point)
+  SensorResidual(const Eigen::Vector4d & radar_point, const Eigen::Vector4d & lidar_point)
   : radar_point_(radar_point), lidar_point_(lidar_point)
   {
   }
@@ -31,22 +31,24 @@ struct SensorResidual
   bool operator()(T const * const params, T * s_residuals) const
   {
     // parameters: x, y, z, pitch, yaw.
-    Eigen::Matrix<T, 4, 4> s_transformation = Eigen::Matrix<T, 4, 4>::Identity(4, 4);
+    Eigen::Matrix<T, 4, 4> transformation_matrix = Eigen::Matrix<T, 4, 4>::Identity(4, 4);
     Eigen::Matrix<T, 3, 3> rotation_matrix;
 
-    s_transformation(0, 3) = T(params[0]);
-    s_transformation(1, 3) = T(params[1]);
-    s_transformation(2, 3) = T(params[2]);
+    transformation_matrix(0, 3) = T(params[0]);
+    transformation_matrix(1, 3) = T(params[1]);
+    transformation_matrix(2, 3) = T(params[2]);
     rotation_matrix = (Eigen::AngleAxis<T>(T(params[4]), Eigen::Vector3<T>::UnitZ()) *
                        Eigen::AngleAxis<T>(T(params[3]), Eigen::Vector3<T>::UnitY()) *
                        Eigen::AngleAxis<T>(T(0), Eigen::Vector3<T>::UnitX()))
                         .matrix();
 
-    s_transformation.block(0, 0, 3, 3) = rotation_matrix;
+    transformation_matrix.block(0, 0, 3, 3) = rotation_matrix;
 
-    Eigen::Map<Eigen::Matrix<T, 4, 1>> residuals(s_residuals);
+    Eigen::Map<Eigen::Matrix<T, 3, 1>> residuals(s_residuals);
+    Eigen::Matrix<T, 4, 1> residuals4d =
+      radar_point_.cast<T>() - transformation_matrix * lidar_point_.cast<T>();
+    residuals = residuals4d.block(0, 0, 3, 1);
 
-    residuals = radar_point_.cast<T>() - s_transformation * lidar_point_.cast<T>();
     return true;
   }
 

@@ -140,7 +140,7 @@ void TransformationEstimator::estimateRollZeroTransformation()
     Eigen::Vector4d radar_point_eigen(radar_point.x, radar_point.y, radar_point.z, 1);
     Eigen::Vector4d lidar_point_eigen(lidar_point.x, lidar_point.y, lidar_point.z, 1);
 
-    ceres::CostFunction * cost_function = new ceres::AutoDiffCostFunction<SensorResidual, 4, 5>(
+    ceres::CostFunction * cost_function = new ceres::AutoDiffCostFunction<SensorResidual, 3, 5>(
       new SensorResidual(radar_point_eigen, lidar_point_eigen));
     problem.AddResidualBlock(cost_function, NULL, params.data());
   }
