@@ -140,15 +140,11 @@ The images below show that with the calibrated transformation, the projected poi
   2. If the UI crashes (check the console for details), it is probably due to a bad PySide installation, invalid intrinsic parameters, invalid extrinsic parameters, etc.
   3. The timestamps of the lidar and camera are not synchronized.
 
-- Why the reprojection errors are so high?
-
-  1. Check whether the intrinsic parameters are correct.
-
 - Why does the reprojection error increase when more data is collected?
 
   1. When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting). The more data is collected, the error may increase to a certain extent, but that is the model trying to fit all the data, being unable to fit the noise. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling).
 
-- Why reprojection error does not seem low enough?
+- Why doesn't the reprojection error seem low enough?
 
   1. The intrinsics may not be accurate, thus limiting the performance of the method.
   2. The boards are not appropriate (are bent).
