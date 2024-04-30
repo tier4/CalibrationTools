@@ -19,7 +19,7 @@ The provided rosbag includes four different topics `camera_info`, `image_rect_co
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that tags are detected by both camera and lidar. The user could always check whether the tags appear in the rviz and the image view UI.
+The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that tags are detected by both camera and lidar. The user could always check whether the tags appear in the `rviz` and the `image view` UI.
 
 ### AprilTag (LidarTag)
 
@@ -29,7 +29,7 @@ In addition to the size of the AprilTag, which affects the physical positions wh
 
 ## Launching the tool
 
-In this tutorial, we will use the X2 project.
+In this tutorial, we will use the X2 project as an example.
 First, run the sensor calibration manager:
 
 ```text
@@ -52,7 +52,7 @@ For this tutorial, we will modify the default values `calibration_pairs` from `9
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
-In this tutorial, since the `tf` are published by the provided rosbag, start by running the bag with the command `ros2 bag play lidar_lidar.db3 --clock -r 0.1`. Afterward, launch the tools and click the `Calibrate` button."
+In this tutorial, since the `tf` are published by the provided rosbag, start by running the bag with the command `ros2 bag play camera_lidar.db3 --clock -r 0.1`. Afterward, launch the tools and click the `Calibrate` button."
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu3.jpg"  alt="menu3">

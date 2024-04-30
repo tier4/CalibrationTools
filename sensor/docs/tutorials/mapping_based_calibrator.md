@@ -19,11 +19,12 @@ The rosbag includes four pointcloud topics published by different lidar sensors 
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. For a normal consumer-level car, a space of `5m x 30m` should be sufficient.
+The required space for calibration depends on the vehicle and sensors used. It is recommended to have a large enough space for the vehicle
+to drive around 30 to 50 meters.
 
 ### Vehicle
 
-When doing the calibration, the user needs to drive the vehicle to collect the pointcloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 5 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
+Before starting the calibration, the user needs to drive the vehicle to collect the pointcloud `ros2 bag record -a` for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 5 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
 
 ## Launching the tool
 
@@ -55,7 +56,7 @@ In this tutorial, since the `tf` are published by the provided rosbag, start by 
     <img src="../images/mapping_based_calibrator/menu3.jpg" alt="menu3">
 </p>
 
-Note: In the default values in the `/calibration_tools/sensor/sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml`, the RDV vehicle set the top_lidar as `mapping lidar`, and other lidars as `calibration lidars`.
+Note: In the `/calibration_tools/sensor/sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml`, the RDV vehicle set the top lidar as `mapping lidar`, and other lidars as `calibration lidars`.
 
 ## Data collection (Mapping & Data paring)
 
@@ -87,7 +88,7 @@ When the rosbag has finished playing, you should see the pointcloud map and the 
 
 ## Calibration
 
-Calibration starts anytime when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. The user can also send this command before the rosbag ends if they think the data collected is sufficient for calibration.
+Calibration starts when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. The user can send this command before the rosbag ends if they think the data collected is sufficient for calibration.
 
 In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 
@@ -126,13 +127,13 @@ The user can also see the three different colors of pointcloud in the `rviz`. wh
 
 After the calibration process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
 
-In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`. The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration. The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`. The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. Since the transformations represented by the black arrows are fixed, the transformations between `sensor_kit_base_link`, `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link`, which are represented by the red arrows, can be calculated using the calibrated transformation.
+In the UI of the RDV project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`. The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration. The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`. The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. Since the transformations represented by the black arrows are fixed, the transformations between `sensor_kit_base_link`, `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link`, which are represented by the red arrows, can be calculated using the calibrated transformation.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">
 </p>
 
-To assess the calibration results, users can precisely measure static objects within the pointcloud map, such as stationary vehicles, traffic cones, and walls.
+To evaluate the calibration results, users can measure static objects within the pointcloud map, such as stationary vehicles, traffic cones, and walls.
 
 The image below displays the vehicle within the pointcloud, allowing for a comparison of results before and after calibration. It is evident that the initial pointcloud from `calibration lidars` (shown in red) has been successfully calibrated (shown in green) and is now aligned with the `mapping lidar` (shown in white).
 
@@ -145,5 +146,5 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
 - Why does the calibration fail?
 
   1. Check the console first to see the error message.
-  2. Check the rviz to see if any number on the path (keyframe number) is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. For instance, if the acceleration of the vehicle is too fast, the mapping might fail. Try to calibrate with more stable movement again.
-  3. Tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md).
+  2. Check the rviz to see if any number on the path (keyframe number) is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. For instance, if the acceleration of the vehicle is too fast, the mapping might fail. We recommend the user calibrate with more stable movement again.
+  3. Tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md) if it is needed.
