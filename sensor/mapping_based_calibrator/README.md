@@ -4,7 +4,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/mapping_bas
 
 ## Purpose
 
-The package `mapping_based_calibrator` allows extrinsic calibration among lidar sensors and lidar sensors used in autonomous driving and robotics.
+The package `mapping_based_calibrator` allows extrinsic calibration among lidar sensors and lidar sensors, as well as lidar sensors and baselink used in autonomous driving and robotics.
 
 Note: depending on how this tool is configured it can perform the following calibrations:
 
@@ -59,7 +59,7 @@ Finally, we use the initial_base_to_lidar_transform and the ground model to calc
 
 | Name                              | Type                                                   | Description                                                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `{calibration_camera_info_topic}` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras . The specific topic is provided via parameters                                                                 |
+| `{calibration_camera_info_topic}` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. The specific topic is provided via parameters.                                                                 |
 | `{calibration_image_topic}`       | `sensor_msgs::msg::CompressedImage`                    | Compressed images for calibration. The specific topic is configured via parameters.                                                                              |
 | `{calibration_pointcloud_topic}`  | `sensor_msgs::msg::PointCloud2`                        | Pointclouds that you want to calibrate with the mapping (main) pointcloud. The specific topic is configured via parameters.                                      |
 | `mapping_pointcloud`              | `sensor_msgs::msg::PointCloud2`                        | Subscribes to pointcloud data for mapping processes. Recommend to select the lidar that have higher resolution. The specific topic is configured via parameters. |
@@ -70,14 +70,14 @@ Finally, we use the initial_base_to_lidar_transform and the ground model to calc
 
 | Name                              | Type                                   | Description                                                                                                                                              |
 | --------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `output_map`                      | `sensor_msgs::msg::PointCloud2`        | Publishes the output map constructed from the `mapping_pointcloud`, providing visualization in RViz.                                                     |
-| `frame_path`                      | `nav_msgs::msg::Path`                  | Publishes the actual path of `mapping_pointcloud`, providing visualization in RViz.                                                                      |
-| `frame_predicted_path`            | `nav_msgs::msg::Path`                  | Publishes the predicted path of `mapping_pointcloud`, providing visualization in RViz.                                                                   |
-| `keyframe_path`                   | `nav_msgs::msg::Path`                  | Publishes the keyframe path of `mapping_pointcloud`, providing visualization in RViz.                                                                    |
-| `keyframe_markers`                | `visualization_msgs::msg::MarkerArray` | Publishes markers for keyframes, providing visualization in RViz.                                                                                        |
-| `initial_source_aligned_map`      | `sensor_msgs::msg::PointCloud2`        | Publishes initial map from calibration lidar, providing visualization in RViz.                                                                           |
-| `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Publishes calibrated map from calibration lidar, providing visualization in RViz.                                                                        |
-| `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Publishes target map from mapping lidar, used for comparing with the `calibrated_source_aligned_map` and `target_map` , providing visualization in RViz. |
+| `output_map`                      | `sensor_msgs::msg::PointCloud2`        | Publishes the output map constructed from the `mapping_pointcloud`, providing visualization in rviz.                                                     |
+| `frame_path`                      | `nav_msgs::msg::Path`                  | Publishes the actual path of `mapping_pointcloud`, providing visualization in rviz.                                                                      |
+| `frame_predicted_path`            | `nav_msgs::msg::Path`                  | Publishes the predicted path of `mapping_pointcloud`, providing visualization in rviz.                                                                   |
+| `keyframe_path`                   | `nav_msgs::msg::Path`                  | Publishes the keyframe path of `mapping_pointcloud`, providing visualization in rviz.                                                                    |
+| `keyframe_markers`                | `visualization_msgs::msg::MarkerArray` | Publishes markers for keyframes, providing visualization in rviz.                                                                                        |
+| `initial_source_aligned_map`      | `sensor_msgs::msg::PointCloud2`        | Publishes initial map from calibration lidar, providing visualization in rviz.                                                                           |
+| `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Publishes calibrated map from calibration lidar, providing visualization in rviz.                                                                        |
+| `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Publishes target map from mapping lidar, used for comparing with the `calibrated_source_aligned_map` and `target_map` , providing visualization in rviz. |
 | `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Publishes markers targeted for specific calibration or mapping purposes, aiding in visualization and alignment.                                          |
 | `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the ground pointcloud from initial pointcloud.                                                                                                 |
 | `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | Publishes the ground pointcloud from calibrated pointcloud.                                                                                              |
@@ -86,12 +86,12 @@ Note: target_markers is only used by camera calibrators (not using now)
 
 ### Services
 
-| Name                    | Type                                                  | Description                                                                                                |
-| ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes                   |
-| `stop_mapping`          | `std_srvs::srv::Empty`                                | `mapping_pointcloud stopped` stop to construct map through this service, afterwared calibration will start |
-| `load_database`         | `std_srvs::srv::Empty`                                | Load lidar and camera calibration frames from database (currently not used)                                |
-| `save_database`         | `std_srvs::srv::Empty`                                | Save lidar and camera calibration frames to database (currently not used)                                  |
+| Name                    | Type                                                  | Description                                                                                                 |
+| ----------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes.                   |
+| `stop_mapping`          | `std_srvs::srv::Empty`                                | `mapping_pointcloud stopped` stop to construct map through this service, afterwared calibration will start. |
+| `load_database`         | `std_srvs::srv::Empty`                                | Load lidar and camera calibration frames from database. (currently not used)                                |
+| `save_database`         | `std_srvs::srv::Empty`                                | Save lidar and camera calibration frames to database. (currently not used)                                  |
 
 ## Parameters
 
@@ -99,15 +99,15 @@ Note: target_markers is only used by camera calibrators (not using now)
 
 | Name                                     | Type                  | Default Value | Description                                                                                                                                                                        |
 | ---------------------------------------- | --------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calibrate_base_frame`                   | `bool`                | `false`       | Flag to optionally calibrate the base frame (base_link).                                                                                                                           |
-| `base_frame`                             | `std::string`         |               | Frame name of the base frame used in base-lidar calibration.                                                                                                                       |
-| `map_frame`                              | `std::string`         |               | Frame name of the `map`                                                                                                                                                            |
+| `calibrate_base_frame`                   | `bool`                | `false`       | Flag to optionally calibrate the base frame. (base_link).                                                                                                                          |
+| `base_frame`                             | `std::string`         |               | Frame name of the base frame used in base-lidar. calibration.                                                                                                                      |
+| `map_frame`                              | `std::string`         |               | Frame name of the `map`.                                                                                                                                                           |
 | `calibration_camera_optical_link_frames` | `std::vector<string>` |               | List of frame names for `calibration camera`.                                                                                                                                      |
 | `calibration_lidar_frames`               | `std::vector<string>` |               | List of frame names for `calibration lidar`.                                                                                                                                       |
 | `calibration_camera_info_topics`         | `std::vector<string>` |               | List of camera info topics for `calibration camera`. (deprecated)                                                                                                                  |
 | `calibration_image_topics`               | `std::vector<string>` |               | List of camera image topics for `calibration camera`. (deprecated)                                                                                                                 |
 | `calibration_pointcloud_topics`          | `std::vector<string>` |               | List of pointcloud topics for `calibration lidar`.                                                                                                                                 |
-| `mapping_lidar_frame`                    | `std::string`         |               | Frame name of the `mapping_lidar`                                                                                                                                                  |
+| `mapping_lidar_frame`                    | `std::string`         |               | Frame name of the `mapping_lidar`.                                                                                                                                                 |
 | `mapping_registrator`                    | `std::string`         |               | Name of the PCL registration algorithm used for mapping processes.                                                                                                                 |
 | `mapping_verbose`                        | `bool`                | `false`       | Verbose output flag for mapping processes.                                                                                                                                         |
 | `use_rosbag`                             | `bool`                | `true`        | Flag to determine if data should be read from a ROS bag file.                                                                                                                      |
@@ -133,12 +133,12 @@ Note: target_markers is only used by camera calibrators (not using now)
 | `mapping_viz_leaf_size`              | `double` | `0.15`        | Leaf size for pcl::VoxelGrid for voxelize the mapping pointcloud.                                                          |
 | `calibration_viz_leaf_size`          | `double` | `0.15`        | Leaf size for pcl::VoxelGridTriplets for voxelize the calibration pointcloud.                                              |
 | `leaf_size_input`                    | `double` | `0.1`         | Leaf size for pcl::VoxelGrid for voxelize the input pointcloud.                                                            |
-| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size for pcl::VoxelGrid for voxelize the local map                                                                    |
-| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size for pcl::VoxelGrid for voxelize the dense map                                                                    |
+| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size for pcl::VoxelGrid for voxelize the local map.                                                                   |
+| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size for pcl::VoxelGrid for voxelize the dense map.                                                                   |
 | `new_keyframe_min_distance`          | `double` | `1.0`         | Minimum distance in meter between consecutive keyframes.                                                                   |
 | `new_frame_min_distance`             | `double` | `0.05`        | Minimum distance in meter of a new frame needs to be apart from the last to be processed.                                  |
 | `frame_stopped_distance`             | `double` | `0.02`        | Threshold distance in meter to determine if the frame has stopped moving.                                                  |
-| `frames_since_stoped_force_frame`    | `int`    | `5`           | If number of stop frames equal to this value, we set it as keyframe_and_stop frame.                                        |
+| `frames_since_stoped_force_frame`    | `int`    | `5`           | If number of stopped frames equal to this value, we set it as keyframe_and_stop frame.                                     |
 | `calibration_skip_keyframes`         | `int`    | `5`           | TODO.                                                                                                                      |
 
 ### Calibration criteria parameters
@@ -149,11 +149,11 @@ Note: target_markers is only used by camera calibrators (not using now)
 | `max_allowed_interpolated_distance`          | `double` | `0.05`        | Maximum allowable distance in meter for frame interpolated distance in standard criteria.                                                   |
 | `max_allowed_interpolated_angle`             | `double` | `1.0`         | Maximum allowable angle in degree for frame interpolated angle in standard criteria.                                                        |
 | `max_allowed_interpolated_speed`             | `double` | `3.0`         | Maximum allowable speed in meter/second for frame interpolated speed in standard criteria.                                                  |
-| `max_allowed_interpolated_accel`             | `double` | `0.4`         | Maximum allowable acceleration in meter/square_of_second for frame interpolated acceleration in standard criteria.                          |
+| `max_allowed_interpolated_accel`             | `double` | `0.4`         | Maximum allowable acceleration in meter/second^2 for frame interpolated acceleration in standard criteria.                                  |
 | `max_allowed_interpolated_distance_straight` | `double` | `0.08`        | Maximum allowable distance in meter for frame interpolated distance in straight criteria.                                                   |
 | `max_allowed_interpolated_angle_straight`    | `double` | `0.5`         | Maximum allowable angle in degree for frame interpolated angle in straight criteria.                                                        |
 | `max_allowed_interpolated_speed_straight`    | `double` | `5.0`         | Maximum allowable speed in meter for frame interpolated speed in straight criteria.                                                         |
-| `max_allowed_interpolated_accel_straight`    | `double` | `0.1`         | Maximum allowable acceleration in meter/squre_of_second for frame interpolated acceleration in straight criteria.                           |
+| `max_allowed_interpolated_accel_straight`    | `double` | `0.1`         | Maximum allowable acceleration in meter/second^2 for frame interpolated acceleration in straight criteria.                                  |
 | `filter_detections`                          | `bool`   | `true`        | Flag to enable filtering of detection to improve calibration accuracy and reduce noise.                                                     |
 | `detection_max_time_tolerance`               | `double` | `0.5`         | Maximum time tolerance in second for obtaining all detections close in time to the source pointcloud                                        |
 | `detection_size_tolerance`                   | `double` | `0.4`         | Tolerance for detection size in meter to account for measurement errors and environmental factors.                                          |
@@ -168,8 +168,8 @@ Note: target_markers is only used by camera calibrators (not using now)
 | `max_calibration_range`                      | `double` | `80.0`        | Maximum range in meter to consider for calibration purposes, defining the spatial boundary for calibration data.                            |
 | `min_calibration_range`                      | `double` | `1.5`         | Minimum range in meter to consider for calibration purposes, defining the spatial boundary for calibration data.                            |
 | `calibration_min_pca_eigenvalue`             | `double` | `0.25`        | Minimum eigenvalue for PCA in calibration.                                                                                                  |
-| `calibration_min_distance_between_frames`    | `double` | `5.0`         | Minimum spatial distance between frames for calibration to reduce redundancy and enhance data diversity.                                    |
-| `calibration_eval_max_corr_distance`         | `double` | `0.1`         | Maximum correspondence distance for source pointcloud and target pointcloud.                                                                |
+| `calibration_min_distance_between_frames`    | `double` | `5.0`         | Minimum spatial distance in meter between frames for calibration to reduce redundancy and enhance data diversity.                           |
+| `calibration_eval_max_corr_distance`         | `double` | `0.1`         | Maximum correspondence distance in meter for source pointcloud and target pointcloud.                                                       |
 
 ### Calibration parameters
 
@@ -194,7 +194,7 @@ Note: target_markers is only used by camera calibrators (not using now)
 | `camera_calibration_min_frames` | `int`    | `1`           | Minimum number of frames to consider for camera calibration. |
 | `camera_calibration_max_frames` | `int`    | `10`          | Maximum number of frames to use in camera calibration.       |
 | `pc_features_min_distance`      | `double` | `0.2`         | Near plane distance for pcl::FrustumCulling.                 |
-| `pc_features_max_distance`      | `double` | `40.0`        | Far plane distance for pcl::FrustumCulling detection.        |
+| `pc_features_max_distance`      | `double` | `40.0`        | Far plane distance for pcl::FrustumCulling.                  |
 
 ### Base-Lidar calibration parameters
 
