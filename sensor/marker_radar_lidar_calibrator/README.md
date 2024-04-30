@@ -42,36 +42,36 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Input
 
-| Name                       | Type                                                           | Description                                                                           |
-| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `{input_lidar_pointcloud}` | `sensor_msgs::msg::PointCloud2`                                | lidar pointcloud for calibration. `input_lidar_pointcloud` is provided via parameters |
-| `{input_radar_msg}`        | `radar_msgs::msg::RadarTracks` or `radar_msgs::msg::RadarScan` | radar msg for calibration, `input_radar_msg` is provided via parameters               |
+| Name                       | Type                                                           | Description                                                                            |
+| -------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `{input_lidar_pointcloud}` | `sensor_msgs::msg::PointCloud2`                                | lidar pointcloud for calibration. `input_lidar_pointcloud` is provided via parameters. |
+| `{input_radar_msg}`        | `radar_msgs::msg::RadarTracks` or `radar_msgs::msg::RadarScan` | radar msg for calibration, `input_radar_msg` is provided via parameters.               |
 
 ### Output
 
-| Name                          | Type                                   | Description                                              |
-| ----------------------------- | -------------------------------------- | -------------------------------------------------------- |
-| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud data from lidar      |
-| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud data from lidar      |
-| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Publishes colored clusters from lidar data               |
-| `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes lidar detections                               |
-| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud data from radar      |
-| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud data from radar      |
-| `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes radar detections                               |
-| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Publishes markers for matched points between sensors     |
-| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Publishes markers used for tracking calibration          |
-| `text_markers`                | `visualization_msgs::msg::Marker`      | Publishes text markers that show the calibration metrics |
-| `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Publishes calibration metrics                            |
+| Name                          | Type                                   | Description                                               |
+| ----------------------------- | -------------------------------------- | --------------------------------------------------------- |
+| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud data from lidar.      |
+| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud data from lidar.      |
+| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Publishes colored clusters from lidar data.               |
+| `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes lidar detections.                               |
+| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud data from radar.      |
+| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud data from radar.      |
+| `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes radar detections.                               |
+| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Publishes markers for matched points between sensors.     |
+| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Publishes markers used for tracking calibration.          |
+| `text_markers`                | `visualization_msgs::msg::Marker`      | Publishes text markers that show the calibration metrics. |
+| `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Publishes calibration metrics.                            |
 
 ### Services
 
-| Name                       | Type                                                  | Description                                                                              |
-| -------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `extrinsic_calibration`    | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes |
-| `extract_background_model` | `std_srvs::srv::Empty`                                | Strat to extract the background model from radar and lidar                               |
-| `add_lidar_radar_pair`     | `std_srvs::srv::Empty`                                | User is able to click this buttom to add lidar-radar pair                                |
-| `delete_lidar_radar_pair`  | `std_srvs::srv::Empty`                                | User is able to click this button to delete the previous lidar-radar pair                |
-| `send_calibration`         | `std_srvs::srv::Empty`                                | Send the calibration result to the sensor calibration manager                            |
+| Name                       | Type                                                  | Description                                                                               |
+| -------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `extrinsic_calibration`    | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes. |
+| `extract_background_model` | `std_srvs::srv::Empty`                                | Strat to extract the background model from radar and lidar.                               |
+| `add_lidar_radar_pair`     | `std_srvs::srv::Empty`                                | User is able to click this buttom to add lidar-radar pair.                                |
+| `delete_lidar_radar_pair`  | `std_srvs::srv::Empty`                                | User is able to click this button to delete the previous lidar-radar pair.                |
+| `send_calibration`         | `std_srvs::srv::Empty`                                | Send the calibration result to the sensor calibration manager.                            |
 
 ## Parameters
 

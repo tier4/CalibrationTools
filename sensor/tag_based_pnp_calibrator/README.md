@@ -1,6 +1,6 @@
 # tag_based_pnp_calibrator
 
-A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_pnp_calibrator.md)
+A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_pnp_calibrator.md).
 
 ## Purpose
 
@@ -24,24 +24,24 @@ Below, you can see how the algorithm is implemented in the `tag_based_pnp_calibr
 
 ### Input
 
-| Name                        | Type                                         | Description                                                                                 |
-| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `{camera_info}`             | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the calibration cameras . `camera_info` is provided via parameters |
-| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | LidarTag detections. `lidartag/detections_array` is defined in launcher.                    |
-| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections. `apriltag/detection_array` is defined in launcher.                     |
+| Name                        | Type                                         | Description                                                                                  |
+| --------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `{camera_info}`             | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the calibration cameras . `camera_info` is provided via parameters. |
+| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | LidarTag detections. `lidartag/detections_array` is defined in launcher.                     |
+| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections. `apriltag/detection_array` is defined in launcher.                      |
 
 ### Output
 
-| Name                   | Type                                             | Description                                         |
-| ---------------------- | ------------------------------------------------ | --------------------------------------------------- |
-| `filtered_projections` | `visualization_msgs::msg::MarkerArray`           | Publishes the calibration markers for visualization |
-| `calibration_points`   | `tier4_calibration_msgs::msg::CalibrationPoints` | Publishes the tag points after calibration          |
+| Name                   | Type                                             | Description                                          |
+| ---------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| `filtered_projections` | `visualization_msgs::msg::MarkerArray`           | Publishes the calibration markers for visualization. |
+| `calibration_points`   | `tier4_calibration_msgs::msg::CalibrationPoints` | Publishes the tag points after calibration.          |
 
 ### Services
 
-| Name                    | Type                                                  | Description                                                                              |
-| ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes |
+| Name                    | Type                                                  | Description                                                                               |
+| ----------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes. |
 
 ## Parameters
 

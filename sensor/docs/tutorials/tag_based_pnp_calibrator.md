@@ -132,7 +132,7 @@ The images below show that with the calibrated transformation, the projected poi
   2. The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue.
   3. The detections are not stable enough (detections don’t converge).
   4. The position of the tag is too far away from the camera. The user can move the tag toward the camera until the detection shows on `rviz` or modify the parameter `max_tag_distance` in the launch file.
-  5. The tag oscillates quite a bit due to the wind. The user can stop the tag with its hand
+  5. The tag oscillates quite a bit due to the wind. The user can stop the tag with its hand.
 
 - Why doesn't the UI launch?
 
