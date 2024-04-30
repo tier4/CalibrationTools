@@ -1,6 +1,6 @@
 # mapping_based_calibrator
 
-In this tutorial, we will present a hands-on tutorial of the `mapping_based_calibrator`, in particular, of its lidar-lidar calibration capabilities. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we present a hands-on tutorial of the `mapping_based_calibrator`, in particular, of its lidar-lidar calibration capabilities. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../mapping_based_calibrator/README.md).
 
@@ -49,7 +49,7 @@ A menu titled `Launcher configuration` should appear in the UI, and the user may
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
-In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play lidar_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
+In this tutorial, since the `tf` are published by the provided rosbag, start by running the bag with the command `ros2 bag play lidar_lidar.db3 --clock -r 0.1`. Afterward, launch the tools and click the `Calibrate` button."
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu3.jpg" alt="menu3">
@@ -124,7 +124,9 @@ The user can also see the three different colors of pointcloud in the `rviz`. wh
 
 ## Results
 
-After the calibration process is finished, the `sensor_calibration_manager` will display the results in the tf tree and allow the user to save the calibration data to a file.
+After the calibration process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
+
+In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`. The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration. The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`. The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. Since the transformations represented by the black arrows are fixed, the transformations between `sensor_kit_base_link`, `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link`, which are represented by the red arrows, can be calculated using the calibrated transformation.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">

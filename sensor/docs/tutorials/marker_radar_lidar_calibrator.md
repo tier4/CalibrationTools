@@ -1,6 +1,6 @@
 # marker_radar_lidar_calibrator
 
-In this tutorial, we will present a hands-on tutorial of the `marker_radar_lidar_calibrator`. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we present a hands-on tutorial of the `marker_radar_lidar_calibrator`. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../marker_radar_lidar_calibrator/README.md).
 
@@ -50,7 +50,7 @@ For this tutorial, we will modify the default value `radar_name` from `front_lef
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
-In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play radar_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
+In this tutorial, since the `tf` are published by the provided rosbag, start by running the bag with the command `ros2 bag play lidar_lidar.db3 --clock -r 0.1`. Afterward, launch the tools and click the `Calibrate` button."
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/menu3.jpg" alt="menu3">
@@ -154,7 +154,9 @@ Once the `Send calibration` button is clicked, the result will be sent to the se
 
 ## Results
 
-After the calibration process is finished, the `sensor_calibration_manager` will display the results in the tf tree and allow the user to save the calibration data to a file.
+After the calibration process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
+
+In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`. The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration. The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `front_center/radar_link` and `pandar_40p_front`. The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. Since the transformations represented by the black arrows are fixed, the transformation between `front_unit_base_link` and `front_center/radar_link`, which is represented by the red arrow, can be calculated using the calibrated transformation.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/menu4.jpg" alt="menu4"  width="500">

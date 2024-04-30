@@ -1,6 +1,6 @@
 # tag_based_pnp_calibrator
 
-In this tutorial, we will present a hands-on tutorial of the `tag_based_pnp_calibrator`. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we present a hands-on tutorial of the `tag_based_pnp_calibrator`. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../tag_based_pnp_calibrator/README.md).
 
@@ -13,24 +13,23 @@ Installation instructions can be found [here](../../README.md)
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1gFrrchW9mWM1huWMYuJ0nWB2n1BfCJag).
 
-The rosabg includes four different topics including `camera_info`, `image_rect_color/compressed`, `pointcloud_raw`, and `tf_static`.
+The provided rosbag includes four different topics `camera_info`, `image_rect_color/compressed`, `pointcloud_raw`, and `tf_static`.
 
 ## Environment preparation
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. For a normal consumer-level car, a space of `5m x 10m` should be sufficient.
+The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that tags are detected by both camera and lidar. The user could always check whether the tags appear in the rviz and the image view UI.
 
 ### AprilTag (LidarTag)
 
-AprilTag are the only moving elements during the calibration process and must detected by both camera and lidar.
 Depending on the lidar model and the available space, the required AprilTag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
 
 In addition to the size of the AprilTag, which affects the physical positions where a tag can be detected, the structure on which the AprilTag is mounted is equally important. The shape and size of this structure may affect the lidar detection algorithm. Therefore, it is advisable to use a mount that positions the tag in such a way that it remains invisible to the sensor (refer to the provided example).
 
 ## Launching the tool
 
-In this tutorial, we will use the X2 vehicle of Tier IV.
+In this tutorial, we will use the X2 project.
 First, run the sensor calibration manager:
 
 ```text
@@ -53,7 +52,7 @@ For this tutorial, we will modify the default values `calibration_pairs` from `9
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
 If it does not become available, it means that either the required `tf` or services are not available.
 
-In this tutorial, since the `tf` are published by the provided rosbag, run the rag (`ros2 bag play camera_lidar.db3 --clock -r 0.1`) first and launch the tools afterward to trigger the `Calibrate` button.
+In this tutorial, since the `tf` are published by the provided rosbag, start by running the bag with the command `ros2 bag play lidar_lidar.db3 --clock -r 0.1`. Afterward, launch the tools and click the `Calibrate` button."
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu3.jpg"  alt="menu3">
@@ -69,35 +68,50 @@ When the user starts the calibration, `rviz` and the `image view` should be disp
     <img src="../images/tag_based_pnp_calibrator/visualization1.jpg"  alt="visualization1">
 </p>
 
-After the tools detect the LidarTag and AprilTag, it will show the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of lidar detections and AprilTag detections.
+After the tools detect the LidarTag and AprilTag, it will show the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of LidarTag detections and AprilTag detections.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization2.jpg"  alt="visualization2">
 </p>
 
-Once the user gets the converged detection, the user can start moving the tag to another position. Please make sure the moving distance is larger than the `calibration_min_pair_distance` and also make sure the tag is in the FOV of the lidar and camera.
+Once the user observes the number of pairs increases in the `rviz`, he can start moving the tag to another position.
+
+While moving the tag to another position, the user should move the tag decisively from one place to the other, not stopping and starting mid-way.
+Please make sure the moving distance is larger than the `calibration_min_pair_distance` and the tag is in the FOV of both lidar and camera.
+
+Depending on the mount and the ground surface, the tags can oscillate quite a bit, which can be detrimental to the calibration process. In this case, the user can stop the tag with its hand.
 
 At the end of the calibration, we can get 8 detection pairs which are shown below.
 
-![segment](../images/tag_based_pnp_calibrator/visualization3.jpg)
+![tag_based_pnp_calibrator](../images/tag_based_pnp_calibrator/visualization3.jpg)
+
+The output in the console should be as follows:
+
+```text
+[tag_based_pnp_calibrator_node]:  Initial reprojection error=15.41
+[tag_based_pnp_calibrator_node]:  Current reprojection error=1.09
+[tag_based_pnp_calibrator_node]:  Filtered reprojection error=1.10
+```
 
 ## Results
 
-After the calibration process is finished, the `sensor_calibration_manager` will display the results in the tf tree and allow the user to save the calibration data to a file.
+After the calibration process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
+
+In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`. The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration. The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `camera6/camera_optical_link` and `pandar_40p_front`. The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. Since the transformations represented by the black arrows are fixed, the transformation between `front_unit_base_link` and `camera6/camera_link`, which is represented by the red arrow, can be calculated using the calibrated transformation.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
 </p>
 
-The user can modify the `visualization options` on the right side of the `image view`. To compare the results, please set the `Marker size (m)` to `0.04` and set the `PC subsample factor` to `1`.
+During the calibration or at the end of the calibration, the user can modify the `visualization options` on the right side of the `image view`. Setting the `Marker size (m)` to `0.04` and setting the `PC subsample factor` to `1` can help the user visualize the projected pointcloud on the image.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization_bar.jpg"  alt="visualization_bar" width="200">
 </p>
 
-After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf`. By doing this, it is easier to measure the difference after the calibration.
+After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf` to measure the difference after the calibration.
 
-The images below show that with the calibrated transformation, the projected pointcloud aligns better with the image.
+The images below show that with the calibrated transformation, the projected pointcloud aligns with the image.
 
 <table>
   <tr>
@@ -112,23 +126,25 @@ The images below show that with the calibrated transformation, the projected poi
 
 ## FAQ
 
-- Why the calibrator doesn't add calibration pairs?
+- Why doesn't the calibrator add calibration pairs?
 
   1. One possible reason is that the current pair is too close to previously collected data. In that case, the current data is not accepted.
-  2. The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name]`. Setting the parameter `use_receive_time` to `True` might help to solve the issue.
+  2. The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue.
   3. The detections are not stable enough (detections don’t converge).
+  4. The position of the tag is too far away from the camera. The user can move the tag toward the camera until the detection shows on `rviz` or modify the parameter `max_tag_distance` in the launch file.
+  5. The tag oscillates quite a bit due to the wind. The user can stop the tag with its hand
 
-- Why the UI doesn't launch?
+- Why doesn't the UI launch?
 
-  1. Check with `ros2 node list` if the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments
-  2. If the UI crashes (see the console), it is probably due to bad PySide installation, invalid intrinsic parameters, or invalid extrinsic parameters.
+  1. Check with `ros2 node list` if the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments.
+  2. If the UI crashes (check the console for details), it is probably due to a bad PySide installation, invalid intrinsic parameters, invalid extrinsic parameters, etc.
   3. The timestamps of the lidar and camera are not synchronized.
 
-- Why the reprojection errors are so high
+- Why the reprojection errors are so high?
 
   1. Check whether the intrinsic parameters are correct.
 
-- Why the reprojection error increases when more data is collected?
+- Why does the reprojection error increase when more data is collected?
 
   1. When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting). The more data is collected, the error may increase to a certain extent, but that is the model trying to fit all the data, being unable to fit the noise. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling).
 
@@ -138,3 +154,4 @@ The images below show that with the calibrated transformation, the projected poi
   2. The boards are not appropriate (are bent).
   3. The boards moved too much while calibrating.
   4. The lidar detections were not very good. Try collecting detections in areas where there is more resolution.
+  5. Check the rviz whether there are some outliers.
