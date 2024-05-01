@@ -177,7 +177,7 @@ class CalibratorBase(QObject):
         logging.debug("Before post_process")
         for parent, children_and_transforms in self.calibration_result_tfs.items():
             for child, transform in children_and_transforms.items():
-                logging.debug(f"{parent}->{child}:\n{transform}")
+                logging.debug(f"{parent}->{child}:\n{transform}")  # noqa E231
 
         calibration_transforms = {
             parent: {
@@ -198,7 +198,7 @@ class CalibratorBase(QObject):
         logging.debug("After post_process")
         for parent, children_and_transforms in self.processed_calibration_result_tfs.items():
             for child, transform in children_and_transforms.items():
-                logging.debug(f"{parent}->{child}:\n{transform}")
+                logging.debug(f"{parent}->{child}:\n{transform}")  # noqa E231
 
     def post_process(self, calibration_transforms) -> Dict[str, Dict[str, np.array]]:
         return calibration_transforms
@@ -235,7 +235,7 @@ class CalibratorBase(QObject):
 
         def float_representer(dumper, value):
             text = "{0:.6f}".format(value)  # noqa E231
-            return dumper.represent_scalar("tag:yaml.org,2002:float", text)
+            return dumper.represent_scalar("tag:yaml.org,2002:float", text)  # noqa E231
 
         yaml.add_representer(float, float_representer)
 

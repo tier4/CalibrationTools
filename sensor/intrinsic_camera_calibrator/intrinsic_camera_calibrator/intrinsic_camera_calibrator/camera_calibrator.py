@@ -811,10 +811,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             os.mkdir(evaluation_folder)
 
         for index, image in enumerate(self.data_collector.get_training_images()):
-            cv2.imwrite(os.path.join(training_folder, f"{index:04d}.jpg"), image)
+            cv2.imwrite(os.path.join(training_folder, f"{index:04d}.jpg"), image)  # noqa E231
 
         for index, image in enumerate(self.data_collector.get_evaluation_images()):
-            cv2.imwrite(os.path.join(evaluation_folder, f"{index:04d}.jpg"), image)
+            cv2.imwrite(os.path.join(evaluation_folder, f"{index:04d}.jpg"), image)  # noqa E231
 
     def process_detection_results(self, img: np.array, detection: BoardDetection):
         """Process the results from an object detection."""
