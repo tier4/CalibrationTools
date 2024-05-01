@@ -303,7 +303,7 @@ class SensorCalibrationManager(QMainWindow):
                 proc.kill()
 
             process.kill()
-            logging.info("Lanch process terminated")
+            logging.info("Launch process terminated")
         else:
             logging.info("No launch process to terminate")
 

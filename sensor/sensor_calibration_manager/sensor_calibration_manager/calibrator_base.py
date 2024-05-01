@@ -82,7 +82,6 @@ class CalibratorBase(QObject):
 
         if prev_state != self.state:
             self.state_changed_signal.emit(self.state)
-        pass
 
     def on_check_tf_timer(self):
         logging.debug("CalibratorBase: on_check_tf_timer")
