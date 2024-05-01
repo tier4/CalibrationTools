@@ -161,7 +161,7 @@ class CalibratorServiceWrapper(QObject):
         return all(self.finished_list)
 
     def result_ros_callback(self, result: ExtrinsicCalibrator.Response):
-        logging.debug(f"{threading.get_ident() }: result_ros_callback")
+        logging.debug(f"{threading.get_ident()}: result_ros_callback")
         self.result_signal.emit(result.results)
 
     def status_ros_callback(self, status: bool):
