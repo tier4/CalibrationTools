@@ -471,7 +471,7 @@ class Calibrator(ParameterizedClass, QObject):
             num_inliers = inlier_mask.sum()
 
             logging.info(
-                f"Iteration {it}: inliers: {num_inliers} | mean rms: {rms_errors.mean():.2f} | min rms: {rms_errors.min():.2f} | max rms: {rms_errors.max():.2f}"
+                f"Iteration {it}: inliers: {num_inliers} | mean rms: {rms_errors.mean():.2f} | min rms: {rms_errors.min():.2f} | max rms: {rms_errors.max():.2f}"  # noqa E231
             )
 
             if num_inliers > max_inliers or (
@@ -482,7 +482,7 @@ class Calibrator(ParameterizedClass, QObject):
                 max_inliers = num_inliers
 
         logging.info(
-            f"Pre rejection inliers = {max_inliers}/{len(detections)} | threshold = {pre_rejection_max_rms_error:.2f}"
+            f"Pre rejection inliers = {max_inliers}/{len(detections)} | threshold = {pre_rejection_max_rms_error:.2f}"  # noqa E231
         )
 
         return model, [detections[i] for i in best_inlier_mask.nonzero()[0]]
@@ -555,7 +555,7 @@ class Calibrator(ParameterizedClass, QObject):
                     max_delta_entropy = delta_entropy
                     max_delta_entropy_idx = idx
 
-            logging.info(f"iteration={it}: delta entropy={max_delta_entropy:.3f}")
+            logging.info(f"iteration={it}: delta entropy={max_delta_entropy:.3f}")  # noqa E231
             accepted_array[max_delta_entropy_idx] = True
             add_detection(
                 detections[max_delta_entropy_idx],
