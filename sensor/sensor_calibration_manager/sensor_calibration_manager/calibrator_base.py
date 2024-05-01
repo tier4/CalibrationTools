@@ -234,7 +234,7 @@ class CalibratorBase(QObject):
                 output_dict[parent][child] = d
 
         def float_representer(dumper, value):
-            text = "{0:.6f}".format(value)
+            text = "{0:.6f}".format(value)  # noqa E231
             return dumper.represent_scalar("tag:yaml.org,2002:float", text)
 
         yaml.add_representer(float, float_representer)
