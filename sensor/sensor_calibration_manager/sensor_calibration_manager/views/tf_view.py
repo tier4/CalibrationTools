@@ -184,7 +184,7 @@ class TfPlot(QWidget):
                 else "black"
             )
             graph_list.append(
-                f'"{parent}" -> "{child}"[color={color} label=" x={x:.4f}\\ny={y:.4f}\\nz={z:.4f}\\nyaw={yaw:.4f}\\npitch={pitch:.4f}\\nroll={roll:.4f}\\n"];\n'
+                f'"{parent}" -> "{child}"[color={color} label=" x={x:.4f}\\ny={y:.4f}\\nz={z:.4f}\\nyaw={yaw:.4f}\\npitch={pitch:.4f}\\nroll={roll:.4f}\\n"];\n'  # noqa E231
             )
 
         if changed_frames_dict is not None:
