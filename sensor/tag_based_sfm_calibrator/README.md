@@ -142,7 +142,7 @@ Since lidar can not detect the tags if they are in the same plane as other eleme
 
 Considerations:
 
-- Among all the tags in the environment, waypoints are the only ones that can be moved during experiments (please the the tutorial and the concept of scenes).
+- Among all the tags in the environment, waypoints are the only ones that can be moved during experiments (please read the provided tutorial and the concept of scenes).
 - The orientation of the waypoint tags should be so that the line that connects the calibration sensors and the waypoint tag is perpendicular to the waypoint tag plane. This is recommended since lidartag detection presents worse performance when this is not the case (more than the detector, it is a limitation of most lidars).
 - We so far have used 800mmx800mm (complete board size) waypoints, and have worked well for most lidars/configurations in our projects
   No matter the setting, there should be at least one waypoint tag. However, in practice, the more waypoint tags (tags that the calibration sensors can detect) the faster the calibration process.
