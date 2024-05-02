@@ -1,6 +1,6 @@
 # Sensor Calibration Tools
 
-Calibration tools for sensors used in autonomous driving and robotics (camera, lidar, and radar)
+Calibration tools for sensors used in autonomous driving and robotics (camera, lidar, and radar).
 
 ## Table of contents
 
@@ -174,7 +174,7 @@ class CalibratorA(CalibratorBase):
 ```
 
 In addition to specifying required frames and calibration services names, the calibrator interfaces are also to post-process the calibration results if needed to accomodate to robotic frame conventions and other project-specific requirements.
-For example, camera-lidar calibration returns the `tf` from the optical link to the lidar itself. However, in most scenarios instead of the optical link, the camera link is preferred in configuration files (the camera link has different axes), and some lidars prefer to use their `base_link` (footprint),
+For example, camera-lidar calibration returns the `tf` from the optical link to the lidar itself. However, in most scenarios instead of the optical link, the camera link is preferred in configuration files (the camera link has different axes), and some lidars prefer to use their `base_link` (footprint).
 
 For example, at Tier IV, most sensors are mounted in a structure called `sensor_kit`, and then the sensor calibration is represented as a `sensor_kit_base_link -> sensor_frame`. In particular, for the case of camera-lidar, the `tf` that represents the camera-lidar calibration in most of our projects is `sensor_kit_base_link -> cameraX/camera_link`. To transform the `tf` that the calibrator returns (`lidar -> cameraX/camera_optical_link`) to the one we need to save, the post-process step can be implemented as follows:
 
@@ -284,7 +284,7 @@ Although we provide several projects and examples, in most cases the user would 
 
 ### Create a new project
 
-If the default project is not enough or does not meet the needs of the user (for example, if they are going to start projects that require running the tools frequently), it is relatively easy to create new projects and calibrator interfaces. In what follows, we will create a new project titled `my_new_project` with a calibrator called `my_new_calibrator`
+If the default project is not enough or does not meet the needs of the user (for example, if they are going to start projects that require running the tools frequently), it is relatively easy to create new projects and calibrator interfaces. In what follows, we will create a new project titled `my_new_project` with a calibrator called `my_new_calibrator`.
 
 First, to make sure that the sensor calibration manager knows of the existence of the calibrator, add the following line to `sensor_calibration_manager/sensor_calibration_manager/calibrators/__init__.py`:
 
@@ -292,7 +292,7 @@ First, to make sure that the sensor calibration manager knows of the existence o
 from .my_new_project import *  # noqa: F401, F403
 ```
 
-Then, create a file called `sensor_calibration_manager/sensor_calibration_manager/calibrators/my_new_project/__init__.py`
+Then, create a file called `sensor_calibration_manager/sensor_calibration_manager/calibrators/my_new_project/__init__.py`.
 
 ```python
 from .my_new_calibrator import MyNewCalibrator
@@ -344,18 +344,18 @@ The launcher itself must contain the following arguments to match the calibrator
 <arg name="target_frame"/>
 ```
 
-Default values are optional, and somewhere inside the launch file the user needs to execute a node that provides the `calibrate_service_name` to match the calibrator interface
+Default values are optional, and somewhere inside the launch file, the user needs to execute a node that provides the `calibrate_service_name` to match the calibrator interface.
 
 ### Integrate a new calibrator
 
-In the previous Section we created a new calibrator interface and added it to the sensor calibration manager. However, that assumes that the user will use one of the calibrator packages offered by the sensor calibration tools.
+In the previous Section, we created a new calibrator interface and added it to the sensor calibration manager. However, that assumes that the user will use one of the calibrator packages offered by the sensor calibration tools.
 
 In the case the user wants to integrate his algorithms, he must follow the instructions, which assume the reader knows and is used to creating ROS2 packages.
 
-- Create a ROS2 package called `my_new_calibrator_package`. The node itself needs to be part of a muli-thread executor with at least two threads
-- Add a dependency to the `tier4_calibration_msgs` package to use the calibration services
-- In the node's header file add a calibration service
-- In most cases, creating a group exclusive to the services is also required
+- Create a ROS2 package called `my_new_calibrator_package`. The node itself needs to be part of a muli-thread executor with at least two threads.
+- Add a dependency to the `tier4_calibration_msgs` package to use the calibration services.
+- In the node's header file add a calibration service.
+- In most cases, creating a group exclusive to the services is also required.
 
 In the header file:
 
@@ -366,7 +366,7 @@ rclcpp::CallbackGroup::SharedPtr srv_callback_group_
 ...
 ```
 
-In the source file
+In the source file:
 
 ```c++
 ...
@@ -382,4 +382,4 @@ service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCal
   ...
 ```
 
-In addition to this, the user must implement `requestReceivedCallback` to comply with the interface
+In addition to this, the user must implement `requestReceivedCallback` to comply with the interface.

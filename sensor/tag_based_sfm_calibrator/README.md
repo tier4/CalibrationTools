@@ -1,6 +1,6 @@
 # tag_based_sfm_calibrator
 
-A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_sfm_calibrator.md)
+A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_sfm_calibrator.md).
 
 ## Purpose
 
@@ -153,8 +153,8 @@ Wheel tags are what allow us to find the `base_link` via solving the bundle adju
 
 Considerations:
 
-- They usually can not be detected by the calibration sensors (instead they are detected by the external camera)
-- Since the number of images that contain wheel tags is expected to be low, it is convenient to use grids of individual tags. An example of a 2x2 tag is presented in Fig 3.
+- They usually can not be detected by the calibration sensors (instead they are detected by the external camera).
+- Since the number of images that contain wheel tags is expected to be low, it is convenient to use grids of individual tags. An example of a 2x2 tag is presented in Figure 3.
 - Since the wheel tags determine the base link, their center should coincide with the axle as much as possible (at least in the x-axis seen from the `base_link`).
 
 ### Ground tag
@@ -176,13 +176,13 @@ Considerations:
 
 ### External camera
 
-The role of the external camera is to connect the sensors and their detections creating the graph required for bundle adjustment
+The role of the external camera is to connect the sensors and their detections creating the graph required for bundle adjustment.
 
 Considerations:
 
 - The camera must behave like a pinhole + distortion model. That is to say, the lenses must be "fixed" during the experiment.
 - The highest "real" resolution the better. So far we have tried with Nikon DSLRs (half frame) with moving and fixed lenses, and a simple point-and-shot camera.
-- In the pro-tips / recommendations section, more suggestions regarding the camera settings have been provided
+- In the pro-tips / recommendations section, more suggestions regarding the camera settings have been provided.
 
 ### Initial (external) camera intrinsics calibration board
 
@@ -210,17 +210,17 @@ Any board that can be used for this purpose is acceptable but circle-patterned c
 
 ## Known issues/limitations
 
-- Our version of lidartag only supports the family `16h5`
-- Our codebase only supports apriltag detections for `36h11`
-- Ground tags are assumed to have no width. If that is not the base, you can directly compensate the width in the final extrinsic
+- Our version of lidartag only supports the family `16h5`.
+- Our codebase only supports apriltag detections for `36h11`.
+- Ground tags are assumed to have no width. If that is not the base, you can directly compensate the width in the final extrinsics.
 - We only use 2 wheel tags. The quality of the calibration could improve, mainly in the yaw component, if we were to use tags in the four wheels.
 
 ## Pro tips/recommendations
 
-- If the `base_link` seems flipped in yaw by 180 degrees, it is probably because you mistook the left and right wheel tags
+- If the `base_link` seems flipped in yaw by 180 degrees, it is probably because you mistook the left and right wheel tags.
 - For an optimal depth of field, use the highest f-number possible of the camera and focus to infinity.
 - Prefer fixed lenses and do not forget to turn off auto zoom.
 - One of the biggest concerns is motion blur when using the external camera. Since a high f-number is recommended, instead of increasing the exposure, prefer using a higher ISO or just under-exposed images.
-- Images taken from the external cameras should have as many possible detections in each image. The absolute minimum is 2, but under 3 are discarded
+- Images taken from the external cameras should have as many possible detections in each image. The absolute minimum is 2, but under 3 are discarded.
 - Detections from the external camera should whenever possible have the least amount of out-of-plane rotation. This is due to how the pose estimation gets distorted in extreme cases.
-- The sampling of the scene by the external camera should focus on the waypoints and wheel tags whenever possible. In terms of usefulness for calibration, images that contain both waypoints and wheel tags are highly coveted. This is due to how they form the closest possible connection between the calibration sensors and the wheels
+- The sampling of the scene by the external camera should focus on the waypoints and wheel tags whenever possible. In terms of usefulness for calibration, images that contain both waypoints and wheel tags are highly coveted. This is due to how they form the closest possible connection between the calibration sensors and the wheels.
