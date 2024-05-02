@@ -157,7 +157,7 @@ If there are no issues, the output in the console should be similar to the follo
 
 ## Scene data collection
 
-To reconstruct the scene and find the `base_link`` pose, we need to obtain data from one or more scenes.
+To reconstruct the scene and find the `base_link` pose, we need to obtain data from one or more scenes.
 In each scene, waypoints are placed in different positions, the sensors record the detections from these waypoints, and using the external camera, photos from the scene, including the waypoints are taken.
 
 The number of required scenes depends on the number of physical waypoints available. We recommend at least 5 waypoint positions in total. In the provided example, we use 2 waypoints and a total of 3 scenes, which correspond to 6 waypoint positions. The placement of the waypoints should be as uniform as possible around the vehicle.
