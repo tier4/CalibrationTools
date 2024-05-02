@@ -19,8 +19,8 @@ from typing import NamedTuple
 
 
 class CalibratorState(Enum):
-    WAITING_TFS = 1
-    WAITING_SERVICES = 2
+    WAITING_SERVICES = 1
+    WAITING_TFS = 2
     READY = 3
     CALIBRATING = 4
     FINISHED = 5

@@ -140,7 +140,7 @@ def plot_calibration_data_statistics(
         height = detections[0].get_image_height()
         width = detections[0].get_image_width()
 
-        axes[0, i].set_title(f"{name} pixel heatmap\n(entropy={pixel_entropy:.2f})")
+        axes[0, i].set_title(f"{name} pixel heatmap\n(entropy={pixel_entropy:.2f})")  # noqa E231
         pixel_heatmap_ax = axes[0, i].imshow(
             pixel_heatmap,
             cmap="jet",
@@ -150,7 +150,9 @@ def plot_calibration_data_statistics(
         )
         plt.colorbar(pixel_heatmap_ax, ax=axes[0, i])
 
-        axes[1, i].set_title(f"{name} rotation heatmap\n(entropy{rotation_entropy:.2f})")
+        axes[1, i].set_title(
+            f"{name} rotation heatmap\n(entropy{rotation_entropy:.2f})"  # noqa E231
+        )
         rotation_heatmap_ax = axes[1, i].imshow(
             rotation_heatmap,
             cmap="jet",

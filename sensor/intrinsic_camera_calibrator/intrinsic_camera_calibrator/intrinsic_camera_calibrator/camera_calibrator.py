@@ -689,7 +689,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibrated_camera_model = calibrated_model
 
         self.calibration_status_label.setText("Calibration status: idle")
-        self.calibration_time_label.setText(f"Calibration time: {dt:.2f}s")
+        self.calibration_time_label.setText(f"Calibration time: {dt:.2f}s")  # noqa E231
         self.calibration_training_samples_label.setText(
             f"Training samples: {num_training_detections}"
         )
@@ -700,9 +700,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             f"\tPost rejection inliers: {num_training_post_rejection_inliers}"
         )
 
-        self.calibration_training_rms_label.setText(f"\trms error (all): {training_rms_error:.3f}")
+        self.calibration_training_rms_label.setText(
+            f"\trms error (all): {training_rms_error:.3f}"  # noqa E231
+        )
         self.calibration_training_inlier_rms_label.setText(
-            f"\trms error (inliers): {training_inlier_rms_error:.3f}"
+            f"\trms error (inliers): {training_inlier_rms_error:.3f}"  # noqa E231
         )
 
         self.calibration_evaluation_samples_label.setText(
@@ -713,10 +715,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         )
 
         self.calibration_evaluation_rms_label.setText(
-            f"\trms error (all): {evaluation_rms_error:.3f}"
+            f"\trms error (all): {evaluation_rms_error:.3f}"  # noqa E231
         )
         self.calibration_evaluation_inlier_rms_label.setText(
-            f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"
+            f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"  # noqa E231
         )
 
         # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
@@ -741,7 +743,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.undistortion_alpha_spinbox.setEnabled(True)
 
         self.calibration_status_label.setText("Calibration status: idle")
-        self.calibration_time_label.setText(f"Calibration time: {dt:.2f}s")
+        self.calibration_time_label.setText(f"Calibration time: {dt:.2f}s")  # noqa E231
         self.calibration_training_samples_label.setText(
             f"Training samples: {num_training_detections}"
         )
@@ -750,9 +752,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             f"\tPost rejection inliers: {num_training_post_rejection_inliers}"
         )
 
-        self.calibration_training_rms_label.setText(f"\trms error (all): {training_rms_error:.3f}")
+        self.calibration_training_rms_label.setText(
+            f"\trms error (all): {training_rms_error:.3f}"  # noqa E231
+        )
         self.calibration_training_inlier_rms_label.setText(
-            f"\trms error (inliers): {training_inlier_rms_error:.3f}"
+            f"\trms error (inliers): {training_inlier_rms_error:.3f}"  # noqa E231
         )
 
         self.calibration_evaluation_samples_label.setText(
@@ -763,10 +767,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         )
 
         self.calibration_evaluation_rms_label.setText(
-            f"\trms error (all): {evaluation_rms_error:.3f}"
+            f"\trms error (all): {evaluation_rms_error:.3f}"  # noqa E231
         )
         self.calibration_evaluation_inlier_rms_label.setText(
-            f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"
+            f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"  # noqa E231
         )
 
         # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
@@ -807,10 +811,10 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             os.mkdir(evaluation_folder)
 
         for index, image in enumerate(self.data_collector.get_training_images()):
-            cv2.imwrite(os.path.join(training_folder, f"{index:04d}.jpg"), image)
+            cv2.imwrite(os.path.join(training_folder, f"{index:04d}.jpg"), image)  # noqa E231
 
         for index, image in enumerate(self.data_collector.get_evaluation_images()):
-            cv2.imwrite(os.path.join(evaluation_folder, f"{index:04d}.jpg"), image)
+            cv2.imwrite(os.path.join(evaluation_folder, f"{index:04d}.jpg"), image)  # noqa E231
 
     def process_detection_results(self, img: np.array, detection: BoardDetection):
         """Process the results from an object detection."""
@@ -907,35 +911,37 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
             self.raw_detection_label.setText("Detected: True")
             self.raw_linear_error_rms_label.setText(
-                f"Linear error rms: {detection.get_linear_error_rms():.2f} px"
+                f"Linear error rms: {detection.get_linear_error_rms():.2f} px"  # noqa E231
             )
-            self.rough_tilt_label.setText(f"Rough tilt: {detection.get_tilt():.2f} degrees")
+            self.rough_tilt_label.setText(
+                f"Rough tilt: {detection.get_tilt():.2f} degrees"  # noqa E231
+            )
             self.rough_angles_label.setText(
-                f"Rough angles: x={rough_angles[0]:.2f} y={rough_angles[1]:.2f} degrees"
+                f"Rough angles: x={rough_angles[0]:.2f} y={rough_angles[1]:.2f} degrees"  # noqa E231
             )
             self.rough_position_label.setText(
-                f"Rough position: x={pose_translation[0]:.2f} y={pose_translation[1]:.2f} z={pose_translation[2]:.2f}"
+                f"Rough position: x={pose_translation[0]:.2f} y={pose_translation[1]:.2f} z={pose_translation[2]:.2f}"  # noqa E231
             )
-            self.skew_label.setText(f"Skew: {detection.get_normalized_skew():.2f}")
+            self.skew_label.setText(f"Skew: {detection.get_normalized_skew():.2f}")  # noqa E231
             self.relative_area_label.setText(
-                f"Relative area: {100.0*detection.get_normalized_size():.2f}"
+                f"Relative area: {100.0*detection.get_normalized_size():.2f}"  # noqa E231
             )
 
             self.single_shot_reprojection_error_max_label.setText(
-                f"Reprojection error (max): {reprojection_error_max:.3f} px ({100.0 * reprojection_error_max_relative:.2f}%)"
+                f"Reprojection error (max): {reprojection_error_max:.3f} px ({100.0 * reprojection_error_max_relative:.2f}%)"  # noqa E231
             )
             self.single_shot_reprojection_error_avg_label.setText(
-                f"Reprojection error (avg): {reprojection_error_mean:.3f} px ({100.0 * reprojection_error_mean_relative:.2f}%)"
+                f"Reprojection error (avg): {reprojection_error_mean:.3f} px ({100.0 * reprojection_error_mean_relative:.2f}%)"  # noqa E231
             )
             self.single_shot_reprojection_error_rms_label.setText(
-                f"Reprojection error (rms): {reprojection_error_rms:.3f} px ({100.0 * reprojection_error_rms_relative:.2f}%)"
+                f"Reprojection error (rms): {reprojection_error_rms:.3f} px ({100.0 * reprojection_error_rms_relative:.2f}%)"  # noqa E231
             )
 
             self.training_occupancy_rate_label.setText(
-                f"Training occupancy: {100.0*self.data_collector.get_training_occupancy_rate():.2f}"
+                f"Training occupancy: {100.0*self.data_collector.get_training_occupancy_rate():.2f}"  # noqa E231
             )
             self.evaluation_occupancy_rate_label.setText(
-                f"Evaluation occupancy: {100.0*self.data_collector.get_evaluation_occupancy_rate():.2f}"
+                f"Evaluation occupancy: {100.0*self.data_collector.get_evaluation_occupancy_rate():.2f}"  # noqa E231
             )
 
         # Draw training / evaluation points

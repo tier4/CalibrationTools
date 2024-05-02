@@ -380,11 +380,15 @@ class ImageViewUI(QMainWindow):
             self.image_view.update()
             self.graphics_view.update()
 
-            self.setWindowTitle(f"Image view (camera-lidar delay={1000*self.delay_tmp:.2f} ms)")
+            self.setWindowTitle(
+                f"Image view (camera-lidar delay={1000*self.delay_tmp:.2f} ms)"  # noqa E231
+            )
 
     def sensor_data_delay_callback(self, delay):
         # This method is executed in the UI thread
-        self.setWindowTitle(f"Image view (camera-lidar delay={1000*self.delay_tmp:.2f} ms)")
+        self.setWindowTitle(
+            f"Image view (camera-lidar delay={1000*self.delay_tmp:.2f} ms)"  # noqa E231
+        )
 
     def transform_callback(self):
         # This method is executed in the UI thread

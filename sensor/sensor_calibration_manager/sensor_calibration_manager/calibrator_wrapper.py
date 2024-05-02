@@ -105,7 +105,7 @@ class CalibratorServiceWrapper(QObject):
         tf = time.time()
 
         for i in range(len(self.elapsed_times)):
-            self.elapsed_times[i] = f"{tf - self.start_times[i]:.2f}"
+            self.elapsed_times[i] = f"{tf - self.start_times[i]:.2f}"  # noqa E231
 
         self.data_changed.emit()
 
@@ -138,7 +138,7 @@ class CalibratorServiceWrapper(QObject):
             self.scores[i] = calibration_result.score
             self.status_messages[i] = calibration_result.message.data
             self.finished_list[i] = True
-            self.elapsed_times[i] = f"{tf - self.start_times[i]:.2f}"
+            self.elapsed_times[i] = f"{tf - self.start_times[i]:.2f}"  # noqa E231
             received_calibration_ids.append(i)
 
         for i in range(len(self.parents)):
@@ -161,7 +161,7 @@ class CalibratorServiceWrapper(QObject):
         return all(self.finished_list)
 
     def result_ros_callback(self, result: ExtrinsicCalibrator.Response):
-        logging.debug(f"{threading.get_ident() }: result_ros_callback")
+        logging.debug(f"{threading.get_ident()}: result_ros_callback")
         self.result_signal.emit(result.results)
 
     def status_ros_callback(self, status: bool):
