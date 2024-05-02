@@ -173,7 +173,7 @@ class CalibratorA(CalibratorBase):
 
 ```
 
-In addition to specifying required frames and calibration services names, the calibrator interfaces are also to post-process the calibration results if needed to accomodate to robotic frame conventions and other project-specific requirements.
+In addition to specifying `required_frames` and `services_name`, the calibrator interfaces are also used to post-process the calibration results if needed to conform to robotics frame conventions and other project-specific requirements.
 For example, camera-lidar calibration returns the `tf` from the optical link to the lidar itself. However, in most scenarios instead of the optical link, the camera link is preferred in configuration files (the camera link has different axes), and some lidars prefer to use their `base_link` (footprint).
 
 For example, at Tier IV, most sensors are mounted in a structure called `sensor_kit`, and then the sensor calibration is represented as a `sensor_kit_base_link -> sensor_frame`. In particular, for the case of camera-lidar, the `tf` that represents the camera-lidar calibration in most of our projects is `sensor_kit_base_link -> cameraX/camera_link`. To transform the `tf` that the calibrator returns (`lidar -> cameraX/camera_optical_link`) to the one we need to save, the post-process step can be implemented as follows:
