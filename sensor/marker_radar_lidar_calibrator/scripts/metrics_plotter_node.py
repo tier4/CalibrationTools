@@ -157,12 +157,12 @@ class MetricsPlotter:
         if len(self.num_of_reflectors_list) > 0:
             # draw annotations for the last point
             self.subplot2.annotate(
-                f"{self.calibration_distance_error_list[-1]:.2f}",
+                f"{self.calibration_distance_error_list[-1]:.2f}",  # noqa E231
                 xy=(self.num_of_reflectors_list[-1], self.calibration_distance_error_list[-1]),
                 color=self.color_distance,
             )
             self.subplot3.annotate(
-                f"{self.calibration_yaw_error_list[-1]:.2f}",
+                f"{self.calibration_yaw_error_list[-1]:.2f}",  # noqa E231
                 xy=(self.num_of_reflectors_list[-1], self.calibration_yaw_error_list[-1]),
                 color=self.color_yaw,
             )
@@ -203,12 +203,12 @@ class MetricsPlotter:
         # annotate the last value
         if len(self.crossval_sample_list) > 0:
             self.subplot0.annotate(
-                f"{self.crossval_distance_error_list[-1]:.2f}",
+                f"{self.crossval_distance_error_list[-1]:.2f}",  # noqa E231
                 xy=(self.crossval_sample_list[-1], self.crossval_distance_error_list[-1]),
                 color=self.color_distance,
             )
             self.subplot1.annotate(
-                f"{self.crossval_yaw_error_list[-1]:.2f}",
+                f"{self.crossval_yaw_error_list[-1]:.2f}",  # noqa E231
                 xy=(self.crossval_sample_list[-1], self.crossval_yaw_error_list[-1]),
                 color=self.color_yaw,
             )

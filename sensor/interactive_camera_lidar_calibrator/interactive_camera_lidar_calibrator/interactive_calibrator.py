@@ -294,8 +294,8 @@ class InteractiveCalibratorUI(ImageViewUI):
             index = 0
 
             while True:
-                file_name_raw = f"screenshot_{index:04d}_raw.png"
-                file_name_roi = f"screenshot_{index:04d}_roi.png"
+                file_name_raw = f"screenshot_{index:04d}_raw.png"  # noqa E231
+                file_name_roi = f"screenshot_{index:04d}_roi.png"  # noqa E231
 
                 if not os.path.exists(file_name_raw):
                     pixmap_raw.save(file_name_raw, "PNG", -1)
@@ -464,7 +464,7 @@ class InteractiveCalibratorUI(ImageViewUI):
                 image_calibration_points,
                 transform_matrix=self.calibrated_transform,
             )
-            calibrated_error_string = f"{calibrated_error:.2f}"
+            calibrated_error_string = f"{calibrated_error:.2f}"  # noqa E231
             self.calibrated_error = calibrated_error
         else:
             calibrated_error_string = ""
@@ -476,7 +476,7 @@ class InteractiveCalibratorUI(ImageViewUI):
                 image_calibration_points,
                 transform_matrix=self.source_transform,
             )
-            source_error_string = f"{source_error:.2f}"
+            source_error_string = f"{source_error:.2f}"  # noqa E231
         else:
             source_error_string = ""
             source_inliers = np.array([])

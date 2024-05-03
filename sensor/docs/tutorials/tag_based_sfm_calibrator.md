@@ -91,7 +91,7 @@ In `project`, select `rdv`, and in `calibrator`, select `tag_based_sfm_base_lida
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient. However, for this tutorial, we will use the default values. After configuring the parameters, click `Launch`.
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
-If it does not become available, it means that either the required `tf` or services are not available. In this case, since the `tf` are published by the provided rosbags, run the first one for a few seconds and then pause it (`ros2 bag play scene0.db3 --clock -r 0.5`).
+If it does not become available, it means that either the required `tf` or services are not available. In this case, since the `tf` are published by the provided rosbags, run it for a few seconds and then pause it (`ros2 bag play scene0.db3 --clock -r 0.5`).
 
 ![sensor_calibration_manager](../images/tag_based_sfm_calibrator/sensor_calibration_manager.png)
 
@@ -157,7 +157,7 @@ If there are no issues, the output in the console should be similar to the follo
 
 ## Scene data collection
 
-To reconstruct the scene and find the `base_link`` pose, we need to obtain data from one or more scenes.
+To reconstruct the scene and find the `base_link` pose, we need to obtain data from one or more scenes.
 In each scene, waypoints are placed in different positions, the sensors record the detections from these waypoints, and using the external camera, photos from the scene, including the waypoints are taken.
 
 The number of required scenes depends on the number of physical waypoints available. We recommend at least 5 waypoint positions in total. In the provided example, we use 2 waypoints and a total of 3 scenes, which correspond to 6 waypoint positions. The placement of the waypoints should be as uniform as possible around the vehicle.

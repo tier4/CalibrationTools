@@ -42,6 +42,7 @@ from launch.actions.declare_launch_argument import DeclareLaunchArgument
 from launch.actions.set_launch_configuration import SetLaunchConfiguration
 from launch.frontend import Parser
 from launch.launch_description import LaunchDescription
+import psutil
 import rclpy
 from sensor_calibration_manager.calibration_manager_model import CalibratorManagerModel
 from sensor_calibration_manager.calibrator_base import CalibratorState
@@ -67,6 +68,9 @@ class SensorCalibrationManager(QMainWindow):
 
         self.ros_interface: RosInterface = None
         self.tfs_dict: Dict[str, Dict[str, None]] = defaultdict(lambda: defaultdict(None))
+
+        # ROS launch process
+        self.process = None
 
         # Threading variables
         self.lock = threading.RLock()
@@ -197,8 +201,8 @@ class SensorCalibrationManager(QMainWindow):
 
     def on_calibrator_state_changed(self, state: CalibratorState):
         text_dict = {
-            CalibratorState.WAITING_TFS: "Waiting for the required TFs to be available",
             CalibratorState.WAITING_SERVICES: "Waiting for calibration services",
+            CalibratorState.WAITING_TFS: "Waiting for the required TFs to be available",
             CalibratorState.READY: "Ready to calibrate",
             CalibratorState.CALIBRATING: "Calibrating...",
             CalibratorState.FINISHED: "Calibration finished",
@@ -292,6 +296,17 @@ class SensorCalibrationManager(QMainWindow):
                 self.tfs_dict, required_frames=self.calibrator.required_frames
             )
 
+    def terminate_calibrators(self):
+        if self.process:
+            process = psutil.Process(self.process.pid)
+            for proc in process.children(recursive=True):
+                proc.kill()
+
+            process.kill()
+            logging.info("Launch process terminated")
+        else:
+            logging.info("No launch process to terminate")
+
 
 def main(args=None):
     os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
@@ -299,13 +314,14 @@ def main(args=None):
 
     rclpy.init(args=args)
 
-    try:
-        signal.signal(signal.SIGINT, sigint_handler)
-        calibration_manager = SensorCalibrationManager()  # noqa: F841
+    signal.signal(signal.SIGINT, sigint_handler)
+    calibration_manager = SensorCalibrationManager()  # noqa: F841
 
+    try:
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
         logging.info("Received sigint. Quitting...")
+        calibration_manager.terminate_calibrators()
         rclpy.shutdown()
 
 
