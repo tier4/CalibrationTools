@@ -13,7 +13,7 @@ Installation instructions can be found [here](../../README.md)
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1gFrrchW9mWM1huWMYuJ0nWB2n1BfCJag).
 
-The provided rosbag includes four different topics `camera_info`, `image_rect_color/compressed`, `pointcloud_raw`, and `tf_static`.
+The provided rosbag includes four different topics: `camera_info`, `image_rect_color/compressed`, `pointcloud_raw`, and `tf_static`.
 
 ## Environment preparation
 
