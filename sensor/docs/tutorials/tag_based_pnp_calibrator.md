@@ -23,9 +23,9 @@ The required space for calibration depends on the vehicle and sensors used. Duri
 
 ### AprilTag (LidarTag)
 
-Depending on the lidar model and the available space, the required AprilTag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
+Depending on the lidar model and the available space, the required apriltag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
 
-In addition to the size of the AprilTag, which affects the physical positions where a tag can be detected, the structure on which the AprilTag is mounted is equally important. The shape and size of this structure may affect the lidar detection algorithm. Therefore, it is advisable to use a mount that positions the tag in such a way that it remains invisible to the sensor (refer to the provided example).
+In addition to the size of the apriltag, which affects the physical positions where a tag can be detected, the structure on which the apriltag is mounted is equally important. The shape and size of this structure may affect the lidar detection algorithm. Therefore, it is advisable to use a mount that positions the tag in such a way that it remains invisible to the sensor (refer to the provided example).
 
 ## Launching the tool
 
@@ -43,7 +43,7 @@ In `project`, select `x2`, and in `calibrator`, select `tag_based_pnp_calibrator
 </p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
-For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag has 8 AprilTag detections and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
+For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag has 8 apriltag detections and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu2.jpg"  alt="menu2">
@@ -60,7 +60,7 @@ In this tutorial, since the `tf` are published by the provided rosbag, start by 
 
 ## Calibration
 
-The calibration starts automatically after clicking the `Calibrate` button. It will keep calibrating the LidarTag detections and AprilTag detections until the number of the detections fits the user-defined `calibration_pairs` in the `Launcher configuration`.
+The calibration starts automatically after clicking the `Calibrate` button. It will keep calibrating the lidartag detections and apriltag detections until the number of the detections fits the user-defined `calibration_pairs` in the `Launcher configuration`.
 
 When the user starts the calibration, `rviz` and the `image view` should be displayed like below.
 
@@ -68,7 +68,7 @@ When the user starts the calibration, `rviz` and the `image view` should be disp
     <img src="../images/tag_based_pnp_calibrator/visualization1.jpg"  alt="visualization1">
 </p>
 
-After the tools detect the LidarTag and AprilTag, it will show the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of LidarTag detections and AprilTag detections.
+After the tools detect the lidartag and apriltag, it will show the detection markers on the `rviz` and the `image view`. The text in the rviz will also display the current number of pairs of lidartag detections and apriltag detections.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization2.jpg"  alt="visualization2">
