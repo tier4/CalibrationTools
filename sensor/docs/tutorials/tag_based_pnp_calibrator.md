@@ -111,7 +111,7 @@ During the calibration or at the end of the calibration, the user can modify the
 
 After setting the options above, change the `/initial_tf` (in the `visualization options`) to `/current_tf` to measure the difference after the calibration.
 
-The images below show that with the calibrated transformation, the projected pointcloud aligns with the image.
+The images below show that with the calibrated transformation, the projected pointcloud aligns correctly with the image.
 
 <table>
   <tr>
