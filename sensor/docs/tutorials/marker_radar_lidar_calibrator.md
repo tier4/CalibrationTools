@@ -48,9 +48,7 @@ For this tutorial, we will modify the default value `radar_name` from `front_lef
 </p>
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
-If it does not become available, it means that either the required `tf` or services are not available.
-
-In this tutorial, since the `tf` are published by the provided rosbag, start by running the bag with the command `ros2 bag play radar_lidar.db3 --clock -r 0.1`. Afterward, launch the tools and click the `Calibrate` button."
+If it does not become available, it means that either the required `tf` or services are not available. In this case, since the `tf` are published by the provided rosbags, run it for a few seconds and then pause it (`ros2 bag play radar_lidar.db3 --clock -r 0.5`).
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/menu3.jpg" alt="menu3">
