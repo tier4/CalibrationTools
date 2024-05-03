@@ -4,7 +4,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_p
 
 ## Purpose
 
-The package `tag_based_pnp_calibrator` allows extrinsic calibration among the camera and lidar sensors used in autonomous driving and robotics.
+The package `tag_based_pnp_calibrator` allows extrinsic calibration among camera and 3d lidar sensors used in autonomous driving and robotics.
 
 ## Inner-workings / Algorithms
 
