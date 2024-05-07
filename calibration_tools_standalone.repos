@@ -1,8 +1,8 @@
 repositories:
   calibration_tools:
     type: git
-    url: https://github.com/knzo25/CalibrationTools.git
-    version: feature/new_api_documentation
+    url: https://github.com/tier4/CalibrationTools.git
+    version: tier4/universe
   autoware/auto_msgs:
     type: git
     url: https://github.com/tier4/autoware_auto_msgs.git
