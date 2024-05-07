@@ -19,13 +19,15 @@ The provided rosbag includes four different topics: `camera_info`, `image_rect_c
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that tags are detected by both camera and lidar. The user could always check whether the tags appear in the `rviz` and the `image view` UI.
+The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that tags are detected by both camera and lidar. The user could always check whether the tags appear in the `rviz` and the `image view` UI. For instance, the user can observe the cyan rhombus around the tag in `rviz` if the tag is successfully detected by lidar, as shown in the image below. For the camera, if the tag is visible in the `image view` UI, it should be detectable (so far, there have been no issues).
+
+<p align="center">
+    <img src="../images/tag_based_pnp_calibrator/lidar_detection.jpg"  alt="lidar_detection">
+</p>
 
 ### AprilTag (LidarTag)
 
-Depending on the lidar model and the available space, the required apriltag size may vary, but so far we have had good results with 0.6m and 0.8m tags (the provided sizes correspond to an edge's size. In these cases the payloads are 0.45m and 0.6m).
-
-In addition to the size of the apriltag, which affects the physical positions where a tag can be detected, the structure on which the apriltag is mounted is equally important. The shape and size of this structure may affect the lidar detection algorithm. Therefore, it is advisable to use a mount that positions the tag in such a way that it remains invisible to the sensor (refer to the provided example).
+Information can be found in the [base documentation](../../tag_based_pnp_calibrator/README.md)
 
 ## Launching the tool
 
