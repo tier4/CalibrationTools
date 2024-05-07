@@ -41,7 +41,7 @@ In `project`, select `x2`, and in `calibrator`, select `marker_radar_lidar_calib
 </p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
-For this tutorial, we will modify the default value `radar_name` from `front_left` to `front_center`. After configuring the parameters, click `Launch`.
+For this tutorial, we modify the default value `radar_name` from `front_left` to `front_center`. After configuring the parameters, click `Launch`.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/menu2.jpg" alt="menu2">
@@ -135,7 +135,7 @@ Consider the left-top subplot, which plots the cross-validation errors for dista
 
 ### Send calibration
 
-The user can click the `Send calibration` button once it is enabled. However, it is recommended to stop the calibration when the line in the cross-validation error is converged. Therefore, in this tutorial, we will do the calibration until the bag is finished. Once the calibration is ended, the console should show similar result as below.
+The user can click the `Send calibration` button once it is enabled. However, it is recommended to stop the calibration when the line in the cross-validation error is converged. Therefore, in this tutorial, we run the calibration process until the bag is finished. Once the calibration is ended, the console should show a similar result as below.
 
 ```text
 [marker_radar_lidar_calibrator]: Initial calibration error: detection2detection.distance=0.3279m yaw=1.5119 degrees

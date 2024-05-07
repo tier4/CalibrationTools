@@ -43,7 +43,7 @@ In `project`, select `x2`, and in `calibrator`, select `tag_based_pnp_calibrator
 </p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
-For this tutorial, we will modify the default values `calibration_pairs` from `9` to `8` as the bag has 8 apriltag detections and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
+For this tutorial, we modify the default values `calibration_pairs` from `9` to `8` as the bag has 8 apriltag detections and also modify the `camera_name` from `camera0` to `camera6`. After configuring the parameters, click `Launch`.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu2.jpg"  alt="menu2">

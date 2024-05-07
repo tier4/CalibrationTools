@@ -41,7 +41,7 @@ In `project`, select `rdv`, and in `calibrator`, select `mapping_based_calibrato
     <img src="../images/mapping_based_calibrator/menu1.jpg" alt="menu1">
 </p>
 
-A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient. However, for this tutorial, we will use the default values. After configuring the parameters, click `Launch`.
+A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient. However, for this tutorial, we use the default values. After configuring the parameters, click `Launch`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu2.jpg" alt="menu2">
