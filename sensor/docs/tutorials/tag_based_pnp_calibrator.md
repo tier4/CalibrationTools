@@ -129,8 +129,10 @@ The images below show that with the calibrated transformation, the projected poi
 - Why doesn't the calibrator add calibration pairs?
 
   1. One possible reason is that the current pair is too close to previously collected data. In that case, the current data is not accepted.
-  2. The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue but is not recommended as a long term solution.
-  3. The detections are not stable enough (detections don’t converge). Possible causes include distance being too far, strong winds, etc.
+  2. The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue but is not recommended as a long-term solution.
+  3. The detections are not stable enough. This can happen due to the following reasons:
+     - The detection rate is not stable. The lidar points inside the lidar frames are not sufficient for the algorithm to detect the tags reliably, which usually happens when the tag is far away from the sensor or outside is high-density zone. Please move the tag to a position where enough points (scan lines) hit the tag. If the user forcefully calibrates under these conditions, the results can be compromised.
+     - The tag is physically unstable. Due to wind, mount, or other external, even if the detector works correctly, the detection will not converge. If this is the case, please remove these external factors before attempting calibration. If the user forcefully calibrates under these conditions, the results can be compromised.
 
 - Why doesn't the UI launch?
 
