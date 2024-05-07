@@ -29,7 +29,7 @@ In addition to the size of the apriltag, which affects the physical positions wh
 
 ## Launching the tool
 
-In this tutorial, we will use the X2 project as an example.
+In this tutorial, we take the X2 project as an example.
 First, run the sensor calibration manager:
 
 ```text

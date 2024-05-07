@@ -28,7 +28,7 @@ Before starting the calibration, the user needs to drive the vehicle to collect 
 
 ## Launching the tool
 
-In this tutorial, we will use the RDV of Tier IV (R&D Vehicle).
+In this tutorial, we use the RDV of Tier IV (R&D Vehicle).
 First, run the sensor calibration manager:
 
 ```text
