@@ -80,7 +80,7 @@ Camera selection and usage recommendations:
 
 ## Launching the tool
 
-In this tutorial, we will use the RDV of Tier IV (R&D Vehicle).
+In this tutorial, we use the RDV of Tier IV (R&D Vehicle).
 First, run the sensor calibration manager:
 
 ```text
