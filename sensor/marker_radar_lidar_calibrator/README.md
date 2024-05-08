@@ -44,22 +44,22 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 | Name                       | Type                                                           | Description                                                                            |
 | -------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `{input_lidar_pointcloud}` | `sensor_msgs::msg::PointCloud2`                                | lidar pointcloud for calibration. `input_lidar_pointcloud` is provided via parameters. |
-| `{input_radar_msg}`        | `radar_msgs::msg::RadarTracks` or `radar_msgs::msg::RadarScan` | radar msg for calibration, `input_radar_msg` is provided via parameters.               |
+| `{input_lidar_pointcloud}` | `sensor_msgs::msg::PointCloud2`                                | Lidar pointcloud for calibration. `input_lidar_pointcloud` is provided via parameters. |
+| `{input_radar_msg}`        | `radar_msgs::msg::RadarTracks` or `radar_msgs::msg::RadarScan` | Radar msg for calibration, `input_radar_msg` is provided via parameters.               |
 
 ### Output
 
 | Name                          | Type                                   | Description                                               |
 | ----------------------------- | -------------------------------------- | --------------------------------------------------------- |
-| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud data from lidar.      |
-| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud data from lidar.      |
-| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Publishes colored clusters from lidar data.               |
+| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud from lidar.           |
+| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud from lidar.           |
+| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Publishes colored pointcloud clusters from lidar.         |
 | `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes lidar detections.                               |
 | `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud data from radar.      |
 | `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud data from radar.      |
 | `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes radar detections.                               |
-| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Publishes markers for matched points between sensors.     |
-| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Publishes markers used for tracking calibration.          |
+| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Publishes matched lidar and radar detection.              |
+| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Publishes tracks of reflectors.                           |
 | `text_markers`                | `visualization_msgs::msg::Marker`      | Publishes text markers that show the calibration metrics. |
 | `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Publishes calibration metrics.                            |
 
@@ -68,7 +68,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | Name                       | Type                                                  | Description                                                                               |
 | -------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `extrinsic_calibration`    | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes. |
-| `extract_background_model` | `std_srvs::srv::Empty`                                | Strat to extract the background model from radar and lidar.                               |
+| `extract_background_model` | `std_srvs::srv::Empty`                                | Strat to extract the background model from radar and lidar data.                          |
 | `add_lidar_radar_pair`     | `std_srvs::srv::Empty`                                | User is able to click this buttom to add lidar-radar pair.                                |
 | `delete_lidar_radar_pair`  | `std_srvs::srv::Empty`                                | User is able to click this button to delete the previous lidar-radar pair.                |
 | `send_calibration`         | `std_srvs::srv::Empty`                                | Send the calibration result to the sensor calibration manager.                            |
@@ -79,7 +79,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 | Name                                        | Type          | Default Value                                           | Description                                                                                                            |
 | ------------------------------------------- | ------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `radar_optimization_frame`                  | `std::string` | `base_link`                                             | The frame that the radar frame optimize the transformation to. (Not available yet)                                     |
+| `radar_parallel_frame`                      | `std::string` | `base_link`                                             | The frame that the radar frame optimize the transformation to.                                                         |
 | `msg_type`                                  | `std::string` | `radar tracks`/`radar scan`                             | The msg type of the input radar message. (Not available yet)                                                           |
 | `transformation_type`                       | `std::string` | `yaw_only_rotation_2d` `svd_2d` `svd_3d` `roll_zero_3d` | The algorithms for optimizing the transformation between radar frame and radar optimizied frame. (Not available yet)   |
 | `use_lidar_initial_crop_box_filter`         | `bool`        | `True`                                                  | Enables or disables the initial cropping filter for lidar data processing.                                             |
@@ -110,7 +110,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | `radar_cluster_max_tolerance`               | `double`      | `0.5`                                                   | Maximum cluster tolerance for extracting radar cluster.                                                                |
 | `radar_cluster_min_points`                  | `int`         | `1`                                                     | Minimum number of points required to form a valid radar cluster.                                                       |
 | `radar_cluster_max_points`                  | `int`         | `10`                                                    | Maximum number of points allowed in a radar cluster.                                                                   |
-| `reflector_radius`                          | `double`      | `0.1`                                                   | Radius of the reflector used in calibration in meters.                                                                 |
+| `reflector_radius`                          | `double`      | `0.1`                                                   | Radius of the reflector in meters.                                                                                     |
 | `reflector_max_height`                      | `double`      | `1.2`                                                   | Maximum height of the reflector in meters.                                                                             |
 | `max_matching_distance`                     | `double`      | `1.0`                                                   | Maximum threshold in meters for matching distance between lidar and radar.                                             |
 | `max_initial_calibration_translation_error` | `double`      | `1.0`                                                   | Maximum allowable translation error in meters in calibration process, if it is more than the value, WARNING will show. |
