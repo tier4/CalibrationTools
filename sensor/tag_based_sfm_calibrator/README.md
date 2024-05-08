@@ -22,7 +22,7 @@ Note: depending on how this tool is configured it can perform the following cali
 
 ## Inner-workings / Algorithms
 
-As per the name of the calibrator, this tool relies upon SfM (Structure from Motion) to find the extrinsics between different sensors. However, since we prioritize precision, we do not use natural features and local descriptors, but fiducial systems (in our case apriltags). Furthermore, since the sensors are attached to a still vehicle, we employ an additional camera (from now on the `external camera`), which we use to create a graph and connect the different vehicle's sensors, which we optimize using standard bundling adjustment.
+As per the name of the calibrator, this tool relies upon SfM (Structure from Motion) to find the extrinsics between different sensors. However, since we prioritize precision, we do not use natural features and local descriptors, but fiducial systems (in our case apriltags). Furthermore, since the sensors are attached to a still vehicle, we employ an additional camera (from now on dubbed the `external camera`), which we use to create a graph and connect the different vehicle's sensors, which we optimize using standard bundling adjustment.
 By using a particular sensor as the origin during bundle adjustment, the other sensor's poses correspond to the desired extrinsics.
 
 Base calibration, on the other hand, can not be directly formulated as a sensor calibration problem (since the base is not a sensor !). We instead formulate an indirect approach to find the `base_link` by using its definitions: a frame between the rear axle projected to the ground. We place two tags in each of the rear wheels and then define the `base_link` as the intersection between these two tags projected into the ground.
@@ -51,11 +51,11 @@ Base calibration, on the other hand, can not be directly formulated as a sensor 
 | --------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `extrinsic_calibration`                             | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocking until the calibration process finishes                    |
 | `add_external_camera_` `images_to_scenes`           | `tier4_calibration_msgs::` `srv::FilesListSrv`        | Provides a list of external camera images' files for each `scene`                                           |
-| `add_calibration_sensor_` `detections_to_new_scene` | `tier4_calibration_msgs::srv::Empty`                  | Created a new `scene` from the latest detections received by the calibrator                                 |
+| `add_calibration_sensor_` `detections_to_new_scene` | `tier4_calibration_msgs::srv::Empty`                  | Creates a new `scene` from the latest detections received by the node                                       |
 | `load_external_camera_intrinsics`                   | `tier4_calibration_msgs::srv::FilesSrv`               | Provides a file containing previously computed external camera intrinsics                                   |
 | `save_external_camera_intrinsics`                   | `tier4_calibration_msgs::srv::FilesSrv`               | Provides a path to save the computed external camera intrinsics                                             |
 | `calibrate_external_camera_intrinsics`              | `tier4_calibration_msgs::srv::FilesSrv`               | Provides a list of files of external camera images to perform intrinsic calibration for the external camera |
-| `process_scenes`                                    | `tier4_calibration_msgs::srv::Empty`                  | Processed all the obtained `scenes`, mainly applying the tag detector to the external images                |
+| `process_scenes`                                    | `tier4_calibration_msgs::srv::Empty`                  | Processes all the obtained `scenes`, mainly applying the tag detector to the external images                |
 | `calibrate`                                         | `tier4_calibration_msgs::srv::Empty`                  | Uses the processed `scenes` to perform `bundling adjustment` optimization                                   |
 | `load_database`                                     | `tier4_calibration_msgs::srv::FilesSrv`               | For debugging purposes. Load a processed database of `scenes`                                               |
 | `save_database`                                     | `tier4_calibration_msgs::srv::FilesSrv`               | For debugging purposes. Saves a processed database of `scenes`                                              |
@@ -66,36 +66,36 @@ Base calibration, on the other hand, can not be directly formulated as a sensor 
 
 | Name                                                        | Type                       | Default Value | Description                                                                                                                                     |
 | ----------------------------------------------------------- | -------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `publish_tfs`                                               | `bool`                     | `N/A`         | Flag to optionally publish the resulting calibration as tfs                                                                                     |
-| `write_debug_images`                                        | `bool`                     | `N/A`         | Flag to optionally create images with resulting calibration poses and detections                                                                |
+| `publish_tfs`                                               | `bool`                     |               | Flag to optionally publish the resulting calibration as tfs                                                                                     |
+| `write_debug_images`                                        | `bool`                     |               | Flag to optionally create images with resulting calibration poses and detections                                                                |
 | `base_frame`                                                | `std::string`              | `base_link`   | The `base_frame` is used to compare the initial and calibrated values                                                                           |
-| `main_calibration_sensor_frame`                             | `std::string`              | `N/A`         | The sensor whose frame will become the origin during optimization                                                                               |
-| `calibration_lidar_frames`                                  | `std::vector<std::string>` | `N/A`         | List of the frames corresponding to the calibration lidars                                                                                      |
-| `calibration_camera_frames`                                 | `std::vector<std::string>` | `N/A`         | List of the frames corresponding to the calibration cameras                                                                                     |
+| `main_calibration_sensor_frame`                             | `std::string`              |               | The sensor whose frame will become the origin during optimization                                                                               |
+| `calibration_lidar_frames`                                  | `std::vector<std::string>` |               | List of the frames corresponding to the calibration lidars                                                                                      |
+| `calibration_camera_frames`                                 | `std::vector<std::string>` |               | List of the frames corresponding to the calibration cameras                                                                                     |
 | `lidartag_to_apriltag_scale`                                | `double`                   |               | The scale factor for converting lidartag detection sizes to apriltag detection sizes                                                            |
-| `auxiliar_tag.family`                                       | `std::string`              |               | The family name of the auxiliary tag                                                                                                            |
-| `auxiliar_tag.rows`                                         | `int`                      |               | The number of rows in the auxiliary tag                                                                                                         |
-| `auxiliar_tag.cols`                                         | `int`                      |               | The number of columns in the auxiliary tag                                                                                                      |
-| `auxiliar_tag.size`                                         | `double`                   |               | The size of the auxiliary tag in meters                                                                                                         |
-| `auxiliar_tag.spacing`                                      | `double`                   |               | The spacing between auxiliary tags in meters. Only relevant when rows or cols is greater than one                                               |
+| `auxiliar_tag.family`                                       | `std::string`              |               | The family name of the auxiliary tags                                                                                                           |
+| `auxiliar_tag.rows`                                         | `int`                      |               | The number of rows in the auxiliary tags                                                                                                        |
+| `auxiliar_tag.cols`                                         | `int`                      |               | The number of columns in the auxiliary tags                                                                                                     |
+| `auxiliar_tag.size`                                         | `double`                   |               | The size of the auxiliary tags in meters                                                                                                        |
+| `auxiliar_tag.spacing`                                      | `double`                   |               | The spacing between auxiliary tags (as a proportion to relative to the tag size). Only relevant when rows or cols is greater than one           |
 | `auxiliar_tag.ids`                                          | `std::vector<int64_t>`     |               | The IDs of the auxiliary tags                                                                                                                   |
 | `waypoint_tag.family`                                       | `std::string`              |               | The family name of the waypoint tag                                                                                                             |
 | `waypoint_tag.rows`                                         | `int`                      |               | The number of rows in the waypoint tag                                                                                                          |
 | `waypoint_tag.cols`                                         | `int`                      |               | The number of columns in the waypoint tag                                                                                                       |
 | `waypoint_tag.size`                                         | `double`                   |               | The size of the waypoint tag in meters                                                                                                          |
-| `waypoint_tag.spacing`                                      | `double`                   |               | The spacing between waypoint tags in meters. Only relevant when rows or cols is greater than one                                                |
+| `waypoint_tag.spacing`                                      | `double`                   |               | The spacing between waypoint tags (as a proportion to relative to the tag size). Only relevant when rows or cols is greater than one            |
 | `waypoint_tag.ids`                                          | `std::vector<int64_t>`     |               | The IDs of the waypoint tags                                                                                                                    |
 | `ground_tag.family`                                         | `std::string`              |               | The family name of the ground tag                                                                                                               |
 | `ground_tag.rows`                                           | `int`                      |               | The number of rows in the ground tag                                                                                                            |
 | `ground_tag.cols`                                           | `int`                      |               | The number of columns in the ground tag                                                                                                         |
 | `ground_tag.size`                                           | `double`                   |               | The size of the ground tag in meters                                                                                                            |
-| `ground_tag.spacing`                                        | `double`                   |               | The spacing between ground tags in meters. Only relevant when rows or cols is greater than one                                                  |
+| `ground_tag.spacing`                                        | `double`                   |               | The spacing between ground tags (as a proportion to relative to the tag size). Only relevant when rows or cols is greater than one              |
 | `ground_tag.ids`                                            | `std::vector<int64_t>`     |               | The IDs of the ground tags                                                                                                                      |
 | `wheel_tag.family`                                          | `std::string`              |               | The family name of the wheel tag                                                                                                                |
 | `wheel_tag.rows`                                            | `int`                      |               | The number of rows in the wheel tag                                                                                                             |
 | `wheel_tag.cols`                                            | `int`                      |               | The number of columns in the wheel tag                                                                                                          |
 | `wheel_tag.size`                                            | `double`                   |               | The size of the wheel tag in meters                                                                                                             |
-| `wheel_tag.spacing`                                         | `double`                   |               | The spacing between wheel tags in meters. Only relevant when rows or cols is greater than one                                                   |
+| `wheel_tag.spacing`                                         | `double`                   |               | The spacing between wheel tags (as a proportion to relative to the tag size). Only relevant when rows or cols is greater than one               |
 | `left_wheel_tag_id`                                         | `int`                      |               | The ID of the left wheel tag                                                                                                                    |
 | `right_wheel_tag_id`                                        | `int`                      |               | The ID of the right wheel tag                                                                                                                   |
 | `ba.optimize_intrinsics`                                    | `bool`                     |               | Flag to optimize the external camera intrinsics during bundle optimization                                                                      |
@@ -115,7 +115,7 @@ Base calibration, on the other hand, can not be directly formulated as a sensor 
 | `initial_intrinsic_` `calibration.tag.cols`                 | `int`                      |               | The number of columns in the tags used in initial intrinsic calibration for the external camera                                                 |
 | `initial_intrinsic_` `calibration.tag.size`                 | `double`                   |               | The size of the tags used in initial intrinsic calibration in meters for the external camera                                                    |
 | `initial_intrinsic_` `calibration.tag.spacing`              | `double`                   |               | The spacing between tags used in initial intrinsic calibration in meters for the external camera                                                |
-| `initial_intrinsic_` `calibration.tag.ids`                  | `std::vector<int64_t>`     | [0]           | The IDs of the tags used in initial intrinsic calibration for the external camera                                                               |
+| `initial_intrinsic_` `calibration.tag.ids`                  | `std::vector<int64_t>`     | `[0]`         | The IDs of the tags used in initial intrinsic calibration for the external camera                                                               |
 | `initial_intrinsic_` `calibration.board_cols`               | `int`                      |               | The number of columns in the calibration board used for initial intrinsic calibration for the external camera. Only valid for chess-like boards |
 | `initial_intrinsic_` `calibration.board_rows`               | `int`                      |               | The number of rows in the calibration board used for initial intrinsic calibration for the external camera. Only valid for chess-like boards    |
 | `apriltag.max_hamming`                                      | `int`                      |               | The maximum allowed Hamming distance for apriltag detection                                                                                     |
@@ -144,8 +144,8 @@ Considerations:
 
 - Among all the tags in the environment, waypoints are the only ones that can be moved during experiments (please read the provided tutorial and the concept of scenes).
 - The orientation of the waypoint tags should be so that the line that connects the calibration sensors and the waypoint tag is perpendicular to the waypoint tag plane. This is recommended since lidartag detection presents worse performance when this is not the case (more than the detector, it is a limitation of most lidars).
-- We so far have used 800mmx800mm (complete board size) waypoints, and have worked well for most lidars/configurations in our projects
-  No matter the setting, there should be at least one waypoint tag. However, in practice, the more waypoint tags (tags that the calibration sensors can detect) the faster the calibration process.
+- We so far have used 800mmx800mm (complete board size) waypoints, and have worked well for most lidars/configurations in our projects.
+  No matter the setting, there should be at least one waypoint tag. However, in practice, the more waypoint tags (tags that the calibration sensors can detect) the faster the calibration process becomes.
 
 ### Wheel tag
 
@@ -154,7 +154,7 @@ Wheel tags are what allow us to find the `base_link` via solving the bundle adju
 Considerations:
 
 - They usually can not be detected by the calibration sensors (instead they are detected by the external camera).
-- Since the number of images that contain wheel tags is expected to be low, it is convenient to use grids of individual tags. An example of a 2x2 tag is presented in Figure 3.
+- Since the number of images that contain wheel tags is expected to be low, it is convenient to use grids of individual tags to increase the number of features (tag corners) corresponding to the wheels. An example of a 2x2 tag is presented in Figure 3.
 - Since the wheel tags determine the base link, their center should coincide with the axle as much as possible (at least in the x-axis seen from the `base_link`).
 
 ### Ground tag
@@ -163,8 +163,8 @@ Ground tags are essential during the calibration of the `base_link` since it def
 
 Considerations:
 
-- The ground in which the vehicle and the ground tags are placed need to be as flat as possible (plane).
-- For this particular tag, the width of the tag is relevant. If it can not be assumed to be null, the final `base_link` pose needs to be offset manually.
+- The surface (ground) in which the vehicle and the ground tags are placed need to be as flat as possible (plane).
+- For this particular tag, the width of the tag is relevant. If it can not be assumed to be null, the final `base_link` pose needs to be offsetted manually.
 - The ground tags can be printed using normal paper and when attached via tape to the floor. The user needs to be careful not to move them during the experiment while talking.
 - The ground tags can be laminated for reuse, but the reflections caused by it can make it difficult or impossible to detect.
   Auxiliary tag
