@@ -12,7 +12,7 @@ The `tag_based_pnp_calibrator` utilizes the PnP (Perspective-n-Point) algorithm,
 
 The `apriltag_ros` package detects apriltag markers from an image and outputs the detection results. Conversely, the `lidartag` package detects lidartag markers and outputs its detection results.
 
-The `tag_based_pnp_calibrator` utilizes the detections from both `apriltag_ros` package and `lidartag` package, employing a Kalman Filter to track these detections. If the detections converge, the calibrator applies the SQPnP algorithm provided by OpenCV to estimate the transformation between the image points from apriltag and the object points from lidartag.
+The `tag_based_pnp_calibrator` utilizes the detections from both `apriltag_ros` package and `lidartag` package, employing a Kalman Filter to track these detections. If the detections converge, the calibrator applies the SQPnP [2] algorithm provided by OpenCV to estimate the transformation between the image points from apriltag and the object points from lidartag.
 
 ### Diagram
 
@@ -96,8 +96,9 @@ Note that the ones we used are lidartags of size 0.8 meters. Meaning the aprilta
 
 ## References
 
-References/External links
 [1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021.
+
+[2] G. Terzakis and M. Lourakis, "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem"
 
 ## Known issues/limitations
 
