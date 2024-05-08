@@ -77,7 +77,7 @@ After the tools detect the lidartag and apriltag, it will show the detection mar
 Once the user observes the number of pairs increases in the `rviz`, he can start moving the tag to another position.
 
 While moving the tag to another position, the user should move the tag decisively from one place to the other, not stopping and starting mid-way.
-Please make sure the new position should be at least `calibration_min_pair_distance` from the closest detection in the set of converged detections and the tag is in the FOV of both lidar and camera.
+Please make sure the new position is at least `calibration_min_pair_distance` from the closest detection in the set of converged detections and the tag is in the FOV of both lidar and camera.
 
 Depending on the mount and the ground surface, the tags can oscillate quite a bit, which can be detrimental to the calibration process. In this case, the user can stop the tag with its hand.
 
