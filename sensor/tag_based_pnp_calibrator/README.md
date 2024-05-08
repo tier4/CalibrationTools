@@ -8,7 +8,7 @@ The package `tag_based_pnp_calibrator` allows extrinsic calibration among camera
 
 ## Inner-workings / Algorithms
 
-The `tag_based_pnp_calibrator` utilizes the PnP (Perspective-n-Point) algorithm, a computer vision method that finds the best match between a set of 3D points (from the lidar) and their corresponding 2D projections (in the camera images), to accurately calculate the transformation between the camera and lidar. To run this package, you also need to execute the `apriltag_ros` and the `lidartag` packages to calculate the transformation.
+The `tag_based_pnp_calibrator` utilizes the PnP (Perspective-n-Point) algorithm, a computer vision technique that calculates the transformation between camera and lidar by solving for the pose of a set of 3D points (from the lidar) relative to their corresponding 2D projections (in the camera images). To operate this package, both `apriltag_ros` and `lidartag` packages are required. The package's launcher will automatically initiate these dependencies.
 
 The `apriltag_ros` package detects apriltag markers from an image and outputs the detection results. Conversely, the `lidartag` package detects lidartag markers and outputs its detection results.
 
