@@ -98,7 +98,7 @@ Note that the ones we used are lidartags of size 0.8 meters. Meaning the aprilta
 
 [1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021.
 
-[2] G. Terzakis and M. Lourakis, "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem"
+[2] G. Terzakis and M. Lourakis, "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" in ECCV 2020. Lecture Notes in Computer Science(), vol 12346.
 
 ## Known issues/limitations
 
