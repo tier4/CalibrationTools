@@ -1,6 +1,6 @@
 # marker_radar_lidar_calibrator
 
-In this tutorial, we present a hands-on tutorial of the `marker_radar_lidar_calibrator`. Although we provide pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we present a hands-on tutorial of the `marker_radar_lidar_calibrator`. Although we provide a pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../marker_radar_lidar_calibrator/README.md).
 
