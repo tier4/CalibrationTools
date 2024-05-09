@@ -103,7 +103,7 @@ In the UI of the X2 project, three different TF trees are displayed: `Initial TF
     <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
 </p>
 
-During the calibration or at the end of the calibration, the user can modify the `visualization options` on the right side of the `image view`. Setting the `Marker size (m)` to `0.04` and setting the `PC subsample factor` to `1` can help the user visualize the projected pointcloud on the image.
+During or at the end of the calibration, the user can modify the `visualization options` on the right side of the `image view`. Setting the `Marker size (m)` to `0.04` and setting the `PC subsample factor` to `1` can help the user visualize the projected pointcloud on the image.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization_bar.jpg"  alt="visualization_bar" width="200">
