@@ -8,29 +8,29 @@ The package `marker_radar_lidar_calibrator` allows extrinsic calibration among r
 
 ## Inner-workings / Algorithms
 
-The calibration process involves five steps: constructing a background model, detecting reflectors from sensor data, matching and filtering lidar and radar detections, conducting the calibration, and showing the evaluation result.
+This calibrator identifies the center points of reflectors from lidar pointcloud and radar messages and matches them. Then, with those matched points, we could use an SVD-based estimation method to predict the transformation between the radar and lidar sensors. To elaborate further, the process can be divided into four steps: constructing a background model, extracting the foreground and detecting reflectors, matching and filtering lidar and radar detections, and conducting the calibration.
 
 ### Step 1: Background model extraction (radar & lidar)
 
-Once the calibrator is launched and the user presses the `Extract background model` button, the calibrator will start using the lidar pointclouds and radar messages to create background models. These models include voxels that indicate whether they represent the background or not.
+First of all, since detecting the reflector reliably is a challenge, lidar's and radar's background models are constructed from the lidar pointcloud and radar message in the user-defined calibration area without any calibration target (radar reflector). To be more specific, the background models contain uniform binary voxel grids that indicate whether they represent the background or not.
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are created, we can extract the foreground lidar and radar points from the incoming lidar pointcloud and radar messages if they do not match the background voxels.
+After the background models for the lidar and radar are created, we can extract the foreground lidar and radar points from the incoming lidar pointcloud and radar messages if they aren't in the background voxels.
 
-All of the foreground radar points are defined as reflector detections. However, to classify foreground lidar points as reflector detections, it is necessary to apply a clustering algorithm, implement additional filtering, and calculate the center of the cluster.
+All of the foreground radar points are defined as reflector detections. However, to classify foreground lidar points as reflector detections, we apply a clustering algorithm, implement additional filtering, and calculate the center of the cluster.
 
 ### Step 3: Matching and filtering
 
-Afterward, we match the lidar’s reflector detection and the radar’s reflection detection as pairs if they are closest to each other.
+Since reflector detections cannot be told apart, we need to rely on the initial calibration for this purpose. We use the initial calibration to find for each lidar detection its closest radar detection and vice-versa. If a pair is each other’s closest detection, we accept it as a pair. After getting a match, it is compared with the current hypotheses. If it matches one, it is updated. If it matches none, a new hypothesis is created. When a hypothesis converges it is added to the calibration list.
 
 ### Step 4: Calibration
 
 Finally, we can use the coordinates of the reflector detection pairs to calculate the transformation based on the SVD-based estimation algorithm.
 
-### Step 5: Evaluation
+Finally, we have detection matches from sensors, we can directly find the rigid transformation between the sensors. Since the radar detections lack a Z component we need to turn the problem to 2D by setting the lidar’s detections z component to 0. By doing this, the rigid transformation becomes 2D as well. Currently, we support two different algorithms for estimating the transformation, 2D SVD-based estimation and also yaw-only rotation estimation. For now, the 2D calibration is preferred when valid, otherwise the yaw rotation is provided as the calibration output.
 
-Additionally, we provide a metric plotter that can indicate whether the calibration errors have converged. Once the cross-validation errors have converged, users should be able to stop the calibration process.
+Note that the calibrator will support radar detection that is not zero with different transformation algorithms in near future.
 
 ### Diagram
 

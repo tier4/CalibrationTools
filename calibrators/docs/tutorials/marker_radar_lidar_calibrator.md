@@ -19,7 +19,7 @@ The rosabg includes three different topics: `object_raw`, `pointcloud_raw`, and 
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that reflectors are detected by both radar and lidar. The user could always check whether the reflectors appear in the `rviz`.
+The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that reflectors are detected by both radar and lidar. The user could always check whether the reflectors appear in the `rviz` with the corresponding topics.
 
 ### Radar reflector
 
@@ -57,6 +57,8 @@ If it does not become available, it means that either the required `tf` or servi
 ### Extract background model
 
 Once the user starts running the tutorial rosbag, the pointcloud should appear in `rviz` as shown in the example below. Press the `Extract Background Model button` in the UI to start extracting the background.
+
+Note that user should put the radar reflector out of the calibration area before clicking the button
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
