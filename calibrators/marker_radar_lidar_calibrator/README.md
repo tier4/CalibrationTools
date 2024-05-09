@@ -12,7 +12,7 @@ The calibration process involves five steps: constructing a background model, de
 
 ### Step 1: Background model extraction (radar & lidar)
 
-Once the calibrator is initiated and the user presses the `Extract background model` button, the calibrator will begin using the lidar pointcloud and radar messages to create background models. These models include voxels that indicate whether they represent the background or not.
+Once the calibrator is launched and the user presses the `Extract background model` button, the calibrator will start using the lidar pointclouds and radar messages to create background models. These models include voxels that indicate whether they represent the background or not.
 
 ### Step 2: Foreground extraction and reflector detection
 
