@@ -27,24 +27,6 @@ We provide calibration tool for sensor pairs like LiDAR - LiDAR, LiDAR - Camera,
 
 [README](sensor/README.md)
 
-### localization - deviation estimation tools
-
-Estimate parameters of sensors used for dead reckoning (IMU and odometry) for a better localization performance
-
-[README](localization/deviation_estimation_tools/ReadMe.md)
-
-### control - vehicle cmd analyzer
-
-Visualization and analysis tools for the control outputs from Autoware
-
-[README](control/vehicle_cmd_analyzer/README.md)
-
-### vehicle - time delay estimator
-
-Calibration tool to fix the delay of the commands to the vehicle
-
-[README](vehicle/time_delay_estimator/README.md)
-
 ### system - tunable static tf broadcaster
 
 GUI to modify the parameters of generic TFs.
