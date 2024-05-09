@@ -1,5 +1,0 @@
-numpy
-scipy
-pysqlite3
-tqdm
-matplotlib
