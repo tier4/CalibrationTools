@@ -25,7 +25,7 @@ The required space for calibration depends on the vehicle and sensors used. Duri
     <img src="../images/tag_based_pnp_calibrator/lidar_detection.jpg"  alt="lidar_detection">
 </p>
 
-### AprilTag (LidarTag)
+### AprilTag (lidarTag)
 
 Details can be found in the [base documentation](../../tag_based_pnp_calibrator/README.md)
 
