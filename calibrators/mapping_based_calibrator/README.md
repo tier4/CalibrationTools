@@ -4,7 +4,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/mapping_bas
 
 ## Purpose
 
-The package `mapping_based_calibrator` allows extrinsic calibration among lidar sensors and lidar sensors, as well as lidar sensors and baselink used in autonomous driving and robotics.
+The package `mapping_based_calibrator` allows extrinsic calibration among 3d lidar and 3d lidar sensors, as well as lidar sensors and baselink used in autonomous driving and robotics.
 
 Note: depending on how this tool is configured it can perform the following calibrations:
 
