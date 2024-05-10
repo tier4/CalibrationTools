@@ -125,7 +125,11 @@ The user can also see the three different colors of pointcloud in the `rviz`. wh
 
 After the calibration process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
 
-In the UI of the RDV project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`. The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration. The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`. The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. Since the transformations represented by the black arrows are fixed, the transformations between `sensor_kit_base_link`, `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link`, which are represented by the red arrows, can be calculated using the calibrated transformation.
+In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`.
+
+- The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration.
+- The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`.
+- The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. As the Autoware project utilizes the concept of [sensor_kit](https://autowarefoundation.github.io/autoware-documentation/main/how-to-guides/integrating-autoware/creating-vehicle-and-sensor-model/creating-sensor-model/), the final transformations we need is `sensor_kit_base_link` to `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link` . We calculate the final transformations in [sensor_calibration_manager](https://github.com/tier4/CalibrationTools/blob/tier4/universe/sensor/sensor_calibration_manager/sensor_calibration_manager/calibrators/rdv/mapping_based_lidar_lidar_calibrator.py). Since the final transformations changed after the calculations, the arrow is shown in red.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">

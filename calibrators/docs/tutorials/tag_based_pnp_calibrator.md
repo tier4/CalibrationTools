@@ -97,7 +97,11 @@ The output in the console should be as follows:
 
 After the calibration process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
 
-In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`. The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration. The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `camera6/camera_optical_link` and `pandar_40p_front`. The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. Since the transformations represented by the black arrows are fixed, the transformation between `front_unit_base_link` and `camera6/camera_link`, which is represented by the red arrow, can be calculated using the calibrated transformation.
+In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`.
+
+- The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration.
+- The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `camera6/camera_optical_link` to `pandar_40p_front`.
+- The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. As the Autoware project utilizes the concept of [sensor_kit](https://autowarefoundation.github.io/autoware-documentation/main/how-to-guides/integrating-autoware/creating-vehicle-and-sensor-model/creating-sensor-model/), the final transformation we need is `front_unit_base_link` to `camera6/camera_link`. We calculate the final transformation in [sensor_calibration_manager](https://github.com/tier4/CalibrationTools/blob/tier4/universe/sensor/sensor_calibration_manager/sensor_calibration_manager/calibrators/x2/tag_based_pnp_calibrator.py). Since the final transformation changed after the calculations, the arrow is shown in red.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/menu4.jpg" alt="menu4" width="500">
