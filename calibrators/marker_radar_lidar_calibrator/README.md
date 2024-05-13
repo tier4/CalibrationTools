@@ -8,29 +8,25 @@ The package `marker_radar_lidar_calibrator` allows extrinsic calibration among r
 
 ## Inner-workings / Algorithms
 
-This calibrator identifies the center points of reflectors from lidar pointcloud and radar messages and matches them. Then, with those matched points, we could use an SVD-based estimation method to predict the transformation between the radar and lidar sensors. To elaborate further, the process can be divided into four steps: constructing a background model, extracting the foreground and detecting reflectors, matching and filtering lidar and radar detections, and conducting the calibration.
+This calibrator is designed to pinpoint the central points of reflectors within lidar pointclouds and radar messages, subsequently aligning these points for precise matching. Utilizing these correlated points, both an SVD-based and a yaw-only estimation algorithm are employed to predict the transformation between the radar and lidar sensors. The calibration process encompasses four primary steps: constructing a background model, isolating the foreground to detect reflectors, matching and filtering lidar and radar detections, and finally executing the calibration.
 
-### Step 1: Background model extraction (radar & lidar)
+### Step 1: Background model construction
 
-First of all, since detecting the reflector reliably is a challenge, lidar's and radar's background models are constructed from the lidar pointcloud and radar message in the user-defined calibration area without any calibration target (radar reflector). To be more specific, the background models contain uniform binary voxel grids that indicate whether they represent the background or not.
+Firstly, given the challenge of reliably detecting reflectors, background models for both lidar and radar are constructed from the lidar pointcloud and radar message within a user-defined calibration area, which lacks any calibration targets (such as radar reflectors). More specifically, these background models consist of uniform binary voxel grids that denote whether each voxel represents the background.
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are created, we can extract the foreground lidar and radar points from the incoming lidar pointcloud and radar messages if they aren't in the background voxels.
-
-All of the foreground radar points are defined as reflector detections. However, to classify foreground lidar points as reflector detections, we apply a clustering algorithm, implement additional filtering, and calculate the center of the cluster.
+After the background models for the LiDAR and radar are established, we extract the foreground points from incoming LiDAR point clouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as reflector detections. For lidar points, however, reflector detection involves a more detailed process: we apply a clustering algorithm, perform additional filtering, and calculate the center of each cluster.
 
 ### Step 3: Matching and filtering
 
-Since reflector detections cannot be told apart, we need to rely on the initial calibration for this purpose. We use the initial calibration to find for each lidar detection its closest radar detection and vice-versa. If a pair is each other’s closest detection, we accept it as a pair. After getting a match, it is compared with the current hypotheses. If it matches one, it is updated. If it matches none, a new hypothesis is created. When a hypothesis converges it is added to the calibration list.
+Since reflector detections cannot be differentiated directly, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually the closest matches. Once a match is made, it is evaluated against existing hypotheses: if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is finalized and added to the calibration list.
 
 ### Step 4: Calibration
 
-Finally, we can use the coordinates of the reflector detection pairs to calculate the transformation based on the SVD-based estimation algorithm.
+Once we have matched detection pairs from the sensors, we can compute the rigid transformation between them using an SVD-based estimation algorithm. Since radar detections lack a Z component, we convert the problem to 2D by setting the Z component of LiDAR's detections to zero, allowing the transformation to be determined in 2D. Currently, we support two algorithms for estimating the transformation: a 2D SVD-based method and a yaw-only rotation estimation. The 2D calibration is generally preferred when valid; otherwise, the yaw rotation is used as the calibration output.
 
-Finally, we have detection matches from sensors, we can directly find the rigid transformation between the sensors. Since the radar detections lack a Z component we need to turn the problem to 2D by setting the lidar’s detections z component to 0. By doing this, the rigid transformation becomes 2D as well. Currently, we support two different algorithms for estimating the transformation, 2D SVD-based estimation and also yaw-only rotation estimation. For now, the 2D calibration is preferred when valid, otherwise the yaw rotation is provided as the calibration output.
-
-Note that the calibrator will support radar detection that is not zero with different transformation algorithms in near future.
+It's also important to note that in the near future, the calibrator will be updated to support radar detections with non-zero Z components using different transformation algorithms.
 
 ### Diagram
 
@@ -42,10 +38,10 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Input
 
-| Name                       | Type                                                           | Description                                                                            |
-| -------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `{input_lidar_pointcloud}` | `sensor_msgs::msg::PointCloud2`                                | Lidar pointcloud for calibration. `input_lidar_pointcloud` is provided via parameters. |
-| `{input_radar_msg}`        | `radar_msgs::msg::RadarTracks` or `radar_msgs::msg::RadarScan` | Radar msg for calibration, `input_radar_msg` is provided via parameters.               |
+| Name                     | Type                                                           | Description                                                                        |
+| ------------------------ | -------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2`                                | Lidar pointcloud for calibration. `input_lidar_pointcloud` is defined in launcher. |
+| `input_radar_msg`        | `radar_msgs::msg::RadarTracks` or `radar_msgs::msg::RadarScan` | Radar message for calibration, `input_radar_msg` is defined in launcher.           |
 
 ### Output
 
@@ -55,8 +51,8 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud from lidar.           |
 | `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Publishes colored pointcloud clusters from lidar.         |
 | `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes lidar detections.                               |
-| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud data from radar.      |
-| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud data from radar.      |
+| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud from radar.           |
+| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud from radar.           |
 | `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes radar detections.                               |
 | `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Publishes matched lidar and radar detection.              |
 | `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Publishes tracks of reflectors.                           |
@@ -77,45 +73,45 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Core Parameters
 
-| Name                                        | Type          | Default Value                                           | Description                                                                                                            |
-| ------------------------------------------- | ------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `radar_parallel_frame`                      | `std::string` | `base_link`                                             | The frame that the radar frame optimize the transformation to.                                                         |
-| `msg_type`                                  | `std::string` | `radar tracks`/`radar scan`                             | The msg type of the input radar message. (Not available yet)                                                           |
-| `transformation_type`                       | `std::string` | `yaw_only_rotation_2d` `svd_2d` `svd_3d` `roll_zero_3d` | The algorithms for optimizing the transformation between radar frame and radar optimizied frame. (Not available yet)   |
-| `use_lidar_initial_crop_box_filter`         | `bool`        | `True`                                                  | Enables or disables the initial cropping filter for lidar data processing.                                             |
-| `lidar_initial_crop_box_min_x`              | `double`      | `-50.0`                                                 | Minimum x-coordinate for the initial lidar cropping box.                                                               |
-| `lidar_initial_crop_box_min_y`              | `double`      | `-50.0`                                                 | Minimum y-coordinate for the initial lidar cropping box.                                                               |
-| `lidar_initial_crop_box_min_z`              | `double`      | `-50.0`                                                 | Minimum z-coordinate for the initial lidar cropping box.                                                               |
-| `lidar_initial_crop_box_max_x`              | `double`      | `50.0`                                                  | Maximum x-coordinate for the initial lidar cropping box.                                                               |
-| `lidar_initial_crop_box_max_y`              | `double`      | `50.0`                                                  | Maximum y-coordinate for the initial lidar cropping box.                                                               |
-| `lidar_initial_crop_box_max_z`              | `double`      | `50.0`                                                  | Maximum z-coordinate for the initial lidar cropping box.                                                               |
-| `use_radar_initial_crop_box_filter`         | `bool`        | `True`                                                  | Enables or disables the initial cropping filter for radar data processing.                                             |
-| `radar_initial_crop_box_min_x`              | `double`      | `-50.0`                                                 | Minimum x-coordinate for the initial radar cropping box.                                                               |
-| `radar_initial_crop_box_min_y`              | `double`      | `-50.0`                                                 | Minimum y-coordinate for the initial radar cropping box.                                                               |
-| `radar_initial_crop_box_min_z`              | `double`      | `-50.0`                                                 | Minimum z-coordinate for the initial radar cropping box.                                                               |
-| `radar_initial_crop_box_max_x`              | `double`      | `50.0`                                                  | Maximum x-coordinate for the initial radar cropping box.                                                               |
-| `radar_initial_crop_box_max_y`              | `double`      | `50.0`                                                  | Maximum y-coordinate for the initial radar cropping box.                                                               |
-| `radar_initial_crop_box_max_z`              | `double`      | `50.0`                                                  | Maximum z-coordinate for the initial radar cropping box.                                                               |
-| `lidar_background_model_leaf_size`          | `double`      | `0.1`                                                   | Leaf size for the lidar background model voxel grid.                                                                   |
-| `radar_background_model_leaf_size`          | `double`      | `0.1`                                                   | Leaf size for the radar background model voxel grid.                                                                   |
-| `max_calibration_range`                     | `double`      | `50.0`                                                  | Maximum range for calibration in meters.                                                                               |
-| `background_model_timeout`                  | `double`      | `5.0`                                                   | Timeout in seconds for background model updates.                                                                       |
-| `min_foreground_distance`                   | `double`      | `0.4`                                                   | Minimum distance in meters for the foreground extraction, typically double the background model leaf size.             |
-| `background_extraction_timeout`             | `double`      | `15.0`                                                  | Timeout in seconds for background extraction processes.                                                                |
-| `ransac_threshold`                          | `double`      | `0.2`                                                   | Threshold used for RANSAC inliers in meters.                                                                           |
-| `ransac_max_iterations`                     | `int`         | `100`                                                   | Maximum number of RANSAC iterations for model fitting.                                                                 |
-| `lidar_cluster_max_tolerance`               | `double`      | `0.5`                                                   | Maximum cluster tolerance for extracting lidar cluster.                                                                |
-| `lidar_cluster_min_points`                  | `int`         | `3`                                                     | Minimum number of points required to form a valid lidar cluster.                                                       |
-| `lidar_cluster_max_points`                  | `int`         | `2000`                                                  | Maximum number of points allowed in a lidar cluster.                                                                   |
-| `radar_cluster_max_tolerance`               | `double`      | `0.5`                                                   | Maximum cluster tolerance for extracting radar cluster.                                                                |
-| `radar_cluster_min_points`                  | `int`         | `1`                                                     | Minimum number of points required to form a valid radar cluster.                                                       |
-| `radar_cluster_max_points`                  | `int`         | `10`                                                    | Maximum number of points allowed in a radar cluster.                                                                   |
-| `reflector_radius`                          | `double`      | `0.1`                                                   | Radius of the reflector in meters.                                                                                     |
-| `reflector_max_height`                      | `double`      | `1.2`                                                   | Maximum height of the reflector in meters.                                                                             |
-| `max_matching_distance`                     | `double`      | `1.0`                                                   | Maximum threshold in meters for matching distance between lidar and radar.                                             |
-| `max_initial_calibration_translation_error` | `double`      | `1.0`                                                   | Maximum allowable translation error in meters in calibration process, if it is more than the value, WARNING will show. |
-| `max_initial_calibration_rotation_error`    | `double`      | `45.0`                                                  | Maximum allowable rotation error in degree in calibration process, if it is more than the value, WARNING will show.    |
-| `max_number_of_combination_samples`         | `int`         | `10000`                                                 | Maximum number of samples from combinations that used for cross validation during calibration process.                 |
+| Name                                        | Type          | Default Value                                           | Description                                                                                                                                              |
+| ------------------------------------------- | ------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `radar_parallel_frame`                      | `std::string` | `base_link`                                             | The frame that the radar frame optimize the transformation to.                                                                                           |
+| `msg_type`                                  | `std::string` | `radar tracks`/`radar scan`                             | The msg type of the input radar message. (Not available yet, currently only support radar tracks)                                                        |
+| `transformation_type`                       | `std::string` | `yaw_only_rotation_2d` `svd_2d` `svd_3d` `roll_zero_3d` | The algorithms for optimizing the transformation between radar frame and radar optimizied frame. (Not available yet)                                     |
+| `use_lidar_initial_crop_box_filter`         | `bool`        | `True`                                                  | Enables or disables the initial cropping filter for lidar data processing.                                                                               |
+| `lidar_initial_crop_box_min_x`              | `double`      | `-50.0`                                                 | Minimum x-coordinate for the initial lidar cropping box.                                                                                                 |
+| `lidar_initial_crop_box_min_y`              | `double`      | `-50.0`                                                 | Minimum y-coordinate for the initial lidar cropping box.                                                                                                 |
+| `lidar_initial_crop_box_min_z`              | `double`      | `-50.0`                                                 | Minimum z-coordinate for the initial lidar cropping box.                                                                                                 |
+| `lidar_initial_crop_box_max_x`              | `double`      | `50.0`                                                  | Maximum x-coordinate for the initial lidar cropping box.                                                                                                 |
+| `lidar_initial_crop_box_max_y`              | `double`      | `50.0`                                                  | Maximum y-coordinate for the initial lidar cropping box.                                                                                                 |
+| `lidar_initial_crop_box_max_z`              | `double`      | `50.0`                                                  | Maximum z-coordinate for the initial lidar cropping box.                                                                                                 |
+| `use_radar_initial_crop_box_filter`         | `bool`        | `True`                                                  | Enables or disables the initial cropping filter for radar data processing.                                                                               |
+| `radar_initial_crop_box_min_x`              | `double`      | `-50.0`                                                 | Minimum x-coordinate for the initial radar cropping box.                                                                                                 |
+| `radar_initial_crop_box_min_y`              | `double`      | `-50.0`                                                 | Minimum y-coordinate for the initial radar cropping box.                                                                                                 |
+| `radar_initial_crop_box_min_z`              | `double`      | `-50.0`                                                 | Minimum z-coordinate for the initial radar cropping box.                                                                                                 |
+| `radar_initial_crop_box_max_x`              | `double`      | `50.0`                                                  | Maximum x-coordinate for the initial radar cropping box.                                                                                                 |
+| `radar_initial_crop_box_max_y`              | `double`      | `50.0`                                                  | Maximum y-coordinate for the initial radar cropping box.                                                                                                 |
+| `radar_initial_crop_box_max_z`              | `double`      | `50.0`                                                  | Maximum z-coordinate for the initial radar cropping box.                                                                                                 |
+| `lidar_background_model_leaf_size`          | `double`      | `0.1`                                                   | Voxel size in meter for the lidar background model.                                                                                                      |
+| `radar_background_model_leaf_size`          | `double`      | `0.1`                                                   | Voxel size in meter for the radar background model.                                                                                                      |
+| `max_calibration_range`                     | `double`      | `50.0`                                                  | Maximum range for calibration in meters.                                                                                                                 |
+| `background_model_timeout`                  | `double`      | `5.0`                                                   | Timeout in seconds for background model updates.                                                                                                         |
+| `min_foreground_distance`                   | `double`      | `0.4`                                                   | Square of this value in meters are used for filtering foreground points, typically need to be at least at least double the `background_model_leaf_size`. |
+| `background_extraction_timeout`             | `double`      | `15.0`                                                  | Timeout in seconds for background extraction processes.                                                                                                  |
+| `ransac_threshold`                          | `double`      | `0.2`                                                   | Threshold used for RANSAC inliers in meters.                                                                                                             |
+| `ransac_max_iterations`                     | `int`         | `100`                                                   | Maximum number of RANSAC iterations for model fitting.                                                                                                   |
+| `lidar_cluster_max_tolerance`               | `double`      | `0.5`                                                   | Maximum cluster tolerance for extracting lidar cluster.                                                                                                  |
+| `lidar_cluster_min_points`                  | `int`         | `3`                                                     | Minimum number of points required to form a valid lidar cluster.                                                                                         |
+| `lidar_cluster_max_points`                  | `int`         | `2000`                                                  | Maximum number of points allowed in a lidar cluster.                                                                                                     |
+| `radar_cluster_max_tolerance`               | `double`      | `0.5`                                                   | Maximum cluster tolerance for extracting radar cluster.                                                                                                  |
+| `radar_cluster_min_points`                  | `int`         | `1`                                                     | Minimum number of points required to form a valid radar cluster.                                                                                         |
+| `radar_cluster_max_points`                  | `int`         | `10`                                                    | Maximum number of points allowed in a radar cluster.                                                                                                     |
+| `reflector_radius`                          | `double`      | `0.1`                                                   | Radius of the reflector in meters.                                                                                                                       |
+| `reflector_max_height`                      | `double`      | `1.2`                                                   | Maximum height of the reflector in meters.                                                                                                               |
+| `max_matching_distance`                     | `double`      | `1.0`                                                   | Maximum threshold in meters for matching distance between lidar and radar.                                                                               |
+| `max_initial_calibration_translation_error` | `double`      | `1.0`                                                   | Maximum allowable translation error in meters in calibration process, if it is more than the value, WARNING will show.                                   |
+| `max_initial_calibration_rotation_error`    | `double`      | `45.0`                                                  | Maximum allowable rotation error in degree in calibration process, if it is more than the value, WARNING will show.                                      |
+| `max_number_of_combination_samples`         | `int`         | `10000`                                                 | Maximum number of samples from combinations that used for cross-validation during calibration process.                                                   |
 
 ## Requirements
 
