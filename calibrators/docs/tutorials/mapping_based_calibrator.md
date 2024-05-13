@@ -48,7 +48,7 @@ A menu titled `Launcher configuration` should appear in the UI, and the user may
 </p>
 
 The following UI should be displayed. When the `Calibrate` button becomes available, click it.
-If it does not become available, it means that either the required `tf` or services are not available. In this case, since the `tf` are published by the provided rosbags, run the bag with the command `ros2 bag play lidar_lidar.db3 --clock -r 0.5` and click the `Calibrate` button.
+If it does not become available, it means that either the required `tf` or services are not available. In this case, since the `tf` are published by the provided rosbag, run the bag with the command `ros2 bag play lidar_lidar.db3 --clock -r 0.5` and click the `Calibrate` button.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu3.jpg" alt="menu3">
@@ -129,7 +129,7 @@ In the UI of the X2 project, three different TF trees are displayed: `Initial TF
 
 - The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration.
 - The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`.
-- The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. As the Autoware project utilizes the concept of [sensor_kit](https://autowarefoundation.github.io/autoware-documentation/main/how-to-guides/integrating-autoware/creating-vehicle-and-sensor-model/creating-sensor-model/), the final transformations we need is `sensor_kit_base_link` to `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link` . We calculate the final transformations in [sensor_calibration_manager](https://github.com/tier4/CalibrationTools/blob/tier4/universe/sensor/sensor_calibration_manager/sensor_calibration_manager/calibrators/rdv/mapping_based_lidar_lidar_calibrator.py). Since the final transformations changed after the calculations, the arrows are shown in red.
+- The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. As the Autoware project utilizes the concept of [sensor_kit](https://autowarefoundation.github.io/autoware-documentation/main/how-to-guides/integrating-autoware/creating-vehicle-and-sensor-model/creating-sensor-model/), the final transformations we need is `sensor_kit_base_link` to `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link`. We calculate the final transformations in [sensor_calibration_manager](https://github.com/tier4/CalibrationTools/blob/tier4/universe/sensor/sensor_calibration_manager/sensor_calibration_manager/calibrators/rdv/mapping_based_lidar_lidar_calibrator.py). Since the final transformations changed after the calculations, the arrows are shown in red.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">
