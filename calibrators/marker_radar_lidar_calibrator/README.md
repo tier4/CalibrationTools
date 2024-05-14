@@ -16,7 +16,7 @@ Firstly, given the challenge of reliably detecting reflectors, background models
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as reflector detections. For lidar points, however, reflector detection involves a more detailed process: we apply a clustering algorithm, perform additional filtering, and calculate the center of each cluster.
+After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as reflector detections. For foreground lidar points, however, reflector detection involves a more detailed process: we apply a clustering algorithm, perform additional filtering, and calculate the center of each cluster.
 
 ### Step 3: Matching and filtering
 
@@ -38,10 +38,10 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Input
 
-| Name                     | Type                                                           | Description                                                                        |
-| ------------------------ | -------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2`                                | Lidar pointcloud for calibration. `input_lidar_pointcloud` is defined in launcher. |
-| `input_radar_msg`        | `radar_msgs::msg::RadarTracks` or `radar_msgs::msg::RadarScan` | Radar message for calibration, `input_radar_msg` is defined in launcher.           |
+| Name                     | Type                            | Description                                                                        |
+| ------------------------ | ------------------------------- | ---------------------------------------------------------------------------------- |
+| `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2` | Lidar pointcloud for calibration. `input_lidar_pointcloud` is defined in launcher. |
+| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | Radar message for calibration, `input_radar_msg` is defined in launcher.           |
 
 ### Output
 
@@ -117,7 +117,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### radar reflector
 
-This type of reflector is crucial for such calibrations because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
+The type of reflector shown in the image below is crucial for such calibrations because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
@@ -125,7 +125,7 @@ This type of reflector is crucial for such calibrations because it has a highly 
 
 ## Known issues/limitations
 
-- While performing the calibration, we have included a button to delete any mismatched pairs (e.g., an object detected by both radar and lidar). However, some outliers may not be easily detectable by human vision, leading to imperfect results as the calibration proceeds even with these anomalies present. Future enhancements will aim to improve outlier detection, thereby refining the calibration accuracy.
+- While performing the calibration, the calibrator provide a button to delete any mismatched pairs (e.g., an object detected by both radar and lidar). However, some outliers may not be easily detectable by human vision, leading to imperfect results as the calibration proceeds even with these anomalies present. Future enhancements will aim to improve outlier detection, thereby refining the calibration accuracy.
 
 ## Pro tips/recommendations
 
