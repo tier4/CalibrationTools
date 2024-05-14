@@ -24,7 +24,7 @@ Since reflector detections cannot be differentiated directly, we rely on the ini
 
 ### Step 4: Calibration
 
-Once we have matched detection pairs from the sensors, we can compute the rigid transformation between them using an SVD-based estimation algorithm. Since radar detections lack a Z component, we convert the problem to 2D by setting the Z component of lidar detections to zero, allowing the transformation to be determined in 2d. Currently, we support two algorithms for estimating the transformation: a 2d SVD-based method and a yaw-only rotation estimation. The 2d calibration is generally preferred when valid; otherwise, the yaw rotation is used as the calibration output.
+Once we have matched detection pairs from the sensors, we can compute the rigid transformation between them using an SVD-based estimation algorithm. Since radar detections lack a Z component, we convert the problem to 2d by setting the Z component of lidar detections to zero, allowing the transformation to be determined in 2d. Currently, we support two algorithms for estimating the transformation: a 2d SVD-based method and a yaw-only rotation estimation. The 2d calibration is generally preferred when valid; otherwise, the yaw rotation is used as the calibration output.
 
 It's also important to note that in the near future, the calibrator will be updated to support radar detections with non-zero Z components using different transformation algorithms.
 
@@ -117,7 +117,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### radar reflector
 
-The type of reflector shown in the image below is crucial for such calibrations because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
+The type of reflector shown in the image below is crucial for our calibration because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">

@@ -30,20 +30,20 @@ Since we aim to apply registration algorithms on the pointclouds from both the `
 
 ##### Data selection
 
-To refine our calibration process, we match each keyframe with the nearest `calibration lidar` in time. Subsequently, we select pairs of `keyframes` and `calibration lidar's pointclouds` for each `calibration lidar` based on specific criteria:
+To refine our calibration process, we match each keyframe with the nearest `calibration lidar` in time. Subsequently, we select pairs of keyframes and calibration lidar's pointclouds for each `calibration lidar` based on specific criteria:
 
-- Low time difference between the keyframe and `calibration lidar's pointcloud`.
-- Low interpolation error (considering parameters such as time difference, speed, and estimated acceleration) between the keyframe and the `calibration lidar's pointcloud`.
+- Low time difference between the keyframe and calibration lidar's pointcloud.
+- Low interpolation error (considering parameters such as time difference, speed, and estimated acceleration) between the keyframe and the calibration lidar's pointcloud.
 - Information threshold. We need some sort of feature to calibrate, with featureless pointclouds being mostly planes. For that reason, we only accept pointclouds whose Z-value of the SVD decomposition is over a threshold.
 - Spatial subsampling: Given a maximum number of pairs to select, we select them maximizing the space between them, to avoid spatial correlation.
 
 ##### Data preprocessing
 
-We use all the `frames` near a `keyframe` to augment it using the frames' poses to make sure we have a high-resolution pointcloud. As the resulting pointcloud has redundant information, we downsample the pointlcoud to quite a fine-grained resolution.
+We use all the frames near a keyframe to augment it using the frames' poses to make sure we have a high-resolution pointcloud. As the resulting pointcloud has redundant information, we downsample the pointlcoud to quite a fine-grained resolution.
 
 #### Step 3: Calibrate (mapping lidar & calibration lidars)
 
-After preparing the data for calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between the pointclouds (the `calibration lidars' pointcloud` and the `mapping lidar's pointcloud`). This process allows us to determine the transformation between the two lidars.
+After preparing the data for calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between the pointclouds (`calibration lidars' pointcloud` and `mapping lidar's pointcloud`). This process allows us to determine the transformation between the two lidars.
 
 #### Diagram
 
@@ -79,7 +79,7 @@ Finally, we use the initial transformation between baselink and lidar, and the g
 | ------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `calibration_camera_info_topic` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. `calibration_camera_info_topic` are defined in launcher. (currently not using)                                 |
 | `calibration_image_topic`       | `sensor_msgs::msg::CompressedImage`                    | Topics of the compressed images for calibration. `calibration_image_topic` are defined in launcher. (currently not using)                                        |
-| `calibration_pointcloud_topic`  | `sensor_msgs::msg::PointCloud2`                        | Topics of the Pointclouds to calibrate with the mapping pointcloud. `calibration_pointcloud_topic` are defined in launcher.                                      |
+| `calibration_pointcloud_topic`  | `sensor_msgs::msg::PointCloud2`                        | Topics of the Pointclouds to calibrate with the `mapping pointcloud`. `calibration_pointcloud_topic` are defined in launcher.                                    |
 | `mapping_pointcloud`            | `sensor_msgs::msg::PointCloud2`                        | Subscribes to pointcloud data for mapping processes. Recommend to select the lidar that has the highest resolution. `mapping_pointcloud` is defined in launcher. |
 | `detected_objects`              | `autoware_auto_perception_msgs::msg::DetectedObjects`  | Subscribes to messages containing detected objects, used in the filtering procedure.                                                                             |
 | `predicted_objects`             | `autoware_auto_perception_msgs::msg::PredictedObjects` | Subscribes to messages that contain predicted object paths and positions, used in the filtering procedure.                                                       |
@@ -113,28 +113,28 @@ Finally, we use the initial transformation between baselink and lidar, and the g
 
 ### Core Parameters
 
-| Name                                     | Type                  | Default Value | Description                                                                                                                                                                       |
-| ---------------------------------------- | --------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calibrate_base_frame`                   | `bool`                | `false`       | Flag to optionally calibrate the base frame. (base_link).                                                                                                                         |
-| `base_frame`                             | `std::string`         |               | Frame name of the base frame used in base-lidar. calibration.                                                                                                                     |
-| `map_frame`                              | `std::string`         |               | Frame name of the `map`.                                                                                                                                                          |
-| `calibration_camera_optical_link_frames` | `std::vector<string>` |               | List of frame names for `calibration camera` . (currently not used)                                                                                                               |
-| `calibration_lidar_frames`               | `std::vector<string>` |               | List of frame names for `calibration lidars`.                                                                                                                                     |
-| `calibration_camera_info_topics`         | `std::vector<string>` |               | List of camera info topics for `calibration camera`. (currently not used)                                                                                                         |
-| `calibration_image_topics`               | `std::vector<string>` |               | List of camera image topics for `calibration camera`. (currently not used)                                                                                                        |
-| `calibration_pointcloud_topics`          | `std::vector<string>` |               | List of pointcloud topics for `calibration lidars`.                                                                                                                               |
-| `mapping_lidar_frame`                    | `std::string`         |               | Frame name of the `mapping_lidar`.                                                                                                                                                |
-| `mapping_registrator`                    | `std::string`         |               | Name of the PCL registration algorithm used for mapping processes (NDT/GICP).                                                                                                     |
-| `mapping_verbose`                        | `bool`                | `false`       | Verbose output flag for mapping processes.                                                                                                                                        |
-| `use_rosbag`                             | `bool`                | `true`        | Flag to determine if data should be read from a ROS bag file.                                                                                                                     |
-| `mapping_max_frames`                     | `int`                 | `500`         | Maximum number of frames to use for mapping, if the number of frames is larger than this value, the mapper stops and the calibration starts.                                      |
-| `local_map_num_keyframes`                | `int`                 | `15`          | Number of keyframes in the local map.                                                                                                                                             |
-| `dense_pointcloud_num_keyframes`         | `int`                 | `10`          | In this range [keyframe_id - `dense_pointcloud_num_keyframes`, keyframe_id + `dense_pointcloud_num_keyframes`] keyframe will use for generating dense pointclouds in calibration. |
-| `mapping_min_range`                      | `double`              | `0.5`         | Minimum range in meters of each lidar pointcloud for mapping.                                                                                                                     |
-| `mapping_max_range`                      | `double`              | `60.0`        | Maximum range in meters of each lidar pointcloud for mapping.                                                                                                                     |
-| `min_mapping_pointcloud_size`            | `int`                 | `10000`       | Minimum size of pointcloud data to consider for mapping.                                                                                                                          |
-| `min_calibration_pointcloud_size`        | `int`                 | `500`         | Minimum size of pointcloud data necessary for calibration processes.                                                                                                              |
-| `mapping_lost_timeout`                   | `double`              | `1.0`         | Sensor's timeout in seconds to consider the mapping process is failed.                                                                                                            |
+| Name                                     | Type                  | Default Value | Description                                                                                                                                                                                  |
+| ---------------------------------------- | --------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `calibrate_base_frame`                   | `bool`                | `false`       | Flag to optionally calibrate the base frame. (base_link).                                                                                                                                    |
+| `base_frame`                             | `std::string`         |               | Frame name of the base frame used in base-lidar. calibration.                                                                                                                                |
+| `map_frame`                              | `std::string`         |               | Frame name of the `map`.                                                                                                                                                                     |
+| `calibration_camera_optical_link_frames` | `std::vector<string>` |               | List of frame names for `calibration camera` . (currently not used)                                                                                                                          |
+| `calibration_lidar_frames`               | `std::vector<string>` |               | List of frame names for `calibration lidars`.                                                                                                                                                |
+| `calibration_camera_info_topics`         | `std::vector<string>` |               | List of camera info topics for `calibration camera`. (currently not used)                                                                                                                    |
+| `calibration_image_topics`               | `std::vector<string>` |               | List of camera image topics for `calibration camera`. (currently not used)                                                                                                                   |
+| `calibration_pointcloud_topics`          | `std::vector<string>` |               | List of pointcloud topics for `calibration lidars`.                                                                                                                                          |
+| `mapping_lidar_frame`                    | `std::string`         |               | Frame name of the `mapping_lidar`.                                                                                                                                                           |
+| `mapping_registrator`                    | `std::string`         |               | Name of the PCL registration algorithm used for mapping processes (NDT/GICP).                                                                                                                |
+| `mapping_verbose`                        | `bool`                | `false`       | Verbose output flag for mapping processes.                                                                                                                                                   |
+| `use_rosbag`                             | `bool`                | `true`        | Flag to determine if data should be read from a rosbag file.                                                                                                                                 |
+| `mapping_max_frames`                     | `int`                 | `500`         | Maximum number of frames to use for mapping, if the number of frames is larger than this value, the mapper stops and the calibration starts.                                                 |
+| `local_map_num_keyframes`                | `int`                 | `15`          | Number of keyframes in the local map.                                                                                                                                                        |
+| `dense_pointcloud_num_keyframes`         | `int`                 | `10`          | Dense poincloud for calibration is generated by integrating the pointcloud in the range of [keyframe_id - `dense_pointcloud_num_keyframes`, keyframe_id + `dense_pointcloud_num_keyframes`]. |
+| `mapping_min_range`                      | `double`              | `0.5`         | Minimum range in meters of each lidar pointcloud for mapping.                                                                                                                                |
+| `mapping_max_range`                      | `double`              | `60.0`        | Maximum range in meters of each lidar pointcloud for mapping.                                                                                                                                |
+| `min_mapping_pointcloud_size`            | `int`                 | `10000`       | Minimum size of pointcloud data to consider for mapping.                                                                                                                                     |
+| `min_calibration_pointcloud_size`        | `int`                 | `500`         | Minimum size of pointcloud data necessary for calibration processes.                                                                                                                         |
+| `mapping_lost_timeout`                   | `double`              | `1.0`         | Sensor's timeout in seconds to consider the mapping process is failed.                                                                                                                       |
 
 ### Mapping Parameters
 
