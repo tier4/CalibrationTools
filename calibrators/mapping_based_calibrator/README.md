@@ -19,7 +19,7 @@ This calibration method employs a lidar, referred to as the `mapping lidar`, for
 
 #### Step 1: Mapping (using mapping lidar)
 
-First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the `mapping lidar` for mapping purposes. The pointcloud from this lidar utilizes either the NDT or GICP algorithm to calculate the pose and also stores the pointcloud as a map for future usage. Several rules are defined below.
+First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the `mapping lidar` for mapping purposes. Pointclouds from this lidar utilize either the NDT or GICP algorithm to calculate the pose and also store the pointclouds as a map for future usage. Several rules are defined below.
 
 - For each `N` meter, a keyframe will be saved, which is used for calibration and for mapping.
 - If the distance between the last frame and the current pointcloud is more than the `D` meters, the pointcloud will be saved as a frame, which is used to complement keyframes.
@@ -31,7 +31,7 @@ After the mapping is complete, some preprocessing is necessary before starting t
 
 ##### Data synchronization
 
-Since we aim to apply registration algorithms on the pointclouds from both the `mapping lidar` and the `calibration lidars` to find the transformation between the two, it's crucial to ensure that both pointclouds share the same timestamp. However, the calibration lidars may not be synchronized with the `mapping lidar`, meaning their respective pointclouds cannot be directly used together during movement. To address this, we first need to interpolate the pose of the mapping lidar at the timestamp of the calibration lidars. This step will allow us to correctly align the pointclouds for the application of registration algorithms.
+Since we aim to apply registration algorithms on the pointclouds from both the `mapping lidar` and the `calibration lidars` to find the transformations between the them, it's crucial to ensure that pointclouds share the same timestamp. However, the `calibration lidars` may not be synchronized with the `mapping lidar`, meaning their respective pointclouds cannot be directly used together during movement. To address this, we first need to interpolate the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. This step will allow us to correctly align the pointclouds for the application of registration algorithms.
 
 ##### Data selection
 
@@ -42,13 +42,13 @@ To refine our calibration process, we match each keyframe with the nearest `cali
 - Information threshold. We need some sort of feature to calibrate, with featureless pointclouds being mostly planes. For that reason, we only accept pointclouds whose Z-value of the SVD decomposition is over a threshold.
 - Spatial subsampling: Given a maximum number of pairs to select, we select them maximizing the space between them, to avoid spatial correlation.
 
-###### Data preprocessing
+##### Data preprocessing
 
-We use all the frames near a keyframe to augment it using the frames' poses to make sure we have a high-resolution pointcloud. As the resulting pointcloud has redundant information, we downsample the pointlcoud to quite a fine-grained resolution.
+We use all the `frames` near a `keyframe` to augment it using the frames' poses to make sure we have a high-resolution pointcloud. As the resulting pointcloud has redundant information, we downsample the pointlcoud to quite a fine-grained resolution.
 
 #### Step 3: Calibrate (mapping lidar & calibration lidars)
 
-After preparing the data for calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between the two pointclouds (the calibration lidars' pointcloud and the mapping lidar's pointcloud). This process allows us to determine the transformation between the two lidars.
+After preparing the data for calibration, we can now run the registration algorithms (NDT/GICP) to find the transformations between the pointclouds (the `calibration lidars' pointcloud` and the `mapping lidar's pointcloud`). This process allows us to determine the transformation between the two lidars.
 
 #### Diagram
 
@@ -82,8 +82,8 @@ Finally, we use the initial transformation between baselink and lidar, and the g
 
 | Name                            | Type                                                   | Description                                                                                                                                                      |
 | ------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calibration_camera_info_topic` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. `calibration_camera_info_topic` are defined in launcher. (currently not used)                                  |
-| `calibration_image_topic`       | `sensor_msgs::msg::CompressedImage`                    | Topics of the compressed images for calibration. `calibration_image_topic` are defined in launcher. (currently not used)                                         |
+| `calibration_camera_info_topic` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. `calibration_camera_info_topic` are defined in launcher. (currently not using)                                 |
+| `calibration_image_topic`       | `sensor_msgs::msg::CompressedImage`                    | Topics of the compressed images for calibration. `calibration_image_topic` are defined in launcher. (currently not using)                                        |
 | `calibration_pointcloud_topic`  | `sensor_msgs::msg::PointCloud2`                        | Topics of the Pointclouds to calibrate with the mapping pointcloud. `calibration_pointcloud_topic` are defined in launcher.                                      |
 | `mapping_pointcloud`            | `sensor_msgs::msg::PointCloud2`                        | Subscribes to pointcloud data for mapping processes. Recommend to select the lidar that has the highest resolution. `mapping_pointcloud` is defined in launcher. |
 | `detected_objects`              | `autoware_auto_perception_msgs::msg::DetectedObjects`  | Subscribes to messages containing detected objects, used in the filtering procedure.                                                                             |
@@ -101,11 +101,9 @@ Finally, we use the initial transformation between baselink and lidar, and the g
 | `initial_source_aligned_map`      | `sensor_msgs::msg::PointCloud2`        | Publishes initial map from calibration lidars, providing visualization in rviz.                                                                           |
 | `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Publishes calibrated map from calibration lidars, providing visualization in rviz.                                                                        |
 | `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Publishes target map from `mapping lidar`, used for comparing with the `calibrated_source_aligned_map` and `target_map`, providing visualization in rviz. |
-| `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Publishes markers targeted for specific calibration or mapping purposes, aiding in visualization and alignment.                                           |
+| `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Publishes markers for camera calibrator (currently not using)                                                                                             |
 | `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the ground pointcloud from initial pointcloud.                                                                                                  |
 | `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | Publishes the ground pointcloud from calibrated pointcloud.                                                                                               |
-
-Note: target_markers is only used by camera calibrators (not using now)
 
 ### Services
 
@@ -113,8 +111,8 @@ Note: target_markers is only used by camera calibrators (not using now)
 | ----------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes.              |
 | `stop_mapping`          | `std_srvs::srv::Empty`                                | `mapping_pointcloud` stop to construct a map through this service, afterwared calibration will start. |
-| `load_database`         | `std_srvs::srv::Empty`                                | Load lidar and camera calibration frames from the database. (currently not used)                      |
-| `save_database`         | `std_srvs::srv::Empty`                                | Save lidar and camera calibration frames to the database. (currently not used)                        |
+| `load_database`         | `std_srvs::srv::Empty`                                | Load lidar and camera calibration frames from the database. (currently not using)                     |
+| `save_database`         | `std_srvs::srv::Empty`                                | Save lidar and camera calibration frames to the database. (currently not using)                       |
 
 ## Parameters
 
@@ -137,8 +135,8 @@ Note: target_markers is only used by camera calibrators (not using now)
 | `mapping_max_frames`                     | `int`                 | `500`         | Maximum number of frames to use for mapping, if the number of frames is larger than this value, the mapper stops and the calibration starts.                                      |
 | `local_map_num_keyframes`                | `int`                 | `15`          | Number of keyframes in the local map.                                                                                                                                             |
 | `dense_pointcloud_num_keyframes`         | `int`                 | `10`          | In this range [keyframe_id - `dense_pointcloud_num_keyframes`, keyframe_id + `dense_pointcloud_num_keyframes`] keyframe will use for generating dense pointclouds in calibration. |
-| `mapping_min_range`                      | `double`              | `0.5`         | Minimum range in meters of each lidar pointcloud for mapping map.                                                                                                                 |
-| `mapping_max_range`                      | `double`              | `60.0`        | Maximum range in meters of each lidar pointcloud for mapping map.                                                                                                                 |
+| `mapping_min_range`                      | `double`              | `0.5`         | Minimum range in meters of each lidar pointcloud for mapping.                                                                                                                     |
+| `mapping_max_range`                      | `double`              | `60.0`        | Maximum range in meters of each lidar pointcloud for mapping.                                                                                                                     |
 | `min_mapping_pointcloud_size`            | `int`                 | `10000`       | Minimum size of pointcloud data to consider for mapping.                                                                                                                          |
 | `min_calibration_pointcloud_size`        | `int`                 | `500`         | Minimum size of pointcloud data necessary for calibration processes.                                                                                                              |
 | `mapping_lost_timeout`                   | `double`              | `1.0`         | Sensor's timeout in seconds to consider the mapping process is failed.                                                                                                            |
@@ -210,7 +208,7 @@ Note: target_markers is only used by camera calibrators (not using now)
 | `lidar_calibration_min_frames` | `int` | `2`           | Minimum number of frames to use in lidar calibration. |
 | `lidar_calibration_max_frames` | `int` | `10`          | Maximum number of frames to use in lidar calibration. |
 
-### Camera calibration-only parameters (currently not used)
+### Camera calibration-only parameters (currently not using)
 
 | Name                            | Type     | Default Value | Description                                                  |
 | ------------------------------- | -------- | ------------- | ------------------------------------------------------------ |
