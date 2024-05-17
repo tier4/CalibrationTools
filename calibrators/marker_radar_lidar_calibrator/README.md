@@ -16,7 +16,7 @@ Firstly, given the challenge of reliably detecting reflectors, background models
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as reflector detections. For foreground lidar points, however, reflector detection involves a more detailed process: we apply a clustering algorithm, perform additional filtering, and calculate the center of each cluster.
+After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as the potential reflector detections. For foreground lidar points, however, [reflector](#radar-reflector) detection involves a more detailed process: we first apply a clustering algorithm, find the highest point in the cluster, and average all points within `reflector_radius` meter of the highest point to estimate the center point of the reflector.
 
 ### Step 3: Matching and filtering
 
@@ -119,6 +119,8 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 The type of reflector shown in the image below is crucial for our calibration because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
+It is recommend that the user should build the radar reflector with tripod by using taps to fixed the radar reflector above the tripod.
+
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
 <p align="center">
@@ -129,4 +131,5 @@ The type of reflector shown in the image below is crucial for our calibration be
 
 ## Pro tips/recommendations
 
-- While performing the calibration, try setting the radar reflector at different heights using the tripod, and also place the reflector at various distances. Please also ensure that the center of the radar reflector faces the radar sensor.
+- While performing the calibration, it is required that all the reflectors are at the same height with respect to the ground, and that both radar and lidar sensors are parallel to the ground.
+- During calibration, place the reflectors at various distances and ensure that the center of the radar reflector faces the radar sensor.
