@@ -132,26 +132,26 @@ The images below show that with the calibrated transformation, the projected poi
 
 - Why doesn't the calibrator add calibration pairs?
 
-  1. One possible reason is that the current pair is too close to previously collected data. In that case, the current data is not accepted.
-  2. The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue but is not recommended as a long-term solution.
-  3. The detections are not stable enough. This can happen due to the following reasons:
-     - The detection rate is not stable. The lidar points inside the lidar frames are not sufficient for the algorithm to detect the tags reliably, which usually happens when the tag is far away from the sensor or outside is high-density zone. Please move the tag to a position where enough points (scan lines) hit the tag. If the user forcefully calibrates under these conditions, the results can be compromised.
-     - The tag is physically unstable. Due to wind, mount, or other external, even if the detector works correctly, the detection will not converge. If this is the case, please remove these external factors before attempting calibration. If the user forcefully calibrates under these conditions, the results can be compromised.
+  - One possible reason is that the current pair is too close to previously collected data. In that case, the current data is not accepted.
+  - The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue but is not recommended as a long-term solution.
+  - The detections are not stable enough. This can happen due to the following reasons:
+    - The detection rate is not stable. The lidar points inside the lidar frames are not sufficient for the algorithm to detect the tags reliably, which usually happens when the tag is far away from the sensor or outside is high-density zone. Please move the tag to a position where enough points (scan lines) hit the tag. If the user forcefully calibrates under these conditions, the results can be compromised.
+    - The tag is physically unstable. Due to wind, mount, or other external, even if the detector works correctly, the detection will not converge. If this is the case, please remove these external factors before attempting calibration. If the user forcefully calibrates under these conditions, the results can be compromised.
 
 - Why doesn't the UI launch?
 
-  1. Check with `ros2 node list` if the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments.
-  2. If the UI crashes (check the console for details), it is probably due to a bad PySide installation, invalid intrinsic parameters, invalid extrinsic parameters, etc.
-  3. The timestamps of the lidar and camera are not synchronized.
+  - Check with `ros2 node list` if the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments.
+  - If the UI crashes (check the console for details), it is probably due to a bad PySide installation, invalid intrinsic parameters, invalid extrinsic parameters, etc.
+  - The timestamps of the lidar and camera are not synchronized.
 
 - Why does the reprojection error increase when more data is collected?
 
-  1. When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting). The more data is collected, the error may increase to a certain extent, but that corresponds to the model attempting to fit all the data, this time unable to fit the noise, resulting in a higher error. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling).
+  - When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting). The more data is collected, the error may increase to a certain extent, but that corresponds to the model attempting to fit all the data, this time unable to fit the noise, resulting in a higher error. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling).
 
 - Why doesn't the reprojection error seem low enough?
 
-  1. The intrinsics may not be accurate, thus limiting the performance of the method.
-  2. The boards are not appropriate (are bent).
-  3. The boards moved too much while calibrating.
-  4. The lidar detections were not very good. Try collecting detections in areas where there is more resolution.
-  5. Check the rviz whether there are some outliers.
+  - The intrinsics may not be accurate, thus limiting the performance of the method.
+  - The boards are not appropriate (are bent).
+  - The boards moved too much while calibrating.
+  - The lidar detections were not very good. Try collecting detections in areas where there is more resolution.
+  - Check the rviz whether there are some outliers.

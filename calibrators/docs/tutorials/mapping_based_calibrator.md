@@ -20,11 +20,11 @@ The rosbag includes four pointcloud topics published by different lidar sensors 
 ### Overall calibration environment
 
 The required space for calibration depends on the vehicle and sensors used. It is recommended to have a large enough space for the vehicle
-to drive around 30 to 50 meters.
+to drive around 30 to 50 meters. It is also recommended to ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 
 ### Vehicle
 
-Before starting the calibration, the user needs to drive the vehicle to collect the pointcloud `ros2 bag record -a` for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 5 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
+Before starting the calibration, the user needs to drive the vehicle to collect the pointcloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 2 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
 
 ## Launching the tool
 
@@ -86,7 +86,7 @@ When the rosbag has finished playing, you should see the pointcloud map and the 
 
 ## Calibration
 
-Calibration starts when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty`. The user can send this command before the rosbag ends if they think the data collected is sufficient for calibration.
+Calibration starts when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty` in the terminal. Note that the user can send this command before the rosbag ends if they think the data collected is sufficient for calibration.
 
 In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 
@@ -115,7 +115,7 @@ Once the calibration process is complete, the displayed text should be as follow
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Sending the results to the calibrator manager
 ```
 
-The user can also see the three different colors of pointcloud in the `rviz`. white for the map from the `mapping lidar`, red for the initial map from the `calibration lidars`, and green for the calibrated map from the `calibration lidars`.
+The user can also see the three different colors of pointcloud in the `rviz`. white for the map from the `mapping lidar`, red for the initial pointcloud from the `calibration lidars`, and green for the calibrated pointcloud from the `calibration lidars`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map3.jpg" alt="map3">
@@ -129,7 +129,7 @@ In the UI of the X2 project, three different TF trees are displayed: `Initial TF
 
 - The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration.
 - The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`.
-- The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. As autoware utilizes the concept of [sensor_kit](https://autowarefoundation.github.io/autoware-documentation/main/how-to-guides/integrating-autoware/creating-vehicle-and-sensor-model/creating-sensor-model/), the final transformations required to comply to the specifications is `sensor_kit_base_link` to `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link`. These transformations is performed by the [calibrator interface](../../sensor_calibration_manager/sensor_calibration_manager/calibrators/rdv/mapping_based_lidar_lidar_calibrator.py) related to this project. The red arrows indicates that the final transformations changed after the calibration process.
+- The `Final TF Tree` depicts the TF tree after incorporating the updated calibrated transformation. As autoware utilizes the concept of [sensor_kit](https://autowarefoundation.github.io/autoware-documentation/main/how-to-guides/integrating-autoware/creating-vehicle-and-sensor-model/creating-sensor-model/), the final transformations required to comply to the specifications is `sensor_kit_base_link` to `pandar_front_base_link`, `pandar_left_base_link`, and `pandar_right_base_link`. These transformations are performed by the [calibrator interface](../../sensor_calibration_manager/sensor_calibration_manager/calibrators/rdv/mapping_based_lidar_lidar_calibrator.py) related to this project. The red arrows indicate that the final transformations changed after the calibration process.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu4.jpg" alt="menu4" width="500">
@@ -147,6 +147,14 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
 
 - Why does the calibration fail?
 
-  1. Check the console first to see the error message.
-  2. Check the rviz to see if any number on the path (keyframe number) is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. For instance, if the acceleration of the vehicle is too fast, the mapping might fail. We recommend the user calibrate with more stable movement again.
-  3. Tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md) if it is needed.
+  - Most of the cases are because the mapping fails. Possible error messages are listed below, which should be displayed in the console. For these cases, restart the experiment and drive more stably and slowly.
+    - Mapping failed. Angle between keyframes is too high.
+    - Mapping failed. Interpolation error is too high.
+    - Mapping failed. Acceleration is too high.
+  - Check the rviz to see if any number on the path (keyframe number) is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. We recommend the user calibrate with more stable movement again.
+  - If it is not feasible to restart the experiment, the user could tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md). However, keep in mind that if the user sets the threshold too high, the accuracy of the calibration result will also decrease.
+  - Check whether all of the lidars apply time synchronization.
+  - Make sure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
+
+- Which registration algorithms (NDT or GICP) should I select?
+  - In our previous experiments, GICP gives better result for the mapping but take more time for building the map. On the other hand, NDT is faster but sometime didn't build a great map (ground points didn't align in a plane).
