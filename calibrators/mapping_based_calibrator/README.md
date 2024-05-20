@@ -4,7 +4,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/mapping_bas
 
 ## Purpose
 
-The package `mapping_based_calibrator` allows extrinsic calibration between 3d lidar and 3d lidar sensors, as well as baselink and lidar sensors used in autonomous driving and robotics.
+The package `mapping_based_calibrator` allows extrinsic calibration between 3d lidar and 3d lidar sensors, as well as baselink and 3d lidar sensors used in autonomous driving and robotics.
 
 ## Inner-workings / Algorithms
 
@@ -20,7 +20,6 @@ First of all, the calibrator will designate one of the lidars (as defined in the
 
 - For each `N` meter, a keyframe will be saved, which is used for calibration and for mapping.
 - If the distance between the last frame and the current pointcloud is more than the `D` meters, the pointcloud will be saved as a frame, which is used to complement keyframes.
-- The pointcloud used as a reference during mapping consists of the last `K` mapping keyframes. Whenever there is a new keyframe, the reference pointcloud is recomputed.
 
 #### Step 2: Calibration data preparation (using calibration lidars)
 
@@ -45,7 +44,7 @@ We use all the frames near a keyframe to augment it using the frames' poses to m
 
 #### Step 3: Calibrate (mapping lidar & calibration lidars)
 
-Once the data is prepared for calibration, we can apply registration algorithms, such as NDT and GICP, to determine the transformations between the pointclouds. For example, consider a `calibration lidar` and a `mapping lidar`. The calibrator applies these algorithms to align the pointcloud from the `calibration lidar` with the augmented pointcloud from the `mapping lidar`, thereby estimating the transformation.
+Once the data is prepared for calibration, we can apply registration algorithms, such as NDT and GICP, to estimate the transformations between pointclouds from the `calibration lidar` and the augmented pointcloud from the `mapping lidar`.
 
 #### Diagram
 
@@ -61,30 +60,24 @@ The first step of base-lidar calibration would be the same as [Step 1](#step-1-m
 
 #### Step 2: Extract ground from the pointcloud
 
-After building the map, we obtain a dense pointcloud from it. We then use PCA and `pcl::SACSegmentation` for ground extraction.
+After building the map, we could get the augmented pointcloud from it. The calibrator then utilize PCA and `pcl::SACSegmentation` for ground extraction.
 
 #### Step 3: Calibrate (using Mapping lidar & baselink)
 
-Finally, we use the initial transformation between baselink and lidar, and the ground model to calculate the transformation between the `base_link` and the `mapping lidar`.
+Finally, we use the initial transformation between baselink and lidar, and the pose from ground model to calculate the transformation between the `base_link` and the `mapping lidar`.
 
 ## ROS Interfaces
 
 ### Input
 
-| Name                        | Type                                         | Description                                                                                |
-| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `camera_info`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the calibration camera. `camera_info` is defined in the launcher. |
-| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections. `lidartag/detections_array` is defined in the launcher.               |
-| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections. `apriltag/detection_array` is defined in the launcher.                |
-
-| Name                            | Type                                                   | Description                                                                                                                                                          |
-| ------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calibration_camera_info_topic` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. `calibration_camera_info_topic` are defined in the launcher. (currently not used)                                  |
-| `calibration_image_topic`       | `sensor_msgs::msg::CompressedImage`                    | Topics of the compressed images for calibration. `calibration_image_topic` are defined in the launcher. (currently not used)                                         |
-| `calibration_pointcloud_topic`  | `sensor_msgs::msg::PointCloud2`                        | Topics of the Pointclouds to calibrate with the `mapping pointcloud`. `calibration_pointcloud_topic` are defined in the launcher.                                    |
-| `mapping_pointcloud`            | `sensor_msgs::msg::PointCloud2`                        | Subscribes to pointcloud data for mapping processes. Recommend to select the lidar that has the highest resolution. `mapping_pointcloud` is defined in the launcher. |
-| `detected_objects`              | `autoware_auto_perception_msgs::msg::DetectedObjects`  | Subscribes to messages containing detected objects, used in the filtering procedure.                                                                                 |
-| `predicted_objects`             | `autoware_auto_perception_msgs::msg::PredictedObjects` | Subscribes to messages that contain predicted object paths and positions, used in the filtering procedure.                                                           |
+| Name                             | Type                                                   | Description                                                                                                                                                          |
+| -------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `calibration_camera_info_topics` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. `calibration_camera_info_topics` are defined in the launcher. (currently not used)                                 |
+| `calibration_image_topics`       | `sensor_msgs::msg::CompressedImage`                    | Topics of the compressed images for calibration. `calibration_image_topics` are defined in the launcher. (currently not used)                                        |
+| `calibration_pointcloud_topics`  | `sensor_msgs::msg::PointCloud2`                        | Topics of the Pointclouds to calibrate with the `mapping pointcloud`. `calibration_pointcloud_topic` are defined in the launcher.                                    |
+| `mapping_pointcloud`             | `sensor_msgs::msg::PointCloud2`                        | Subscribes to pointcloud data for mapping processes. Recommend to select the lidar that has the highest resolution. `mapping_pointcloud` is defined in the launcher. |
+| `detected_objects`               | `autoware_auto_perception_msgs::msg::DetectedObjects`  | Subscribes to messages containing detected objects, used in the filtering procedure.                                                                                 |
+| `predicted_objects`              | `autoware_auto_perception_msgs::msg::PredictedObjects` | Subscribes to messages that contain predicted object paths and positions, used in the filtering procedure.                                                           |
 
 ### Output
 
