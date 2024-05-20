@@ -6,6 +6,8 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/marker_rada
 
 The package `marker_radar_lidar_calibrator` allows extrinsic calibration between radar and 3d lidar sensors used in autonomous driving and robotics.
 
+Currently, the calibrator only supports the radar that includes distance and azimuth angle, but without elevation angle. For example, ARS 408 radar can be calibrated with this tool. Also, note that the 3d lidar should have a resolution that is high enough to scan several points on the radar reflector (calibration target).
+
 ## Inner-workings / Algorithms
 
 The calibrator is designed to accurately predict the transformation between radar and lidar sensors. It starts by pinpointing the central points of reflectors within lidar pointclouds and radar messages, then aligns these points for precise matching. An SVD-based and a yaw-only rotation estimation algorithm are applied to these correlated points to determine the transformation. Specifically, the calibration process consists of four primary steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering lidar and radar detections, and finally executing the calibration.
@@ -16,7 +18,7 @@ Firstly, given the challenge of reliably detecting reflectors, background models
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as the potential reflector detections. For foreground lidar points, however, [reflector](#radar-reflector) detection involves a more detailed process: we first apply a clustering algorithm, find the highest point in the cluster, and average all points within `reflector_radius` meter of the highest point to estimate the center point of the reflector.
+After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as potential reflector detections. For foreground lidar points, however, the [reflector](#radar-reflector) detection process is more detailed. We first apply a clustering algorithm to identify clusters, then find the highest point in each cluster, and filter the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a reflector_radius from the highest point to estimate the center point of the reflector.
 
 ### Step 3: Matching and filtering
 
@@ -24,9 +26,9 @@ Since reflector detections cannot be differentiated directly, we rely on the ini
 
 ### Step 4: Calibration
 
-Once we have matched detection pairs from the sensors, we can compute the rigid transformation between them using an SVD-based estimation algorithm. Since radar detections lack a Z component, we convert the problem to 2d by setting the Z component of lidar detections to zero, allowing the transformation to be determined in 2d. Currently, we support two algorithms for estimating the transformation: a 2d SVD-based method and a yaw-only rotation estimation. The 2d calibration is generally preferred when valid; otherwise, the yaw rotation is used as the calibration output.
+After matching detection pairs from the sensors, we can compute the transformation between them using estimation algorithms. Currently, we support two methods: a 2d SVD-based approach and a yaw-only rotation approach. For the 2d SVD-based method, since radar detections lack a Z component, we convert the problem to 2d by setting the Z component of lidar detections to zero. We then estimate the transformation using the SVD method provided by PCL. The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only rotation, between the sensors. Generally, the 2d calibration is preferred when valid; otherwise, the yaw rotation is used as the calibration output.
 
-It's also important to note that in the near future, the calibrator will be updated to support radar detections with non-zero Z components using different transformation algorithms.
+It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angle and provides different transformation algorithms.
 
 ### Diagram
 
@@ -95,7 +97,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | `lidar_background_model_leaf_size`          | `double`      | `0.1`                                                   | Voxel size in meter for the lidar background model.                                                                                               |
 | `radar_background_model_leaf_size`          | `double`      | `0.1`                                                   | Voxel size in meter for the radar background model.                                                                                               |
 | `max_calibration_range`                     | `double`      | `50.0`                                                  | Maximum range for calibration in meters.                                                                                                          |
-| `background_model_timeout`                  | `double`      | `5.0`                                                   | The background model will terminate if it is not updated within this time period, measured in seconds.                                            |
+| `background_model_timeout`                  | `double`      | `5.0`                                                   | The background model will terminate if it is not updated within this period, measured in seconds.                                                 |
 | `min_foreground_distance`                   | `double`      | `0.4`                                                   | Square of this value in meters is used for filtering foreground points, typically needing to be at least double the `background_model_leaf_size`. |
 | `background_extraction_timeout`             | `double`      | `15.0`                                                  | Timeout in seconds for background extraction processes.                                                                                           |
 | `ransac_threshold`                          | `double`      | `0.2`                                                   | Distance threshold for the segmentation model.                                                                                                    |
@@ -119,7 +121,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 The type of reflector shown in the image below is crucial for our calibration because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
-It is recommend that the user should build the radar reflector with tripod by using taps to fixed the radar reflector above the tripod.
+It is recommended that the user build the radar reflector on a tripod, securing it with tape to ensure stability. Additionally, nothing should be attached above the radar reflector; it must be the highest object on the entire calibration target. Additionally, make sure the height of the radar reflector is not larger than the `reflector_max_height` parameter.
 
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
@@ -127,9 +129,13 @@ It is recommend that the user should build the radar reflector with tripod by us
 
 ## Known issues/limitations
 
-- While performing the calibration, the calibrator provide a button to delete any mismatched pairs (e.g., an object detected by both radar and lidar). However, some outliers may not be easily detectable by human vision, leading to imperfect results as the calibration proceeds even with these anomalies present. Future enhancements will aim to improve outlier detection, thereby refining the calibration accuracy.
+- While extracting the background model, ensure that the radar reflectors are not in the calibration area and that no one is moving around the calibration area.
+
+- While performing the calibration, the calibrator provides a button to delete any mismatched pairs (e.g., an object detected by both radar and lidar). However, some outliers may not be easily detectable by human vision, leading to imperfect results as the calibration proceeds even with these anomalies present. Future enhancements will aim to improve outlier detection, thereby refining the calibration accuracy.
+
+- We have successfully calibrated various sensors with this calibrator, including the Velodyne VLS-128 lidar sensor, Pandar-40P lidar sensor, and ARS408 radar sensor, achieving good calibration results.
 
 ## Pro tips/recommendations
 
-- While performing the calibration, it is required that all the reflectors are at the same height with respect to the ground, and that both radar and lidar sensors are parallel to the ground.
+- While performing the calibration, it is required that all the reflectors are at the same height with respect to the ground and that both radar and lidar sensors are parallel to the ground.
 - During calibration, place the reflectors at various distances and ensure that the center of the radar reflector faces the radar sensor.

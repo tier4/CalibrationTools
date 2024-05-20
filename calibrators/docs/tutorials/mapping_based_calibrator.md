@@ -7,7 +7,7 @@ General documentation regarding this calibrator can be found [here](../../mappin
 ## Setup
 
 This tutorial assumes that the user has already built the calibration tools.
-Installation instructions can be found [here](../../README.md)
+Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 

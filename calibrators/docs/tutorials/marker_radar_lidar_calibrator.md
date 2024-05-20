@@ -7,7 +7,7 @@ General documentation regarding this calibrator can be found [here](../../marker
 ## Setup
 
 This tutorial assumes that the user has already built the calibration tools.
-Installation instructions can be found [here](../../README.md)
+Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 
@@ -19,11 +19,11 @@ The rosabg includes three different topics: `object_raw`, `pointcloud_raw`, and 
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. During the calibration, please always make sure that reflectors are detected by both radar and lidar. The user could always check whether the reflectors appear in the `rviz` with the corresponding topics.
+The required space for calibration depends on the vehicle and sensors used. Generally, an open space without any other objects is an ideal calibration environment. During the calibration, please always make sure that reflectors are detected by both radar and lidar. The user could always check whether the reflectors appear in the `rviz` with the corresponding topics.
 
 ### Radar reflector
 
-It is recommended to utilize a tripod to adjust the height of the radar reflector and also modify its center to align with the radar sensor.
+It is recommended to utilize a tripod to adjust the height of the radar reflector and also modify its center to align with the radar sensor. More information about the radar reflector can be found in the [general documentation](../../marker_radar_lidar_calibrator/README.md#radar-reflector).
 
 ## Launching the tool
 
@@ -58,7 +58,7 @@ If it does not become available, it means that either the required `tf` or servi
 
 Once the user starts running the tutorial rosbag, the pointcloud should appear in `rviz` as shown in the example below. Press the `Extract Background Model button` in the UI to start extracting the background.
 
-Note that user should put the radar reflector out of the calibration area before clicking the button
+Note that the user should put the radar reflector out of the calibration area before clicking the button. Ideally, there shouldn't be any moving objects like humans and vehicles in the calibration area.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
@@ -82,11 +82,35 @@ Also, the following text should be shown in the console.
 [marker_radar_lidar_calibrator]: Finished background model initialization
 ```
 
+Additionally, the user can click the options: `lidar_background_pointcloud`, `lidar_foreground_pointcloud`, and `radar_background_pointcloud` on the left bar of the `rviz` for visualizing the output of background and foreground pointcloud. As described in the [documentation](../../README.md), the `radar_reflections` is the same as the `radar_foreground_pointcloud`, which is visible as default.
+
+<table>
+  <tr>
+    <td><img src="../images/marker_radar_lidar_calibrator/lidar_background.jpg" alt="lidar_background" width = 700px height = 300px ></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/lidar_foreground.jpg" alt="lidar_foreground" width = 700px height = 300px ></td>
+   </tr>
+   <tr>
+    <td><p style="text-align: center;">Lidar background points.</p></td>
+    <td><p style="text-align: center;">Lidar foreground points.</p></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="../images/marker_radar_lidar_calibrator/radar_background.jpg" alt="radar_background" width = 700px height = 300px></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/radar_foreground.jpg" alt="radar_foreground" width = 700px height = 300px ></td>
+   </tr>
+   <tr>
+    <td><p style="text-align: center;">Radar background points.</p></td>
+    <td><p style="text-align: center;">Radar foreground points.</p></td>
+  </tr>
+</table>
+
 ### Add lidar-radar pair
 
-After the background model has been extracted, the user can carry the radar reflector with the tripod and place it in front of the radar sensor. In the tutorial rosbag, the user will see that both the human and the radar reflector (with tripod) are identified as foreground objects in the image below.
+After the background model has been extracted, the user can carry the radar reflector (with the tripod) and place it in front of the radar sensor. Once the reflector is positioned, the user should step a few steps away from it. In the tutorial rosbag, the user will see that both the human and the radar reflector (with tripod) are identified as foreground objects in the image below.
 
-In the image, the green points represent the lidar foreground points, while the purple points indicate radar foreground detections. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud.
+In the image, the green points represent the lidar foreground points, which form a cluster, while the purple points indicate radar foreground detections. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/add1.jpg" alt="add1" width="300" height="300">
@@ -99,6 +123,19 @@ Afterward, if the pair that the user added converges, it will become a converged
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/add2.jpg" alt="add2" width="300" height="300">
 </p>
+
+As described in the [Step 3: Matching and filtering](../../marker_radar_lidar_calibrator/README.md#step-3-matching-and-filtering) in the general documentation, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. Below, we show examples of good and bad initial calibration. In both images, the calibrator detects two potential reflectors: a human and a radar reflector (located closer to the bottom of the image). In the good initial calibration image, the blue point from lidar detection will correctly match the radar detection, as they are the closest to each other. However, in the image of bad initial calibration, the blue point will incorrectly match the radar detection of the human.
+
+<table>
+  <tr>
+    <td><img src="../images/marker_radar_lidar_calibrator/good_sample.jpg" alt="good_sample" width = 700px height = 300px></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/bad_sample.jpg" alt="bad_sample" width = 700px height = 300px ></td>
+   </tr>
+   <tr>
+    <td><p style="text-align: center;">Good initial calibration.</p></td>
+    <td><p style="text-align: center;">Bad initial calibration.</p></td>
+  </tr>
+</table>
 
 ### Delete previous lidar-radar pair
 
@@ -179,4 +216,19 @@ To evaluate the calibration result, the user can measure that the calibrated rad
 
 - Why doesn't the reflector detection show on the rviz?
 
-  1. Make sure the center of the reflector faces toward the radar sensor, and the height of the reflector is enough for the radar to detect.
+  - Make sure the center of the reflector faces toward the radar sensor, and the height of the reflector is enough for the radar to detect.
+  - Make sure the height of the radar reflector is not larger than the `reflector_max_height` parameter.
+  - Make sure the radar reflector is not in the background voxel (visualize the topic mentioned before.)
+
+- Why doesn't the calibration error seem low enough?
+
+  - Make sure that there are no outliers in the calibration pairs list.
+  - Make sure that the initial calibration is good enough to match the lidar detection and radar detection correctly.
+
+- When can I stop the calibration process?
+
+  - It is recommended to stop the calibration when the line in the cross-validation error is converged.
+  - With more matched pairs without outliers, the calibration result should improve if the number of pairs increases.
+
+- In the cross-validation plot, why does the standard deviation for a sample size of 3 increase significantly when the overall sample size increases?
+  - When the overall number of samples increases, and we randomly select three samples to calculate the transformation, the likelihood of selecting three collinear samples also increases. This selection can lead to significant errors in the transformation for the remaining samples, resulting in a higher standard deviation.
