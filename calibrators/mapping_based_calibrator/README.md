@@ -152,7 +152,7 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `frames_since_stoped_force_frame`    | `int`    | `5`           | If the number of stopped frames is equal to this value, we set it as keyframe_and_stop frame.                                  |
 | `calibration_skip_keyframes`         | `int`    | `5`           | The number of initial keyframes that are skipped for calibration.                                                              |
 
-### Calibration criteria parameters
+### Calibration Criteria Parameters
 
 | Name                                         | Type     | Default Value | Description                                                                                                                                   |
 | -------------------------------------------- | -------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -182,7 +182,7 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `calibration_min_distance_between_frames`    | `double` | `5.0`         | Threshold for the minimum distance in meters between frames.                                                                                  |
 | `calibration_eval_max_corr_distance`         | `double` | `0.1`         | Maximum correspondence distance in meters for source pointcloud and target pointcloud.                                                        |
 
-### Calibration parameters
+### Calibration Parameters
 
 | Name                       | Type     | Default Value | Description                                                                                                              |
 | -------------------------- | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -191,14 +191,14 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `max_corr_dist_fine`       | `double` | `0.1`         | Maximum fine correspondence distance for the PCL registration algorithm during calibration.                              |
 | `max_corr_dist_ultra_fine` | `double` | `0.05`        | Maximum ultra fine correspondence distance for the PCL registration algorithm during calibration.                        |
 
-### Lidar calibration-only parameters
+### Lidar Calibration Parameters
 
 | Name                           | Type  | Default Value | Description                                                       |
 | ------------------------------ | ----- | ------------- | ----------------------------------------------------------------- |
 | `lidar_calibration_min_frames` | `int` | `2`           | Minimum number of calibration frames to use in lidar calibration. |
 | `lidar_calibration_max_frames` | `int` | `10`          | Maximum number of calibration frames to use in lidar calibration. |
 
-### Camera calibration-only parameters (currently not used)
+### Camera Calibration Parameters (currently not used)
 
 | Name                            | Type     | Default Value | Description                                                  |
 | ------------------------------- | -------- | ------------- | ------------------------------------------------------------ |
@@ -207,7 +207,7 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `pc_features_min_distance`      | `double` | `0.2`         | Near plane distance for `pcl::FrustumCulling`.               |
 | `pc_features_max_distance`      | `double` | `40.0`        | Far plane distance for `pcl::FrustumCulling`.                |
 
-### Base-Lidar calibration parameters
+### Base-Lidar Calibration Parameters
 
 | Name                                     | Type     | Default Value | Description                                                                                                 |
 | ---------------------------------------- | -------- | ------------- | ----------------------------------------------------------------------------------------------------------- |
