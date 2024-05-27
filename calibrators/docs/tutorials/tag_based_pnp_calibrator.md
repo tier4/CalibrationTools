@@ -85,7 +85,7 @@ At the end of the calibration, we should get 8 detection pairs which are shown b
 
 ![tag_based_pnp_calibrator](../images/tag_based_pnp_calibrator/visualization3.jpg)
 
-The output in the console should be as follows:
+The output in the console should be as follows (variations in the numerical results may occur due to the nature of ROS):
 
 ```text
 [tag_based_pnp_calibrator_node]:  Initial reprojection error=15.41
