@@ -204,25 +204,25 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | ------------------------------- | -------- | ------------- | ------------------------------------------------------------ |
 | `camera_calibration_min_frames` | `int`    | `1`           | Minimum number of frames to consider for camera calibration. |
 | `camera_calibration_max_frames` | `int`    | `10`          | Maximum number of frames to use in camera calibration.       |
-| `pc_features_min_distance`      | `double` | `0.2`         | Near plane distance for `pcl::FrustumCulling`.               |
-| `pc_features_max_distance`      | `double` | `40.0`        | Far plane distance for `pcl::FrustumCulling`.                |
+| `pc_features_min_distance`      | `double` | `0.2`         | Near plane distance in meters for `pcl::FrustumCulling`.     |
+| `pc_features_max_distance`      | `double` | `40.0`        | Far plane distance in meters for `pcl::FrustumCulling`.      |
 
 ### Base-Lidar Calibration Parameters
 
-| Name                                     | Type     | Default Value | Description                                                                                                 |
-| ---------------------------------------- | -------- | ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `base_lidar_crop_box_min_x`              | `double` | `-20.0`       | Minimum X-coordinate for the cropping box in base-lidar calibration to focus on relevant data areas.        |
-| `base_lidar_crop_box_min_y`              | `double` | `-20.0`       | Minimum Y-coordinate for the cropping box in base-lidar calibration to focus on relevant data areas.        |
-| `base_lidar_crop_box_min_z`              | `double` | `-20.0`       | Minimum Z-coordinate for the cropping box in base-lidar calibration to focus on relevant data areas.        |
-| `base_lidar_crop_box_max_x`              | `double` | `20.0`        | Maximum X-coordinate for the cropping box in base-lidar calibration to focus on relevant data areas.        |
-| `base_lidar_crop_box_max_y`              | `double` | `20.0`        | Maximum Y-coordinate for the cropping box in base-lidar calibration to focus on relevant data areas.        |
-| `base_lidar_crop_box_max_z`              | `double` | `20.0`        | Maximum Z-coordinate for the cropping box in base-lidar calibration to focus on relevant data areas.        |
-| `base_lidar_max_inlier_distance`         | `double` | `0.01`        | Maximum inlier distance for ground extraction by using `pcl::SACSegmentation`.                              |
-| `base_lidar_max_iterations`              | `int`    | `1000`        | Maximum number of iterations for ground extraction by using `pcl::SACSegmentation`.                         |
-| `base_lidar_min_plane_points`            | `int`    | `1000`        | Minimum number of points required in a pointcloud, ensuring sufficient data for applying ground extraction. |
-| `base_lidar_min_plane_points_percentage` | `double` | `10.0`        | Minimum percentage of ground plane points in a pointcloud.                                                  |
-| `base_lidar_max_cos_distance`            | `double` | `0.5`         | Maximum cosine distance for applying ground plane extraction.                                               |
-| `base_lidar_overwrite_xy_yaw`            | `bool`   | `false`       | Flag to allow overwriting the x, y, and yaw value during base-lidar calibration.                            |
+| Name                                     | Type     | Default Value | Description                                                                                                    |
+| ---------------------------------------- | -------- | ------------- | -------------------------------------------------------------------------------------------------------------- |
+| `base_lidar_crop_box_min_x`              | `double` | `-20.0`       | Minimum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas. |
+| `base_lidar_crop_box_min_y`              | `double` | `-20.0`       | Minimum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas. |
+| `base_lidar_crop_box_min_z`              | `double` | `-20.0`       | Minimum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas. |
+| `base_lidar_crop_box_max_x`              | `double` | `20.0`        | Maximum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas. |
+| `base_lidar_crop_box_max_y`              | `double` | `20.0`        | Maximum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas. |
+| `base_lidar_crop_box_max_z`              | `double` | `20.0`        | Maximum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas. |
+| `base_lidar_max_inlier_distance`         | `double` | `0.01`        | Maximum inlier distance in meters for ground extraction by using `pcl::SACSegmentation`.                       |
+| `base_lidar_max_iterations`              | `int`    | `1000`        | Maximum number of iterations for ground extraction by using `pcl::SACSegmentation`.                            |
+| `base_lidar_min_plane_points`            | `int`    | `1000`        | Minimum number of points required in a pointcloud, ensuring sufficient data for applying ground extraction.    |
+| `base_lidar_min_plane_points_percentage` | `double` | `10.0`        | Minimum percentage of ground plane points in a pointcloud.                                                     |
+| `base_lidar_max_cos_distance`            | `double` | `0.5`         | Maximum cosine distance for applying ground plane extraction.                                                  |
+| `base_lidar_overwrite_xy_yaw`            | `bool`   | `false`       | Flag to allow overwriting the x, y, and yaw value during base-lidar calibration.                               |
 
 ## Known issues/limitations
 
