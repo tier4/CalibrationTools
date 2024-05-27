@@ -81,7 +81,7 @@ Please make sure the new position is at least `calibration_min_pair_distance` fr
 
 Depending on the mount and the ground surface, the tags can oscillate quite a bit, which can be detrimental to the calibration process. In this case, the user can stop the tag with its hand.
 
-At the end of the calibration, we can get 8 detection pairs which are shown below.
+At the end of the calibration, we should get 8 detection pairs which are shown below.
 
 ![tag_based_pnp_calibrator](../images/tag_based_pnp_calibrator/visualization3.jpg)
 
