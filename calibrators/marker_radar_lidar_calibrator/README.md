@@ -66,7 +66,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | Name                       | Type                                                  | Description                                                                              |
 | -------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `extrinsic_calibration`    | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
-| `extract_background_model` | `std_srvs::srv::Empty`                                | Strat to extract the background model from radar and lidar data.                         |
+| `extract_background_model` | `std_srvs::srv::Empty`                                | Start to extract the background model from radar and lidar data.                         |
 | `add_lidar_radar_pair`     | `std_srvs::srv::Empty`                                | User is able to click this button to add lidar-radar pair.                               |
 | `delete_lidar_radar_pair`  | `std_srvs::srv::Empty`                                | User is able to click this button to delete the previous lidar-radar pair.               |
 | `send_calibration`         | `std_srvs::srv::Empty`                                | Send the calibration result to the sensor calibration manager.                           |
