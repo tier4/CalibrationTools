@@ -119,7 +119,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Radar reflector
 
-The type of reflector shown in the image below is crucial for our calibration because it has a highly predictable and consistent response to radar. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
+The type of reflector shown in the image below is crucial for our calibration because it has a highly predictable and consistent response to radar waves. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
 It is recommended that the user build the radar reflector on a tripod, securing it with tape to ensure stability. Additionally, nothing should be attached above the radar reflector; it must be the highest object on the entire calibration target. Additionally, make sure the height of the radar reflector is not larger than the `reflector_max_height` parameter.
 
