@@ -82,7 +82,7 @@ Also, the following text should be shown in the console.
 [marker_radar_lidar_calibrator]: Finished background model initialization
 ```
 
-Additionally, the user can click the options: `lidar_background_pointcloud`, `lidar_foreground_pointcloud`, and `radar_background_pointcloud` on the left bar of the `rviz` for visualizing the output of background and foreground pointcloud. As described in the [documentation](../../README.md), the `radar_reflections` is the same as the `radar_foreground_pointcloud`, which is visible as default.
+Additionally, the user can click the topics: `lidar_background_pointcloud`, `lidar_foreground_pointcloud`, and `radar_background_pointcloud` on the left bar of the `rviz` for visualizing the output of background and foreground pointcloud. As described in the [documentation](../../README.md), the `radar_reflections` is the same as the `radar_foreground_pointcloud`, which is visible as default.
 
 <table>
   <tr>
