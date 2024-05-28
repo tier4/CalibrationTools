@@ -102,7 +102,7 @@ Additionally, the user can click the topics: `lidar_background_pointcloud`, `lid
    </tr>
    <tr>
     <td><p style="text-align: center;">Radar background points.</p></td>
-    <td><p style="text-align: center;">Radar foreground points (purple line).</p></td>
+    <td><p style="text-align: center;">Radar foreground points (purple lines).</p></td>
   </tr>
 </table>
 
