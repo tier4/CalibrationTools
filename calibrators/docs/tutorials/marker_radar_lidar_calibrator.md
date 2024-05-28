@@ -102,7 +102,7 @@ Additionally, the user can click the topics: `lidar_background_pointcloud`, `lid
    </tr>
    <tr>
     <td><p style="text-align: center;">Radar background points.</p></td>
-    <td><p style="text-align: center;">Radar foreground points.</p></td>
+    <td><p style="text-align: center;">Radar foreground points (purple line).</p></td>
   </tr>
 </table>
 
@@ -110,7 +110,7 @@ Additionally, the user can click the topics: `lidar_background_pointcloud`, `lid
 
 After the background model has been extracted, the user can carry the radar reflector (with the tripod) and place it in front of the radar sensor. Once the reflector is positioned, the user should step a few steps away from it. In the tutorial rosbag, the user will see that both the human and the radar reflector (with tripod) are identified as foreground objects in the image below.
 
-In the image, the green points represent the lidar foreground points, which form a cluster, while the purple points indicate radar foreground detections. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud.
+In the image, the green points represent the lidar foreground points, which form a cluster, The purple lines indicate radar foreground detections, appearing as lines due to the radar's lack of elevation data, making the z-axis unknown. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/add1.jpg" alt="add1" width="300" height="300">
