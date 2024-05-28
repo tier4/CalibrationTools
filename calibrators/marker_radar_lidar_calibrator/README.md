@@ -26,7 +26,11 @@ Since reflector detections cannot be differentiated directly, we rely on the ini
 
 ### Step 4: Calibration
 
-After matching detection pairs from the sensors, we can compute the transformation between them using estimation algorithms. Currently, we support two methods: a 2d SVD-based approach and a yaw-only rotation approach. For the 2d SVD-based method, since radar detections lack a Z component, we convert the problem to 2d by setting the Z component of lidar detections to zero. We then estimate the transformation using the SVD method provided by PCL. The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only rotation, between the sensors. Generally, the 2d calibration is preferred when valid; otherwise, the yaw rotation is used as the calibration output.
+After matching detection pairs from the sensors, we can compute the transformation between them using estimation algorithms. Currently, we support two methods: a 2d SVD-based approach and a yaw-only rotation approach.
+
+For the 2d SVD-based method, since radar detections lack a Z component, we convert the problem to 2d by setting the Z component of lidar detections to zero. We then estimate the transformation using the SVD method provided by PCL.
+
+The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only rotation, between the sensors. Generally, the 2d calibration is preferred when valid; otherwise, the yaw rotation is used as the calibration output.
 
 It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angle and provides different transformation algorithms.
 
