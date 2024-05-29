@@ -26,11 +26,11 @@ Below, you can see how the algorithm is implemented in the `tag_based_pnp_calibr
 
 ### Input
 
-| Name                        | Type                                         | Description                                                                                |
-| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `camera_info`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the calibration camera. `camera_info` is defined in the launcher. |
-| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections. `lidartag/detections_array` is defined in the launcher.               |
-| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections. `apriltag/detection_array` is defined in the launcher.                |
+| Name                        | Type                                         | Description                                                                    |
+| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `camera_info`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the camera. `camera_info` is defined in the launcher. |
+| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections. `lidartag/detections_array` is defined in the launcher.   |
+| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections. `apriltag/detection_array` is defined in the launcher.    |
 
 ### Output
 
@@ -114,7 +114,7 @@ Note that the ones we used are lidartags of size 0.8 meters. This means the apri
     <img src="../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg"  alt="lidarscan_on_tag" width="500">
 </p>
 
-- It is highly recommended to place the tag perpendicular to the calibration camera as shown in the following image:
+- It is highly recommended to place the tag perpendicular to the camera as shown in the following image:
 
 <p align="center">
     <img src="../docs/images/tag_based_pnp_calibrator/tag_position.jpg"  alt="tag_position" width="500">
