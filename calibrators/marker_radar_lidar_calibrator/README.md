@@ -141,5 +141,5 @@ It is recommended that the user build the radar reflector on a tripod, securing 
 
 ## Pro tips/recommendations
 
-- While performing the calibration, it is required that all the reflectors are at the same height with respect to the ground and that both radar and lidar sensors are parallel to the ground.
+- While performing the calibration, it is required that all the reflectors are at the same height, which also match the radar.
 - During calibration, place the reflectors at various distances and ensure that the center of the radar reflector faces the radar sensor.
