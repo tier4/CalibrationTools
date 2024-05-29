@@ -10,7 +10,9 @@ Currently, the calibrator only supports the radar that includes distance and azi
 
 ## Inner-workings / Algorithms
 
-The calibrator is designed to accurately predict the transformation between radar and lidar sensors. It starts by pinpointing the central points of reflectors within lidar pointclouds and radar messages, then aligns these points for precise matching. An SVD-based and a yaw-only rotation estimation algorithm are applied to these correlated points to determine the transformation. Specifically, the calibration process consists of four primary steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering lidar and radar detections, and finally executing the calibration.
+The calibrator is designed to accurately predict the transformation between radar and lidar sensors. It starts by pinpointing the central points of reflectors within lidar pointclouds and radar messages, then aligns these points for precise matching. An SVD-based and a yaw-only rotation estimation algorithm are applied to these correlated points to determine the transformation.
+
+Specifically, the calibration process consists of four primary steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering lidar and radar detections, and finally executing the calibration.
 
 ### Step 1: Background model construction
 
@@ -18,7 +20,9 @@ Firstly, given the challenge of reliably detecting reflectors, background models
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as potential reflector detections. For foreground lidar points, however, the [reflector](#radar-reflector) detection process is more detailed. We first apply a clustering algorithm to identify clusters, then find the highest point in each cluster, and filter the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a reflector_radius from the highest point to estimate the center point of the reflector.
+After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as potential reflector detections.
+
+For foreground lidar points, however, the [reflector](#radar-reflector) detection process is more detailed. We first apply a clustering algorithm to identify clusters, then find the highest point in each cluster, and filter the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a reflector_radius from the highest point to estimate the center point of the reflector.
 
 ### Step 3: Matching and filtering
 
