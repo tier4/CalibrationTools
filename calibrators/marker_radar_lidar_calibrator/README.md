@@ -6,7 +6,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/marker_rada
 
 The package `marker_radar_lidar_calibrator` allows extrinsic calibration between radar and 3d lidar sensors used in autonomous driving and robotics.
 
-Currently, the calibrator only supports the radar that includes distance and azimuth angle, but without elevation angle. For example, ARS 408 radar can be calibrated with this tool. Also, note that the 3d lidar should have a resolution that is high enough to scan several points on the radar reflector (calibration target).
+Currently, the calibrator only supports the radars that include distance and azimuth angle, but without elevation angle. For example, ARS 408 radar can be calibrated with this tool. Also, note that the 3d lidar should have a resolution that is high enough to scan several points on the [radar reflector](#radar-reflector) (calibration target).
 
 ## Inner-workings / Algorithms
 
