@@ -4,25 +4,27 @@ Calibration tools for sensors used in autonomous driving and robotics (camera, l
 
 ## Table of contents
 
-- [Installation](#installation)
-  - [Requirements](#requirements)
-  - [Installation alongside autoware](#installation-alongside-autoware)
-  - [Standalone installation (for non-autoware users)](#standalone-installation-for-non-autoware-users)
-  - [Standalone installation using Docker (for non-autoware users)](#standalone-installation-using-docker-for-non-autoware-users)
-- [Implemented tools](#implemented-tools)
-  - [Extrinsic calibration tools](#extrinsic-calibration-tools)
-  - [Intrinsic calibration tools](#intrinsic-calibration-tools)
-- [Design](#design)
-  - [Calibrator node](#calibrator-node)
-  - [Sensor calibrator manager](#sensor-calibration-manager)
-    - [Projects and calibrators](#projects-and-calibrators)
-    - [Calibrator interface](#calibrator-interface)
-    - [Launch files](#launch-files)
-    - [Launching the sensor calibration manager](#launching-the-sensor-calibration-manager)
-- [Integration](#integration)
-  - [Using your vehicle/robot](#using-your-vehiclerobot)
-  - [Create a new project](#create-a-new-project)
-  - [Integrate a new calibrator](#integrate-a-new-calibrator)
+- [Sensor Calibration Tools](#sensor-calibration-tools)
+  - [Table of contents](#table-of-contents)
+  - [Installation](#installation)
+    - [Requirements](#requirements)
+    - [Installation alongside autoware](#installation-alongside-autoware)
+    - [Standalone installation (for non-autoware users)](#standalone-installation-for-non-autoware-users)
+    - [Standalone installation using Docker (for non-autoware users)](#standalone-installation-using-docker-for-non-autoware-users)
+  - [Implemented tools](#implemented-tools)
+    - [Extrinsic calibration tools](#extrinsic-calibration-tools)
+    - [Intrinsic calibration tools](#intrinsic-calibration-tools)
+  - [Design](#design)
+    - [Calibrator node](#calibrator-node)
+    - [Sensor calibration manager](#sensor-calibration-manager)
+      - [Projects and calibrators](#projects-and-calibrators)
+      - [Calibrator interface](#calibrator-interface)
+      - [Launch files](#launch-files)
+      - [Launching the sensor calibration manager](#launching-the-sensor-calibration-manager)
+  - [Integration](#integration)
+    - [Using your vehicle/robot](#using-your-vehiclerobot)
+    - [Create a new project](#create-a-new-project)
+    - [Integrate a new calibrator](#integrate-a-new-calibrator)
 
 ## Installation
 
@@ -75,6 +77,25 @@ DOCKER_BUILDKIT=1 docker build --ssh default -t ghcr.io/tier4/calibration-tools:
 
 # Run - Modify if needed
 docker run --gpus all --net=host -e ROS_DOMAIN_ID=$ROS_DOMAIN_ID -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --device=/dev/dri:/dev/dri -it ghcr.io/tier4/calibration-tools:2.0 /bin/bash
+
+# If user encounter some issue like "Authorization required", follow the command below.
+# Solution 1 (Not recommended):
+xhost +local:docker
+
+# Solution 2:
+touch /tmp/.docker.xauth
+chmod a+r /tmp/.docker.xauth
+
+xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | xauth -f /tmp/.docker.xauth nmerge -
+
+docker run --gpus all --net=host \
+  -e ROS_DOMAIN_ID=$ROS_DOMAIN_ID \
+  -e DISPLAY=$DISPLAY \
+  -e XAUTHORITY=/tmp/.docker.xauth \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v /tmp/.docker.xauth:/tmp/.docker.xauth \
+  --device=/dev/dri:/dev/dri \
+  -it ghcr.io/tier4/calibration-tools:2.0 /bin/bash
 ```
 
 ## Implemented tools
