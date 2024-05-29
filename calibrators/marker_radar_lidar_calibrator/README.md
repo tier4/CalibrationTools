@@ -146,5 +146,5 @@ It is recommended that the user build the radar reflector on a tripod, securing 
 - The calibration area is recommended to setup like the image below.
 
 <p align="center">
-    <img src="../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_vis.jpg" alt="radar_reflector" width="500">
+    <img src="../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_vis.svg" alt="radar_reflector" width="500">
 <p align="center">

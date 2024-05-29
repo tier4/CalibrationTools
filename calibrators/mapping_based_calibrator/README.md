@@ -238,5 +238,5 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 - The calibration area is recommended to setup like the image below.
 
 <p align="center">
-    <img src="../docs/images/mapping_based_calibrator/mapping_based_vis.jpg" alt="radar_reflector" width="900">
+    <img src="../docs/images/mapping_based_calibrator/mapping_based_vis.svg" alt="radar_reflector" width="900">
 <p align="center">
