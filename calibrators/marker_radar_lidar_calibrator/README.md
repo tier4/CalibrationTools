@@ -10,17 +10,17 @@ Currently, the calibrator only supports the radars that include distance and azi
 
 ## Inner-workings / Algorithms
 
-The calibrator is designed to predict the transformation between radar and lidar sensors. It starts by pinpointing the central points of reflectors within lidar pointclouds and radar messages, then aligns these points for precise matching. An SVD-based and a yaw-only rotation estimation algorithm are applied to these correlated points to determine the transformation.
+The calibrator is designed to predict the transformation between radar and lidar sensors. It starts by pinpointing the central points of reflectors within lidar pointclouds and radar objects, then aligns these points for precise matching. An SVD-based and a yaw-only rotation estimation algorithm are applied to these correlated points to determine the transformation.
 
 Specifically, the calibration process consists of four primary steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering lidar and radar detections, and finally executing the calibration.
 
 ### Step 1: Background model construction
 
-Firstly, given the challenge of reliably detecting reflectors, background models for both lidar and radar are constructed from the lidar pointcloud and radar message within a user-defined calibration area, which lacks any calibration targets (such as radar reflectors). More specifically, these background models consist of uniform binary voxel grids that denote whether each voxel represents the background.
+Firstly, given the challenge of reliably detecting reflectors, such as when radar outputs numerous objects making it difficult to identify the reflector among them, background models for both lidar and radar are constructed from the lidar pointclouds and radar objects within a user-defined calibration area, which lacks any calibration targets (such as radar reflectors). More specifically, these background models consist of uniform binary voxel grids that denote whether each voxel represents the background.
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar messages that do not align with the background voxels. All foreground radar points are automatically categorized as potential reflector detections.
+After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar objects that do not align with the background voxels. All foreground radar points are automatically categorized as potential reflector detections.
 
 For foreground lidar points, however, the [reflector](#radar-reflector) detection process is more detailed. We first apply a clustering algorithm to identify clusters, then find the highest point in each cluster, and filter the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a reflector_radius from the highest point to estimate the center point of the reflector.
 
@@ -48,10 +48,10 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Input
 
-| Name                     | Type                            | Description                                                                            |
-| ------------------------ | ------------------------------- | -------------------------------------------------------------------------------------- |
-| `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2` | Lidar pointcloud for calibration. `input_lidar_pointcloud` is defined in the launcher. |
-| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | Radar message for calibration, `input_radar_msg` is defined in the launcher.           |
+| Name                     | Type                            | Description                                                                                     |
+| ------------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2` | Topic of lidar pointcloud for calibration. `input_lidar_pointcloud` is defined in the launcher. |
+| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | Topic of radar objects for calibration, `input_radar_msg` is defined in the launcher.           |
 
 ### Output
 
@@ -86,7 +86,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | Name                                        | Type          | Default Value                                           | Description                                                                                                                                                        |
 | ------------------------------------------- | ------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `radar_parallel_frame`                      | `std::string` | `base_link`                                             | The frame that the radar frame optimizes the transformation to.                                                                                                    |
-| `msg_type`                                  | `std::string` | `radar tracks`/`radar scan`                             | The message's type of the input radar message. (Not available yet, currently only support radar tracks)                                                            |
+| `msg_type`                                  | `std::string` | `radar tracks`/`radar scan`                             | The type of the input radar objects. (Not available yet, currently only support radar tracks)                                                                      |
 | `transformation_type`                       | `std::string` | `yaw_only_rotation_2d` `svd_2d` `svd_3d` `roll_zero_3d` | The algorithms for optimizing the transformation between radar frame and radar parallel frame. (Not available yet)                                                 |
 | `use_lidar_initial_crop_box_filter`         | `bool`        | `true`                                                  | Enables or disables the initial cropping filter for lidar data processing.                                                                                         |
 | `lidar_initial_crop_box_min_x`              | `double`      | `-50.0`                                                 | Minimum x-coordinate in meters for the initial lidar calibration area.                                                                                             |
