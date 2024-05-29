@@ -20,9 +20,9 @@ Firstly, given the challenge of reliably detecting reflectors, such as when rada
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar objects that do not align with the background voxels. All foreground radar points are automatically categorized as potential reflector detections.
+After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar objects that are not in the background voxels. All foreground radar points are automatically categorized as potential reflector detections.
 
-For foreground lidar points, however, the [reflector](#radar-reflector) detection process is more detailed. We first apply a clustering algorithm to identify clusters, then find the highest point in each cluster, and filter the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a reflector_radius from the highest point to estimate the center point of the reflector.
+For foreground lidar points, however, the [reflector](#radar-reflector) detection process is more detailed. We first apply a clustering algorithm, then find the highest point in each cluster, and filter the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
 
 ### Step 3: Matching and filtering
 
