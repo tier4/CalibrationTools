@@ -6,6 +6,8 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/tag_based_p
 
 The package `tag_based_pnp_calibrator` allows extrinsic calibration between the camera and 3d lidar sensors used in autonomous driving and robotics.
 
+Note that the 3d lidar should have a resolution that is high enough to detect the lidartag [1].
+
 ## Inner-workings / Algorithms
 
 The `tag_based_pnp_calibrator` utilizes the PnP (Perspective-n-Point) algorithm, a computer vision technique that is used to estimate the transformation between a set of correspondences of 3d and 2d points (in this case the 3d points come from the lidar and the 2d points come from the camera). For the calibration process, both `apriltag_ros` and `lidartag` packages are required, and they are executed automatically by this package's launcher files.
