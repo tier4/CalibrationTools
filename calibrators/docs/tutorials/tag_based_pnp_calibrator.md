@@ -154,4 +154,3 @@ The images below show that with the calibrated transformation, the projected poi
   - The boards are not appropriate (are bent).
   - The boards moved too much while calibrating.
   - The lidar detections were not very good. Try collecting detections in areas where there is more resolution.
-  - Check the rviz whether there are some outliers.
