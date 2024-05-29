@@ -50,7 +50,7 @@ Once the data is prepared for calibration, we can apply registration algorithms,
 
 Below, you can see how the algorithm is implemented in the `mapping_based_calibrator` package.
 
-![segment](../docs/images/mapping_based_calibrator/mapping_based_calibrator.jpg)
+![mapping_based_calibrator](../docs/images/mapping_based_calibrator/mapping_based_calibrator.jpg)
 
 ### base-lidar calibration
 
@@ -233,4 +233,10 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 ## Pro tips/recommendations
 
 - For building the map accurately, drive your vehicle at the lowest feasible speed (2 km/h).
-- In order to create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
+- In order to create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions, which shown in the image below. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
+
+- The calibration area is recommended to setup like the image below.
+
+<p align="center">
+    <img src="../docs/images/mapping_based_calibrator/mapping_based_vis.jpg" alt="radar_reflector" width="900">
+<p align="center">
