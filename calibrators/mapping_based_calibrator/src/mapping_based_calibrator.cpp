@@ -377,14 +377,13 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     "mapping_pointcloud", rclcpp::SensorDataQoS().keep_all(),
     std::bind(&CalibrationMapper::mappingPointCloudCallback, mapper_, std::placeholders::_1));
 
-  detected_objects_sub_ =
-    this->create_subscription<autoware_auto_perception_msgs::msg::DetectedObjects>(
-      "detected_objects", rclcpp::SensorDataQoS().keep_all(),
-      std::bind(
-        &ExtrinsicMappingBasedCalibrator::detectedObjectsCallback, this, std::placeholders::_1));
+  detected_objects_sub_ = this->create_subscription<autoware_perception_msgs::msg::DetectedObjects>(
+    "detected_objects", rclcpp::SensorDataQoS().keep_all(),
+    std::bind(
+      &ExtrinsicMappingBasedCalibrator::detectedObjectsCallback, this, std::placeholders::_1));
 
   predicted_objects_sub_ =
-    this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>(
+    this->create_subscription<autoware_perception_msgs::msg::PredictedObjects>(
       "predicted_objects", rclcpp::SensorDataQoS().keep_all(),
       std::bind(
         &ExtrinsicMappingBasedCalibrator::predictedObjectsCallback, this, std::placeholders::_1));
@@ -629,7 +628,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
 }
 
 void ExtrinsicMappingBasedCalibrator::detectedObjectsCallback(
-  const autoware_auto_perception_msgs::msg::DetectedObjects::SharedPtr objects)
+  const autoware_perception_msgs::msg::DetectedObjects::SharedPtr objects)
 {
   // Convert objects into ObjectBB
   ObjectsBB new_objects;
@@ -654,7 +653,7 @@ void ExtrinsicMappingBasedCalibrator::detectedObjectsCallback(
 }
 
 void ExtrinsicMappingBasedCalibrator::predictedObjectsCallback(
-  const autoware_auto_perception_msgs::msg::PredictedObjects::SharedPtr objects)
+  const autoware_perception_msgs::msg::PredictedObjects::SharedPtr objects)
 {
   // Convert objects into ObjectBB
   ObjectsBB new_objects;

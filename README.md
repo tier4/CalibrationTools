@@ -39,7 +39,7 @@ After installing [autoware](https://github.com/tier4/autoware) (please see [sour
 
 ```bash
 cd autoware
-wget https://raw.githubusercontent.com/tier4/CalibrationTools/tier4/universe/calibration_tools.repos
+wget https://raw.githubusercontent.com/tier4/CalibrationTools/tier4/universe/calibration_tools_autoware.repos
 vcs import src < calibration_tools.repos
 rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
@@ -78,7 +78,7 @@ DOCKER_BUILDKIT=1 docker build --ssh default -t ghcr.io/tier4/calibration-tools:
 # Run - Modify if needed
 docker run --gpus all --net=host -e ROS_DOMAIN_ID=$ROS_DOMAIN_ID -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --device=/dev/dri:/dev/dri -it ghcr.io/tier4/calibration-tools:2.0 /bin/bash
 
-# If user encounter some issue like "Authorization required", follow the command below.
+# If user encounters issues like "Authorization required", use one of the alternatives below.
 # Solution 1 (Not recommended):
 xhost +local:docker
 

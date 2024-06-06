@@ -26,8 +26,8 @@
 #include <rclcpp/timer.hpp>
 #include <std_srvs/srv/empty.hpp>
 
-#include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
-#include <autoware_auto_perception_msgs/msg/predicted_objects.hpp>
+#include <autoware_perception_msgs/msg/detected_objects.hpp>
+#include <autoware_perception_msgs/msg/predicted_objects.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -75,14 +75,14 @@ protected:
    * @param[in] objects Calibration pointcloud msg
    */
   void detectedObjectsCallback(
-    const autoware_auto_perception_msgs::msg::DetectedObjects::SharedPtr objects);
+    const autoware_perception_msgs::msg::DetectedObjects::SharedPtr objects);
 
   /*!
    * Message callback for detected objects
    * @param[in] objects Calibration pointcloud msg
    */
   void predictedObjectsCallback(
-    const autoware_auto_perception_msgs::msg::PredictedObjects::SharedPtr objects);
+    const autoware_perception_msgs::msg::PredictedObjects::SharedPtr objects);
 
   /*!
    * Callback to set parameters using the ROS interface
@@ -111,9 +111,9 @@ protected:
   std::map<std::string, ImageSubscription::SharedPtr> calibration_image_subs_;
   std::map<std::string, PointSubscription::SharedPtr> calibration_pointcloud_subs_;
   PointSubscription::SharedPtr mapping_pointcloud_sub_;
-  rclcpp::Subscription<autoware_auto_perception_msgs::msg::DetectedObjects>::SharedPtr
+  rclcpp::Subscription<autoware_perception_msgs::msg::DetectedObjects>::SharedPtr
     detected_objects_sub_;
-  rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr
+  rclcpp::Subscription<autoware_perception_msgs::msg::PredictedObjects>::SharedPtr
     predicted_objects_sub_;
 
   rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
