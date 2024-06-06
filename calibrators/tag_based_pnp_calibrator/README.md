@@ -28,9 +28,9 @@ Below, you can see how the algorithm is implemented in the `tag_based_pnp_calibr
 
 | Name                        | Type                                         | Description                                                                    |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| `camera_info`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the camera. `camera_info` is defined in the launcher. |
-| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections. `lidartag/detections_array` is defined in the launcher.   |
-| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections. `apriltag/detection_array` is defined in the launcher.    |
+| `camera_info`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the camera. |
+| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections published by `lidartag` package.    |
+| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections published by `apriltag_ros` package..    |
 
 ### Output
 

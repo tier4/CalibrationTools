@@ -13,7 +13,7 @@ WORKDIR /workspace
 
 RUN mkdir -p /workspace/src
 
-RUN wget https://raw.githubusercontent.com/tier4/CalibrationTools/tier4/universe/calibration_tools_standalone.repos --directory-prefix=/workspace
+RUN wget https://raw.githubusercontent.com/knzo25/CalibrationTools/feature/new_api_documentation/calibration_tools_standalone.repos --directory-prefix=/workspace
 
 RUN vcs import src < calibration_tools_standalone.repos
 
