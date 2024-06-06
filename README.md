@@ -373,7 +373,7 @@ In the previous Section, we created a new calibrator interface and added it to t
 
 In the case the user wants to integrate his algorithms, he must follow the instructions, which assume the reader knows and is used to creating ROS2 packages.
 
-- Create a ROS2 package called `my_new_calibrator_package`. The node itself needs to be part of a muli-thread executor with at least two threads.
+- Create a ROS2 package called `my_new_calibrator_package`. The node itself needs to be part of a multi-thread executor with at least two threads.
 - Add a dependency to the `tier4_calibration_msgs` package to use the calibration services.
 - In the node's header file add a calibration service.
 - In most cases, creating a group exclusive to the services is also required.
