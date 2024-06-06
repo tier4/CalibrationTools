@@ -68,14 +68,14 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 
 ### Input
 
-| Name                             | Type                                                   | Description                                                                                                                                                          |
-| -------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calibration_camera_info_topics` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. (currently not used)                                 |
-| `calibration_image_topics`       | `sensor_msgs::msg::CompressedImage`                    | Topics of the compressed images for calibration. (currently not used)                                        |
-| `mapping_pointcloud`             | `sensor_msgs::msg::PointCloud2`                        | Topic of the pointcloud used for mapping processes. Recommend to select the lidar that has the highest resolution.  |
-| `calibration_pointcloud_topics`  | `sensor_msgs::msg::PointCloud2`                        | Topics of the pointclouds to calibrate with the `mapping pointcloud`.                                   |
-| `detected_objects`               | `autoware_auto_perception_msgs::msg::DetectedObjects`  | Subscribes to messages containing detected objects, used in the filtering procedure.                                                                                 |
-| `predicted_objects`              | `autoware_auto_perception_msgs::msg::PredictedObjects` | Subscribes to messages that contain predicted object paths and positions, used in the filtering procedure.                                                           |
+| Name                             | Type                                                   | Description                                                                                                        |
+| -------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `calibration_camera_info_topics` | `sensor_msgs::msg::CameraInfo`                         | Intrinsic parameters for the calibration cameras. (currently not used)                                             |
+| `calibration_image_topics`       | `sensor_msgs::msg::CompressedImage`                    | Topics of the compressed images for calibration. (currently not used)                                              |
+| `mapping_pointcloud`             | `sensor_msgs::msg::PointCloud2`                        | Topic of the pointcloud used for mapping processes. Recommend to select the lidar that has the highest resolution. |
+| `calibration_pointcloud_topics`  | `sensor_msgs::msg::PointCloud2`                        | Topics of the pointclouds to calibrate with the `mapping pointcloud`.                                              |
+| `detected_objects`               | `autoware_auto_perception_msgs::msg::DetectedObjects`  | Subscribes to messages containing detected objects, used in the filtering procedure.                               |
+| `predicted_objects`              | `autoware_auto_perception_msgs::msg::PredictedObjects` | Subscribes to messages that contain predicted object paths and positions, used in the filtering procedure.         |
 
 ### Output
 

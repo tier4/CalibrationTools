@@ -48,10 +48,10 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Input
 
-| Name                     | Type                            | Description                                                                                     |
-| ------------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Name                     | Type                            | Description                                |
+| ------------------------ | ------------------------------- | ------------------------------------------ |
 | `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2` | Topic of lidar pointcloud for calibration. |
-| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | Topic of radar objects for calibration.          |
+| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | Topic of radar objects for calibration.    |
 
 ### Output
 
