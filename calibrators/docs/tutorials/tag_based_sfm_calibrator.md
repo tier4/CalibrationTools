@@ -11,7 +11,7 @@ Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 
-Please download the data from [here](https://drive.google.com/drive/folders/1HBKDrLMW-aERfpYSbaI1vRIvNgBhmLuJ).
+Please download the data from [here](https://drive.google.com/drive/folders/1iFPjP_9BgzujqLnzlObT2eM44KAijmEN).
 We provide three types of data:
 
 - intrinsic calibration images for the external camera

@@ -11,7 +11,7 @@ Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 
-Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1e0rajkGfXrKl-6E5oouALdbjeva1c5X1).
+Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1_pGds5HDyt8C55sD2qEH4TJMGzIOCCyV).
 
 The rosbag includes four pointcloud topics published by different lidar sensors and also includes `tf_static` information.
 

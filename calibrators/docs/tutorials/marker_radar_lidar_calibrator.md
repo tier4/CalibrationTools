@@ -11,7 +11,7 @@ Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 
-Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1S3Cz_VomvHBRgiCSt8JCOgN53UGz5TpZ).
+Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1G1n2AV47gbQFKQtlzbHJPeV10m5_uMMk).
 
 The rosabg includes three different topics: `object_raw`, `pointcloud_raw`, and `tf_static`.
 
