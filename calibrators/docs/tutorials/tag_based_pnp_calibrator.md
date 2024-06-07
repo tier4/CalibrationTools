@@ -154,3 +154,4 @@ The images below show that with the calibrated transformation, the projected poi
   - The boards are not appropriate (are bent).
   - The boards moved too much while calibrating.
   - The lidar detections were not very good. Try collecting detections in areas where there is more resolution.
+  - There are some outliers when the user forces the calibrator to detect far-away lidar tags or the quality of the lidar is not good for lidartag detection.
