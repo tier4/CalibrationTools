@@ -26,11 +26,11 @@ Below, you can see how the algorithm is implemented in the `tag_based_pnp_calibr
 
 ### Input
 
-| Name                        | Type                                         | Description                                               |
-| --------------------------- | -------------------------------------------- | --------------------------------------------------------- |
-| `camera_info`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters for the camera.                      |
-| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections published by `lidartag` package.      |
-| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections published by `apriltag_ros` package.. |
+| Name                        | Type                                         | Description                                              |
+| --------------------------- | -------------------------------------------- | -------------------------------------------------------- |
+| `camera_info`               | `sensor_msgs::msg::CameraInfo`               | Intrinsic parameters of the camera.                      |
+| `lidartag/detections_array` | `lidartag_msgs::msg::LidarTagDetectionArray` | Lidartag detections published by `lidartag` package.     |
+| `apriltag/detection_array`  | `apriltag_msgs::msg::AprilTagDetectionArray` | AprilTag detections published by `apriltag_ros` package. |
 
 ### Output
 
