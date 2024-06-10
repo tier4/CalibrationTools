@@ -114,7 +114,7 @@ Note that the ones we used are lidartags of size 0.8 meters. This means the apri
     <img src="../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg"  alt="lidarscan_on_tag" width="500">
 </p>
 
-- It is highly recommended to place the tag perpendicular to the camera as shown in the following image:
+- It is highly recommended to place the tag perpendicular to the lidar as shown in the following image:
 
 <p align="center">
     <img src="../docs/images/tag_based_pnp_calibrator/tag_position.jpg"  alt="tag_position" width="500">
