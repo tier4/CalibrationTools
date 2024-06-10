@@ -23,7 +23,7 @@ Duration:          51.59s
 Start:             Feb  7 2022 14:23:32.345 (1644211412.345)
 End:               Feb  7 2022 14:24:23.404 (1644211463.404)
 Messages:          252554
-Topic information: Topic: /awapi/autoware/put/engage | Type: autoware_auto_vehicle_msgs/msg/Engage | Count: 0 | Serialization Format: cdr
+Topic information: Topic: /awapi/autoware/put/engage | Type: autoware_vehicle_msgs/msg/Engage | Count: 0 | Serialization Format: cdr
                    Topic: /sensing/camera/camera1/camera_info | Type: sensor_msgs/msg/CameraInfo | Count: 489 | Serialization Format: cdr
                    Topic: /sensing/camera/camera1/trigger_time | Type: builtin_interfaces/msg/Time | Count: 497 | Serialization Format: cdr
                    Topic: /sensing/camera/camera6/camera_info | Type: sensor_msgs/msg/CameraInfo | Count: 463 | Serialization Format: cdr
