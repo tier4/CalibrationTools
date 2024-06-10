@@ -10,7 +10,7 @@ The package `mapping_based_calibrator` allows extrinsic calibration between 3d l
 
 ### lidar-lidar calibration
 
-The calibrator is designed to predict the transformation between lidar and lidar sensors. It starts by employing a lidar, referred to as the `mapping lidar`, for mapping purposes, and utilizes pointcloud registration algorithms to calibrate the remaining lidars, known as `calibration lidars`, to the `mapping lidar`. Specifically, the calibration process encompasses three primary steps: constructing a map, calibration data preparation, and finally executing the calibration.
+The calibrator is designed to estimate the transformation between lidar and lidar sensors. It starts by employing a lidar, referred to as the `mapping lidar`, for mapping purposes, and utilizes pointcloud registration algorithms to calibrate the remaining lidars, known as `calibration lidars`, to the `mapping lidar`. Specifically, the calibration process encompasses three primary steps: constructing a map, calibration data preparation, and finally executing the calibration.
 
 A prerequisite for this calibrator is an environment rich in natural landmarks suitable for registration-based mapping in all directions, ensuring that the lidar captures sufficient details beyond simple features like lane surfaces or walls.
 
