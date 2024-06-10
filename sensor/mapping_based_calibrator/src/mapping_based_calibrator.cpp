@@ -377,11 +377,10 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     "mapping_pointcloud", rclcpp::SensorDataQoS().keep_all(),
     std::bind(&CalibrationMapper::mappingPointCloudCallback, mapper_, std::placeholders::_1));
 
-  detected_objects_sub_ =
-    this->create_subscription<autoware_perception_msgs::msg::DetectedObjects>(
-      "detected_objects", rclcpp::SensorDataQoS().keep_all(),
-      std::bind(
-        &ExtrinsicMappingBasedCalibrator::detectedObjectsCallback, this, std::placeholders::_1));
+  detected_objects_sub_ = this->create_subscription<autoware_perception_msgs::msg::DetectedObjects>(
+    "detected_objects", rclcpp::SensorDataQoS().keep_all(),
+    std::bind(
+      &ExtrinsicMappingBasedCalibrator::detectedObjectsCallback, this, std::placeholders::_1));
 
   predicted_objects_sub_ =
     this->create_subscription<autoware_perception_msgs::msg::PredictedObjects>(
