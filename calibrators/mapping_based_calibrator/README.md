@@ -40,7 +40,7 @@ To refine our calibration process, we match each keyframe with the nearest `cali
 
 We use all the frames near a keyframe to augment it using the frames' poses to make sure we have a high-resolution pointcloud. As the resulting pointcloud has redundant information, we downsample the pointlcoud to quite a fine-grained resolution.
 
-#### Step 3: Calibrate
+#### Step 3: Calibration
 
 Once the data is prepared for calibration, we can apply registration algorithms, such as NDT and GICP, to estimate the transformations between pointclouds from the `calibration lidar` and the augmented pointcloud from the `mapping lidar`.
 
@@ -60,7 +60,7 @@ The first step of base-lidar calibration would be the same as [Step 1](#step-1-m
 
 After building the map, we could get the augmented pointcloud from it. The calibrator then utilize PCA and `pcl::SACSegmentation` for ground extraction.
 
-#### Step 3: Calibrate (using Mapping lidar & baselink)
+#### Step 3: Calibration
 
 Finally, we use the initial transformation between baselink and lidar, and the pose from ground model to calculate the transformation between the `base_link` and the `mapping lidar`.
 
@@ -70,12 +70,12 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 
 | Name                             | Type                                              | Description                                                                                                        |
 | -------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `calibration_camera_info_topics` | `sensor_msgs::msg::CameraInfo`                    | Intrinsic parameters for the calibration cameras. (currently not used)                                             |
+| `calibration_camera_info_topics` | `sensor_msgs::msg::CameraInfo`                    | Intrinsic parameters of the calibration cameras. (currently not used)                                              |
 | `calibration_image_topics`       | `sensor_msgs::msg::CompressedImage`               | Topics of the compressed images for calibration. (currently not used)                                              |
 | `mapping_pointcloud`             | `sensor_msgs::msg::PointCloud2`                   | Topic of the pointcloud used for mapping processes. Recommend to select the lidar that has the highest resolution. |
 | `calibration_pointcloud_topics`  | `sensor_msgs::msg::PointCloud2`                   | Topics of the pointclouds to calibrate with the `mapping pointcloud`.                                              |
-| `detected_objects`               | `autoware_perception_msgs::msg::DetectedObjects`  | Subscribes to messages containing detected objects, used in the filtering procedure.                               |
-| `predicted_objects`              | `autoware_perception_msgs::msg::PredictedObjects` | Subscribes to messages that contain predicted object paths and positions, used in the filtering procedure.         |
+| `detected_objects`               | `autoware_perception_msgs::msg::DetectedObjects`  | Messages containing detected objects, used in the filtering procedure.                                             |
+| `predicted_objects`              | `autoware_perception_msgs::msg::PredictedObjects` | Messages that contain predicted object paths and positions, used in the filtering procedure.                       |
 
 ### Output
 
@@ -109,7 +109,7 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | Name                                     | Type                  | Default Value | Description                                                                                                                                                                                  |
 | ---------------------------------------- | --------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `calibrate_base_frame`                   | `bool`                | `false`       | Flag to optionally calibrate the base frame. (base_link).                                                                                                                                    |
-| `base_frame`                             | `std::string`         |               | Frame name of the base frame used in base-lidar. calibration.                                                                                                                                |
+| `base_frame`                             | `std::string`         |               | Frame name of the base frame used in base-lidar calibration.                                                                                                                                 |
 | `map_frame`                              | `std::string`         |               | Frame name of the `map`.                                                                                                                                                                     |
 | `calibration_camera_optical_link_frames` | `std::vector<string>` |               | List of frame names for `calibration camera` . (currently not used)                                                                                                                          |
 | `calibration_lidar_frames`               | `std::vector<string>` |               | List of frame names for `calibration lidars`.                                                                                                                                                |
