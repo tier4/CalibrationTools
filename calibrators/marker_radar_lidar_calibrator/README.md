@@ -24,6 +24,20 @@ After the background models for the lidar and radar are established, we extract 
 
 For foreground lidar points, however, the [reflector](#radar-reflector) detection process involves more steps. We first apply a clustering algorithm, then find the highest point in each cluster, and filter out the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
 
+The images below illustrate the process of radar background model construction and radar foreground extraction that descibed in Step1 and Step2.
+The blue 3d voxels, which shown in 2D grid in the images, denoted as the background voxel if radar objects are in the voxels during the background model construction. Once the background model is constructed, it becomes straightforward to extract the foreground points in the calibration area. For the lidar, the background model and foreground extraction process are the same as the radar process described above.
+
+<table>
+  <tr>
+    <td><img src="../docs/images/marker_radar_lidar_calibrator/background_construction.svg" alt="background_construction" width = 700px height = 300px ></td>
+    <td><img src="../docs/images/marker_radar_lidar_calibrator/foreground_extraction.svg" alt="foreground_extraction" width = 700px height = 300px ></td>
+   </tr>
+   <tr>
+    <td><p style="text-align: center;">Background model contruction.</p></td>
+    <td><p style="text-align: center;">Foreground extraction</p></td>
+  </tr>
+</table>
+
 ### Step 3: Matching and filtering
 
 Since it is not possible to directly differentiate reflector detections, whether there are multiple targets in the calibration area or if the detections are from humans or radar reflectors, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually their the closest matches. Once a match is made, it is evaluated against existing hypotheses (monitored by a Kalman filter): if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is finalized and added to the calibration list.
