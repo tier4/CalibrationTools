@@ -159,4 +159,4 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
   - Make sure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 
 - Which registration algorithm (NDT or GICP) should I select for mapping?
-  - In our previous experiments, GICP gives better result for the mapping but take more time for building the map. On the other hand, NDT is faster but sometime didn't build a accurate map such as when ground points didn't align in a plane.
+  - In our previous experiments, GICP gives better result for the mapping but take more time for building the map. On the other hand, NDT is faster but sometime did not build a accurate map such as when ground points did not align in a plane.
