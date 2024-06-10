@@ -90,8 +90,8 @@ Additionally, the user can click the topics: `lidar_background_pointcloud`, `lid
     <td><img src="../images/marker_radar_lidar_calibrator/lidar_foreground.jpg" alt="lidar_foreground" width = 700px height = 300px ></td>
    </tr>
    <tr>
-    <td><p style="text-align: center;">Lidar background points.</p></td>
-    <td><p style="text-align: center;">Lidar foreground points.</p></td>
+    <td><p style="text-align: center;">Lidar background pointcloud.</p></td>
+    <td><p style="text-align: center;">Lidar foreground pointcloud</p></td>
   </tr>
 </table>
 
@@ -101,8 +101,8 @@ Additionally, the user can click the topics: `lidar_background_pointcloud`, `lid
     <td><img src="../images/marker_radar_lidar_calibrator/radar_foreground.jpg" alt="radar_foreground" width = 700px height = 300px ></td>
    </tr>
    <tr>
-    <td><p style="text-align: center;">Radar background points.</p></td>
-    <td><p style="text-align: center;">Radar foreground points (purple lines).</p></td>
+    <td><p style="text-align: center;">Radar background pointcloud.</p></td>
+    <td><p style="text-align: center;">Radar foreground pointcloud <br>(appearing as lines due to the radar's lack of elevation data).</p></td>
   </tr>
 </table>
 
