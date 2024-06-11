@@ -114,11 +114,16 @@ int main(int argc, char ** argv)
       sensor_msgs::msg::Imu::SharedPtr imu_msg = std::make_shared<sensor_msgs::msg::Imu>();
       serialization_imu.deserialize_message(&msg, imu_msg.get());
       imu_frame_id = imu_msg->header.frame_id;
-      const geometry_msgs::msg::TransformStamped transform =
-        tf_buffer.lookupTransform("base_link", imu_msg->header.frame_id, tf2::TimePointZero);
       geometry_msgs::msg::Vector3Stamped vec_stamped_transformed;
-      vec_stamped_transformed.header = imu_msg->header;
-      tf2::doTransform(imu_msg->angular_velocity, vec_stamped_transformed.vector, transform);
+      try {
+        const geometry_msgs::msg::TransformStamped transform =
+          tf_buffer.lookupTransform("base_link", imu_msg->header.frame_id, tf2::TimePointZero);
+        vec_stamped_transformed.header = imu_msg->header;
+        tf2::doTransform(imu_msg->angular_velocity, vec_stamped_transformed.vector, transform);
+      } catch (const tf2::TransformException & ex) {
+        std::cerr << "Transform exception: " << ex.what() << std::endl;
+        continue;
+      }
       const rclcpp::Time curr_stamp = imu_msg->header.stamp;
       first_stamp = std::min(first_stamp, curr_stamp);
       const double diff_sec = (curr_stamp - first_stamp).seconds();
