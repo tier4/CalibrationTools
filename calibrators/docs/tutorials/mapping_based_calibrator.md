@@ -1,6 +1,6 @@
 # mapping_based_calibrator
 
-In this tutorial, we present a hands-on tutorial of the `mapping_based_calibrator`, in particular, of its lidar-lidar calibration capabilities. Although we provide a pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
+In this tutorial, we present a hands-on tutorial of the `mapping_based_calibrator`, particularly its lidar-lidar calibration capabilities. Although we provide a pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
 General documentation regarding this calibrator can be found [here](../../mapping_based_calibrator/README.md).
 
@@ -15,7 +15,7 @@ Please download the data (rosbag) from [here](https://drive.google.com/drive/fol
 
 The rosbag includes four pointcloud topics published by different lidar sensors and also includes `tf_static` information.
 
-Note that in the real world, enviroment, user should start to record a rosbag with all of the lidar topics and tf topics that are needed, which should be similar with the provided bag. Afterward, the user could start to drive the vehicle and do the calibration with the recorded rosbag.
+Note that in the real-world environment, the user should start to record a rosbag with all of the lidar topics and tf topics that are needed, which should be similar to the provided bag. Afterward, the user could start to drive the vehicle and do the calibration with the recorded rosbag.
 
 ## Environment preparation
 
@@ -60,13 +60,13 @@ Note: In the `/calibration_tools/sensor/sensor_calibration_manager/launch/rdv/ma
 
 ## Data collection (Mapping & Data paring)
 
-Once user have clicked the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT or GICP algorithm with the `mapping lidar`. He can visualize the process of building the map on the `rviz`.
+Once the user clicks the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT or GICP algorithm with the `mapping lidar`. He can visualize the process of building the map on the `rviz`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map1.jpg" alt="menu3">
 </p>
 
-User can also see the log in the console showing that the map is building.
+The user can also see the log in the console showing that the map is building.
 
 ```text
 [mapping_based_calibrator-1] [calibration_mapper]: ROS: New pointcloud. Unprocessed=1 Frames=26 Keyframes=2
@@ -80,7 +80,7 @@ User can also see the log in the console showing that the map is building.
 [mapping_based_calibrator-1] [calibration_mapper]: New frame (id=28 | kid=-1). Distance=2.26 Delta_distance0.11 Delta_time0.10. Unprocessed=0 Frames=29 Keyframes=3
 ```
 
-When the rosbag has finished playing, user should see the pointcloud map and the path of the lidar frames, as shown in the picture below.
+When the rosbag has finished playing, the user should see the pointcloud map and the path of the lidar frames, as shown in the picture below.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map2.jpg" alt="map2">
@@ -159,4 +159,4 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
   - Make sure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 
 - Which registration algorithm (NDT or GICP) should I select for mapping?
-  - In our previous experiments, GICP gives better result for the mapping but take more time for building the map. On the other hand, NDT is faster but sometime did not build a accurate map such as when ground points did not align in a plane.
+  - In our previous experiments, GICP gives better results for the mapping but takes more time to build the map. On the other hand, NDT is faster but sometimes does not build an accurate map such as when ground points do not align in a plane.
