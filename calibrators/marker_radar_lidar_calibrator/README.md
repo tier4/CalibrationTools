@@ -22,7 +22,7 @@ Firstly, given the challenge of reliably detecting reflectors, such as when rada
 
 After the background models for the lidar and radar are established, we extract the foreground points from incoming lidar pointclouds and radar objects that are not in the background voxels. All foreground radar points are automatically categorized as potential reflector detections.
 
-For foreground lidar points, however, the [reflector](#radar-reflector) detection process involves more steps. We first apply a clustering algorithm, then find the highest point in each cluster, and filter out the cluster if the highest point is larger than `reflector_max_height`. Next, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
+For foreground lidar points, however, the [reflector](#radar-reflector) detection process involves more steps. We first apply a clustering algorithm, then find the highest point in each cluster, and filter out the cluster if the highest point exceeds `reflector_max_height`. Next, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
 
 The images below illustrate the process of radar background model construction and radar foreground extraction that descibed in Step1 and Step2.
 The blue 3d voxels, which shown in 2D grid in the images, denoted as the background voxel if radar objects are in the voxels during the background model construction. Once the background model is constructed, it becomes straightforward to extract the foreground points in the calibration area. For the lidar, the background model and foreground extraction process are the same as the radar process described above.
@@ -143,7 +143,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 The type of reflector shown in the image below is crucial for our calibration because it has a highly predictable and consistent response to radar waves. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
-It is recommended that the user build the radar reflector on a tripod, securing it with tape to ensure stability. Additionally, nothing should be attached above the radar reflector; it must be the highest object on the entire calibration target. Additionally, make sure the height of the radar reflector is not larger than the `reflector_max_height` parameter.
+It is recommended that the user build the radar reflector on a tripod, securing it with tape to ensure stability. Additionally, nothing should be attached above the radar reflector; it must be the highest object on the entire calibration target. Additionally, make sure the height of the radar reflector does not exceed `reflector_max_height` parameter.
 
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
