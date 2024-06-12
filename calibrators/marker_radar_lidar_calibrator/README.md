@@ -24,8 +24,8 @@ After the background models for the lidar and radar are established, we extract 
 
 For foreground lidar points, however, the [reflector](#radar-reflector) detection process involves more steps. We first apply a clustering algorithm, then find the highest point in each cluster, and filter out the cluster if the highest point exceeds `reflector_max_height`. Next, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
 
-The images below illustrate the process of radar background model construction and radar foreground extraction that descibed in Step1 and Step2.
-The blue 3d voxels, which shown in 2D grid in the images, denoted as the background voxel if radar objects are in the voxels during the background model construction. Once the background model is constructed, it becomes straightforward to extract the foreground points in the calibration area. For the lidar, the background model and foreground extraction process are the same as the radar process described above.
+The images below illustrate the process of radar background model construction and radar foreground extraction that is described in Step 1 and Step 2.
+The blue 3d voxels, which are shown in a 2D grid in the images, are denoted as the background voxel if radar objects are in the voxels during the background model construction. Once the background model is constructed, it becomes straightforward to extract the foreground points in the calibration area. For the lidar, the background model and foreground extraction process are the same as the radar process described above.
 
 <table>
   <tr>
@@ -40,7 +40,7 @@ The blue 3d voxels, which shown in 2D grid in the images, denoted as the backgro
 
 ### Step 3: Matching and filtering
 
-Since it is not possible to directly differentiate reflector detections, whether there are multiple targets in the calibration area or if the detections are from humans or radar reflectors, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually their the closest matches. Once a match is made, it is evaluated against existing hypotheses (monitored by a Kalman filter): if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is finalized and added to the calibration list.
+Since it is not possible to directly differentiate reflector detections, whether there are multiple targets in the calibration area or if the detections are from humans or radar reflectors, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually their closest matches. Once a match is made, it is evaluated against existing hypotheses (monitored by a Kalman filter): if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is finalized and added to the calibration list.
 
 ### Step 4: Calibration
 
@@ -50,7 +50,7 @@ For the 2d SVD-based method, since radar detections lack a Z component, we conve
 
 The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only rotation, between the sensors. Generally, the 2d calibration is preferred when valid; otherwise, the yaw rotation is used as the calibration output.
 
-It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angle and provides different transformation algorithms.
+It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angles and provides different transformation algorithms.
 
 ### Diagram
 
@@ -143,7 +143,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 The type of reflector shown in the image below is crucial for our calibration because it has a highly predictable and consistent response to radar waves. The triangular shape, often composed of three metal plates arranged in a prism form, ensures that the reflector returns signals in specific, predictable ways.
 
-It is recommended that the user build the radar reflector on a tripod, securing it with tape to ensure stability. Additionally, nothing should be attached above the radar reflector; it must be the highest object on the entire calibration target. Additionally, make sure the height of the radar reflector does not exceed `reflector_max_height` parameter.
+It is recommended that the user build the radar reflector on a tripod, securing it with tape to ensure stability. Additionally, nothing should be attached above the radar reflector; it must be the highest object on the entire calibration target. Additionally, make sure the height of the radar reflector does not exceed the `reflector_max_height` parameter.
 
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
@@ -155,13 +155,13 @@ It is recommended that the user build the radar reflector on a tripod, securing 
 
 - While performing the calibration, the calibrator provides a button to delete any mismatched pairs (e.g., an object detected by both radar and lidar). However, some outliers may not be easily detectable by human eyes, leading to imperfect results as the calibration proceeds even with these anomalies present. Future enhancements will aim to improve outlier detection, thereby refining the calibration accuracy.
 
-- The calibrator should be able to handle different lidar and radar sensors. So far, We calibrated Velodyne VLS-128 lidar sensor, Pandar-40P lidar sensor, and ARS408 radar sensor with good calibration results.
+- The calibrator should be able to handle different lidar and radar sensors. So far, We calibrated the Velodyne VLS-128 lidar sensor, Pandar-40P lidar sensor, and ARS408 radar sensor with good calibration results.
 
 ## Pro tips/recommendations
 
 - While performing the calibration, it is required that all radar reflectors and the radar itself lie on the same plane. The lidar does not have the same limitation.
 - During calibration, place the reflectors at various distances and ensure that the center of the radar reflector faces the radar sensor.
-- The calibration area is recommended to setup like the image below.
+- The calibration area is recommended to be setup like the image below.
 
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_vis.svg" alt="radar_reflector" width="500">

@@ -82,7 +82,7 @@ Also, the following text should be shown in the console.
 [marker_radar_lidar_calibrator]: Finished background model initialization
 ```
 
-Additionally, the user can click the topics: `lidar_background_pointcloud`, `lidar_foreground_pointcloud`, and `radar_background_pointcloud` on the left bar of the `rviz` for visualizing the output of background and foreground pointcloud. As described in the [documentation](../../README.md), the `radar_reflections` is the same as the `radar_foreground_pointcloud`, which is visible as default.
+Additionally, the user can click the topics: `lidar_background_pointcloud`, `lidar_foreground_pointcloud`, and `radar_background_pointcloud` on the left bar of the `rviz` to visualize the output of background and foreground pointcloud. As described in the [documentation](../../README.md), the `radar_reflections` is the same as the `radar_foreground_pointcloud`, which is visible as default.
 
 <table>
   <tr>
@@ -126,7 +126,7 @@ Afterward, if the pair that the user added converges, it will become a converged
 
 As described in the [Step 3: Matching and filtering](../../marker_radar_lidar_calibrator/README.md#step-3-matching-and-filtering) in the general documentation, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. Below, we show examples of good and bad initial calibration.
 
-In both images, the calibrator detects two potential reflectors: a human and a radar reflector (located closer to the bottom of the image). In the good initial calibration image, the blue point from lidar detection will correctly match the radar detection, as they are the closest to each other. However, in the image of bad initial calibration, the blue point will incorrectly match the radar detection of the human.
+In both images, the calibrator detects two potential reflectors: a human and a radar reflector (located closer to the bottom of the image). In a good initial calibration image, the blue point from lidar detection will correctly match the radar detection, as they are the closest to each other. However, in the image of bad initial calibration, the blue point will incorrectly match the radar detection of the human.
 
 <table>
   <tr>
