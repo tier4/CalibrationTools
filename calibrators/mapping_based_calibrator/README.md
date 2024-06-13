@@ -58,11 +58,11 @@ The first step of base-lidar calibration would be the same as [Step 1](#step-1-m
 
 #### Step 2: Extract ground from the pointcloud
 
-After building the map, we could get the augmented pointcloud from it. The calibrator then utilize PCA and `pcl::SACSegmentation` for ground extraction.
+After building the map, we could get the augmented pointcloud from it. The calibrator then utilizes PCA and `pcl::SACSegmentation` for ground extraction.
 
 #### Step 3: Calibration
 
-Finally, we use the initial transformation between baselink and lidar, and the pose from ground model to calculate the transformation between the `base_link` and the `mapping lidar`.
+Finally, we use the initial transformation between baselink and lidar, and the pose from the ground model to calculate the transformation between the `base_link` and the `mapping lidar`.
 
 ## ROS Interfaces
 
@@ -225,13 +225,13 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 ## Known issues/limitations
 
 - As described in [Step 2](#step-2-calibration-data-preparation), the calibrator interpolates the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. Therefore, the calibrator highly requires time synchronization between all of the lidar sensors.
-- It is required that the `mapping lidar` have high resolution. For the `calibration lidar`, both high and low resolutions are acceptable. Therefore, the vehicle with only low resolution lidars couldn't use the calibrator.
-- A good initial calibration parameters is required for the calibrator. Better initial calibration parameters could help the registration algorithm estimate more reliable transformation.
+- It is required that the `mapping lidar` have high resolution. For the `calibration lidar`, both high and low resolutions are acceptable. Therefore, the vehicle with only low-resolution lidars couldn't use the calibrator.
+- A good initial calibration parameters is required for the calibrator. Better initial calibration parameters could help the registration algorithm estimate a more reliable transformation.
 
 ## Pro tips/recommendations
 
 - For building the map accurately, drive your vehicle at the lowest feasible speed, for example, 2 km/h would be a good speed.
-- In order to create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions, which shown in the image below. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
+- In order to create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions, which is shown in the image below. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 
 <p align="center">
     <img src="../docs/images/mapping_based_calibrator/mapping_based_vis.svg" alt="radar_reflector" width="900">
