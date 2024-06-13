@@ -34,10 +34,10 @@ Below, you can see how the algorithm is implemented in the `tag_based_pnp_calibr
 
 ### Output
 
-| Name                   | Type                                             | Description                                          |
-| ---------------------- | ------------------------------------------------ | ---------------------------------------------------- |
-| `filtered_projections` | `visualization_msgs::msg::MarkerArray`           | Publishes the calibration markers for visualization. |
-| `calibration_points`   | `tier4_calibration_msgs::msg::CalibrationPoints` | Publishes the tag points after calibration.          |
+| Name                   | Type                                             | Description                            |
+| ---------------------- | ------------------------------------------------ | -------------------------------------- |
+| `filtered_projections` | `visualization_msgs::msg::MarkerArray`           | Calibration markers for visualization. |
+| `calibration_points`   | `tier4_calibration_msgs::msg::CalibrationPoints` | Tag points after calibration.          |
 
 ### Services
 

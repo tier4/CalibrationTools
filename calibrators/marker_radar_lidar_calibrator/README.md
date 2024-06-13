@@ -69,19 +69,19 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 ### Output
 
-| Name                          | Type                                   | Description                                               |
-| ----------------------------- | -------------------------------------- | --------------------------------------------------------- |
-| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud from lidar.           |
-| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud from lidar.           |
-| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Publishes colored pointcloud clusters from lidar.         |
-| `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes lidar detections.                               |
-| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the background pointcloud from radar.           |
-| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the foreground pointcloud from radar.           |
-| `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Publishes radar detections.                               |
-| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Publishes matched lidar and radar detection.              |
-| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Publishes tracks of reflectors.                           |
-| `text_markers`                | `visualization_msgs::msg::Marker`      | Publishes text markers that show the calibration metrics. |
-| `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Publishes calibration metrics.                            |
+| Name                          | Type                                   | Description                                     |
+| ----------------------------- | -------------------------------------- | ----------------------------------------------- |
+| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from lidar.               |
+| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from lidar.               |
+| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Colored pointcloud clusters from lidar.         |
+| `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Lidar detections.                               |
+| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from radar.               |
+| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from radar.               |
+| `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Radar detections.                               |
+| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Matched lidar and radar detection.              |
+| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Tracks of reflectors.                           |
+| `text_markers`                | `visualization_msgs::msg::Marker`      | Text markers that show the calibration metrics. |
+| `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Calibration metrics.                            |
 
 ### Services
 

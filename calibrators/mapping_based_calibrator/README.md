@@ -79,19 +79,19 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 
 ### Output
 
-| Name                              | Type                                   | Description                                                                                                                                               |
-| --------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `output_map`                      | `sensor_msgs::msg::PointCloud2`        | Publishes the output map constructed from the `mapping_pointcloud`, providing visualization in rviz.                                                      |
-| `frame_path`                      | `nav_msgs::msg::Path`                  | Publishes the actual path of `mapping_pointcloud`, providing visualization in rviz.                                                                       |
-| `frame_predicted_path`            | `nav_msgs::msg::Path`                  | Publishes the predicted path of `mapping_pointcloud`, providing visualization in rviz.                                                                    |
-| `keyframe_path`                   | `nav_msgs::msg::Path`                  | Publishes the keyframe path of `mapping_pointcloud`, providing visualization in rviz.                                                                     |
-| `keyframe_markers`                | `visualization_msgs::msg::MarkerArray` | Publishes markers for keyframes, providing visualization in rviz.                                                                                         |
-| `initial_source_aligned_map`      | `sensor_msgs::msg::PointCloud2`        | Publishes initial map from calibration lidars, providing visualization in rviz.                                                                           |
-| `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Publishes calibrated map from calibration lidars, providing visualization in rviz.                                                                        |
-| `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Publishes target map from `mapping lidar`, used for comparing with the `calibrated_source_aligned_map` and `target_map`, providing visualization in rviz. |
-| `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Publishes markers for camera calibrator (currently not used)                                                                                              |
-| `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Publishes the ground pointcloud from initial pointcloud.                                                                                                  |
-| `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | Publishes the ground pointcloud from calibrated pointcloud.                                                                                               |
+| Name                              | Type                                   | Description                                                                                                                                     |
+| --------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `output_map`                      | `sensor_msgs::msg::PointCloud2`        | Output map constructed from the `mapping_pointcloud`, providing visualization in rviz.                                                          |
+| `frame_path`                      | `nav_msgs::msg::Path`                  | Actual path of `mapping_pointcloud`, providing visualization in rviz.                                                                           |
+| `frame_predicted_path`            | `nav_msgs::msg::Path`                  | Predicted path of `mapping_pointcloud`, providing visualization in rviz.                                                                        |
+| `keyframe_path`                   | `nav_msgs::msg::Path`                  | Keyframe path of `mapping_pointcloud`, providing visualization in rviz.                                                                         |
+| `keyframe_markers`                | `visualization_msgs::msg::MarkerArray` | Markers for keyframes, providing visualization in rviz.                                                                                         |
+| `initial_source_aligned_map`      | `sensor_msgs::msg::PointCloud2`        | Initial map from calibration lidars, providing visualization in rviz.                                                                           |
+| `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Calibrated map from calibration lidars, providing visualization in rviz.                                                                        |
+| `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Target map from `mapping lidar`, used for comparing with the `calibrated_source_aligned_map` and `target_map`, providing visualization in rviz. |
+| `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Markers for camera calibrator (currently not used)                                                                                              |
+| `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Ground pointcloud from initial pointcloud.                                                                                                      |
+| `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | Ground pointcloud from calibrated pointcloud.                                                                                                   |
 
 ### Services
 
