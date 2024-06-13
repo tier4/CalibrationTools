@@ -40,7 +40,7 @@ The blue 3d voxels, which are shown in a 2D grid in the images, are denoted as t
 
 ### Step 3: Matching and filtering
 
-Since it is not possible to directly differentiate reflector detections, whether there are multiple targets in the calibration area or if the detections are from humans or radar reflectors, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually their closest matches. Once a match is made, it is evaluated against existing hypotheses (monitored by a Kalman filter): if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is finalized and added to the calibration list.
+Since it is not possible to directly differentiate reflector detections, whether there are multiple targets in the calibration area or if the detections are from humans or radar reflectors, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually their closest matches. Once a match is made, it is evaluated against existing hypotheses (monitored by a Kalman filter): if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is added to the calibration list.
 
 ### Step 4: Calibration
 
