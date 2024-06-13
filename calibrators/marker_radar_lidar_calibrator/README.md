@@ -48,7 +48,7 @@ After matching detection pairs from the sensors, we can compute the transformati
 
 For the 2d SVD-based method, since radar detections lack a z component, we reduce the problem to 2d by setting the z component of lidar detections to zero. We then estimate the transformation using the SVD method provided by PCL.
 
-The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only rotation, between the sensors. Generally, the 2d calibration is preferred when valid; otherwise, the yaw rotation is used as the calibration output.
+The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only yaw rotation, between the sensors. Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
 
 It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angles and provides different transformation algorithms.
 
