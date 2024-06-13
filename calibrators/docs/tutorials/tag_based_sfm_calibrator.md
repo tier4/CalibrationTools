@@ -64,7 +64,7 @@ Vehicles have suspension systems that make the `base_link` definition an ambiguo
 
 ### External camera
 
-To construct the SfM graph and ultimately connect the calibration sensor (in this case a lidar) with the wheel tags, we make use of an additional camera, which we dub the `external camera`. In principle, the camera can be of any nature as long as it has fixed intrinsics parameters during the experiment. We have so far used Nikon DSLR cameras with good results, but have had also good results with certain point-and-shoot cameras.
+To construct the SfM graph and ultimately connect the calibration sensor (in this case a lidar) with the wheel tags, we make use of an additional camera, which we dub the `external camera`. In principle, the camera can be of any nature as long as it has fixed intrinsics parameters during the experiment. We have so far used Nikon DSLR cameras with good results, but have had also good results with certain point-and-shoot cameras. <!--cSpell:ignore DSLRs -->
 
 Note: we assume the user knows how to use a camera and make no attempt at explaining camera fundamentals in this tutorial.
 

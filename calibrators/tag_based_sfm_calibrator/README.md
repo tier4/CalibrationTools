@@ -64,6 +64,8 @@ Base calibration, on the other hand, can not be directly formulated as a sensor 
 
 ### Core Parameters
 
+<!--cSpell:ignore nthreads -->
+
 | Name                                                        | Type                       | Default Value | Description                                                                                                                                     |
 | ----------------------------------------------------------- | -------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `publish_tfs`                                               | `bool`                     |               | Flag to optionally publish the resulting calibration as tfs                                                                                     |
@@ -125,7 +127,7 @@ Base calibration, on the other hand, can not be directly formulated as a sensor 
 | `apriltag.max_homography_error`                             | `double`                   |               | The maximum allowed homography error for apriltag detection                                                                                     |
 | `apriltag.quad_decimate`                                    | `double`                   |               | The decimation factor for quad detection in apriltag detection                                                                                  |
 | `apriltag.quad_sigma`                                       | `double`                   |               | The sigma value for quad detection in apriltag detection                                                                                        |
-| `apriltag.nthreads` <!--cSpell:ignore DSLRs -->             | `int`                      |               | The number of threads to use for apriltag detection                                                                                             |
+| `apriltag.nthreads`                                         | `int`                      |               | The number of threads to use for apriltag detection                                                                                             |
 | `apriltag.debug`                                            | `bool`                     |               | Flag to enable debug mode in apriltag detection                                                                                                 |
 | `apriltag.refine_edges`                                     | `bool`                     |               | Flag to enable edge refinement in apriltag detection                                                                                            |
 
@@ -206,7 +208,7 @@ Any board that can be used for this purpose is acceptable but circle-patterned c
 
 ## References/External links
 
-[1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021. <!--cSpell:ignore Jiunn,Shoutian,Maani,Ghaffari,Maani -->
+[1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021. <!--cSpell:ignore Jiunn,Shoutian,Jessy,Ghaffari,Maani -->
 
 ## Known issues/limitations
 

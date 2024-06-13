@@ -71,6 +71,8 @@ After selecting the `evaluation` and pressing `Start`, the process is analogous 
 
 In order to perform intrinsic calibration, images from the target camera are needed, and to load them, the `intrinsic_calibration_calibrator` tool implemented 3 methods:
 
+<!-- cSpell:ignore ROS2 -->
+
 - ROS2 topics
 - ROS2 bags
 - Image files
