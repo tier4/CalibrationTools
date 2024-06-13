@@ -125,7 +125,7 @@ Base calibration, on the other hand, can not be directly formulated as a sensor 
 | `apriltag.max_homography_error`                             | `double`                   |               | The maximum allowed homography error for apriltag detection                                                                                     |
 | `apriltag.quad_decimate`                                    | `double`                   |               | The decimation factor for quad detection in apriltag detection                                                                                  |
 | `apriltag.quad_sigma`                                       | `double`                   |               | The sigma value for quad detection in apriltag detection                                                                                        |
-| `apriltag.nthreads`                                         | `int`                      |               | The number of threads to use for apriltag detection                                                                                             |
+| `apriltag.nthreads` <!--cSpell:ignore DSLRs -->             | `int`                      |               | The number of threads to use for apriltag detection                                                                                             |
 | `apriltag.debug`                                            | `bool`                     |               | Flag to enable debug mode in apriltag detection                                                                                                 |
 | `apriltag.refine_edges`                                     | `bool`                     |               | Flag to enable edge refinement in apriltag detection                                                                                            |
 
@@ -164,7 +164,7 @@ Ground tags are essential during the calibration of the `base_link` since it def
 Considerations:
 
 - The surface (ground) in which the vehicle and the ground tags are placed need to be as flat as possible (plane).
-- For this particular tag, the width of the tag is relevant. If it can not be assumed to be null, the final `base_link` pose needs to be offsetted manually.
+- For this particular tag, the width of the tag is relevant. If it can not be assumed to be null, the final `base_link` pose needs to be offset manually.
 - The ground tags can be printed using normal paper and when attached via tape to the floor. The user needs to be careful not to move them during the experiment while talking.
 - The ground tags can be laminated for reuse, but the reflections caused by it can make it difficult or impossible to detect.
   Auxiliary tag
@@ -181,7 +181,7 @@ The role of the external camera is to connect the sensors and their detections c
 Considerations:
 
 - The camera must behave like a pinhole + distortion model. That is to say, the lenses must be "fixed" during the experiment.
-- The highest "real" resolution the better. So far we have tried with Nikon DSLRs (half frame) with moving and fixed lenses, and a simple point-and-shot camera.
+- The highest "real" resolution the better. So far we have tried with Nikon DSLRs (half frame) with moving and fixed lenses, and a simple point-and-shot camera. <!--cSpell:ignore DSLRs -->
 - In the pro-tips / recommendations section, more suggestions regarding the camera settings have been provided.
 
 ### Initial (external) camera intrinsics calibration board
@@ -206,7 +206,7 @@ Any board that can be used for this purpose is acceptable but circle-patterned c
 
 ## References/External links
 
-[1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021.
+[1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021. <!--cSpell:ignore Jiunn,Shoutian,Maani,Ghaffari,Maani -->
 
 ## Known issues/limitations
 

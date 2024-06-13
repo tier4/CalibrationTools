@@ -104,7 +104,7 @@ docker run --gpus all --net=host \
 
 | Name                                | Sensors calibrated | Feature type                | Calibration type   | Documentation                                               | Tutorial                                                            |
 | ----------------------------------- | ------------------ | --------------------------- | ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------- |
-| ground plane calibrator             | base-lidar         | ground                      | roll, pitch, z     | [Link](calibrators/ground_plane_calibrator/README.md)       | N/A                                                                 |
+| ground plane calibrator             | base-lidar         | ground                      | roll, pitch, z     |                                                             | N/A                                                                 |
 | interactive camera-lidar calibrator | camera-lidar       | manual correspondences      | full pose          | Link                                                        | N/A                                                                 |
 | lidar-lidar 2d calibrator           | lidar-lidar        | natural features            | x, y, yaw          | Link                                                        | N/A                                                                 |
 | mapping calibrator (lidar-lidar)    | lidar-lidar        | natural features            | full pose          | [Link](calibrators/mapping_based_calibrator/README.md)      | [Link](calibrators/docs/tutorials/mapping_based_calibrator.md)      |
