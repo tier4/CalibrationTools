@@ -33,7 +33,7 @@ The blue 3d voxels, which are shown in a 2D grid in the images, are denoted as t
     <td><img src="../docs/images/marker_radar_lidar_calibrator/foreground_extraction.svg" alt="foreground_extraction" width = 700px height = 300px ></td>
    </tr>
    <tr>
-    <td><p style="text-align: center;">Background model contruction.</p></td>
+    <td><p style="text-align: center;">Background model construction.</p></td>
     <td><p style="text-align: center;">Foreground extraction</p></td>
   </tr>
 </table>

@@ -176,7 +176,7 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `calibration_use_only_last_frames`           | `bool`   | `false`       | Consider only the last frames for calibration.                                                                                                |
 | `max_calibration_range`                      | `double` | `80.0`        | Maximum range in meters to consider for calibration purposes, defining the spatial boundary for calibration data.                             |
 | `min_calibration_range`                      | `double` | `1.5`         | Minimum range in meters to consider for calibration purposes, defining the spatial boundary for calibration data.                             |
-| `calibration_min_pca_eigenvalue`             | `double` | `0.25`        | If the eigenvalue of a pointlcoud is less than this value, it will be filtered.                                                               |
+| `calibration_min_pca_eigenvalue`             | `double` | `0.25`        | If the eigenvalue of a pointcloud is less than this value, it will be filtered out.                                                           |
 | `calibration_min_distance_between_frames`    | `double` | `5.0`         | Threshold for the minimum distance in meters between frames.                                                                                  |
 | `calibration_eval_max_corr_distance`         | `double` | `0.1`         | Maximum correspondence distance in meters for source pointcloud and target pointcloud.                                                        |
 
