@@ -102,7 +102,7 @@ Additionally, the user can click the topics: `lidar_background_pointcloud`, `lid
    </tr>
    <tr>
     <td><p style="text-align: center;">Radar background pointcloud.</p></td>
-    <td><p style="text-align: center;">Radar foreground pointcloud <br>(appearing as lines due to the radar's lack of elevation data).</p></td>
+    <td><p style="text-align: center;">Radar foreground pointcloud (shown in purple lines). <br>The pointcloud appears as lines due to the radar's lack of elevation data.</p></td>
   </tr>
 </table>
 
