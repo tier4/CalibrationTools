@@ -44,7 +44,7 @@ Since it is not possible to directly differentiate reflector detections, whether
 
 ### Step 4: Calibration
 
-After matching detection pairs from the sensors, we can compute the transformation between them using estimation algorithms. Currently, we support two methods: a 2d SVD-based approach and a yaw-only rotation approach.
+After matching detection pairs from the sensors, we can compute the transformation between them using rigid transformation estimation algorithms. Currently, we support two methods: a 2d SVD-based approach and a yaw-only rotation approach.
 
 For the 2d SVD-based method, since radar detections lack a z component, we reduce the problem to 2d by setting the z component of lidar detections to zero. We then estimate the transformation using the SVD method provided by PCL.
 
