@@ -97,12 +97,12 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 
 ### Services
 
-| Name                    | Type                                                  | Description                                                                                          |
-| ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes.             |
-| `stop_mapping`          | `std_srvs::srv::Empty`                                | `mapping_pointcloud` stop to construct a map through this service, afterward calibration will start. |
-| `load_database`         | `std_srvs::srv::Empty`                                | Load lidar and camera calibration frames from the database. (currently not used)                     |
-| `save_database`         | `std_srvs::srv::Empty`                                | Save lidar and camera calibration frames to the database. (currently not used)                       |
+| Name                    | Type                                                  | Description                                                                              |
+| ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
+| `stop_mapping`          | `std_srvs::srv::Empty`                                | Stop building the map; calibration will begin afterward.                                 |
+| `load_database`         | `std_srvs::srv::Empty`                                | Loads lidar and camera calibration frames from the database. (currently not used)        |
+| `save_database`         | `std_srvs::srv::Empty`                                | Saves lidar and camera calibration frames to the database. (currently not used)          |
 
 ## Parameters
 
