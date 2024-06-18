@@ -212,7 +212,7 @@ In the UI of the X2 project, three different TF trees are displayed: `Initial TF
     <img src="../images/marker_radar_lidar_calibrator/menu4.jpg" alt="menu4"  width="500">
 </p>
 
-To evaluate the calibration result, the user can measure that the calibrated radar points (green) are closer than the initial radar points (red) to the lidar points (white).
+To evaluate the calibration result, the user can measure that the calibrated radar objects (green) are closer than the initial radar objects (red) to the lidar points (white).
 
 ## FAQ
 
