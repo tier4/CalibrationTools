@@ -160,8 +160,7 @@ It is recommended that the user build the radar reflector on a tripod and ensure
 ## Pro tips/recommendations
 
 - During calibration, all radar reflectors and the radar itself must lie on the same plane. This requirement does not apply to the lidar.
-- Position the reflectors at various distances, and ensure the center of each radar reflector always faces the radar sensor.
-- It is recommended to set up the calibration area as shown in the image below.
+- Position the reflectors at various locations within the lidar's and radar's field of view (FOV). Additionally, ensure that the center of each radar reflector always faces the radar sensor, as illustrated in the image below.
 
 <p align="center">
     <img src="../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_vis.svg" alt="radar_reflector" width="500">
