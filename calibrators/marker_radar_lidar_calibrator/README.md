@@ -71,12 +71,12 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 | Name                          | Type                                   | Description                                     |
 | ----------------------------- | -------------------------------------- | ----------------------------------------------- |
-| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from lidar.               |
-| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from lidar.               |
-| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Colored pointcloud clusters from lidar.         |
+| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from the lidar.           |
+| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from the lidar.           |
+| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Colored pointcloud clusters from the lidar.     |
 | `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Lidar detections.                               |
-| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from radar.               |
-| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from radar.               |
+| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from the radar.           |
+| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from the radar.           |
 | `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Radar detections.                               |
 | `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Matched lidar and radar detection.              |
 | `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Tracks of reflectors.                           |
