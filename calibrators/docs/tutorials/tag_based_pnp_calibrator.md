@@ -140,7 +140,7 @@ The images below show that with the calibrated transformation, the projected poi
 
 - Why doesn't the UI launch?
 
-  - Check with `ros2 node list` if the relevant nodes have been started. It is possible that the provided parameters don’t match any of the valid arguments.
+  - Check with `ros2 node list` if the relevant nodes have been started. It is possible that the provided parameters do not match any of the valid arguments.
   - If the UI crashes (check the console for details), it is probably due to a bad PySide installation, invalid intrinsic parameters, invalid extrinsic parameters, etc.
   - The timestamps of the lidar and camera are not synchronized.
 

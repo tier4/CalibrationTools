@@ -58,7 +58,7 @@ If it does not become available, it means that either the required `tf` or servi
 
 Once the user starts running the tutorial rosbag, the pointcloud should appear in `rviz` as shown in the example below. Press the `Extract Background Model button` in the UI to start extracting the background.
 
-Note that the user should put the radar reflector out of the calibration area before clicking the button. Ideally, there shouldn't be any moving objects like humans and vehicles in the calibration area.
+Note that the user should remove the radar reflector from the calibration area before clicking the button. Ideally, there should not be any moving objects, such as humans or vehicles, in the calibration area.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
