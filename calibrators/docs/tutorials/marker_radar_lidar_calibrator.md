@@ -64,13 +64,13 @@ Note that the user should remove the radar reflector from the calibration area b
     <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
 </p>
 
-Once the user clicks the button, it will show like the image below.
+Once the user clicks the button, the result will appear as shown in the image below.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz2.jpg" alt="rviz2" width="500">
 </p>
 
-Once the background is extracted, it will show like the image below. The user can see that the `Add lidar-radar pair` button is enabled.
+Once the background is extracted, the result will appear as shown in the image below. The user can see that the `Add lidar-radar pair` button is enabled.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/rviz3.jpg" alt="rviz3" width="500">
