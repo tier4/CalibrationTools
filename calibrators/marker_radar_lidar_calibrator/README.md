@@ -16,7 +16,7 @@ Specifically, the calibration process consists of four primary steps: constructi
 
 ### Step 1: Background model construction
 
-Given the challenge of reliably detecting reflectors, such as when radar outputs numerous objects making it difficult to identify the reflector among them, background models for both lidar and radar are constructed from the lidar pointclouds and radar objects within a user-defined calibration area, which lacks any calibration targets (such as radar reflectors). More specifically, these background models consist of uniform binary voxel grids that denote whether each voxel represents the background.
+Given the challenge of reliably detecting reflectors, such as when the radar outputs numerous objects, making it difficult to identify the reflector among them, background models for both lidar and radar are constructed from the lidar pointclouds and radar objects within a user-defined calibration area, which lacks any calibration targets (such as radar reflectors). More specifically, these background models consist of uniform binary voxel grids that denote whether each voxel represents the background.
 
 ### Step 2: Foreground extraction and reflector detection
 
