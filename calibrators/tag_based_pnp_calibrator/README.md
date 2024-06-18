@@ -90,7 +90,7 @@ Below, you can see how the algorithm is implemented in the `tag_based_pnp_calibr
 
 To perform camera-lidar calibration using this tool, it is necessary to prepare lidartags and lidars with intensity measures. To ensure that no objects obstruct the tag detection and to achieve the most stable detection possible, it is highly recommended to also prepare fixed mounts for these tags, as shown below.
 
-Note that the ones we used are lidartags of size 0.8 meters. This means the apriltags payload is 0.6 meters. We have also tried with lidartags of sizes 0.6 meters, but to use them the user needs to set several parameters by himself.
+Note that the lidartags we used have a size of 0.8 meters (edge size). This means their apriltag payload is 0.6 meters (black frame's edge size). We have also tried with lidartags with smaller sizes (e.g., 0.6 meters), but to use them the user needs to set several parameters by himself.
 
 <p align="center">
     <img src="../docs/images/tag_based_pnp_calibrator/lidartag-mount.jpg"  alt="lidartag-mount" width="500">
