@@ -153,7 +153,7 @@ It is recommended that the user mount the radar reflector on a tripod and ensure
 
 ## Known issues/limitations
 
-- While extracting the background model, ensure that the radar reflectors are not in the calibration area and that no one is moving around in the area.
+- While extracting the background model, ensure that no reflector, person, or moving object is present in the calibration area.
 
 - The calibrator provides a button to delete any mismatched pairs (e.g., an object detected by both radar and lidar). However, some outliers may not be easily detectable by human eyes, leading to imperfect results as the calibration proceeds even with these anomalies present. Future enhancements will aim to improve outlier detection, thereby refining the calibration accuracy.
 
