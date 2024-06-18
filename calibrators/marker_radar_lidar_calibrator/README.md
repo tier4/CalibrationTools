@@ -12,7 +12,7 @@ Currently, the calibrator only supports radars whose detection interface include
 
 The calibrator is designed to estimate the transformation between radar and lidar sensors. It starts by pinpointing the central points of reflectors within lidar pointclouds and radar objects, then aligns these points for precise matching. An SVD-based and a yaw-only rotation estimation algorithm are applied to these matched points to estimate the transformation.
 
-Specifically, the calibration process consists of four primary steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering lidar and radar detections, and finally executing the calibration process.
+Specifically, the calibration process consists of four primary steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering lidar and radar detections, and finally estimating rigid transformation.
 
 ### Step 1: Background model construction
 
@@ -42,7 +42,7 @@ The blue 3d voxels, which are shown in a 2D grid in the images, are denoted as t
 
 Since it is not possible to directly differentiate individual reflector detections, discern the number of targets in the calibration area, nor determine if the detections correspond to humans or radar reflectors, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually their closest matches. Once a match is made, it is evaluated against existing hypotheses (monitored by a Kalman filter): if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is added to the calibration list.
 
-### Step 4: Calibration
+### Step 4: Rigid transformation estimation
 
 After matching detection pairs from the sensors, we can compute the transformation between them using rigid transformation estimation algorithms. Currently, we support two methods: a 2d SVD-based approach and a yaw-only rotation approach.
 
