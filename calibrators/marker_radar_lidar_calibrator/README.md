@@ -44,11 +44,13 @@ Since it is not possible to directly differentiate individual reflector detectio
 
 ### Step 4: Rigid transformation estimation
 
-After matching detection pairs from the sensors, we can compute the transformation between them using rigid transformation estimation algorithms. Currently, we support two methods: a 2d SVD-based approach and a yaw-only rotation approach.
+After matching detection pairs, we first transform the lidar detections to radar parallel frame since we only estimate 2d transformations, which will be explained later. Then, we apply rigid transformation estimation algorithms between the lidar detections in the radar parallel frame and the radar detections in the radar frame. This allows us to estimate the transformation between lidar and radar by multiplying the radar-to-radar parallel transformation with the radar-parallel-to-lidar transformation.
+
+Currently, we support two rigid transformation estimation algorithms: a 2D SVD-based approach and a yaw-only rotation approach.
 
 For the 2d SVD-based method, since radar detections lack a z component, we reduce the problem to 2d by setting the z component of lidar detections to zero. We then estimate the rigid transformation using the SVD-based method provided by PCL, which leverages SVD to find the optimal rotation component and then calculates the translation component based on the rotation.
 
-The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only yaw rotation, between the sensors. Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
+The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only yaw rotation, between the radar and radar parallel coordinate. Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
 
 It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angles and provides different transformation algorithms.
 
