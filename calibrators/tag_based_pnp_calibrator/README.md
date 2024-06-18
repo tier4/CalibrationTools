@@ -105,6 +105,9 @@ Note that the lidartags we used have a size of 0.8 meters (edge size). This mean
 ## Known issues/limitations
 
 - The tool uses a basic OpenCV camera model for calibration (plumb bomb).
+- The tool uses a basic OpenCV camera model for calibration (plumb bomb).
+- Only lidars with an intensity channel can be used (lidartag requirement).
+- Only traditional lidars with a rotational scan pattern are compatible (other lidars may be compatible but we provide no guarantees).
 
 ## Pro tips/recommendations
 
