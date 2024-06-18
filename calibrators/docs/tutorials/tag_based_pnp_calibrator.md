@@ -130,7 +130,7 @@ The images below show that with the calibrated transformation, the projected poi
 
 ## FAQ
 
-- Why doesn't the calibrator add calibration pairs?
+- Why doesn't the tool add calibration pairs?
 
   - One possible reason is that the current pair is too close to previously collected data. In that case, the current data is not accepted.
   - The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue but is not recommended as a long-term solution.
