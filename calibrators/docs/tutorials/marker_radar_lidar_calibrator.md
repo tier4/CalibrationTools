@@ -126,7 +126,7 @@ Afterward, if the pair that the user added converges, it will become a converged
 
 As described in the [Step 3: Matching and filtering](../../marker_radar_lidar_calibrator/README.md#step-3-matching-and-filtering) in the general documentation, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. Below, we show examples of good and bad initial calibration.
 
-In both images, the calibrator detects two potential reflectors: a human and a radar reflector (located closer to the bottom of the image). In a good initial calibration image, the blue point from lidar detection will correctly match the radar detection, as they are the closest to each other. However, in the image of bad initial calibration, the blue point will incorrectly match the radar detection of the human.
+In both images, the calibrator detects one lidar detection (blue points) and two radar detections (purple lines). The radar detections identify two potential reflectors: a human and a radar reflector (located closer to the bottom of the image). In the good initial calibration image, the blue point from lidar detection will correctly match the radar detection, as they are the closest to each other. However, in the image of bad initial calibration, the lidar detection will incorrectly match the radar detection of the human.
 
 <table>
   <tr>
