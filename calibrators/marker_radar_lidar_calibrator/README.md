@@ -50,7 +50,7 @@ Currently, we support two rigid transformation estimation algorithms: a 2D SVD-b
 
 For the 2d SVD-based method, since radar detections lack a z component, we reduce the problem to 2d by setting the z component of lidar detections to zero. We then estimate the rigid transformation using the SVD-based method provided by PCL, which leverages SVD to find the optimal rotation component and then calculates the translation component based on the rotation.
 
-The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only yaw rotation, between the radar and radar parallel coordinate. Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
+The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only yaw rotation, between the radar and radar parallel frame. Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
 
 It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angles and provides different transformation algorithms.
 
