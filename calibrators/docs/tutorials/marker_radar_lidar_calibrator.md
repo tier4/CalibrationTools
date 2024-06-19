@@ -110,7 +110,7 @@ Additionally, the user can click the topics: `lidar_background_pointcloud`, `lid
 
 After the background model has been extracted, the user can carry the radar reflector (with the tripod) and place it in the [calibration area](../../marker_radar_lidar_calibrator/README.md#pro-tipsrecommendations). Once the reflector is positioned, the user should move away from it. In the tutorial rosbag, the user will see that both the human and the radar reflector (with tripod) are identified as foreground objects in the image below.
 
-In the image, the colored points represent different lidar foreground clusters. The purple lines indicate radar foreground detections, appearing as lines due to the radar's lack of elevation data, making the z-axis unknown. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud. The blue points did not appear on the human figure because the calibrator filters out clusters where the highest point in the cluster exceeds the specified threshold.
+In the image, the colored points represent different lidar foreground clusters. The purple lines indicate radar foreground detections, appearing as lines due to the radar's lack of elevation data, making the z-axis unknown. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud. There is no blue point on the human cluster because the calibrator filters out clusters where the highest point in the cluster exceeds the specified threshold.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/add1.jpg" alt="add1" width="300" height="300">
