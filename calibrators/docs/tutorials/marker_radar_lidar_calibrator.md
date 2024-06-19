@@ -176,7 +176,7 @@ Consider the left-top subplot, which plots the cross-validation errors for dista
 
 ### Send calibration
 
-The user can click the `Send calibration` button once it is enabled. However, it is recommended to stop the calibration when the line in the cross-validation error is converged. Therefore, in this tutorial, we run the calibration process until the bag is finished. Once the calibration is ended, the console should show a similar result as below.
+The user can click the `Send calibration` button once it is enabled. However, it is recommended to stop the calibration when the curve in the cross-validation error is converged. Therefore, in this tutorial, we run the calibration process until the bag is finished. Once the calibration is ended, the console should show a similar result as below.
 
 ```text
 [marker_radar_lidar_calibrator]: Initial calibration error: detection2detection.distance=0.3279m yaw=1.5119 degrees
@@ -230,7 +230,7 @@ To evaluate the calibration result, the user can measure that the calibrated rad
 
 - When can I stop the calibration process?
 
-  - It is recommended to stop the calibration when the line in the cross-validation error is converged.
+  - It is recommended to stop the calibration when the curve in the cross-validation error is converged.
   - With more matched pairs without outliers, the calibration result should improve if the number of pairs increases.
 
 - In the cross-validation plot, why does the standard deviation for a sample size of 3 increase significantly when the overall sample size increases?
