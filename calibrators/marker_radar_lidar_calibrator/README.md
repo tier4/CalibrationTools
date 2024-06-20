@@ -20,7 +20,7 @@ Given the challenge of reliably detecting reflectors, such as when the radar out
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are constructed, we compare the incoming lidar pointcloud and radar objects with the background model, extract those that do not belong to background voxels, and call them foreground lidar points and foreground radar objects.
+After the background models for the lidar and radar are constructed, we compare the incoming lidar pointcloud and radar objects with the background model, extract those that do not belong to background voxels, and call them foreground lidar points and foreground radar objects. Additionally, we apply ground segmentation to filter out some foreground lidar points and foreground radar objects caused by changes in the vehicle's pitch, as these ground points and objects may not be included in the background model.
 
 All foreground radar objects are automatically categorized as potential reflector detections. For foreground lidar points, however, the [reflector](#radar-reflector) detection process involves more steps. We first apply a clustering algorithm on the lidar foreground points, then find the highest point in each cluster, and filter out the cluster if the highest point exceeds `reflector_max_height`. Next, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
 
