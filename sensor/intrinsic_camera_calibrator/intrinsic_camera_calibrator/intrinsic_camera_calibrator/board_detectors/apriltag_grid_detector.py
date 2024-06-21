@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ class Detector(_Detector):
     def __del__(self):
         if self.tag_detector_ptr is not None:
             # destroy the detector
-            self.libc.apriltag_detector_destroy.restype = None
+            self.libc.apriltag_detector_destroy.restype = None  # cSpell:ignore libc
             self.libc.apriltag_detector_destroy(self.tag_detector_ptr)
 
             # destroy the tag families
@@ -84,7 +84,6 @@ class ApriltagGridDetector(BoardDetector):
         self.current_refine_edges = None
         self.current_decode_sharpening = None
         self.current_debug = None
-        pass
 
     def detect(self, img, stamp):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""

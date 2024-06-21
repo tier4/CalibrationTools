@@ -19,6 +19,10 @@ repositories:
     type: git
     url: https://github.com/astuff/astuff_sensor_msgs.git
     version: 3.2.0
+  core/autoware_internal_msgs:
+    type: git
+    url: https://github.com/autowarefoundation/autoware_internal_msgs.git
+    version: main
   core/common:
     type: git
     url: https://github.com/autowarefoundation/autoware_common.git

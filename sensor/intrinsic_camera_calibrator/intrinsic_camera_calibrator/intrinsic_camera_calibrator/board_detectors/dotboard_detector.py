@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2022 Tier IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ class DotBoardDetector(BoardDetector):
 
         self.resized_detection = Parameter(bool, value=True, min_value=False, max_value=True)
         self.resized_max_resolution = Parameter(int, value=2000, min_value=500, max_value=5000)
-        pass
 
     def detect(self, img: np.array, stamp: float):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""

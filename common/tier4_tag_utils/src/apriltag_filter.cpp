@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <rclcpp/time.hpp>
-#include <tier4_tag_utils/apriltag_filter.hpp>
-#include <tier4_tag_utils/types.hpp>
-
-#include <image_geometry/pinhole_camera_model.h>
-
-#ifdef ROS_DISTRO_GALACTIC
-#include <tf2_eigen/tf2_eigen.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#else
-#include <tf2_eigen/tf2_eigen.hpp>
-
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#endif
-
 #include <Eigen/Core>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <rclcpp/time.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
+#include <tier4_tag_utils/apriltag_filter.hpp>
+
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
+#include <image_geometry/pinhole_camera_model.h>
 
 namespace tier4_tag_utils
 {
@@ -44,21 +36,23 @@ ApriltagFilter::ApriltagFilter(const rclcpp::NodeOptions & options)
   min_margin_ = this->declare_parameter<double>("min_margin");
   ;
   max_no_observation_time_ = this->declare_parameter<double>("max_no_observation_time");
-  new_hypothesis_transl_ = this->declare_parameter<double>("new_hypothesis_transl");
-  measurement_noise_transl_ = this->declare_parameter<double>("measurement_noise_transl");
-  process_noise_transl_ = this->declare_parameter<double>("process_noise_transl");
+  new_hypothesis_translation_ = this->declare_parameter<double>("new_hypothesis_translation");
+  measurement_noise_translation_ = this->declare_parameter<double>("measurement_noise_translation");
+  process_noise_translation_ = this->declare_parameter<double>("process_noise_translation");
 
   std::vector<std::string> tag_families =
     this->declare_parameter<std::vector<std::string>>("tag_families");
   // std::vector<int64_t> tag_ids = this->declare_parameter<std::vector<int64_t>>("tag_ids");
-  std::vector<double> tag_sizes = this->declare_parameter<std::vector<double>>("tag_sizes");
+  std::vector<double> tag_sizes =
+    this->declare_parameter<std::vector<double>>("tag_sizes", std::vector<double>{});
 
-  if (tag_families.size() != tag_sizes.size()) {
+  if (tag_sizes.size() > 0 && tag_families.size() != tag_sizes.size()) {
     throw std::invalid_argument("Tag ids and sizes must be of the same size");
   }
 
   for (std::size_t i = 0; i < tag_families.size(); i++) {
-    tag_sizes_map_["tag" + tag_families[i]] = tag_sizes[i];
+    double size = i < tag_sizes.size() ? tag_sizes[i] : 0.0;
+    tag_sizes_map_["tag" + tag_families[i]] = size;
   }
 
   camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
@@ -150,10 +144,10 @@ void ApriltagFilter::detectionsCallback(
       auto & h = hypotheses_map_[family_and_id];
       h.setMaxConvergenceThreshold(0.0);
       h.setMaxNoObservationTime(max_no_observation_time_);
-      h.setMeasurementNoise(measurement_noise_transl_);
+      h.setMeasurementNoise(measurement_noise_translation_);
       h.setMinConvergenceTime(std::numeric_limits<double>::max());
-      h.setNewHypothesisThreshold(new_hypothesis_transl_);
-      h.setProcessNoise(process_noise_transl_);
+      h.setNewHypothesisThreshold(new_hypothesis_translation_);
+      h.setProcessNoise(process_noise_translation_);
       h.setTagSize(tag_sizes_map_[detection.family]);
       h.update(corners, timestamp);
     } else {
