@@ -64,13 +64,13 @@ Vehicles have suspension systems that make the `base_link` definition an ambiguo
 
 ### External camera
 
-To construct the SfM graph and ultimately connect the calibration sensor (in this case a lidar) with the wheel tags, we make use of an additional camera, which we dub the `external camera`. In principle, the camera can be of any nature as long as it has fixed intrinsics parameters during the experiment. We have so far used Nikon DSLR cameras with good results, but have had also good results with certain point-and-shoot cameras. <!--cSpell:ignore DSLRs -->
+To construct the SfM graph and ultimately connect the calibration sensor (in this case a lidar) with the wheel tags, we make use of an additional camera, which we dub the `external camera`. In principle, the camera can be of any nature as long as it has fixed intrinsics parameters during the experiment. We have so far used Nikon DSLR cameras with good results, but have had also good results with certain point-and-shoot cameras. <!--cSpell:ignore DSLR -->
 
 Note: we assume the user knows how to use a camera and make no attempt at explaining camera fundamentals in this tutorial.
 
 Camera selection and usage recommendations:
 
-- It is recommended to use cameras with the highest (real) resolution possible and use image formats with as little compression as possible (DLSR cameras have options like normal, fine, ultra-fine, and so on).
+- It is recommended to use cameras with the highest (real) resolution possible and use image formats with as little compression as possible (DSLR cameras have options like normal, fine, ultra-fine, and so on). <!--cSpell:ignore DSLR -->
 - It is recommended to use a wide lens to capture as much of the environment as possible. Otherwise, the camera can not capture a high number of tags in a single image. However, fish-eye lenses are not supported.
 - Use the highest F-number possible (smaller aperture). For example, we use at least f/14. This ensures that the tags will be in focus at the relevant distances.
 - Use a relatively high shutter speed. The specific number will depend on the user's ability, but while it is acceptable to have underexposed photos, it is not acceptable to have blurred ones (motion while exposing the sensor to light).

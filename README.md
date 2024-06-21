@@ -31,7 +31,7 @@ Calibration tools for sensors used in autonomous driving and robotics (camera, l
 ### Requirements
 
 - Ubuntu 22.04
-- ROS2 Humble
+- ROS2 Humble <!--cSpell:ignore ROS2 -->
 
 ### Installation alongside autoware
 
@@ -49,7 +49,7 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 The sensor calibration tools are usually used as part of the autoware ecosystem. However, they can also be used for projects outside autoware, or even outside autonomous driving. Note: due to its use in autoware, even if it is possible to use the sensor calibration tools independently, due to some light dependencies, parts of autoware still need to be downloaded, even if they are not all compiled.
 
-The following commands present an example of how to install the calibration tools and their dependencies assuming you have a ROS2 workspace called `workspace`:
+The following commands present an example of how to install the calibration tools and their dependencies assuming you have a ROS2 workspace called `workspace`: <!--cSpell:ignore ROS2 -->
 
 ```bash
 # Install vcs (if needed, follow the instructions from https://github.com/dirk-thomas/vcstool)
@@ -371,9 +371,9 @@ Default values are optional, and somewhere inside the launch file, the user need
 
 In the previous Section, we created a new calibrator interface and added it to the sensor calibration manager. However, that assumes that the user will use one of the calibrator packages offered by the sensor calibration tools.
 
-In the case the user wants to integrate his algorithms, he must follow the instructions, which assume the reader knows and is used to creating ROS2 packages.
+In the case the user wants to integrate his algorithms, he must follow the instructions, which assume the reader knows and is used to creating ROS2 packages. <!--cSpell:ignore ROS2 -->
 
-- Create a ROS2 package called `my_new_calibrator_package`. The node itself needs to be part of a multi-thread executor with at least two threads.
+- Create a ROS2 package called `my_new_calibrator_package`. The node itself needs to be part of a multi-thread executor with at least two threads. <!--cSpell:ignore ROS2 -->
 - Add a dependency to the `tier4_calibration_msgs` package to use the calibration services.
 - In the node's header file add a calibration service.
 - In most cases, creating a group exclusive to the services is also required.
