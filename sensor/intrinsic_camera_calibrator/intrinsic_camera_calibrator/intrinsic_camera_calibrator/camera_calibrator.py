@@ -1004,7 +1004,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.last_processed_stamp = current_time
         detection_time = current_time - self.detection_request_time
         self.setWindowTitle(
-            f"Camera intrinsics calibrator ({self.data_source.get_camera_name()}). Data delay={detection_delay:.2f} Detection time={detection_time:.2f} fps={self.estimated_fps:.2f} Data time={img_stamp:.2f}"
+            f"Camera intrinsics calibrator ({self.data_source.get_camera_name()}). Data delay={detection_delay: .2f} Detection time={detection_time: .2f} fps={self.estimated_fps: .2f} Data time={img_stamp: .2f}"
         )
 
         self.image_view.update()
