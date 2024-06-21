@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <autoware/universe_utils/geometry/geometry.hpp>
 #include <extrinsic_manual_calibrator/extrinsic_manual_calibrator_node.hpp>
-#include <tier4_autoware_utils/geometry/geometry.hpp>
 
 #include <memory>
 
@@ -92,7 +92,7 @@ geometry_msgs::msg::Pose ExtrinsicManualCalibratorNode::getTfParameters(
   pose.position.x = params.get().at(0).as_double();
   pose.position.y = params.get().at(1).as_double();
   pose.position.z = params.get().at(2).as_double();
-  pose.orientation = tier4_autoware_utils::createQuaternionFromRPY(
+  pose.orientation = autoware::universe_utils::createQuaternionFromRPY(
     params.get().at(3).as_double(), params.get().at(4).as_double(), params.get().at(5).as_double());
   return pose;
 }
@@ -100,7 +100,7 @@ void ExtrinsicManualCalibratorNode::setTfParameters(
   const rclcpp::AsyncParametersClient::SharedPtr & client, const geometry_msgs::msg::Pose & pose)
 {
   const auto xyz = pose.position;
-  const auto rpy = tier4_autoware_utils::getRPY(pose.orientation);
+  const auto rpy = autoware::universe_utils::getRPY(pose.orientation);
   auto results = client->set_parameters(
     {rclcpp::Parameter("tf_x", xyz.x), rclcpp::Parameter("tf_y", xyz.y),
      rclcpp::Parameter("tf_z", xyz.z), rclcpp::Parameter("tf_roll", rpy.x),

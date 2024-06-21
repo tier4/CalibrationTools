@@ -13,6 +13,7 @@
 
   <build_depend>autoware_cmake</build_depend>
 
+  <depend>autoware_universe_utils</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>kalman_filter</depend>
@@ -27,7 +28,6 @@
   <depend>tf2_eigen</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
-  <depend>tier4_autoware_utils</depend>
   <depend>tier4_calibration_msgs</depend>
   <depend>visualization_msgs</depend>
 

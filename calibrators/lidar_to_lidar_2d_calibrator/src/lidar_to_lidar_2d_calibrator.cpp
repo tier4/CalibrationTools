@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <autoware/universe_utils/geometry/geometry.hpp>
 #include <lidar_to_lidar_2d_calibrator/lidar_to_lidar_2d_calibrator.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
-#include <tier4_autoware_utils/geometry/geometry.hpp>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/PCLPointCloud2.h>
@@ -331,7 +331,7 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
   // Optional filtering
   if (filter_estimations_) {
     // We force our RPY to avoid convention errors
-    auto estimated_rpy = tier4_autoware_utils::getRPY(tf2::toMsg(icp_affine).orientation);
+    auto estimated_rpy = autoware::universe_utils::getRPY(tf2::toMsg(icp_affine).orientation);
 
     Eigen::Vector3d x(estimated_rpy.z, icp_affine.translation().x(), icp_affine.translation().y());
     Eigen::DiagonalMatrix<double, 3> p0(initial_angle_cov_, initial_xy_cov_, initial_xy_cov_);
@@ -348,8 +348,9 @@ void LidarToLidar2DCalibrator::calibrationTimerCallback()
     filtered_affine.translation().x() = kalman_filter_.getXelement(1);
     filtered_affine.translation().y() = kalman_filter_.getXelement(2);
 
-    geometry_msgs::msg::Quaternion quaternion_msg = tier4_autoware_utils::createQuaternionFromRPY(
-      estimated_rpy.x, estimated_rpy.y, estimated_rpy.z);
+    geometry_msgs::msg::Quaternion quaternion_msg =
+      autoware::universe_utils::createQuaternionFromRPY(
+        estimated_rpy.x, estimated_rpy.y, estimated_rpy.z);
     Eigen::Quaterniond quaternion_eigen(
       quaternion_msg.w, quaternion_msg.x, quaternion_msg.y, quaternion_msg.z);
 

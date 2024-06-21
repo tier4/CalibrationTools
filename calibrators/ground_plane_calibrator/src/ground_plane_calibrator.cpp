@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <autoware/universe_utils/geometry/geometry.hpp>
 #include <ground_plane_calibrator/ground_plane_calibrator.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
-#include <tier4_autoware_utils/geometry/geometry.hpp>
 
 #include <tf2/utils.h>
 
@@ -276,9 +276,9 @@ void ExtrinsicGroundPlaneCalibrator::filterGroundModelEstimation(
 
   Eigen::Vector3d estimated_translation;
   auto estimated_rpy =
-    tier4_autoware_utils::getRPY(tf2::toMsg(estimated_base_to_lidar_transform).orientation);
+    autoware::universe_utils::getRPY(tf2::toMsg(estimated_base_to_lidar_transform).orientation);
   auto initial_rpy =
-    tier4_autoware_utils::getRPY(tf2::toMsg(initial_base_to_lidar_transform_).orientation);
+    autoware::universe_utils::getRPY(tf2::toMsg(initial_base_to_lidar_transform_).orientation);
 
   if (verbose_) {
     RCLCPP_INFO(

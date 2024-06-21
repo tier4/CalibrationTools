@@ -15,6 +15,7 @@
 
   <depend>apriltag</depend>
   <depend>apriltag_msgs</depend>
+  <depend>autoware_universe_utils</depend>
   <depend>cv_bridge</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
@@ -35,7 +36,6 @@
   <depend>tf2_eigen</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
-  <depend>tier4_autoware_utils</depend>
   <depend>tier4_calibration_msgs</depend>
   <depend>tier4_ground_plane_utils</depend>
   <depend>tier4_tag_utils</depend>

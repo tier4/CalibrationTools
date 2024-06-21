@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include <Eigen/Dense>
+#include <autoware/universe_utils/geometry/geometry.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
-#include <tier4_autoware_utils/geometry/geometry.hpp>
 #include <tier4_ground_plane_utils/ground_plane_utils.hpp>
 
 #include <pcl/ModelCoefficients.h>
@@ -358,17 +358,17 @@ geometry_msgs::msg::TransformStamped overwriteXYYawValues(
   msg.transform.translation.y = initial_base_lidar_transform_msg.transform.translation.y;
 
   auto initial_rpy =
-    tier4_autoware_utils::getRPY(initial_base_lidar_transform_msg.transform.rotation);
+    autoware::universe_utils::getRPY(initial_base_lidar_transform_msg.transform.rotation);
 
   auto calibrated_rpy =
-    tier4_autoware_utils::getRPY(calibrated_base_lidar_transform_msg.transform.rotation);
+    autoware::universe_utils::getRPY(calibrated_base_lidar_transform_msg.transform.rotation);
 
   // Overwrite only yaw
   auto output_rpy = calibrated_rpy;
   output_rpy.z = initial_rpy.z;
 
   msg.transform.rotation =
-    tier4_autoware_utils::createQuaternionFromRPY(output_rpy.x, output_rpy.y, output_rpy.z);
+    autoware::universe_utils::createQuaternionFromRPY(output_rpy.x, output_rpy.y, output_rpy.z);
   return msg;
 }
 

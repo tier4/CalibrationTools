@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <Eigen/Core>
+#include <autoware/universe_utils/geometry/geometry.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
@@ -27,7 +28,6 @@
 #include <tag_based_sfm_calibrator/serialization.hpp>
 #include <tag_based_sfm_calibrator/tag_based_sfm_calibrator.hpp>
 #include <tag_based_sfm_calibrator/visualization.hpp>
-#include <tier4_autoware_utils/geometry/geometry.hpp>
 #include <tier4_ground_plane_utils/ground_plane_utils.hpp>
 
 #include <boost/archive/binary_iarchive.hpp>
@@ -436,8 +436,9 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
 
   // Display the initial and calibrated values
   const auto & initial_base_to_lidar_rpy =
-    tier4_autoware_utils::getRPY(initial_base_link_to_lidar_msg.rotation);
-  const auto & base_to_lidar_rpy = tier4_autoware_utils::getRPY(base_link_to_lidar_msg.rotation);
+    autoware::universe_utils::getRPY(initial_base_link_to_lidar_msg.rotation);
+  const auto & base_to_lidar_rpy =
+    autoware::universe_utils::getRPY(base_link_to_lidar_msg.rotation);
   RCLCPP_INFO(this->get_logger(), "base_link: initial and calibrated statistics statistics");
   RCLCPP_INFO(
     this->get_logger(), "\tinitial: x=%.5f y=%.5f z=%.5f roll=%.5f pitch=%.5f yaw=%.5f",
