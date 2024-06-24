@@ -148,7 +148,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   mapping_parameters_->frame_stopped_distance_ =
     this->declare_parameter<double>("frame_stopped_distance", 0.02);
   mapping_parameters_->frames_since_stop_force_frame_ =
-    this->declare_parameter<int>("frames_since_stoped_force_frame", 5);
+    this->declare_parameter<int>("frames_since_stopped_force_frame", 5);
   mapping_parameters_->calibration_skip_keyframes_ =
     this->declare_parameter<int>("calibration_skip_keyframes", 5);
 

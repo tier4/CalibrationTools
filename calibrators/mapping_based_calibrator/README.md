@@ -145,7 +145,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `new_keyframe_min_distance`          | `double` | `1.0`         | Minimum distance in meters between consecutive keyframes.                                                                      |
 | `new_frame_min_distance`             | `double` | `0.05`        | Minimum distance in meters of a new frame needs to be apart from the last to be processed.                                     |
 | `frame_stopped_distance`             | `double` | `0.02`        | Threshold distance in meters to determine if the frame has stopped moving.                                                     |
-| `frames_since_stoped_force_frame`    | `int`    | `5`           | If the number of stopped frames is equal to this value, we set it as keyframe_and_stop frame.                                  |
+| `frames_since_stopped_force_frame`   | `int`    | `5`           | If the number of stopped frames is equal to this value, we set it as keyframe_and_stop frame.                                  |
 | `calibration_skip_keyframes`         | `int`    | `5`           | The number of initial keyframes that are skipped for calibration.                                                              |
 
 ### Calibration Criteria Parameters
