@@ -10,7 +10,7 @@ The package `mapping_based_calibrator` allows extrinsic calibration between 3d l
 
 ### lidar-lidar calibration
 
-The calibrator is designed to estimate the transformation between lidar and lidar sensors. It starts by employing a lidar, called the `mapping lidar`, for mapping purposes. It utilizes pointcloud registration algorithms to calibrate the remaining lidars, known as `calibration lidars`, to the `mapping lidar`. Specifically, the calibration process encompasses three primary steps: constructing a map, preparing calibration data, and finally estimating the transformations.
+The calibrator is designed to estimate the transformation between lidar and lidar sensors. It starts by employing a lidar, called the `mapping lidar`, for mapping purposes. Then, it utilizes pointcloud registration algorithms to calibrate the remaining lidars, known as `calibration lidars`, to the `mapping lidar`. Specifically, the calibration process encompasses three primary steps: constructing a map, preparing calibration data, and finally estimating the transformations.
 
 A prerequisite for this calibrator is an environment rich in natural landmarks suitable for registration-based mapping in all directions, ensuring that the lidar captures sufficient details beyond simple features like lane surfaces or walls.
 
@@ -31,10 +31,10 @@ As the tool aims to apply registration algorithms on the pointclouds from both t
 
 ##### Data selection
 
-To refine our calibration process, the tool first pairs `mapping lidar` keyframes with their closest `calibration lidar` frames, and then selects pairs (`mapping lidar` keyframes and `calibration lidar` frame) based on the criteria listed below.
+To refine our calibration process, the tool first temporaily pairs `mapping lidar` keyframes with their closest `calibration lidar` frame, and then selects the final calibration pairs (`mapping lidar` keyframes and `calibration lidar` frame) based on the criteria listed below.
 
 - The pairs have Low time difference and low interpolation error (such as time difference, speed, and estimated acceleration) between the keyframe and the `calibration lidar` frame.
-- The `calibration lidar` frame has enough features for calibration, which we filter out the pointcloud that has low variance in the z-axis that is mostly a plane.
+- The `calibration lidar` frame has enough features for calibration, which the tool filter out the pointcloud that has low variance in the z-axis that is mostly a plane.
 
 ##### Data preprocessing
 
@@ -60,7 +60,7 @@ After constructing the map, we could get the augmented pointcloud from `mapping 
 
 To estimate the transformation between the `mapping lidar` and the `baselink`, the tool needs to calculate the transformation between the lidar and the ground pose, as well as the transformation between the ground pose and the baselink.
 
-The transformation between the lidar and the ground pose is calculated by utilizing the normal vector of the plane and selecting a point on the ground plane. To estimate the transformation between the ground pose and the baselink, the tool first determines the initial ground-pose-to-baselink using the initial lidar-to-baselink and lidar-to-ground-pose transformations. Then, the tool projects this initial ground-pose-to-baselink transformation onto the xy plane to estimate the transformation between the ground pose and the baselink.
+The transformation between the lidar and the ground pose is calculated by utilizing the normal vector and a point on the ground plane. To estimate the transformation between the ground pose and the baselink, the tool first determines the initial ground-pose-to-baselink using the initial lidar-to-baselink and lidar-to-ground-pose transformations. Then, the tool projects this initial ground-pose-to-baselink transformation onto the xy plane to estimate the transformation between the ground pose and the baselink.
 
 ## ROS Interfaces
 
