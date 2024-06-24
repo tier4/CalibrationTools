@@ -98,9 +98,9 @@ Note that the lidartags we used have a size of 0.8 meters (edge size). This mean
 
 ## References
 
-[1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021.
+[1] Jiunn-Kai (Bruce) Huang, Shoutian Wang, Maani Ghaffari, and Jessy W. Grizzle, "LiDARTag: A Real-Time Fiducial Tag System for Point Clouds," in IEEE Robotics and Automation Letters. Volume: 6, Issue: 3, July 2021. <!--cSpell:ignore Jiunn,Shoutian,Jessy,Ghaffari,Maani -->
 
-[2] G. Terzakis and M. Lourakis, "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" in ECCV 2020. Lecture Notes in Computer Science, vol 12346.
+[2] G. Terzakis and M. Lourakis, "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" in ECCV 2020. Lecture Notes in Computer Science, vol 12346. <!--cSpell: ignore Terzakis Lourakis -->
 
 ## Known issues/limitations
 
@@ -114,7 +114,7 @@ Note that the lidartags we used have a size of 0.8 meters (edge size). This mean
 - During calibration, ensure that the lidar scan covers the tag, similar to the first example shown in the image below. However, if the tag resolution is low, as in the second example, and the lidar still detects the tag, it may still be acceptable but should be avoided when possible. The third example demonstrates a scenario where the lidar scan fails to cover the tag, resulting in the inability to detect the lidartag.
 
 <p align="center">
-    <img src="../docs/images/tag_based_pnp_calibrator/lidarscan_on_tag.jpg"  alt="lidarscan_on_tag" width="500">
+    <img src="../docs/images/tag_based_pnp_calibrator/lidar_scan_on_tag.jpg"  alt="lidar_scan_on_tag" width="500">
 </p>
 
 - It is highly recommended to place the tag perpendicular to the lidar as shown in the following image:
