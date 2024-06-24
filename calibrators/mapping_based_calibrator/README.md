@@ -137,11 +137,11 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `mapper_epsilon`                     | `double` | `0.01`        | Epsilon value for `pclomp::NormalDistributionsTransform` and `pcl::GeneralizedIterativeClosestPoint` algorithm.                |
 | `mapper_num_threads`                 | `int`    | `8`           | Number of threads to use for `pclomp::NormalDistributionsTransform` algorithm.                                                 |
 | `mapper_max_correspondence_distance` | `double` | `0.1`         | Maximum correspondence distance for `pcl::GeneralizedIterativeClosestPoint` algorithm.                                         |
-| `mapping_viz_leaf_size`              | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGrid` for voxelize the mapping pointcloud.                                                  |
-| `calibration_viz_leaf_size`          | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGridTriplets` for voxelize the calibration pointcloud.                                      |
-| `leaf_size_input`                    | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` for voxelize the input pointcloud.                                                    |
-| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` for voxelize the local map.                                                           |
-| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size in meters for `pcl::VoxelGrid` for voxelize the dense map.                                                           |
+| `mapping_viz_leaf_size`              | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGrid` to voxelize the mapping pointcloud.                                                   |
+| `calibration_viz_leaf_size`          | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGridTriplets` to voxelize the calibration pointcloud.                                       |
+| `leaf_size_input`                    | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` to voxelize the input pointcloud.                                                     |
+| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` to voxelize the local map.                                                            |
+| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size in meters for `pcl::VoxelGrid` to voxelize the dense map.                                                            |
 | `new_keyframe_min_distance`          | `double` | `1.0`         | Minimum distance in meters between consecutive keyframes.                                                                      |
 | `new_frame_min_distance`             | `double` | `0.05`        | Minimum distance in meters of a new frame needs to be apart from the last to be processed.                                     |
 | `frame_stopped_distance`             | `double` | `0.02`        | Threshold distance in meters to determine if the frame has stopped moving.                                                     |
