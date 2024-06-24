@@ -15,7 +15,7 @@ Please download the data (rosbag) from [here](https://drive.google.com/drive/fol
 
 The rosbag includes four pointcloud topics published by different lidar sensors and also includes `tf_static` information.
 
-Note that in the real-world environment, the user should start to record a rosbag with all of the lidar topics and tf topics that are needed, which should be similar to the provided bag. Afterward, the user could start to drive the vehicle and do the calibration with the recorded rosbag.
+Note that in the real-world environment, the user should start to record a rosbag with all of the lidar topics and tf topics that are needed, which should be similar to the provided bag. Afterward, the user could start to drive the vehicle and calibrate sensors with the recorded rosbag.
 
 ## Environment preparation
 
@@ -26,7 +26,7 @@ to drive around 30 to 50 meters. It is also recommended to ensure that the envir
 
 ### Vehicle
 
-Before starting the calibration, the user needs to drive the vehicle to collect the pointcloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 2 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and aim to keep the surroundings static.
+Before starting the calibration, the user needs to drive the vehicle to collect the pointcloud for building the map. While recording data during the experiment, slow down the vehicle's speed as much as possible. For instance, driving slower than 2 km/hr is good for recording quality data. Also, during the experiment, try to avoid people walking around the vehicle and keep the surroundings static.
 
 ## Launching the tool
 

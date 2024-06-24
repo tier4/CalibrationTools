@@ -10,49 +10,43 @@ The package `mapping_based_calibrator` allows extrinsic calibration between 3d l
 
 ### lidar-lidar calibration
 
-The calibrator is designed to estimate the transformation between lidar and lidar sensors. It starts by employing a lidar, referred to as the `mapping lidar`, for mapping purposes, and utilizes pointcloud registration algorithms to calibrate the remaining lidars, known as `calibration lidars`, to the `mapping lidar`. Specifically, the calibration process encompasses three primary steps: constructing a map, calibration data preparation, and finally executing the calibration.
+The calibrator is designed to estimate the transformation between lidar and lidar sensors. It starts by employing a lidar, called the `mapping lidar`, for mapping purposes. It utilizes pointcloud registration algorithms to calibrate the remaining lidars, known as `calibration lidars`, to the `mapping lidar`. Specifically, the calibration process encompasses three primary steps: constructing a map, preparing calibration data, and finally estimating the transformations.
 
 A prerequisite for this calibrator is an environment rich in natural landmarks suitable for registration-based mapping in all directions, ensuring that the lidar captures sufficient details beyond simple features like lane surfaces or walls.
 
-#### Step 1: Mapping
+#### Step 1: Construct a map
 
-First of all, the calibrator will designate one of the lidars (as defined in the launch file) as the `mapping lidar` for mapping purposes. Pointclouds from this lidar utilize either the NDT or GICP algorithm to calculate the pose and also store the pointclouds as a map for future usage. Several rules are defined below.
+The calibrator designates one of the lidars (defined in the launch file) as the `mapping lidar` for mapping purposes. Pointclouds from this lidar utilize either the NDT or GICP algorithm to calculate the pose and also store the pointclouds as a map for future usage. The following rules are applied while constructing the map.
 
-- For each `N` meter, a keyframe will be saved, which is used for mapping and calibration.
+- For each `N` meter, a keyframe will be saved, which is used for mapping and estimating transformation.
 - If the distance between the last frame and the current pointcloud is more than the `D` meters, the pointcloud will be saved as a frame, which is used to complement keyframes.
 
-#### Step 2: Calibration data preparation
+#### Step 2: Prepare calibration data
 
-After the mapping is complete, some preprocessing is necessary before starting the calibration process.
+After the mapping has been completed, some preprocessing is necessary before estimating the transformations between lidars. In the explanation below, we assume that there is only a `calibration lidar` that needs to be calibrated with the `mapping lidar`.
 
 ##### Data synchronization
 
-Since we aim to apply registration algorithms on the pointclouds from both the `mapping lidar` and the `calibration lidars` to find the transformations between them, it's crucial to ensure that pointclouds share the same timestamp. However, the `calibration lidars` may not be synchronized with the `mapping lidar`, meaning their respective pointclouds cannot be directly used together during movement. To address this, we first need to interpolate the pose of the `mapping lidar` at the timestamp of the `calibration lidars`.
+As the tool aims to apply registration algorithms on the pointclouds from both the `mapping lidar` and the `calibration lidar` to estimate the transformation between them, it's crucial to ensure those pointclouds share the same timestamp. However, the `calibration lidar` may not be synchronized with the `mapping lidar`, meaning these pointclouds cannot be directly used together during movement. To address this, the tool first needs to interpolate the pose of the `mapping lidar` at the timestamp of the `calibration lidar` in the map.
 
 ##### Data selection
 
-To refine our calibration process, we match each keyframe with the nearest `calibration lidar` in time. To be more specific, we select pairs of keyframes and calibration lidar's pointclouds for each `calibration lidar` based on specific criteria:
+To refine our calibration process, the tool first pairs `mapping lidar` keyframes with their closest `calibration lidar` frames, and then selects pairs (`mapping lidar` keyframes and `calibration lidar` frame) based on the criteria listed below.
 
-- Low time difference between the keyframe and calibration lidar's pointcloud.
-- Low interpolation error (considering parameters such as time difference, speed, and estimated acceleration) between the keyframe and the calibration lidar's pointcloud.
+- The pairs have Low time difference and low interpolation error (such as time difference, speed, and estimated acceleration) between the keyframe and the `calibration lidar` frame.
+- The `calibration lidar` frame has enough features for calibration, which we filter out the pointcloud that has low variance in the z-axis that is mostly a plane.
 
 ##### Data preprocessing
 
-We use all the frames near a keyframe to augment it using the frames' poses to make sure we have a high-resolution pointcloud. As the resulting pointcloud has redundant information, we downsample the pointlcoud to quite a fine-grained resolution.
+For the `calibration lidar` pointcloud to have more points to apply the registration algorithm, the calibrator would need a high-resolution pointcloud from the `mapping lidar`. Therefore, we augment the keyframe's pointcloud with all the frames' pointcloud near it. As the resulting pointcloud has redundant information, we downsample the pointcloud to quite a fine-grained resolution, which is called augmented pointcloud.
 
-#### Step 3: Calibration
+#### Step 3: Estimate transformations
 
-Once the data is prepared for calibration, we can apply registration algorithms, such as NDT and GICP, to estimate the transformations between pointclouds from the `calibration lidar` and the augmented pointcloud from the `mapping lidar`.
-
-#### Diagram
-
-Below, you can see how the algorithm is implemented in the `mapping_based_calibrator` package.
-
-![mapping_based_calibrator](../docs/images/mapping_based_calibrator/mapping_based_calibrator.jpg)
+Once the data is prepared for calibration, the tool applies registration algorithms, such as NDT and GICP, to estimate the transformation between pointcloud from the `calibration lidar` and the augmented pointcloud from the `mapping lidar`.
 
 ### base-lidar calibration
 
-Instead of calibrating the transformation between lidar and lidar, we can also utilize the map generated by the `mapping lidar` to calibrate the transformation between the `mapping lidar` and the `base_link`.
+Instead of calibrating the transformations between lidars, we can also utilize the map generated by the `mapping lidar` to calibrate the transformation between the `mapping lidar` and the `base_link`.
 
 #### Step 1: Mapping
 
@@ -60,11 +54,13 @@ The first step of base-lidar calibration would be the same as [Step 1](#step-1-m
 
 #### Step 2: Extract ground from the pointcloud
 
-After building the map, we could get the augmented pointcloud from it. The calibrator then utilizes PCA and `pcl::SACSegmentation` for ground extraction.
+After constructing the map, we could get the augmented pointcloud from `mapping lidar`, which would be the same process as [Step 2](#step-2-prepare-calibration-data). Afterward, the tool utilizes PCA and a segmentation algorithm for extracting the ground plane from the augmented pointcloud.
 
-#### Step 3: Calibration
+#### Step 3: Estimate transformation
 
-Finally, we use the initial transformation between baselink and lidar, and the pose from the ground model to calculate the transformation between the `base_link` and the `mapping lidar`.
+To estimate the transformation between the `mapping lidar` and the `baselink`, the tool needs to calculate the transformation between the lidar and the ground pose, as well as the transformation between the ground pose and the baselink.
+
+The transformation between the lidar and the ground pose is calculated by utilizing the normal vector of the plane and selecting a point on the ground plane. To estimate the transformation between the ground pose and the baselink, the tool first determines the initial ground-pose-to-baselink using the initial lidar-to-baselink and lidar-to-ground-pose transformations. Then, the tool projects this initial ground-pose-to-baselink transformation onto the xy plane to estimate the transformation between the ground pose and the baselink.
 
 ## ROS Interfaces
 
@@ -92,7 +88,7 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Calibrated map from calibration lidars, providing visualization in rviz.                                                                        |
 | `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Target map from `mapping lidar`, used for comparing with the `calibrated_source_aligned_map` and `target_map`, providing visualization in rviz. |
 | `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Markers for camera calibrator (currently not used)                                                                                              |
-| `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Ground pointcloud from initial pointcloud.                                                                                                      |
+| `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Ground pointcloud from augmented pointcloud.                                                                                                    |
 | `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | Ground pointcloud from calibrated pointcloud.                                                                                                   |
 
 ### Services
@@ -100,7 +96,7 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | Name                    | Type                                                  | Description                                                                              |
 | ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
-| `stop_mapping`          | `std_srvs::srv::Empty`                                | Stop building the map; calibration will begin afterward.                                 |
+| `stop_mapping`          | `std_srvs::srv::Empty`                                | Stops building the map; calibration will begin afterward.                                |
 | `load_database`         | `std_srvs::srv::Empty`                                | Loads lidar and camera calibration frames from the database. (currently not used)        |
 | `save_database`         | `std_srvs::srv::Empty`                                | Saves lidar and camera calibration frames to the database. (currently not used)          |
 
@@ -127,8 +123,8 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `dense_pointcloud_num_keyframes`         | `int`                 | `10`          | Dense poincloud for calibration is generated by integrating the pointcloud in the range of [keyframe_id - `dense_pointcloud_num_keyframes`, keyframe_id + `dense_pointcloud_num_keyframes`]. |
 | `mapping_min_range`                      | `double`              | `0.5`         | Minimum range in meters of each lidar pointcloud for mapping.                                                                                                                                |
 | `mapping_max_range`                      | `double`              | `60.0`        | Maximum range in meters of each lidar pointcloud for mapping.                                                                                                                                |
-| `min_mapping_pointcloud_size`            | `int`                 | `10000`       | Minimum size of pointcloud data to consider for mapping.                                                                                                                                     |
-| `min_calibration_pointcloud_size`        | `int`                 | `500`         | Minimum size of pointcloud data necessary for calibration processes.                                                                                                                         |
+| `min_mapping_pointcloud_size`            | `int`                 | `10000`       | Minimum size of pointcloud required for mapping.                                                                                                                                             |
+| `min_calibration_pointcloud_size`        | `int`                 | `500`         | Minimum size of pointcloud that is necessary for estimating transformation.                                                                                                                  |
 | `mapping_lost_timeout`                   | `double`              | `1.0`         | Sensor's timeout in seconds to consider the mapping process is failed.                                                                                                                       |
 
 ### Mapping Parameters
@@ -141,11 +137,11 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 | `mapper_epsilon`                     | `double` | `0.01`        | Epsilon value for `pclomp::NormalDistributionsTransform` and `pcl::GeneralizedIterativeClosestPoint` algorithm.                |
 | `mapper_num_threads`                 | `int`    | `8`           | Number of threads to use for `pclomp::NormalDistributionsTransform` algorithm.                                                 |
 | `mapper_max_correspondence_distance` | `double` | `0.1`         | Maximum correspondence istance for `pcl::GeneralizedIterativeClosestPoint` algorithm.                                          |
-| `mapping_viz_leaf_size`              | `double` | `0.15`        | Leaf size for `pcl::VoxelGrid` for voxelize the mapping pointcloud.                                                            |
-| `calibration_viz_leaf_size`          | `double` | `0.15`        | Leaf size for `pcl::VoxelGridTriplets` for voxelize the calibration pointcloud.                                                |
-| `leaf_size_input`                    | `double` | `0.1`         | Leaf size for `pcl::VoxelGrid` for voxelize the input pointcloud.                                                              |
-| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size for `pcl::VoxelGrid` for voxelize the local map.                                                                     |
-| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size for `pcl::VoxelGrid` for voxelize the dense map.                                                                     |
+| `mapping_viz_leaf_size`              | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGrid` for voxelize the mapping pointcloud.                                                  |
+| `calibration_viz_leaf_size`          | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGridTriplets` for voxelize the calibration pointcloud.                                      |
+| `leaf_size_input`                    | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` for voxelize the input pointcloud.                                                    |
+| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` for voxelize the local map.                                                           |
+| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size in meters for `pcl::VoxelGrid` for voxelize the dense map.                                                           |
 | `new_keyframe_min_distance`          | `double` | `1.0`         | Minimum distance in meters between consecutive keyframes.                                                                      |
 | `new_frame_min_distance`             | `double` | `0.05`        | Minimum distance in meters of a new frame needs to be apart from the last to be processed.                                     |
 | `frame_stopped_distance`             | `double` | `0.02`        | Threshold distance in meters to determine if the frame has stopped moving.                                                     |
@@ -226,14 +222,14 @@ Finally, we use the initial transformation between baselink and lidar, and the p
 
 ## Known issues/limitations
 
-- As described in [Step 2](#step-2-calibration-data-preparation), the calibrator interpolates the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. Therefore, the calibrator highly requires time synchronization between all of the lidar sensors.
+- As described in [Step 2](#step-2-prepare-calibration-data), the calibrator interpolates the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. Therefore, the calibrator highly requires time synchronization between all of the lidar sensors.
 - It is required that the `mapping lidar` have high resolution. For the `calibration lidar`, both high and low resolutions are acceptable. Therefore, the vehicle with only low-resolution lidars couldn't use the calibrator.
 - A good initial calibration parameters is required for the calibrator. Better initial calibration parameters could help the registration algorithm estimate a more reliable transformation.
 
 ## Pro tips/recommendations
 
 - To build the map accurately, drive your vehicle at the lowest feasible speed, for example, 2 km/h would be a good speed. If the user drives the vehicle too fast, the pointcloud will be distorted.
-- In order to create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions, which is shown in the image below. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
+- To create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions, which is shown in the image below. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 
 <p align="center">
     <img src="../docs/images/mapping_based_calibrator/mapping_based_vis.svg" alt="radar_reflector" width="900">
