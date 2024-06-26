@@ -57,7 +57,7 @@ public:
   Eigen::Isometry3d calibrated_radar_to_lidar_transformation_;
 
   Eigen::Isometry3d initial_radar_to_lidar_eigen_;
-  Eigen::Isometry3d initial_radar_to_radar_optimization_eigen_;
+  Eigen::Isometry3d initial_radar_optimization_to_radar_eigen_;
   Eigen::Isometry3d radar_optimization_to_lidar_eigen_;
 };
 

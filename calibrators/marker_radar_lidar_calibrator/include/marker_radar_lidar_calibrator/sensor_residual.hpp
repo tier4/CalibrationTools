@@ -49,7 +49,7 @@ struct SensorResidual
 
     Eigen::Map<Eigen::Matrix<T, 3, 1>> residuals(s_residuals);
     Eigen::Matrix<T, 4, 1> residuals4d =
-      radar_point_.cast<T>() - transformation_matrix * lidar_point_.cast<T>();
+      lidar_point_.cast<T>() - transformation_matrix * radar_point_.cast<T>();
     residuals = residuals4d.block(0, 0, 3, 1);
 
     return true;
