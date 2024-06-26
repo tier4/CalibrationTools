@@ -23,11 +23,11 @@ namespace marker_radar_lidar_calibrator
 
 TransformationEstimator::TransformationEstimator(
   Eigen::Isometry3d initial_radar_to_lidar_eigen,
-  Eigen::Isometry3d initial_radar_to_radar_optimization_eigen,
+  Eigen::Isometry3d initial_radar_optimization_to_radar_eigen,
   Eigen::Isometry3d radar_optimization_to_lidar_eigen)
 {
   initial_radar_to_lidar_eigen_ = initial_radar_to_lidar_eigen;
-  initial_radar_to_radar_optimization_eigen_ = initial_radar_to_radar_optimization_eigen;
+  initial_radar_optimization_to_radar_eigen_ = initial_radar_optimization_to_radar_eigen;
   radar_optimization_to_lidar_eigen_ = radar_optimization_to_lidar_eigen;
 }
 
@@ -117,8 +117,8 @@ void TransformationEstimator::estimateZeroRollTransformation()
 
   ceres::Problem problem;
 
-  Eigen::Vector3d translation = initial_radar_to_radar_optimization_eigen_.translation();
-  Eigen::Matrix3d rotation = initial_radar_to_radar_optimization_eigen_.rotation();
+  Eigen::Vector3d translation = initial_radar_optimization_to_radar_eigen_.translation();
+  Eigen::Matrix3d rotation = initial_radar_optimization_to_radar_eigen_.rotation();
   Eigen::Vector3d euler_angle = rotation.eulerAngles(0, 1, 2);
 
   // params: x, y, z, pitch, yaw
@@ -165,18 +165,19 @@ void TransformationEstimator::estimateZeroRollTransformation()
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"), "%s", calibrated_params_msg.c_str());
 
-  Eigen::Isometry3d calibrated_3d_radar_to_radar_optimization_transformation =
+  Eigen::Isometry3d calibrated_3d_radar_optimization_to_radar_transformation =
     Eigen::Isometry3d::Identity();
-  calibrated_3d_radar_to_radar_optimization_transformation.pretranslate(
+  calibrated_3d_radar_optimization_to_radar_transformation.pretranslate(
     Eigen::Vector3d(params[0], params[1], params[2]));
   Eigen::Quaterniond q(
     Eigen::AngleAxisd(params[4], Eigen::Vector3d::UnitZ()) *
     Eigen::AngleAxisd(params[3], Eigen::Vector3d::UnitY()) *
     Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX()));
-  calibrated_3d_radar_to_radar_optimization_transformation.rotate(q);
+  calibrated_3d_radar_optimization_to_radar_transformation.rotate(q);
 
   calibrated_radar_to_lidar_transformation_ =
-    calibrated_3d_radar_to_radar_optimization_transformation * radar_optimization_to_lidar_eigen_;
+    calibrated_3d_radar_optimization_to_radar_transformation.inverse() *
+    radar_optimization_to_lidar_eigen_;
 }
 
 Eigen::Isometry3d TransformationEstimator::getTransformation()
