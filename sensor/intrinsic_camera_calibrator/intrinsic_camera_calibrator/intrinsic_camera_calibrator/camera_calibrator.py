@@ -23,6 +23,7 @@ import os
 import signal
 import sys
 import threading
+import time
 from typing import Dict
 
 from PySide2.QtCore import QThread
@@ -75,7 +76,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
     produced_data_signal = Signal()
     consumed_data_signal = Signal()
     should_process_image = Signal()
-    request_image_detection = Signal(object)
+    request_image_detection = Signal(object, float)
 
     def __init__(self, cfg):
         super().__init__()
@@ -85,6 +86,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         # Threading variables
         self.lock = threading.RLock()
+        self.produced_image = None
+        self.produced_stamp = None
         self.unprocessed_image = None
         self.pending_detection_request = False
         self.pending_detection_result = False
@@ -96,6 +99,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_thread.start()
 
         # Calibration results
+        self.estimated_fps = 0
+        self.last_processed_stamp = None
 
         # Camera models to use normally
         self.current_camera_model: CameraModel = None
@@ -816,7 +821,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         for index, image in enumerate(self.data_collector.get_evaluation_images()):
             cv2.imwrite(os.path.join(evaluation_folder, f"{index:04d}.jpg"), image)  # noqa E231
 
-    def process_detection_results(self, img: np.array, detection: BoardDetection):
+    def process_detection_results(self, img: np.array, detection: BoardDetection, img_stamp: float):
         """Process the results from an object detection."""
         # Signal that the detector is free
         self.consumed_data_signal.emit()
@@ -988,6 +993,20 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.image_view.set_image(img)
 
         # Request a redrawing
+        current_time = time.time()
+        detection_delay = time.time() - img_stamp
+        current_fps = (
+            0
+            if self.last_processed_stamp is None
+            else 1.0 / max(1e-5, (current_time - self.last_processed_stamp))
+        )
+        self.estimated_fps = 0.9 * self.estimated_fps + 0.1 * current_fps
+        self.last_processed_stamp = current_time
+        detection_time = current_time - self.detection_request_time
+        self.setWindowTitle(
+            f"Camera intrinsics calibrator ({self.data_source.get_camera_name()}). Data delay={detection_delay: .2f} Detection time={detection_time: .2f} fps={self.estimated_fps: .2f} Data time={img_stamp: .2f}"
+        )
+
         self.image_view.update()
         self.graphics_view.update()
 
@@ -1015,6 +1034,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
     def process_data(self):
         """Request the detector to process the image (the detector itself runs in another thread). Depending on the ImageViewMode selected, the image is also rectified."""
+        stamp = self.unprocessed_stamp
+
         if self.image_view_type_combobox.currentData() in {
             ImageViewMode.SOURCE_UNRECTIFIED,
             ImageViewMode.TRAINING_DB_UNRECTIFIED,
@@ -1031,8 +1052,9 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         self.pending_detection_request = False
         self.pending_detection_result = True
+        self.detection_request_time = time.time()
 
-        self.request_image_detection.emit(img)
+        self.request_image_detection.emit(img, stamp)
 
     def process_db_data(self, img):
         assert self.image_view_type_combobox.currentData() in set(
@@ -1060,26 +1082,31 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         with self.lock:
             if self.produced_image is not None:
                 self.unprocessed_image = self.produced_image
+                self.unprocessed_stamp = self.produced_stamp
             else:
                 self.unprocessed_image = self.produced_image
+                self.unprocessed_stamp = self.produced_stamp
                 self.produced_image = None
+                self.produced_stamp = None
 
         if self.pending_detection_result:
             self.pending_detection_request = True
         else:
             self.should_process_image.emit()
 
-    def data_source_external_callback(self, img: np.array):
+    def data_source_external_callback(self, img: np.array, stamp: float):
         """
         Consumer side of the producer/consumer pattern.
 
         The producer generally has its own thread so synchronization it is needed
         Args:
             img (np.array): the produced image coming from any data source.
+            stamp (float): the produced image's timestamp as a float.
         """
         # We decouple the the data coming from the source with the processing slot to avoid dropping frames in case we can not process them all
         with self.lock:
             self.produced_image = img
+            self.produced_stamp = stamp
             self.produced_data_signal.emit()  # Using a signal from another thread results in the slot being executed in the class Qt thread
 
     def on_parameter_changed(self):
