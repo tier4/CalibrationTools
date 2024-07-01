@@ -44,15 +44,15 @@ Since it is not possible to directly differentiate individual reflector detectio
 
 ### Step 4: Rigid transformation estimation
 
-After matching detection pairs, we first transform the lidar detections to radar parallel frame since we only estimate 2d transformations, which will be explained later. Then, we apply rigid transformation estimation algorithms between the lidar detections in the radar parallel frame and the radar detections in the radar frame. This allows us to estimate the transformation between lidar and radar by multiplying the radar-to-radar parallel transformation with the radar-parallel-to-lidar transformation.
+After matching detection pairs, we apply rigid transformation estimation algorithms to those pairs to estimate the transformation between the radar and lidar sensors. We currently support two algorithms: a 2d SVD-based method and a yaw-only rotation method.
 
-Currently, we support two rigid transformation estimation algorithms: a 2D SVD-based approach and a yaw-only rotation approach.
+For the 2d SVD-based method, we reduce the problem to 2d transformation estimation since radar detections lack a z component. However, because lidar detections are in the lidar frame and likely involve a 3d transformation to the radar frame, we first transform the lidar detections to a `radar parallel` frame, setting the z component to zero. The `radar parallel` frame has only a 2d transformation (x, y, yaw) relative to the radar frame. In autonomous vehicles, the base_link is a suitable choice for the 'radar parallel' frame.
 
-For the 2d SVD-based method, since radar detections lack a z component, we reduce the problem to 2d by setting the z component of lidar detections to zero. We then estimate the rigid transformation using the SVD-based method provided by PCL, which leverages SVD to find the optimal rotation component and then calculates the translation component based on the rotation.
+Next, we apply the SVD-based rigid transformation estimation algorithm between the lidar detections in the radar parallel frame and the radar detections in the radar frame. This allows us to estimate the transformation between the lidar and radar by multiplying the radar-to-radar-parallel transformation with the radar-parallel-to-lidar transformation. The SVD-based algorithm, provided by PCL, leverages SVD to find the optimal rotation component and then calculates the translation component based on the rotation.
 
-The yaw-only rotation method, on the other hand, calculates the average yaw angle difference of all pairs and estimates the transformation, considering only yaw rotation, between the radar and radar parallel frame. Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
+The yaw-only rotation method, on the other hand, utilizes the initial radar-to-lidar transformation to calculate lidar detections in the radar frame. We then calculate the average yaw angle difference of all pairs, considering only yaw rotation between the lidar and radar detections in the radar frame, to estimate a yaw-only rotation transformation in the radar frame. Finally, we estimate the transformation between the lidar and radar by multiplying the yaw-only rotation transformation with the initial radar-to-lidar transformation.
 
-It's also important to note that in the near future, the calibrator will be updated to support radar that includes elevation angles and provides different transformation algorithms.
+Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
 
 ### Diagram
 
