@@ -21,6 +21,8 @@ The calibrator designates one of the lidars (defined in the launch file) as the 
 - For each `N` meter, a keyframe will be saved, which is used for mapping and estimating transformation.
 - If the distance between the last frame and the current pointcloud is more than the `D` meters, the pointcloud will be saved as a frame, which is used to complement keyframes.
 
+It is recommended to select the lidar that has the highest resolution and best FOV as the `mapping lidar`.
+
 #### Step 2: Prepare calibration data
 
 After the mapping has been completed, some preprocessing is necessary before estimating the transformations between lidars. In the explanation below, we assume that there is only a `calibration lidar` that needs to be calibrated with the `mapping lidar`.
