@@ -216,13 +216,13 @@ To evaluate the calibration result, the user can measure that the calibrated rad
 
 ## FAQ
 
-- Why doesn't the reflector detection show on the rviz?
+- Why does the reflector detection not show on the rviz?
 
   - Make sure the center of the reflector faces toward the radar sensor, and the height of the reflector is enough for the radar to detect.
   - Make sure the height of the radar reflector is not larger than the `reflector_max_height` parameter.
   - Make sure the radar reflector is not in the background voxel (visualize the topic mentioned before.)
 
-- Why doesn't the calibration error seem low enough?
+- Why does the calibration error seem high?
 
   - Make sure that there are no outliers in the calibration pairs list.
   - Make sure that the initial calibration is good enough to match the lidar detection and radar detection correctly.
