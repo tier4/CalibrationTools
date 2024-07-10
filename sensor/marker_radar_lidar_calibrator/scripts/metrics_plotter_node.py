@@ -30,7 +30,7 @@ class MetricsPlotter:
         self.subplot1 = self.axes[0, 1]
         self.subplot2 = self.axes[1, 0]
         self.subplot3 = self.axes[1, 1]
-        plt.gcf().canvas.set_window_title("Metrics plotter")
+        self.fig.canvas.manager.set_window_title("Metrics plotter")
 
         self.color_distance_o = "C0o-"
         self.color_yaw_o = "C1o-"
