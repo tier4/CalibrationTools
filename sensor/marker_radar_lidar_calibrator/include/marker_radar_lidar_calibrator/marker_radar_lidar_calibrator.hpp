@@ -96,12 +96,8 @@ protected:
 
   void radarCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
-  pcl::PointCloud<PointType>::Ptr extractRadarPointcloud(
-    const radar_msgs::msg::RadarTracks::SharedPtr msg);
-  pcl::PointCloud<PointType>::Ptr extractRadarPointcloud(
-    const radar_msgs::msg::RadarScan::SharedPtr msg);
-  pcl::PointCloud<PointType>::Ptr extractRadarPointcloud(
-    const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  template <typename RadarMsgType>
+  pcl::PointCloud<PointType>::Ptr extractRadarPointcloud(const std::shared_ptr<RadarMsgType> & msg);
 
   std::vector<Eigen::Vector3d> extractLidarReflectors(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg);
