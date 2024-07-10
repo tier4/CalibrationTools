@@ -16,6 +16,7 @@
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>kalman_filter</depend>
+  <depend>libceres-dev</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
   <depend>radar_msgs</depend>
