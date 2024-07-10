@@ -13,7 +13,7 @@ Installation instructions can be found [here](../../../README.md).
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1eO_B_fdBdc8uI5a5LYU4jrVUS0OzRVEq).
 
-The provided rosbag includes four different topics: `/sensing/camera/camera6/camera_info`, `/sensing/camera/camera6/image_rect_color/compressed`, `/sensing/lidar/front_lower/pointcloud_raw`, and `tf_static`.
+The provided rosbag includes four different topics: `/sensing/camera/camera6/camera_info`, `/sensing/camera/camera6/image_rect_color/compressed`, `/sensing/lidar/front_lower/pointcloud_raw`, and `/tf_static`.
 
 ## Environment preparation
 

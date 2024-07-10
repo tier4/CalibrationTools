@@ -13,7 +13,7 @@ Installation instructions can be found [here](../../../README.md).
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1G1n2AV47gbQFKQtlzbHJPeV10m5_uMMk).
 
-The rosbag includes three different topics: `/sensing/radar/front_center/objects_raw`, `/sensing/lidar/front_lower/pointcloud_raw`, and `tf_static`.
+The rosbag includes three different topics: `/sensing/radar/front_center/objects_raw`, `/sensing/lidar/front_lower/pointcloud_raw`, and `/tf_static`.
 
 ## Environment preparation
 

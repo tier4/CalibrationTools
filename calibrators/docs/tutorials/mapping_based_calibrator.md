@@ -13,7 +13,7 @@ Installation instructions can be found [here](../../../README.md).
 
 Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1_pGds5HDyt8C55sD2qEH4TJMGzIOCCyV).
 
-The rosbag includes four pointcloud topics published by different lidar sensors and also includes `tf_static` information.
+The rosbag includes four pointcloud topics published by different lidar sensors and also includes `/tf_static` information.
 
 Note that in the real-world environment, the user should start to record a rosbag with all of the lidar topics and tf topics that are needed, which should be similar to the provided bag. Afterward, the user could start to drive the vehicle and calibrate sensors with the recorded rosbag.
 
