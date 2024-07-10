@@ -15,7 +15,7 @@ Please download the data (rosbag) from [here](https://drive.google.com/drive/fol
 
 The rosbag includes four pointcloud topics published by different lidar sensors and also includes `/tf_static` information.
 
-Note that in the real-world environment, the user should start to record a rosbag with all of the lidar topics and tf topics that are needed, which should be similar to the provided bag. Afterward, the user could start to drive the vehicle and calibrate sensors with the recorded rosbag.
+Note that in the real-world environment, the user should record a rosbag with all of the lidar topics and tf topics that are needed, which should be similar to the provided bag. Afterward, the user could start driving the vehicle to collect the data in the rosbag and then calibrate sensors with the recorded rosbag.
 
 ## Environment preparation
 
@@ -56,7 +56,7 @@ If it does not become available, it means that either the required `tf` or servi
     <img src="../images/mapping_based_calibrator/menu3.jpg" alt="menu3">
 </p>
 
-Note: In the `/calibration_tools/sensor/sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml`, the RDV vehicle set the top lidar as `mapping lidar`, and other lidars as `calibration lidars`.
+Note: In the [launch file](../../sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml), the RDV vehicle set the top lidar as `mapping lidar`, and other lidars as `calibration lidars`.
 
 ## Data collection (Mapping & Data paring)
 
