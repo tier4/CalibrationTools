@@ -136,7 +136,7 @@ The images below show that with the calibrated transformation, the projected poi
   - The timestamps of the lidar and camera are not synchronized, this can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue but is not recommended as a long-term solution.
   - The detections are not stable enough. This can happen due to the following reasons:
     - The detection rate is not stable. The lidar points inside the lidar frames are not sufficient for the algorithm to detect the tags reliably, which usually happens when the tag is far away from the sensor or outside is high-density zone. Please move the tag to a position where enough points (scan lines) hit the tag. If the user forcefully calibrates under these conditions, the results can be compromised.
-    - The tag is physically unstable. Due to wind, mount, or other external, even if the detector works correctly, the detection will not converge. If this is the case, please remove these external factors before attempting calibration. If the user forcefully calibrates under these conditions, the results can be compromised.
+    - The tag is physically unstable due to wind, mounting issues, or other external factors. Even if the detector functions correctly, these conditions prevent the detection from converging. If this occurs, please eliminate these external factors before attempting calibration. Forcefully calibrating under these conditions can compromise the results.
 
 - Why does the UI not launch?
 
