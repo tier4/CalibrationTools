@@ -41,7 +41,7 @@ In `project`, select `x2`, and in `calibrator`, select `marker_radar_lidar_calib
 </p>
 
 A menu titled `Launcher configuration` should appear in the UI, and the user may change any parameter he deems convenient.
-For this tutorial, we modify the default value `radar_name` from `front_left` to `front_center`. After configuring the parameters, click `Launch`.
+For this tutorial, we modify the default value of `radar_name` from `front_left` to `front_center`. After configuring the parameters, click `Launch`.
 
 <p align="center">
     <img src="../images/marker_radar_lidar_calibrator/menu2.jpg" alt="menu2">
