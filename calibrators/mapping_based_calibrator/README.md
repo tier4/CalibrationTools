@@ -36,7 +36,7 @@ As the tool aims to apply registration algorithms on the pointclouds from both t
 To refine our calibration process, the tool first temporarily pairs `mapping lidar` keyframes with their closest `calibration lidar` frame, and then selects the final calibration pairs (`mapping lidar` keyframes and `calibration lidar` frame) based on the criteria listed below.
 
 - The pairs have low time difference and low interpolation error (such as speed, estimated acceleration, etc.) between the keyframe and the `calibration lidar` frame.
-- The pointlcoud in `calibration lidar` frame has enough features for calibration, which the tool filter out the pointcloud that has low variance in the z-axis that is mostly a plane.
+- The pointlcoud in `calibration lidar` frame has enough features for calibration, which the tool filters out the pointcloud that has low variance in the z-axis that is mostly a plane.
 
 ##### Data preprocessing
 
@@ -44,7 +44,7 @@ For the `calibration lidar` pointcloud to have more points to apply the registra
 
 #### Step 3: Estimate transformations
 
-Once the data is prepared for calibration, the tool applies registration algorithms, such as NDT and GICP, to estimate the transformation between pointcloud from the `calibration lidar` and the augmented pointcloud from the `mapping lidar`.
+Once the data is prepared for calibration, the tool applies registration algorithms, such as NDT and GICP, to estimate the transformation between the pointcloud from the `calibration lidar` and the augmented pointcloud from the `mapping lidar`.
 
 ### base-lidar calibration
 
@@ -68,14 +68,14 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 ### Input
 
-| Name                             | Type                                              | Description                                                                                                                            |
-| -------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `calibration_camera_info_topics` | `sensor_msgs::msg::CameraInfo`                    | The intrinsic parameters of the calibration cameras. `calibration_camera_info_topics` is provided via parameters (currently not used). |
-| `calibration_image_topics`       | `sensor_msgs::msg::CompressedImage`               | Calibration cameras' image topics. `calibration_image_topics` is provided via parameters (currently not used).                         |
-| `mapping_pointcloud`             | `sensor_msgs::msg::PointCloud2`                   | Pointcloud's topic used for mapping. It is recommended to select the lidar that has the highest resolution and best FOV.               |
-| `calibration_pointcloud_topics`  | `sensor_msgs::msg::PointCloud2`                   | Pointclouds' topics used for calibrating with the `mapping pointcloud`. `calibration_pointcloud_topics` is provided via parameters.    |
-| `detected_objects`               | `autoware_perception_msgs::msg::DetectedObjects`  | Messages containing detected objects, used in the filtering procedure.                                                                 |
-| `predicted_objects`              | `autoware_perception_msgs::msg::PredictedObjects` | Messages that contain predicted object paths and positions, used in the filtering procedure.                                           |
+| Name                             | Type                                              | Description                                                                                                                         |
+| -------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `calibration_camera_info_topics` | `sensor_msgs::msg::CameraInfo`                    | The intrinsic parameters of calibration cameras. `calibration_camera_info_topics` is provided via parameters (currently not used).  |
+| `calibration_image_topics`       | `sensor_msgs::msg::CompressedImage`               | Calibration cameras' image topics. `calibration_image_topics` is provided via parameters (currently not used).                      |
+| `mapping_pointcloud`             | `sensor_msgs::msg::PointCloud2`                   | Pointcloud's topic used for mapping. It is recommended to select the lidar that has the highest resolution and best FOV.            |
+| `calibration_pointcloud_topics`  | `sensor_msgs::msg::PointCloud2`                   | Pointclouds' topics used for calibrating with the `mapping pointcloud`. `calibration_pointcloud_topics` is provided via parameters. |
+| `detected_objects`               | `autoware_perception_msgs::msg::DetectedObjects`  | Messages containing detected objects, used in the filtering procedure.                                                              |
+| `predicted_objects`              | `autoware_perception_msgs::msg::PredictedObjects` | Messages that contain predicted object paths and positions, used in the filtering procedure.                                        |
 
 ### Output
 
@@ -111,11 +111,11 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `calibrate_base_frame`                   | `bool`                | `false`        | Flag to optionally calibrate the base frame. (base_link).                                                                                                                                     |
 | `base_frame`                             | `std::string`         |                | The frame name of the base frame used in base-lidar calibration.                                                                                                                              |
 | `map_frame`                              | `std::string`         |                | The frame name of the `map`.                                                                                                                                                                  |
-| `calibration_camera_optical_link_frames` | `std::vector<string>` |                | The list of the frame names for `calibration camera` . (currently not used)                                                                                                                   |
-| `calibration_lidar_frames`               | `std::vector<string>` |                | The list of the frame names for `calibration lidars`.                                                                                                                                         |
-| `calibration_camera_info_topics`         | `std::vector<string>` |                | The list of the camera info topics for `calibration camera`. (currently not used)                                                                                                             |
-| `calibration_image_topics`               | `std::vector<string>` |                | The list of the camera image topics for `calibration camera`. (currently not used)                                                                                                            |
-| `calibration_pointcloud_topics`          | `std::vector<string>` |                | The list of the pointcloud topics for `calibration lidars`.                                                                                                                                   |
+| `calibration_camera_optical_link_frames` | `std::vector<string>` |                | The list of frame names for `calibration camera`. (currently not used)                                                                                                                        |
+| `calibration_lidar_frames`               | `std::vector<string>` |                | The list of frame names for `calibration lidars`.                                                                                                                                             |
+| `calibration_camera_info_topics`         | `std::vector<string>` |                | The list of camera info topics for `calibration camera`. (currently not used)                                                                                                                 |
+| `calibration_image_topics`               | `std::vector<string>` |                | The list of camera image topics for `calibration camera`. (currently not used)                                                                                                                |
+| `calibration_pointcloud_topics`          | `std::vector<string>` |                | The list of pointcloud topics for `calibration lidars`.                                                                                                                                       |
 | `mapping_lidar_frame`                    | `std::string`         |                | The frame name of the `mapping_lidar`.                                                                                                                                                        |
 | `mapping_registrator`                    | `std::string`         | `NDT` / `GICP` | The type of the PCL registration algorithm used for mapping.                                                                                                                                  |
 | `mapping_verbose`                        | `bool`                | `false`        | Verbose output flag for mapping.                                                                                                                                                              |
@@ -131,24 +131,24 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 ### Mapping Parameters
 
-| Name                                 | Type     | Default Value | Description                                                                                                                            |
-| ------------------------------------ | -------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `mapper_resolution`                  | `double` | `5.0`         | Resolution for `pclomp::NormalDistributionsTransform` algorithm.                                                                       |
-| `mapper_step_size`                   | `double` | `0.1`         | Step size for `pclomp::NormalDistributionsTransform` algorithm.                                                                        |
-| `mapper_max_iterations`              | `int`    | `35`          | The maximum number of the iterations for `pclomp::NormalDistributionsTransform` and `pcl::GeneralizedIterativeClosestPoint` algorithm. |
-| `mapper_epsilon`                     | `double` | `0.01`        | Epsilon value for `pclomp::NormalDistributionsTransform` and `pcl::GeneralizedIterativeClosestPoint` algorithm.                        |
-| `mapper_num_threads`                 | `int`    | `8`           | The mumber of the threads to use for `pclomp::NormalDistributionsTransform` algorithm.                                                 |
-| `mapper_max_correspondence_distance` | `double` | `0.1`         | Maximum correspondence distance in meters for `pcl::GeneralizedIterativeClosestPoint` algorithm.                                       |
-| `mapping_viz_leaf_size`              | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGrid` to voxelize the mapping pointcloud.                                                           |
-| `calibration_viz_leaf_size`          | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGridTriplets` to voxelize the calibration pointcloud.                                               |
-| `leaf_size_input`                    | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` to voxelize the input pointcloud.                                                             |
-| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` to voxelize the local map.                                                                    |
-| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size in meters for `pcl::VoxelGrid` to voxelize the dense map.                                                                    |
-| `new_keyframe_min_distance`          | `double` | `1.0`         | Minimum distance in meters between consecutive keyframes.                                                                              |
-| `new_frame_min_distance`             | `double` | `0.05`        | Minimum distance in meters of a new frame needs to be apart from the last to be processed.                                             |
-| `frame_stopped_distance`             | `double` | `0.02`        | Threshold distance in meters to determine if the frame has stopped moving.                                                             |
-| `frames_since_stopped_force_frame`   | `int`    | `5`           | If the number of stopped frames is equal to this value, we set it as keyframe_and_stop frame.                                          |
-| `calibration_skip_keyframes`         | `int`    | `5`           | The number of initial keyframes that are skipped for calibration.                                                                      |
+| Name                                 | Type     | Default Value | Description                                                                                                                        |
+| ------------------------------------ | -------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `mapper_resolution`                  | `double` | `5.0`         | Resolution for `pclomp::NormalDistributionsTransform` algorithm.                                                                   |
+| `mapper_step_size`                   | `double` | `0.1`         | Step size for `pclomp::NormalDistributionsTransform` algorithm.                                                                    |
+| `mapper_max_iterations`              | `int`    | `35`          | The maximum number of iterations for `pclomp::NormalDistributionsTransform` and `pcl::GeneralizedIterativeClosestPoint` algorithm. |
+| `mapper_epsilon`                     | `double` | `0.01`        | Epsilon value for `pclomp::NormalDistributionsTransform` and `pcl::GeneralizedIterativeClosestPoint` algorithm.                    |
+| `mapper_num_threads`                 | `int`    | `8`           | The number of threads to use for `pclomp::NormalDistributionsTransform` algorithm.                                                 |
+| `mapper_max_correspondence_distance` | `double` | `0.1`         | Maximum correspondence distance in meters for `pcl::GeneralizedIterativeClosestPoint` algorithm.                                   |
+| `mapping_viz_leaf_size`              | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGrid` to voxelize the mapping pointcloud.                                                       |
+| `calibration_viz_leaf_size`          | `double` | `0.15`        | Leaf size in meters for `pcl::VoxelGridTriplets` to voxelize the calibration pointcloud.                                           |
+| `leaf_size_input`                    | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` to voxelize the input pointcloud.                                                         |
+| `leaf_size_local_map`                | `double` | `0.1`         | Leaf size in meters for `pcl::VoxelGrid` to voxelize the local map.                                                                |
+| `leaf_size_dense_map`                | `double` | `0.05`        | Leaf size in meters for `pcl::VoxelGrid` to voxelize the dense map.                                                                |
+| `new_keyframe_min_distance`          | `double` | `1.0`         | Minimum distance in meters between consecutive keyframes.                                                                          |
+| `new_frame_min_distance`             | `double` | `0.05`        | Minimum distance in meters of a new frame needs to be apart from the last to be processed.                                         |
+| `frame_stopped_distance`             | `double` | `0.02`        | Threshold distance in meters to determine if the frame has stopped moving.                                                         |
+| `frames_since_stopped_force_frame`   | `int`    | `5`           | If the number of stopped frames is equal to this value, we set it as keyframe_and_stop frame.                                      |
+| `calibration_skip_keyframes`         | `int`    | `5`           | The number of initial keyframes that are skipped for calibration.                                                                  |
 
 ### Calibration Criteria Parameters
 
@@ -191,36 +191,36 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 ### Lidar Calibration Parameters
 
-| Name                           | Type  | Default Value | Description                                                               |
-| ------------------------------ | ----- | ------------- | ------------------------------------------------------------------------- |
-| `lidar_calibration_min_frames` | `int` | `2`           | The minimum number of the calibration frames to use in lidar calibration. |
-| `lidar_calibration_max_frames` | `int` | `10`          | The maximum number of the calibration frames to use in lidar calibration. |
+| Name                           | Type  | Default Value | Description                                                           |
+| ------------------------------ | ----- | ------------- | --------------------------------------------------------------------- |
+| `lidar_calibration_min_frames` | `int` | `2`           | The minimum number of calibration frames to use in lidar calibration. |
+| `lidar_calibration_max_frames` | `int` | `10`          | The maximum number of calibration frames to use in lidar calibration. |
 
 ### Camera Calibration Parameters (currently not used)
 
-| Name                            | Type     | Default Value | Description                                                          |
-| ------------------------------- | -------- | ------------- | -------------------------------------------------------------------- |
-| `camera_calibration_min_frames` | `int`    | `1`           | The minimum number of the frames to consider for camera calibration. |
-| `camera_calibration_max_frames` | `int`    | `10`          | The maximum number of the frames to use in camera calibration.       |
-| `pc_features_min_distance`      | `double` | `0.2`         | Near plane distance in meters for `pcl::FrustumCulling`.             |
-| `pc_features_max_distance`      | `double` | `40.0`        | Far plane distance in meters for `pcl::FrustumCulling`.              |
+| Name                            | Type     | Default Value | Description                                                      |
+| ------------------------------- | -------- | ------------- | ---------------------------------------------------------------- |
+| `camera_calibration_min_frames` | `int`    | `1`           | The minimum number of frames to consider for camera calibration. |
+| `camera_calibration_max_frames` | `int`    | `10`          | The maximum number of frames to use in camera calibration.       |
+| `pc_features_min_distance`      | `double` | `0.2`         | Near plane distance in meters for `pcl::FrustumCulling`.         |
+| `pc_features_max_distance`      | `double` | `40.0`        | Far plane distance in meters for `pcl::FrustumCulling`.          |
 
 ### Base-Lidar Calibration Parameters
 
-| Name                                     | Type     | Default Value | Description                                                                                                         |
-| ---------------------------------------- | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `base_lidar_crop_box_min_x`              | `double` | `-20.0`       | Minimum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.      |
-| `base_lidar_crop_box_min_y`              | `double` | `-20.0`       | Minimum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.      |
-| `base_lidar_crop_box_min_z`              | `double` | `-20.0`       | Minimum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.      |
-| `base_lidar_crop_box_max_x`              | `double` | `20.0`        | Maximum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.      |
-| `base_lidar_crop_box_max_y`              | `double` | `20.0`        | Maximum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.      |
-| `base_lidar_crop_box_max_z`              | `double` | `20.0`        | Maximum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.      |
-| `base_lidar_max_inlier_distance`         | `double` | `0.01`        | Maximum inlier distance in meters for ground extraction by using `pcl::SACSegmentation`.                            |
-| `base_lidar_max_iterations`              | `int`    | `1000`        | The maximum number of the iterations for ground extraction by using `pcl::SACSegmentation`.                         |
-| `base_lidar_min_plane_points`            | `int`    | `1000`        | The minimum number of the points required in a pointcloud, ensuring sufficient data for applying ground extraction. |
-| `base_lidar_min_plane_points_percentage` | `double` | `10.0`        | The minimum percentage of the ground plane points in a pointcloud.                                                  |
-| `base_lidar_max_cos_distance`            | `double` | `0.5`         | Maximum cosine distance for applying ground plane extraction.                                                       |
-| `base_lidar_overwrite_xy_yaw`            | `bool`   | `false`       | Flag to allow overwriting the x, y, and yaw value during base-lidar calibration.                                    |
+| Name                                     | Type     | Default Value | Description                                                                                                     |
+| ---------------------------------------- | -------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
+| `base_lidar_crop_box_min_x`              | `double` | `-20.0`       | Minimum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_min_y`              | `double` | `-20.0`       | Minimum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_min_z`              | `double` | `-20.0`       | Minimum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_max_x`              | `double` | `20.0`        | Maximum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_max_y`              | `double` | `20.0`        | Maximum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_max_z`              | `double` | `20.0`        | Maximum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_max_inlier_distance`         | `double` | `0.01`        | Maximum inlier distance in meters for ground extraction by using `pcl::SACSegmentation`.                        |
+| `base_lidar_max_iterations`              | `int`    | `1000`        | The maximum number of iterations for ground extraction by using `pcl::SACSegmentation`.                         |
+| `base_lidar_min_plane_points`            | `int`    | `1000`        | The minimum number of points required in a pointcloud, ensuring sufficient data for applying ground extraction. |
+| `base_lidar_min_plane_points_percentage` | `double` | `10.0`        | The minimum percentage of the ground plane points in a pointcloud.                                              |
+| `base_lidar_max_cos_distance`            | `double` | `0.5`         | Maximum cosine distance for applying ground plane extraction.                                                   |
+| `base_lidar_overwrite_xy_yaw`            | `bool`   | `false`       | Flag to allow overwriting the x, y, and yaw value during base-lidar calibration.                                |
 
 ## Known issues/limitations
 
