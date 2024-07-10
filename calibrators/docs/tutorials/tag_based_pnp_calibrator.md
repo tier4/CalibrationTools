@@ -19,7 +19,7 @@ The provided rosbag includes four different topics: `/sensing/camera/camera6/cam
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. During calibration, please always make sure that tags are detected by both camera and lidar. The user can always check whether the tags appear in the `rviz` and the `image view` UI. For instance, he can observe the cyan rhombus around the tag in `rviz` if the tag is successfully detected by lidar, as shown in the image below. For the camera, if the tag is visible in the `image view` UI, it should be detectable. So far, in our use cases, the tag is always detected as long as it is completely visible in the image.
+The required space for calibration depends on the vehicle and sensors used. During calibration, please always make sure that tags are detected by both camera and lidar. This can be done by checking whether the tags appear in the `rviz` and the `image view` UI. For instance, a cyan rhombus around the tag in `rviz` represents a successful detection by the lidar, as shown in the image below. For the camera, if the tag is visible in the `image view` UI, it should be detectable. So far, in our use cases, the tag is always detected as long as it is completely visible in the image.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/lidar_detection.jpg"  alt="lidar_detection">
