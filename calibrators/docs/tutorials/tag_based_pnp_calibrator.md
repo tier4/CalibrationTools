@@ -68,7 +68,7 @@ When the user starts the calibration, `rviz` and the `image view` should be disp
     <img src="../images/tag_based_pnp_calibrator/visualization1.jpg"  alt="visualization1">
 </p>
 
-After the tools detects lidartags and apriltags, it will show the detection markers on `rviz` and the `image view` respectively. The text in `rviz` will also display the number of pairs of converged lidartag/apriltag detections so far.
+After the tool detects lidartags and apriltags, it will show the detection markers on `rviz` and the `image view` respectively. The text in `rviz` will also display the number of pairs of converged lidartag/apriltag detections so far.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization2.jpg"  alt="visualization2">
