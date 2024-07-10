@@ -666,54 +666,42 @@ std::vector<Eigen::Vector3d> ExtrinsicReflectorBasedCalibrator::extractLidarRefl
   return detections;
 }
 
+template <typename RadarMsgType>
 pcl::PointCloud<ExtrinsicReflectorBasedCalibrator::PointType>::Ptr
-ExtrinsicReflectorBasedCalibrator::extractRadarPointcloud(
-  const radar_msgs::msg::RadarTracks::SharedPtr msg)
+ExtrinsicReflectorBasedCalibrator::extractRadarPointcloud(const std::shared_ptr<RadarMsgType> & msg)
 {
+  static_assert(
+    std::is_same<RadarMsgType, radar_msgs::msg::RadarTracks>::value ||
+      std::is_same<RadarMsgType, radar_msgs::msg::RadarScan>::value ||
+      std::is_same<RadarMsgType, sensor_msgs::msg::PointCloud2>::value,
+    "Unsupported message type");
+
   radar_frame_ = msg->header.frame_id;
   radar_header_ = msg->header;
-  pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr(new pcl::PointCloud<PointType>);
-  radar_pointcloud_ptr->reserve(msg->tracks.size());
+  auto radar_pointcloud_ptr = std::make_shared<pcl::PointCloud<PointType>>();
 
-  for (const auto & track : msg->tracks) {
-    radar_pointcloud_ptr->emplace_back(track.position.x, track.position.y, track.position.z);
+  if constexpr (std::is_same<RadarMsgType, radar_msgs::msg::RadarTracks>::value) {
+    radar_pointcloud_ptr->reserve(msg->tracks.size());
+    for (const auto & track : msg->tracks) {
+      radar_pointcloud_ptr->emplace_back(track.position.x, track.position.y, track.position.z);
+    }
+  } else if constexpr (std::is_same<RadarMsgType, radar_msgs::msg::RadarScan>::value) {
+    radar_pointcloud_ptr->reserve(msg->returns.size());
+    for (const auto & radar_return : msg->returns) {
+      float range = radar_return.range;
+      float azimuth = radar_return.azimuth;
+      float elevation = radar_return.elevation;
+
+      float x = range * std::cos(azimuth) * std::cos(elevation);
+      float y = range * std::sin(azimuth) * std::cos(elevation);
+      float z = range * std::sin(elevation);
+
+      radar_pointcloud_ptr->emplace_back(x, y, z);
+    }
+  } else if constexpr (std::is_same<RadarMsgType, sensor_msgs::msg::PointCloud2>::value) {
+    pcl::fromROSMsg(*msg, *radar_pointcloud_ptr);
   }
 
-  return radar_pointcloud_ptr;
-}
-
-pcl::PointCloud<ExtrinsicReflectorBasedCalibrator::PointType>::Ptr
-ExtrinsicReflectorBasedCalibrator::extractRadarPointcloud(
-  const radar_msgs::msg::RadarScan::SharedPtr msg)
-{
-  radar_frame_ = msg->header.frame_id;
-  radar_header_ = msg->header;
-  pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr(new pcl::PointCloud<PointType>);
-  radar_pointcloud_ptr->reserve(msg->returns.size());
-
-  for (const auto & radar_return : msg->returns) {
-    float range = radar_return.range;
-    float azimuth = radar_return.azimuth;
-    float elevation = radar_return.elevation;
-
-    float x, y, z;
-    x = range * std::cos(azimuth) * std::cos(elevation);
-    y = range * std::sin(azimuth) * std::cos(elevation);
-    z = range * std::sin(elevation);
-    radar_pointcloud_ptr->emplace_back(x, y, z);
-  }
-
-  return radar_pointcloud_ptr;
-}
-
-pcl::PointCloud<ExtrinsicReflectorBasedCalibrator::PointType>::Ptr
-ExtrinsicReflectorBasedCalibrator::extractRadarPointcloud(
-  const sensor_msgs::msg::PointCloud2::SharedPtr msg)
-{
-  radar_frame_ = msg->header.frame_id;
-  radar_header_ = msg->header;
-  pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr(new pcl::PointCloud<PointType>);
-  pcl::fromROSMsg(*msg, *radar_pointcloud_ptr);
   return radar_pointcloud_ptr;
 }
 
