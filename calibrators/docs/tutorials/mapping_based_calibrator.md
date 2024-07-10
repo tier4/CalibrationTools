@@ -117,7 +117,7 @@ Once the calibration process is complete, the displayed text should be as follow
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Sending the results to the calibrator manager
 ```
 
-The user can also see the three different colors of pointcloud in the `rviz`. white for the map from the `mapping lidar`, red for the initial pointcloud from the `calibration lidars`, and green for the calibrated pointcloud from the `calibration lidars`.
+The user can also see the three different colors of pointcloud in `rviz`. white for the map from the `mapping lidar`, red for the initial pointcloud from the `calibration lidars`, and green for the calibrated pointcloud from the `calibration lidars`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map3.jpg" alt="map3">

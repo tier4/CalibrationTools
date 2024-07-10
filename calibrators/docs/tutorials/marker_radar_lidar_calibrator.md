@@ -19,7 +19,7 @@ The rosbag includes three different topics: `/sensing/radar/front_center/objects
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. Generally, an open space without any other objects is an ideal calibration environment. During the calibration, please always make sure that reflectors are detected by both radar and lidar. The user could always check whether the reflectors appear in the `rviz` with the corresponding topics.
+The required space for calibration depends on the vehicle and sensors used. Generally, an open space without any other objects is an ideal calibration environment. During the calibration, please always make sure that reflectors are detected by both radar and lidar. The user could always check whether the reflectors appear in `rviz` with the corresponding topics.
 
 ### Radar reflector
 
