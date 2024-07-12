@@ -161,7 +161,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `max_allowed_interpolated_accel`             | `double` | `0.4`         | Maximum allowable acceleration in meters/second^2 for frame interpolated acceleration in standard criteria.                                   |
 | `max_allowed_interpolated_distance_straight` | `double` | `0.08`        | Maximum allowable distance in meters for frame interpolated distance in straight criteria.                                                    |
 | `max_allowed_interpolated_angle_straight`    | `double` | `0.5`         | Maximum allowable angle in degrees for frame interpolated angle in straight criteria.                                                         |
-| `max_allowed_interpolated_speed_straight`    | `double` | `5.0`         | Maximum allowable speed in meters for frame interpolated speed in straight criteria.                                                          |
+| `max_allowed_interpolated_speed_straight`    | `double` | `5.0`         | Maximum allowable speed in meters/second for frame interpolated speed in straight criteria.                                                   |
 | `max_allowed_interpolated_accel_straight`    | `double` | `0.1`         | Maximum allowable acceleration in meters/second^2 for frame interpolated acceleration in straight criteria.                                   |
 | `filter_detections`                          | `bool`   | `true`        | Flag to enable filtering of detection to improve calibration accuracy and reduce noise.                                                       |
 | `detection_max_time_tolerance`               | `double` | `0.5`         | Maximum time tolerance in seconds for obtaining all detections close in time to the source pointcloud.                                        |
@@ -173,7 +173,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `crop_z_calibration_pointclouds`             | `bool`   | `true`        | Flag to enable cropping of the Z-axis in calibration pointclouds.                                                                             |
 | `crop_z_calibration_pointclouds_value`       | `double` | `2.0`         | Value of cropping the Z-axis in the calibration pointcloud.                                                                                   |
 | `calibration_use_only_stopped`               | `bool`   | `false`       | Flag to use only data from stopped frames.                                                                                                    |
-| `calibration_use_only_last_frames`           | `bool`   | `false`       | Consider only the last frames for calibration.                                                                                                |
+| `calibration_use_only_last_frames`           | `bool`   | `false`       | Flag to use only last frames for calibration.                                                                                                 |
 | `max_calibration_range`                      | `double` | `80.0`        | Maximum range in meters to consider for calibration purposes, defining the spatial boundary for calibration data.                             |
 | `min_calibration_range`                      | `double` | `1.5`         | Minimum range in meters to consider for calibration purposes, defining the spatial boundary for calibration data.                             |
 | `calibration_min_pca_eigenvalue`             | `double` | `0.25`        | If the eigenvalue of a pointcloud is less than this value, it will be filtered out.                                                           |
@@ -209,12 +209,12 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 | Name                                     | Type     | Default Value | Description                                                                                                     |
 | ---------------------------------------- | -------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| `base_lidar_crop_box_min_x`              | `double` | `-20.0`       | Minimum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
-| `base_lidar_crop_box_min_y`              | `double` | `-20.0`       | Minimum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
-| `base_lidar_crop_box_min_z`              | `double` | `-20.0`       | Minimum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
-| `base_lidar_crop_box_max_x`              | `double` | `20.0`        | Maximum X-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
-| `base_lidar_crop_box_max_y`              | `double` | `20.0`        | Maximum Y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
-| `base_lidar_crop_box_max_z`              | `double` | `20.0`        | Maximum Z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_min_x`              | `double` | `-20.0`       | Minimum x-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_min_y`              | `double` | `-20.0`       | Minimum y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_min_z`              | `double` | `-20.0`       | Minimum z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_max_x`              | `double` | `20.0`        | Maximum x-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_max_y`              | `double` | `20.0`        | Maximum y-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
+| `base_lidar_crop_box_max_z`              | `double` | `20.0`        | Maximum z-coordinate in meters for the cropping box in base-lidar calibration to focus on relevant data areas.  |
 | `base_lidar_max_inlier_distance`         | `double` | `0.01`        | Maximum inlier distance in meters for ground extraction by using `pcl::SACSegmentation`.                        |
 | `base_lidar_max_iterations`              | `int`    | `1000`        | The maximum number of iterations for ground extraction by using `pcl::SACSegmentation`.                         |
 | `base_lidar_min_plane_points`            | `int`    | `1000`        | The minimum number of points required in a pointcloud, ensuring sufficient data for applying ground extraction. |
@@ -225,7 +225,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 ## Known issues/limitations
 
 - As described in [Step 2](#step-2-prepare-calibration-data), the calibrator interpolates the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. Therefore, the calibrator highly requires time synchronization between all of the lidar sensors.
-- It is required that the `mapping lidar` have high resolution. For the `calibration lidar`, both high and low resolutions are acceptable. Therefore, the vehicle with only low-resolution lidars couldn't use the calibrator.
+- It is required that the `mapping lidar` have high resolution. For the `calibration lidar`, both high and low resolutions are acceptable. Therefore, the vehicle with only low-resolution lidars could not use the calibrator.
 - A good initial calibration parameters is required for the calibrator. Better initial calibration parameters could help the registration algorithm estimate a more reliable transformation.
 
 ## Pro tips/recommendations
