@@ -18,7 +18,7 @@ A prerequisite for this calibrator is an environment rich in natural landmarks s
 
 The calibrator designates one of the lidars (defined in the launch file) as the `mapping lidar` for mapping purposes. Pointclouds from this lidar utilize either the NDT or GICP algorithm to calculate the pose and also store the pointclouds as a map for future usage. The following rules are applied while constructing the map.
 
-- For each `N` meter, a keyframe will be saved, which is used for mapping and estimating transformation.
+- For each `N` meters, a keyframe will be saved, which is used for mapping and estimating transformation.
 - If the distance between the last frame and the current pointcloud is more than the `D` meters, the pointcloud will be saved as a frame, which is used to complement keyframes.
 
 It is recommended to select the lidar that has the highest resolution and best FOV as the `mapping lidar`.
@@ -157,18 +157,18 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `max_allowed_interpolated_time`              | `double` | `0.05`        | Maximum allowable time in seconds for frame interpolated time in standard criteria.                                                           |
 | `max_allowed_interpolated_distance`          | `double` | `0.05`        | Maximum allowable distance in meters for frame interpolated distance in standard criteria.                                                    |
 | `max_allowed_interpolated_angle`             | `double` | `1.0`         | Maximum allowable angle in degrees for frame interpolated angle in standard criteria.                                                         |
-| `max_allowed_interpolated_speed`             | `double` | `3.0`         | Maximum allowable speed in meter/second for frame interpolated speed in standard criteria.                                                    |
-| `max_allowed_interpolated_accel`             | `double` | `0.4`         | Maximum allowable acceleration in meter/second^2 for frame interpolated acceleration in standard criteria.                                    |
+| `max_allowed_interpolated_speed`             | `double` | `3.0`         | Maximum allowable speed in meters/second for frame interpolated speed in standard criteria.                                                   |
+| `max_allowed_interpolated_accel`             | `double` | `0.4`         | Maximum allowable acceleration in meters/second^2 for frame interpolated acceleration in standard criteria.                                   |
 | `max_allowed_interpolated_distance_straight` | `double` | `0.08`        | Maximum allowable distance in meters for frame interpolated distance in straight criteria.                                                    |
 | `max_allowed_interpolated_angle_straight`    | `double` | `0.5`         | Maximum allowable angle in degrees for frame interpolated angle in straight criteria.                                                         |
 | `max_allowed_interpolated_speed_straight`    | `double` | `5.0`         | Maximum allowable speed in meters for frame interpolated speed in straight criteria.                                                          |
-| `max_allowed_interpolated_accel_straight`    | `double` | `0.1`         | Maximum allowable acceleration in meter/second^2 for frame interpolated acceleration in straight criteria.                                    |
+| `max_allowed_interpolated_accel_straight`    | `double` | `0.1`         | Maximum allowable acceleration in meters/second^2 for frame interpolated acceleration in straight criteria.                                   |
 | `filter_detections`                          | `bool`   | `true`        | Flag to enable filtering of detection to improve calibration accuracy and reduce noise.                                                       |
 | `detection_max_time_tolerance`               | `double` | `0.5`         | Maximum time tolerance in seconds for obtaining all detections close in time to the source pointcloud.                                        |
 | `detection_size_tolerance`                   | `double` | `0.4`         | Tolerance for detection size in meters to account for measurement errors and environmental factors.                                           |
 | `lost_frame_max_angle_diff`                  | `double` | `25.0`        | Maximum allowable angular difference in degrees between keyframes to consider a frame as lost, used in handling outliers in frame processing. |
 | `lost_frame_interpolation_error`             | `double` | `0.05`        | Maximum allowable interpolation error in meters between keyframes to consider a frame as lost, used in handling outliers in frame processing. |
-| `lost_frame_max_acceleration`                | `double` | `8.0`         | Maximum allowable acceleration in meter/second between keyframes to consider a frame as lost, used in handling outliers in frame processing.  |
+| `lost_frame_max_acceleration`                | `double` | `8.0`         | Maximum allowable acceleration in meters/second between keyframes to consider a frame as lost, used in handling outliers in frame processing. |
 | `viz_max_range`                              | `double` | `80.0`        | Maximum range in meters for visualization purposes, setting the boundary for displayable data.                                                |
 | `crop_z_calibration_pointclouds`             | `bool`   | `true`        | Flag to enable cropping of the Z-axis in calibration pointclouds.                                                                             |
 | `crop_z_calibration_pointclouds_value`       | `double` | `2.0`         | Value of cropping the Z-axis in the calibration pointcloud.                                                                                   |
