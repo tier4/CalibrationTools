@@ -62,7 +62,7 @@ If it does not become available, it means that either the required `tf` or servi
 
 The calibration starts automatically after clicking the `Calibrate` button. It will keep calibrating the lidartag detections and apriltag detections until the number of the detections fits the user-defined `calibration_pairs` in the `Launcher configuration`.
 
-When the user starts the calibration, `rviz` and the `image view` should be displayed like below.
+When the user starts the calibration, `rviz` and the `image view` should be displayed as shown below.
 
 <p align="center">
     <img src="../images/tag_based_pnp_calibrator/visualization1.jpg"  alt="visualization1">

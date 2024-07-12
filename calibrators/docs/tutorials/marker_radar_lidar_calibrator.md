@@ -185,7 +185,7 @@ The user can click the `Send calibration` button once it is enabled. However, it
 [marker_radar_lidar_calibrator]: The 2D calibration pose was chosen as the output calibration pose
 ```
 
-Once the `Send calibration` button is clicked, the result will be sent to the sensor calibration manager. No pairs can be added or deleted afterward like the image shown below. Please make sure you want to end the calibration process when you click the button.
+Once the `Send calibration` button is clicked, the result will be sent to the sensor calibration manager. Afterward, no pairs can be added or deleted, as shown in the image below. Please make sure you want to end the calibration process before clicking the button.
 
 <table>
   <tr>
