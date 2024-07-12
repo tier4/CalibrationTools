@@ -67,7 +67,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | Name                     | Type                            | Description                                             |
 | ------------------------ | ------------------------------- | ------------------------------------------------------- |
 | `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2` | The topic of the lidar pointcloud used for calibration. |
-| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | The topic of the radar objects used for calibration.    |
+| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | The topic of radar objects used for calibration.        |
 
 ### Output
 

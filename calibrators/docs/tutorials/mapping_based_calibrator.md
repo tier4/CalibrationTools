@@ -149,11 +149,11 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
 
 - Why does the calibration fail?
 
-  - Most of the cases are because the mapping fails. Possible error messages are listed below, which should be displayed in the console. For these cases, restart the experiment and drive more stably and slowly.
+  - In most cases, the failure is due to mapping issues. The possible error messages are listed below and should be displayed in the console. For these cases, restart the experiment and drive more stably and slowly.
     - Mapping failed. Angle between keyframes is too high.
     - Mapping failed. Interpolation error is too high.
     - Mapping failed. Acceleration is too high.
-  - Check the rviz to see if any number on the path (keyframe number) is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. We recommend the user calibrate with more stable movement again.
+  - Check the rviz to see if any keyframe number on the path is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. We recommend the user calibrate with more stable movement again.
   - If it is not feasible to restart the experiment, the user could tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md). However, keep in mind that if the user sets the threshold too high, the accuracy of the calibration result will also decrease.
   - Check whether all of the lidars apply time synchronization.
   - Make sure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
