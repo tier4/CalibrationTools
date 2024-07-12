@@ -60,7 +60,7 @@ Note: In the [launch file](../../sensor_calibration_manager/launch/rdv/mapping_b
 
 ## Data collection (Mapping & Data paring)
 
-Once the user clicks the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT or GICP algorithm with the `mapping lidar`. He can visualize the process of building the map on the `rviz`.
+Once the user clicks the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT or GICP algorithm with the `mapping lidar`. He can visualize the process of building the map on `rviz`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map1.jpg" alt="menu3">

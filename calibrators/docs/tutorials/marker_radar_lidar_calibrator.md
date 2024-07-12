@@ -82,7 +82,7 @@ Also, the following text should be shown in the console.
 [marker_radar_lidar_calibrator]: Finished background model initialization
 ```
 
-Additionally, the user can click the topics: `lidar_background_pointcloud`, `lidar_foreground_pointcloud`, `radar_foreground_pointcloud` and `radar_background_pointcloud` on the left bar of the `rviz` to visualize the output of background and foreground pointcloud. In the [documentation](../../marker_radar_lidar_calibrator/README.md), we referred to `radar foreground objects`; here, we call it `radar_foreground_pointcloud` for visualization purposes.
+Additionally, the user can click the topics: `lidar_background_pointcloud`, `lidar_foreground_pointcloud`, `radar_foreground_pointcloud` and `radar_background_pointcloud` on the left bar of `rviz` to visualize the output of background and foreground pointcloud. In the [documentation](../../marker_radar_lidar_calibrator/README.md), we referred to `radar foreground objects`; here, we call it `radar_foreground_pointcloud` for visualization purposes.
 
 <table>
   <tr>
@@ -216,7 +216,7 @@ To evaluate the calibration result, the user can measure that the calibrated rad
 
 ## FAQ
 
-- Why does the reflector detection not show on the rviz?
+- Why does the reflector detection not show on rviz?
 
   - Make sure the center of the reflector faces toward the radar sensor, and the height of the reflector is enough for the radar to detect.
   - Make sure the height of the radar reflector is not larger than the `reflector_max_height` parameter.
