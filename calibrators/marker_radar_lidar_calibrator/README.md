@@ -80,7 +80,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 | `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from the radar.           |
 | `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from the radar.           |
 | `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Radar detections.                               |
-| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Matched lidar and radar detection.              |
+| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Matched lidar and radar detections.             |
 | `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Reflectors' tracks.                             |
 | `text_markers`                | `visualization_msgs::msg::Marker`      | Text markers that show the calibration metrics. |
 | `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Calibration metrics.                            |
