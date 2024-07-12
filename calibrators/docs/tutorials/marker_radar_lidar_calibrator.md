@@ -226,7 +226,7 @@ To evaluate the calibration result, the user can measure that the calibrated rad
 
   - Make sure that there are no outliers in the calibration pairs list.
   - Make sure that the initial calibration is good enough to match the lidar detection and radar detection correctly.
-  - Radars like the ARS408 (the one we use in this tutorial) have a resolution of 0.2m. Given that, there is a theoretical limit to how low the calibration error can be. If the radar resolution is considerable, it will strongly limit the lower bound of the calibration error.
+  - Radars like the ARS 408 (the one we use in this tutorial) have a resolution of 0.2m. Given that, there is a theoretical limit to how low the calibration error can be. If the radar resolution is considerable, it will strongly limit the lower bound of the calibration error.
 
 - When can I stop the calibration process?
 
