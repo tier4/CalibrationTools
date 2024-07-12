@@ -37,7 +37,7 @@ First, run the sensor calibration manager:
 ros2 run sensor_calibration_manager sensor_calibration_manager
 ```
 
-In `project`, select `rdv`, and in `calibrator`, select `mapping_based_calibrator`. Then, press `Continue`.
+In `Project`, select `rdv`, and in `Calibrator`, select `mapping_based_calibrator`. Then, press `Continue`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/menu1.jpg" alt="menu1">
