@@ -58,7 +58,7 @@ If it does not become available, it means that either the required `tf` or servi
 
 Note: In the [launch file](../../sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml), the RDV vehicle set the top lidar as `mapping lidar`, and other lidars as `calibration lidars`.
 
-## Data collection (Mapping & Data paring)
+## Construct a map
 
 Once the user clicks the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT or GICP algorithm with the `mapping lidar`. He can visualize the process of building the map on `rviz`.
 
@@ -86,9 +86,9 @@ When the rosbag has finished playing, the user should see the pointcloud map and
     <img src="../images/mapping_based_calibrator/map2.jpg" alt="map2">
 </p>
 
-## Calibration
+## Estimate transformations
 
-Calibration starts when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty` in the terminal. Note that the user can send this command before the rosbag ends if they think the data collected is sufficient for calibration.
+The process of estimating transformations starts when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty` in the terminal. Note that the user can send this command before the rosbag ends if they think the data collected is sufficient for calibration.
 
 In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 
@@ -98,9 +98,9 @@ In this tutorial, we send the command after the rosbag runs until the end. Once 
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Beginning lidar calibration for pandar_front (operator()())
 ```
 
-The calibration process may take some time, as it involves multiple lidars. Users should remain patient and monitor the console output to track the progress of the calibration.
+This process may take some time, as it involves multiple lidars' calibration. Users should remain patient and monitor the console output to track the progress of the calibration.
 
-Once the calibration process is complete, the displayed text should be as follows:
+Once the process is complete, the displayed text should be as follows:
 
 ```text
 [mapping_based_calibrator-1] [lidar_calibrator(pandar_left)]: Calibration result as a tf main lidar -> lidar_calibrator(pandar_left)
@@ -125,7 +125,7 @@ The user can also see the three different colors of pointcloud in `rviz`. White 
 
 ## Results
 
-After the calibration process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
+After the estimation transformations process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
 
 In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`.
 
