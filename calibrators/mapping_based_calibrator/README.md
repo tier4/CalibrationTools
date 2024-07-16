@@ -4,7 +4,7 @@ A tutorial for this calibrator can be found [here](../docs/tutorials/mapping_bas
 
 ## Purpose
 
-The package `mapping_based_calibrator` allows extrinsic calibration between 3d lidar and 3d lidar sensors, as well as baselink and 3d lidar sensors used in autonomous driving and robotics.
+The package `mapping_based_calibrator` allows extrinsic calibration between 3d lidar and 3d lidar sensors, as well as `base_link` and 3d lidar sensors used in autonomous driving and robotics.
 
 ## Inner-workings / Algorithms
 
@@ -12,7 +12,7 @@ The package `mapping_based_calibrator` allows extrinsic calibration between 3d l
 
 The calibrator is designed to estimate the transformation between lidar and lidar sensors. It starts by employing a lidar, called the `mapping lidar`, for mapping purposes. Then, it utilizes pointcloud registration algorithms to calibrate the remaining lidars, known as `calibration lidars`, to the `mapping lidar`. Specifically, the calibration process encompasses three primary steps: constructing a map, preparing calibration data, and finally estimating the transformations.
 
-A prerequisite for this calibrator is an environment rich in natural landmarks suitable for registration-based mapping in all directions, ensuring that the lidar captures sufficient details beyond simple features like lane surfaces or walls.
+A prerequisite for this calibrator is an environment rich in natural landmarks suitable for registration-based mapping and calibration in all directions, ensuring that the lidar captures sufficient details beyond simple features like lane surfaces or walls.
 
 #### Step 1: Map construction
 
@@ -60,9 +60,9 @@ After constructing the map, we could get the augmented pointcloud from `mapping 
 
 #### Step 3: Estimate transformation
 
-To estimate the transformation between the `mapping lidar` and the `baselink`, the tool needs to calculate the transformation between the lidar and the ground pose, as well as the transformation between the ground pose and the baselink.
+To estimate the transformation between the `mapping lidar` and the `base_link`, the tool needs to calculate the transformation between the lidar and the ground pose (), as well as the transformation between the ground pose and the `base_link`.
 
-The transformation between the lidar and the ground pose is calculated by utilizing the normal vector and a point on the ground plane. To estimate the transformation between the ground pose and the baselink, the tool first determines the initial ground-pose-to-baselink using the initial lidar-to-baselink and lidar-to-ground-pose transformations. Then, the tool projects this initial ground-pose-to-baselink transformation onto the xy plane to estimate the transformation between the ground pose and the baselink.
+The transformation between the lidar and the ground pose is calculated by utilizing the normal vector and a point on the ground plane. To estimate the transformation between the ground pose and the `base_link`, the tool first determines the initial ground-pose-to-base-link using the initial lidar-to-base-link and lidar-to-ground-pose transformations. Then, the tool projects this initial ground-pose-to-base-link transformation onto the xy plane to estimate the transformation between the ground pose and the `base_link`.
 
 ## ROS Interfaces
 
@@ -231,7 +231,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 ## Pro tips/recommendations
 
 - To build the map accurately, drive your vehicle at the lowest feasible speed, such as 2 km/h. Driving too fast can distort the point cloud, negatively impacting the map's accuracy.
-- To create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions, which is shown in the image below. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
+- The surroundings of the calibration area are crucial for creating an accurate map and estimating transformations. Therefore, it is essential to ensure that the environment is rich in natural landmarks suitable for registration-based mapping and calibration in all directions, as shown in the image below. This richness in natural landmarks helps the lidar capture sufficient details beyond simple features like lane surfaces or walls, thereby enhancing the accuracy and reliability of the mapping and calibration processes.
 
 <p align="center">
     <img src="../docs/images/mapping_based_calibrator/mapping_based_vis.svg" alt="radar_reflector" width="900">
