@@ -77,7 +77,7 @@ void TransformationEstimator::estimateSVDTransformation(
 
   if (transformation_type == ExtrinsicReflectorBasedCalibrator::TransformationType::svd_2d) {
     // Check that is is actually a 2D transformation
-    auto calibrated_radar_to_radar_optimization_rpy = tier4_autoware_utils::getRPY(
+    auto calibrated_radar_to_radar_optimization_rpy = autoware::universe_utils::getRPY(
       tf2::toMsg(calibrated_radar_to_radar_optimization_transformation).orientation);
     double calibrated_radar_to_radar_optimization_z =
       calibrated_radar_to_radar_optimization_transformation.translation().z();

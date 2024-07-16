@@ -45,7 +45,8 @@ However, not all pointclouds coming from the `mapping lidar` are used in the map
 
 The data required for calibration is created throughout the mapping process and right before the calibration itself. In particular, the mapping and calibration lidar are expected to have different timestamps so they can not be directly registered. Additionally, the mapping process produces a great amount of potential combinations of pointclouds to register, so the data best suited for calibration needs to be chosen.
 
-##### Data interpolation
+
+##### Data synchronization
 
 As explained in the previous section, pointclouds from the `mapping lidar` and `calibration lidar` have different timestamps which makes registration directly unfeasible. To address this problem, whenever a `keyframe` from the `mapping lidar` is generated, the temporally closest `calibration lidar` pointcloud is associated to it, and the pose of the `mapping lidar` pointcloud is interpolated to the stamp of the `calibration lidar` pointcloud using the map (adjacent frames to the `keyframe`).
 
@@ -63,6 +64,7 @@ At this point, we have obtained a series of `calibration frames` that can be use
   - The Principal Component Analysis (PCA) is applied to the `calibration lidar` pointcloud of the `calibration frames`. In this context, the higher the smallest component of PCA is, the more suited a pointcloud is for calibration.
   - Then, the `calibration frames` are sorted in descending order and they are greedily added to the final calibration set until a maximum budget is reached.
   - However, `calibration frames` will be skipped if another one near it has already been added (using distance criteria in the map).
+
 
 ##### Data preprocessing
 
@@ -95,6 +97,7 @@ After constructing the map, and computing the augmented pointcloud from `mapping
 To estimate the transformation between the `mapping lidar` and the `base_link`, the tool needs to calculate the transformation between the lidar and the ground pose, as well as the transformation between the ground pose and the `base_link`.
 
 The transformation between the lidar and the ground pose is calculated by utilizing the normal vector and a point on the ground plane, both obtained in the last step. To estimate the transformation between the ground pose and the `base_link`, the tool first determines the initial ground-pose-to-base-link using the initial lidar-to-base-link and lidar-to-ground-pose transformations. Then, the tool projects this initial ground-pose-to-base-link transformation onto the xy plane to estimate the transformation between the ground pose and the `base_link`. The final lidar to `base_link` pose can be obtained by composing the previous poses.
+
 
 ## ROS Interfaces
 
@@ -160,6 +163,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `min_mapping_pointcloud_size`            | `int`                 | `10000`        | The minimum size of the pointcloud required for mapping.                                                                                                                                       |
 | `min_calibration_pointcloud_size`        | `int`                 | `500`          | The minimum size of the pointcloud that is necessary for estimating transformation.                                                                                                            |
 | `mapping_lost_timeout`                   | `double`              | `1.0`          | Sensor's timeout in seconds to consider the mapping process is failed.                                                                                                                         |
+
 
 ### Mapping Parameters
 
@@ -265,6 +269,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 - It is recommended to select the lidar that has the highest resolution and best FOV as the `mapping lidar`.
 - To build the map accurately, drive your vehicle at the lowest feasible speed, such as 2 km/h. Driving too fast can distort the point cloud, negatively impacting the map's accuracy.
 - The surroundings of the calibration area are crucial for creating an accurate map and estimating transformations. Therefore, it is essential to ensure that the environment is rich in natural landmarks suitable for registration-based mapping and calibration in all directions, as shown in the image below. This richness in natural landmarks helps the lidar capture sufficient details beyond simple features like lane surfaces or walls, thereby enhancing the accuracy and reliability of the mapping and calibration processes.
+
 
 <p align="center">
     <img src="../../docs/images/mapping_based_calibrator/mapping_based_vis.svg" alt="radar_reflector" width="900">
