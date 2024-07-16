@@ -36,7 +36,7 @@ As the tool aims to apply registration algorithms on the pointclouds from both t
 To refine our calibration process, the tool first temporarily pairs `mapping lidar` keyframes with their closest `calibration lidar` frame, and then selects the final calibration pairs (`mapping lidar` keyframes and `calibration lidar` frame) based on the criteria listed below.
 
 - The pairs have low time difference and low interpolation error (such as speed, estimated acceleration, etc.) between the keyframe and the `calibration lidar` frame.
-- The pointlcoud in `calibration lidar` frame has enough features for calibration, which the tool filters out the pointcloud that has low variance in the z-axis that is mostly a plane.
+- The pointcloud in `calibration lidar` frame has enough features for calibration, which the tool filters out the pointcloud that has low variance in the z-axis that is mostly a plane.
 
 ##### Data preprocessing
 
@@ -56,7 +56,7 @@ The first step of base-lidar calibration would be the same as [Step 1](#step-1-c
 
 #### Step 2: Extract ground plane from the pointcloud
 
-After constructing the map, we could get the augmented pointcloud from `mapping lidar`, which would be the same process as [Step 2](#step-2-prepare-calibration-data). Afterward, the tool utilizes PCA and a segmentation algorithm for extracting the ground plane from the augmented pointcloud.
+After constructing the map, we could get the augmented pointcloud from `mapping lidar`, which would be the same process as [Step 2](#step-2-calibration-data-preparation). Afterward, the tool utilizes PCA and a segmentation algorithm for extracting the ground plane from the augmented pointcloud.
 
 #### Step 3: Estimate transformation
 
@@ -224,7 +224,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 ## Known issues/limitations
 
-- As described in [Step 2](#step-2-prepare-calibration-data), the calibrator interpolates the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. Therefore, the calibrator highly requires time synchronization between all of the lidar sensors.
+- As described in [Step 2](#step-2-calibration-data-preparation), the calibrator interpolates the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. Therefore, the calibrator highly requires time synchronization between all of the lidar sensors.
 - It is required that the `mapping lidar` have high resolution. For the `calibration lidar`, both high and low resolutions are acceptable. Therefore, the vehicle with only low-resolution lidars could not use the calibrator.
 - A good initial calibration parameters is required for the calibrator. Better initial calibration parameters could help the registration algorithm estimate a more reliable transformation.
 
