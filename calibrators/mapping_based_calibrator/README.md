@@ -23,7 +23,7 @@ The calibrator designates one of the lidars (defined in the launch file) as the 
 
 It is recommended to select the lidar that has the highest resolution and best FOV as the `mapping lidar`.
 
-#### Step 2: Prepare calibration data
+#### Step 2: Calibration data preparation
 
 After the mapping has been completed, some preprocessing is necessary before estimating the transformations between lidars. In the explanation below, we assume that there is only a `calibration lidar` that needs to be calibrated with the `mapping lidar`.
 
