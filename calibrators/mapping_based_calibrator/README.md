@@ -14,7 +14,7 @@ The calibrator is designed to estimate the transformation between lidar and lida
 
 A prerequisite for this calibrator is an environment rich in natural landmarks suitable for registration-based mapping in all directions, ensuring that the lidar captures sufficient details beyond simple features like lane surfaces or walls.
 
-#### Step 1: Construct a map
+#### Step 1: Map construction
 
 The calibrator designates one of the lidars (defined in the launch file) as the `mapping lidar` for mapping purposes. Pointclouds from this lidar utilize either the NDT or GICP algorithm to calculate the pose and also store the pointclouds as a map for future usage. The following rules are applied while constructing the map.
 
