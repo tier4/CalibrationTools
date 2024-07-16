@@ -52,7 +52,7 @@ Instead of calibrating the transformations between lidars, we can also utilize t
 
 #### Step 1: Map construction
 
-The first step of base-lidar calibration would be the same as [Step 1](#step-1-construct-a-map) in `lidar-lidar calibration`.
+The first step of base-lidar calibration would be the same as [Step 1](#step-1-map-construction) in `lidar-lidar calibration`.
 
 #### Step 2: Extract ground plane from the pointcloud
 
