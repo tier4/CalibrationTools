@@ -112,7 +112,7 @@ protected:
   void extractForegroundPoints(
     const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
     const BackgroundModel & background_model, bool use_ransac,
-    pcl::PointCloud<PointType>::Ptr & foreground_points, Eigen::Vector4f & ground_model);
+    pcl::PointCloud<PointType>::Ptr & foreground_points, Eigen::Vector4d & ground_model);
 
   std::vector<pcl::PointCloud<PointType>::Ptr> extractClusters(
     const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud,
@@ -120,7 +120,7 @@ protected:
 
   std::vector<Eigen::Vector3d> findReflectorsFromClusters(
     const std::vector<pcl::PointCloud<PointType>::Ptr> & clusters,
-    const Eigen::Vector4f & ground_model);
+    const Eigen::Vector4d & ground_model);
 
   bool checkInitialTransforms();
 
@@ -216,6 +216,7 @@ protected:
 
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_background_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_plane_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_foreground_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_colored_clusters_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr lidar_detections_pub_;
@@ -297,6 +298,9 @@ protected:
   MsgType msg_type_;
   TransformationType transformation_type_;
   static constexpr int MARKER_SIZE_PER_TRACK = 8;
+
+  bool first_time_{true};
+  Eigen::Vector4d ground_model_;
 };
 
 }  // namespace marker_radar_lidar_calibrator
