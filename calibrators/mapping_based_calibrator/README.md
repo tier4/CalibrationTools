@@ -226,7 +226,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 - As described in [Step 2](#step-2-calibration-data-preparation), the calibrator interpolates the pose of the `mapping lidar` at the timestamp of the `calibration lidars`. Therefore, the calibrator highly requires time synchronization between all of the lidar sensors.
 - It is required that the `mapping lidar` has high resolution. For the `calibration lidar`, both high and low resolutions are acceptable. Therefore, vehicles with only low-resolution lidars cannot use the calibrator.
-- A good initial calibration parameters is required for the calibrator. Better initial calibration parameters could help the registration algorithm estimate a more reliable transformation.
+- A good initial calibration parameters are required for the calibrator. Better initial calibration parameters could help the registration algorithm estimate a more reliable transformation.
 
 ## Pro tips/recommendations
 
