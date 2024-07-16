@@ -230,7 +230,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 ## Pro tips/recommendations
 
-- To build the map accurately, drive your vehicle at the lowest feasible speed, for example, 2 km/h would be a good speed. If the user drives the vehicle too fast, the pointcloud will be distorted.
+- To build the map accurately, drive your vehicle at the lowest feasible speed, such as 2 km/h. Driving too fast can distort the point cloud, negatively impacting the map's accuracy.
 - To create an accurate map, the surroundings of the calibration area are crucial. Ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions, which is shown in the image below. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 
 <p align="center">
