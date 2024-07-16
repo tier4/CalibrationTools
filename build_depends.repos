@@ -5,16 +5,12 @@ repositories:
     version: main
   autoware/universe:
     type: git
-    url: https://github.com/tier4/autoware.universe.git
-    version: tier4/main
+    url: https://github.com/autowarefoundation/autoware.universe.git
+    version: main
   autoware/tier4_autoware_msgs:
     type: git
     url: https://github.com/tier4/tier4_autoware_msgs.git
     version: tier4/universe
-  autoware/auto_msgs:
-    type: git
-    url: https://github.com/tier4/autoware_auto_msgs.git
-    version: tier4/main
   missing_packages/astuff_sensor_msgs:
     type: git
     url: https://github.com/astuff/astuff_sensor_msgs.git
