@@ -89,7 +89,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `initial_source_aligned_map`      | `sensor_msgs::msg::PointCloud2`        | Initial map from calibration lidars.                                                                           |
 | `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Calibrated map from calibration lidars.                                                                        |
 | `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Target map from `mapping lidar`, used for comparing with the `calibrated_source_aligned_map` and `target_map`. |
-| `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Markers for camera calibrator (currently not used)                                                             |
+| `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Markers for camera calibrator (currently not used).                                                            |
 | `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Ground pointcloud from augmented pointcloud.                                                                   |
 | `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | Ground pointcloud from calibrated pointcloud.                                                                  |
 
@@ -99,8 +99,8 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
 | `stop_mapping`          | `std_srvs::srv::Empty`                                | Stops building the map; calibration will begin afterward.                                |
-| `load_database`         | `std_srvs::srv::Empty`                                | Loads lidar and camera calibration frames from the database. (currently not used)        |
-| `save_database`         | `std_srvs::srv::Empty`                                | Saves lidar and camera calibration frames to the database. (currently not used)          |
+| `load_database`         | `std_srvs::srv::Empty`                                | Loads lidar and camera calibration frames from the database (for developers).            |
+| `save_database`         | `std_srvs::srv::Empty`                                | Saves lidar and camera calibration frames to the database (for developers).              |
 
 ## Parameters
 
