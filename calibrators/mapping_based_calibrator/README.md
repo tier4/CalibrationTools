@@ -33,7 +33,7 @@ As the tool aims to apply registration algorithms on the pointclouds from both t
 
 ##### Data selection
 
-In the data selection process, the tool initially pairs mapping lidar keyframes with their nearest calibration lidar frames. It then selects the final calibration pairs based on the following criteria:
+In the data selection process, the tool initially pairs `mapping lidar` keyframes with their nearest `calibration lidar` frames. It then selects the final calibration pairs (`mapping lidar` keyframes and `calibration lidar` frame) based on the following criteria:
 
 - The pairs have low time difference and low interpolation error (such as speed, estimated acceleration, etc.) between the keyframe and the `calibration lidar` frame.
 - The pointcloud in `calibration lidar` frame has enough features for calibration, which the tool filters out the pointcloud that has low variance in the z-axis that is mostly a plane.
