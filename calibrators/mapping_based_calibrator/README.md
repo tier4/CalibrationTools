@@ -56,7 +56,7 @@ The first step of base-lidar calibration is identical to [Step 1](#step-1-map-co
 
 #### Step 2: Extract ground plane from the pointcloud
 
-After constructing the map, we could get the augmented pointcloud from `mapping lidar`, which is identical to [Step 2](#step-2-calibration-data-preparation). Afterward, the tool utilizes PCA and a segmentation algorithm for extracting the ground plane from the augmented pointcloud.
+After constructing the map, we obtain the augmented pointcloud from `mapping lidar`, which is identical to [Step 2](#step-2-calibration-data-preparation). Afterward, the tool utilizes PCA and a segmentation algorithm for extracting the ground plane from the augmented pointcloud.
 
 #### Step 3: Estimate transformation
 
