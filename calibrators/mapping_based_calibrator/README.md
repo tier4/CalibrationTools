@@ -60,7 +60,7 @@ After constructing the map, we could get the augmented pointcloud from `mapping 
 
 #### Step 3: Estimate transformation
 
-To estimate the transformation between the `mapping lidar` and the `base_link`, the tool needs to calculate the transformation between the lidar and the ground pose (), as well as the transformation between the ground pose and the `base_link`.
+To estimate the transformation between the `mapping lidar` and the `base_link`, the tool needs to calculate the transformation between the lidar and the ground pose, as well as the transformation between the ground pose and the `base_link`.
 
 The transformation between the lidar and the ground pose is calculated by utilizing the normal vector and a point on the ground plane. To estimate the transformation between the ground pose and the `base_link`, the tool first determines the initial ground-pose-to-base-link using the initial lidar-to-base-link and lidar-to-ground-pose transformations. Then, the tool projects this initial ground-pose-to-base-link transformation onto the xy plane to estimate the transformation between the ground pose and the `base_link`.
 
