@@ -90,8 +90,8 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 | `calibrated_source_aligned_map`   | `sensor_msgs::msg::PointCloud2`        | Calibrated map from calibration lidars.                                                           |
 | `target_map`                      | `sensor_msgs::msg::PointCloud2`        | Target map from the `mapping lidar`, used for comparing with the `calibrated_source_aligned_map`. |
 | `target_markers`                  | `visualization_msgs::msg::MarkerArray` | Markers for the camera calibrator (currently not used).                                           |
-| `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | The ground pointcloud from the augmented pointcloud.                                              |
-| `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | The ground pointcloud from the calibrated pointcloud.                                             |
+| `base_lidar_augmented_pointcloud` | `sensor_msgs::msg::PointCloud2`        | The ground pointcloud extracted from the augmented pointcloud.                                    |
+| `ground_pointcloud`               | `sensor_msgs::msg::PointCloud2`        | The ground pointcloud extracted from the calibrated pointcloud.                                   |
 
 ### Services
 
