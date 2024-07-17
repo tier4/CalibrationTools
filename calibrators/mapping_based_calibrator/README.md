@@ -25,7 +25,7 @@ It is recommended to select the lidar that has the highest resolution and best F
 
 #### Step 2: Calibration data preparation
 
-After the mapping has been completed, some preprocessing steps such as data synchronization and data selection are required before estimating the transformations between lidars. In the explanation below, we assume that there is only a `calibration lidar` that needs to be calibrated with the `mapping lidar`.
+After the mapping has been completed, some steps such as data synchronization, data selection and data preprocessing are required before estimating the transformations between lidars. In the explanation below, we assume that there is only a `calibration lidar` that needs to be calibrated with the `mapping lidar`.
 
 ##### Data synchronization
 
