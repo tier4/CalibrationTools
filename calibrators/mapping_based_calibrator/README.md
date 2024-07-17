@@ -230,6 +230,7 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 ## Pro tips/recommendations
 
+- It is recommended to select the lidar that has the highest resolution and best FOV as the `mapping lidar`.
 - To build the map accurately, drive your vehicle at the lowest feasible speed, such as 2 km/h. Driving too fast can distort the point cloud, negatively impacting the map's accuracy.
 - The surroundings of the calibration area are crucial for creating an accurate map and estimating transformations. Therefore, it is essential to ensure that the environment is rich in natural landmarks suitable for registration-based mapping and calibration in all directions, as shown in the image below. This richness in natural landmarks helps the lidar capture sufficient details beyond simple features like lane surfaces or walls, thereby enhancing the accuracy and reliability of the mapping and calibration processes.
 
