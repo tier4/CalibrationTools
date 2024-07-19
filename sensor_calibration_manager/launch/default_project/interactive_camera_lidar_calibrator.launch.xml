@@ -1,5 +1,5 @@
 <launch>
-  <arg name="camera_optical_link_frame" default="zedxm_left_camera_optical_frame" description="E.g., camera0/camera_optical_link"/>
+  <arg name="camera_optical_link_frame" description="E.g., camera0/camera_optical_link"/>
   <!-- this is needed for the calibrator interface - transformation algebra-->
   <arg name="lidar_frame" description="E.g., velodyne_top. this is used for the extrinsic_calibration_manager under the hood"/>
   <arg name="image_topic" default="/sensing/camera/camera0/image_rect_color/decompressed" description="Internal topic to decompress the image"/>
