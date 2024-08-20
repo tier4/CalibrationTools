@@ -13,10 +13,10 @@
 
   <build_depend>autoware_cmake</build_depend>
 
+  <depend>autoware_kalman_filter</depend>
   <depend>autoware_universe_utils</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
-  <depend>kalman_filter</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
   <depend>radar_msgs</depend>

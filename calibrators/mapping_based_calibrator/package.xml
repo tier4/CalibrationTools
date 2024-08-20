@@ -12,13 +12,13 @@
 
   <build_depend>autoware_cmake</build_depend>
 
+  <depend>autoware_kalman_filter</depend>
   <depend>autoware_perception_msgs</depend>
   <depend>autoware_universe_utils</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>image_geometry</depend>
   <depend>image_transport</depend>
-  <depend>kalman_filter</depend>
   <depend>libboost-filesystem</depend>
   <depend>libboost-serialization</depend>
   <depend>libpcl-all-dev</depend>
