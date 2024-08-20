@@ -9,9 +9,11 @@
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
 
-    <node pkg="image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
+    <node pkg="autoware_image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
       <remap from="decompressor/input/compressed_image" to="$(var image_compressed_topic)"/>
       <remap from="decompressor/output/raw_image" to="raw_image"/>
+
+      <param name="encoding" value="default"/>
     </node>
 
     <include file="$(find-pkg-share tag_based_sfm_calibrator)/launch/apriltag_detector.launch.py">
