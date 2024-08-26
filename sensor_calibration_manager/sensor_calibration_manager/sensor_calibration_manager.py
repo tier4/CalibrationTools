@@ -287,7 +287,7 @@ class SensorCalibrationManager(QMainWindow):
 
     def tf_graph_callback2(self, tfs_dict):
         if (
-            self.calibrator.state != CalibratorState.WAITING_TFS
+            self.calibrator.state != CalibratorState.WAITING_SERVICES
             and self.calibrator.state != CalibratorState.WAITING_TFS
         ):
             return
