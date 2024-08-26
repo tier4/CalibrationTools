@@ -14,11 +14,11 @@
   <arg name="calibration_pairs_min_distance" default="1.5" description="Minimum allowed between a new detection and current pairs"/>
 
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
-  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_rect_color/decompressed"/>
-  <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_rect_color/compressed"/>
+  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_raw"/>
+  <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
 
   <let name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
-  <let name="pointcloud_topic" value="/aw_points"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/xt32/aw_points"/>
 
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
