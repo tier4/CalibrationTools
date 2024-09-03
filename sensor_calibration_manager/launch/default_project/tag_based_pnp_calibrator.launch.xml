@@ -5,9 +5,25 @@
   <arg name="image_compressed_topic" default="/sensing/camera/camera0/image_rect_color/compressed" description="Input compressed image"/>
   <arg name="camera_info_topic" default="/sensing/camera/camera0/camera_info"/>
   <arg name="pointcloud_topic" default="/sensing/lidar/top/pointcloud_raw"/>
-  <arg name="lidar_model" default="velodyne_vls128" description="this lidar must be supported by the lidartag package"/>
   <arg name="use_rectified_image" default="true" description="image_rect vs. raw"/>
   <arg name="view_only_ui" default="true" description="By default we use a minimal UI"/>
+
+  <arg name="lidar_model">
+    <choice value="aeva_aeries2"/>
+    <choice value="at128"/>
+    <choice value="innoviz2"/>
+    <choice value="ouster_os1_128"/>
+    <choice value="ouster_os2"/>
+    <choice value="pandar_40p"/>
+    <choice value="pandar_64"/>
+    <choice value="pandar_qt"/>
+    <choice value="pandar_xt32"/>
+    <choice value="robosense_m1"/>
+    <choice value="seyond_falcon"/>
+    <choice value="seyond_robin_w"/>
+    <choice value="velodyne_vlp16"/>
+    <choice value="velodyne_vls128"/>
+  </arg>
 
   <let name="rviz_profile" value=""/>
   <let name="rviz_profile" value="$(find-pkg-share tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
