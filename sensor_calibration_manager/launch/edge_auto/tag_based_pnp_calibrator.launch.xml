@@ -14,7 +14,7 @@
   <arg name="calibration_pairs_min_distance" default="1.5" description="Minimum allowed between a new detection and current pairs"/>
 
   <!-- we do not use the standard image_raw name to avoid naming conflicts -->
-  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_raw"/>
+  <let name="image_decompressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/decompressed"/>
   <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
 
   <let name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
