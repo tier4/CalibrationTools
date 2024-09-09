@@ -9,7 +9,14 @@
     <choice value="pandar_xt32"/>
   </arg>
 
-  <arg name="view_only_ui" default="true" description="By default we use a minimal UI"/>
+  <arg name="view_only_ui" default="true" description="By default we use a minimal UI">
+    <choice value="true"/>
+    <choice value="false"/>
+  </arg>
+  <arg name="use_receive_time" default="false" description="Use receive time instead of topic timestamps to make corresponding pairs">
+    <choice value="false"/>
+    <choice value="true"/>
+  </arg>
   <arg name="calibration_pairs" default="9" description="Number of lidar-image pairs for the calibration to converge"/>
   <arg name="calibration_pairs_min_distance" default="1.5" description="Minimum allowed between a new detection and current pairs"/>
 
@@ -50,6 +57,7 @@
       <arg name="use_rectified_image" value="$(var use_rectified_image)"/>
       <arg name="calibration_pairs" value="$(var calibration_pairs)"/>
       <arg name="calibration_pairs_min_distance" value="$(var calibration_pairs_min_distance)"/>
+      <arg name="use_receive_time" value="$(var use_receive_time)"/>
     </include>
 
     <!-- interactive calibrator -->
