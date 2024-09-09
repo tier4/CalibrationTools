@@ -23,7 +23,7 @@
 
   <let name="camera_frame" value="$(var camera_name)/camera_link"/>
   <let name="rviz_profile" value="$(find-pkg-share tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
-  <let name="lidar_model" value="pandar64"/>
+  <let name="lidar_model" value="pandar_64"/>
   <let name="lidar_frame" value="pandar_top"/>
   <let name="use_rectified_image" value="false"/>
 

@@ -12,7 +12,7 @@
   <let name="main_calibration_sensor_frame" value="pandar_top"/>
 
   <!-- Lidar configuration -->
-  <let name="calibration_lidar_model" value="pandar64"/>
+  <let name="calibration_lidar_model" value="pandar_64"/>
 
   <!-- Topic configuration -->
   <let name="calibration_lidar_topic" value="/sensing/lidar/top/pointcloud_raw"/>
