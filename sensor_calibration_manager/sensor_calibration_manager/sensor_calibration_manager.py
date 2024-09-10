@@ -286,7 +286,10 @@ class SensorCalibrationManager(QMainWindow):
         self.tfs_graph_signal.emit(copy.deepcopy(tfs_dict))
 
     def tf_graph_callback2(self, tfs_dict):
-        if self.calibrator.state != CalibratorState.WAITING_TFS:
+        if (
+            self.calibrator.state != CalibratorState.WAITING_SERVICES
+            and self.calibrator.state != CalibratorState.WAITING_TFS
+        ):
             return
 
         for parent, children_and_tf_dict in tfs_dict.items():
