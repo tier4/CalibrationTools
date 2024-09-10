@@ -120,6 +120,10 @@ class DotBoardDetector(BoardDetector):
         if not resized_detection or max(h, w) <= resized_max_resolution:
             (ok, corners) = detect(grayscale, full_res_detector)
 
+            if not ok:
+                self.detection_results_signal.emit(img, None, stamp)
+                return
+
         else:
             # Resize
             resized = cv2.resize(img, (resized_w, resized_h), interpolation=cv2.INTER_NEAREST)
