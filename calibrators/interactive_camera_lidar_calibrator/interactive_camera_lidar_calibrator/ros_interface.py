@@ -103,7 +103,7 @@ class InteractiveCalibratorRosInterface(ImageViewRosInterface):
             result = CalibrationResult()
             result.success = True
             result.score = self.calibration_error
-            result.message = "The score corresponds to the reprojection error"
+            result.message.data = "The score corresponds to the reprojection error"
             result.transform_stamped = self.output_transform_msg
             result.transform_stamped.header.frame_id = self.image_frame
             result.transform_stamped.child_frame_id = self.lidar_frame
