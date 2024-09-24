@@ -1,4 +1,4 @@
-// Copyright 2024 Tier IV, Inc.
+// Copyright 2024 TIER IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include <Eigen/Dense>
+#include <autoware/universe_utils/geometry/geometry.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
-#include <tier4_autoware_utils/geometry/geometry.hpp>
 #include <tier4_ground_plane_utils/ground_plane_utils.hpp>
 
 #include <pcl/ModelCoefficients.h>
@@ -85,9 +85,9 @@ std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr> extractGround
   seg.setMaxIterations(parameters.max_iterations_);
 
   pcl::PointCloud<PointType>::Ptr iteration_cloud = pointcloud;
-  int iteration_size = iteration_cloud->height * iteration_cloud->width;
+  int iteration_cloud_size = iteration_cloud->height * iteration_cloud->width;
 
-  while (iteration_size > parameters.min_plane_points_) {
+  while (iteration_cloud_size > parameters.min_plane_points_) {
     seg.setInputCloud(iteration_cloud);
     seg.segment(*inliers, *coefficients);
 
@@ -176,7 +176,7 @@ std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr> extractGround
     extract.filter(next_cloud);
 
     iteration_cloud->swap(next_cloud);
-    iteration_size = iteration_cloud->height * iteration_cloud->width;
+    iteration_cloud_size = iteration_cloud->height * iteration_cloud->width;
   }
   return std::make_tuple(false, model, inliers_pointcloud);
 }
@@ -358,17 +358,17 @@ geometry_msgs::msg::TransformStamped overwriteXYYawValues(
   msg.transform.translation.y = initial_base_lidar_transform_msg.transform.translation.y;
 
   auto initial_rpy =
-    tier4_autoware_utils::getRPY(initial_base_lidar_transform_msg.transform.rotation);
+    autoware::universe_utils::getRPY(initial_base_lidar_transform_msg.transform.rotation);
 
   auto calibrated_rpy =
-    tier4_autoware_utils::getRPY(calibrated_base_lidar_transform_msg.transform.rotation);
+    autoware::universe_utils::getRPY(calibrated_base_lidar_transform_msg.transform.rotation);
 
   // Overwrite only yaw
   auto output_rpy = calibrated_rpy;
   output_rpy.z = initial_rpy.z;
 
   msg.transform.rotation =
-    tier4_autoware_utils::createQuaternionFromRPY(output_rpy.x, output_rpy.y, output_rpy.z);
+    autoware::universe_utils::createQuaternionFromRPY(output_rpy.x, output_rpy.y, output_rpy.z);
   return msg;
 }
 
