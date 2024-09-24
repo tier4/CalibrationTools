@@ -1,36 +1,51 @@
 # marker_radar_lidar_calibrator
 
-A tutorial for this calibrator can be found [here](../docs/tutorials/marker_radar_lidar_calibrator.md)
+A tutorial for this calibrator can be found [here](../../docs/tutorials/marker_radar_lidar_calibrator.md)
 
 ## Purpose
 
-The package `marker_radar_lidar_calibrator` allows extrinsic calibration between radar and 3d lidar sensors used in autonomous driving and robotics.
+The package `marker_radar_lidar_calibrator` performs extrinsic calibration between radar and 3d lidar sensors used in autonomous driving and robotics.
 
-Currently, the calibrator only supports radars whose detection interface includes distance and azimuth angle, but do not offer elevation angle. For example, ARS 408 radars can be calibrated with this tool. Also, note that the 3d lidar should have a resolution that is high enough to scan several points on the [radar reflector](#radar-reflector) (calibration target).
+Currently, the calibrator only supports radars whose detection interface includes distance and azimuth angle, but do not offer elevation angle. For example, ARS408 radars can be calibrated with this tool. Also, note that the 3d lidar should have a high enough resolution to present several returns on the [radar reflector](#radar-reflector) (calibration target).
 
 ## Inner-workings / Algorithms
 
-The calibrator is designed to estimate the transformation between radar and lidar sensors. It starts by estimating the center points of reflectors within lidar pointclouds and radar objects and then aligns these points for precise matching. An SVD-based and a yaw-only rotation estimation algorithm are applied to these matched points to estimate the rigid transformation between sensors.
+The calibrator computes the center of the reflectors from the pointcloud and pairs them to the radar objects/tracks. Afterwards, both an SVD-based and a yaw-only rotation estimation algorithm are applied to these matched points to estimate the rigid transformation between sensors.
 
-Specifically, the calibration process consists of four primary steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering the lidar and radar detections, and estimating the rigid transformation between the radar and lidar sensors.
+Due to the complexity of the problem, the process in split in the following steps: constructing a background model, extracting the foreground to detect reflectors, matching and filtering the lidar and radar detections, and estimating the rigid transformation between the radar and lidar sensors.
+
+In what follows, we proceed to explain each step, making a point to put emphasis on the parts that the user must take into consideration to use phis package effectively.
+
+\*Note: although the radar can provide either detections and/or objects/tracks, we treat them as points in this package, and as such may refer to the radar pointcloud when needed.
 
 ### Step 1: Background model construction
 
-Given the challenge of reliably detecting reflectors, such as when the radar outputs numerous objects, making it difficult to identify the reflector among them, background models for both lidar and radar are constructed from the lidar pointclouds and radar objects within a user-defined calibration area, which lacks any calibration targets (such as radar reflectors). More specifically, these background models consist of uniform binary voxel grids that denote whether each voxel represents the background.
+Detecting corner reflectors in an unknown environment, without imposing impractical restrictions on the reflectors themselves, the operators, or the environment, it a challenging problem. From the perspective of the lidar, radar reflectors may be confused with the floor or other metallic objects, and from the radar's perspective, although corner reflectors are detected by the sensor (the user must confirm it themselves before attempting to use this tool!), other objects are also detected, with no practical way to tell them apart most of the time.
+
+For these reasons, we avoid addressing the full problem an instead leverage the use of background models. To do this, the user must first present the sensors an environment with no radar reflectors nor any dynamic objects (mostly persons) in the space that is to be used for calibration. The tool will collect data for a set period of time or until there is no new information. For each modality, this data is then turned into voxels, marking the space of each occupied voxel as `background` in the following steps.
 
 ### Step 2: Foreground extraction and reflector detection
 
-After the background models for the lidar and radar are constructed, we compare the incoming lidar pointcloud and radar objects with their respective background models, extract those that do not belong to background voxels, and call them foreground lidar points and foreground radar objects respectively. Additionally, we apply ground segmentation to filter out some foreground lidar points and foreground radar objects caused by changes in the vehicle's pitch, as these ground points and objects may not be included in the background model.
+Once the background models for both sensors have been prepared, new data gets filtered using the background models to leave only the foreground.
 
-All foreground radar objects are automatically categorized as potential reflector detections. For foreground lidar points, however, the [reflector](#radar-reflector) detection process involves more steps. We first apply a clustering algorithm on the lidar foreground points, then find the highest point in each cluster, and filter out the cluster if the highest point exceeds `reflector_max_height`. Next, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
+Before placing radar reflectors, the foreground data should ideally be empty, and once placing them, only the reflectors and the people holding them should appear as foreground. In practice, however, even small variations in the load of the vehicle can cause ground points to escape the background models and be marked as foreground (a phenomenon exclusive to the lidars). To address this issue, we also employ a RANSAC-based ground segmentation algorithm to avoid these ground points being processed in downstream steps.
 
-The images below illustrate the process of radar background model construction and radar foreground extraction described in Step 1 and Step 2.
-The blue 3d voxels, which are shown in a 2d grid in the images, are denoted as background voxels if any radar object falls into them during the background model construction. Once the background model is constructed, it becomes straightforward to extract the foreground objects in the calibration area. For the lidar, the background model and foreground extraction process are the same as the radar process described above.
+All foreground radar objects are automatically categorized as potential reflector detections. For foreground lidar points, however, the [reflector](#radar-reflector) detection process involves more steps:
+
+- We first apply a clustering algorithm on the lidar foreground points and discard clusters with a number of points below a predefined threshold.
+- Compute the highest point of each cluster and discard it if the highest point exceeds `reflector_max_height`. This is required to discard the clusters corresponding to users (we assume the operators are taller than the reflectors).
+- Finally, we average all points within a `reflector_radius` from the highest point to estimate the center point of the reflector.
+
+The following images illustrate the background construction and foreground extraction process respectively. Although the radar pre-processing is presented, the process remains the same for the lidar.
+
+During background model construction (left image), the blue voxels (presented as 2d grid for visualization purposes) are marked as background since sensor data is present in said voxels.
+
+Once background model construction finishes and the foreground extraction process begins (right image), only points that fall outside previous background-marked voxels are considered as foreground. In this example, the points hitting the corner reflector and a human are marked as foreground (note that those points' voxels, here marked in green are disjoint with those of the background).
 
 <table>
   <tr>
-    <td><img src="../docs/images/marker_radar_lidar_calibrator/background_construction.svg" alt="background_construction" width = 700px height = 300px ></td>
-    <td><img src="../docs/images/marker_radar_lidar_calibrator/foreground_extraction.svg" alt="foreground_extraction" width = 700px height = 300px ></td>
+    <td><img src="../../docs/images/marker_radar_lidar_calibrator/background_construction.svg" alt="background_construction" width = 700px height = 300px ></td>
+    <td><img src="../../docs/images/marker_radar_lidar_calibrator/foreground_extraction.svg" alt="foreground_extraction" width = 700px height = 300px ></td>
    </tr>
    <tr>
     <td><p style="text-align: center;">Background model construction.</p></td>
@@ -40,17 +55,35 @@ The blue 3d voxels, which are shown in a 2d grid in the images, are denoted as b
 
 ### Step 3: Matching and filtering
 
-Since it is not possible to directly differentiate individual reflector detections, discern the number of targets in the calibration area, nor determine if the detections correspond to humans or radar reflectors, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. A detection pair is accepted if they are mutually their closest matches. Once a match is made, it is evaluated against existing hypotheses (monitored by a Kalman filter): if it aligns with an existing hypothesis, that hypothesis is updated; if it does not align with any, a new hypothesis is created. When a hypothesis achieves convergence, it is added to the calibration list.
+The output of the previous step consists of two lists of points of potentials radar reflector candidates for each sensor. However, it is not possible to directly match points among these lists, and they are expected to contain a high number of false positives on both sensors.
+
+To address this issue, we rely on a heuristic that leverages the accuracy of initial calibration. Usually, robot/vehicle CAD designs allow an initial calibration with an accuracy of a few centimeters/degrees, and direct sensor calibration is only used to refine it.
+
+Using the initial radar-lidar calibration, we project each lidar corner reflector candidate into the radar coordinates and for each candidate we compute the closest candidate from the other modality. We consider real radar-lidar pairs of corner reflectors those pairs who are mutually their closest candidate.
+
+Matches using this heuristic can still contain incorrect pairs and false positives, which is why we employ a Kalman filter to both improve the estimations and check for temporal consistency (false positives are not usually consistent in time).
+
+Once matches' estimations converge (using a covariance matrix criteria), they are added to the calibration list.
 
 ### Step 4: Rigid transformation estimation
 
 After matching detection pairs, we apply rigid transformation estimation algorithms to those pairs to estimate the transformation between the radar and lidar sensors. We currently support two algorithms: a 2d SVD-based method and a yaw-only rotation method.
 
-For the 2d SVD-based method, we reduce the problem to 2d transformation estimation since radar detections lack a z component. However, because lidar detections are in the lidar frame and likely involve a 3d transformation to the radar frame, we transform the lidar detections to a `radar parallel` frame and then set the z component to zero. The `radar parallel` frame has only a 2d transformation (x, y, yaw) relative to the radar frame. In autonomous vehicles, radars are mounted in a way designed to minimize pitch and roll angles, maximizing their performance and ensuring accurate distance measurements. This means the radar sensors are aligned as parallel as possible to the ground plane, making the `base_link` a suitable choice for the `radar parallel` frame.
+### 2d SVD-based method
 
-Next, we apply the SVD-based rigid transformation estimation algorithm between the lidar detections in the radar parallel frame and the radar detections in the radar frame. This allows us to estimate the transformation between the lidar and radar by multiplying the radar-to-radar-parallel transformation with the radar-parallel-to-lidar transformation. The SVD-based algorithm, provided by PCL, leverages SVD to find the optimal rotation component and then calculates the translation component based on the rotation.
+In this method, we reduce the problem to a 2d transformation estimation since radar detections lack a z component (elevation is fixed to zero).
 
-The yaw-only rotation method, on the other hand, utilizes the initial radar-to-lidar transformation to calculate lidar detections in the radar frame. We then calculate the average yaw angle difference of all pairs, considering only yaw rotation between the lidar and radar detections in the radar frame, to estimate a yaw-only rotation transformation in the radar frame. Finally, we estimate the transformation between the lidar and radar by multiplying the yaw-only rotation transformation with the initial radar-to-lidar transformation.
+However, because lidar detections are in the lidar frame and likely involve a 3d transformation (non-zero roll and\or pitch) to the radar frame, we transform the lidar detections to a frame dubbed the `radar parallel` frame and then set their z component to zero. The `radar parallel` frame has only a 2d transformation (x, y, yaw) relative to the radar frame. By dropping the z-component we explicitly give up on computing a 3D pose, which was not possible due to the nature of the radar.
+
+In autonomous vehicles, radars are mounted in a way designed to minimize pitch and roll angles, maximizing their performance and measurement range. This means the radar sensors are aligned as parallel as possible to the ground plane, making the `base_link` a suitable choice for the `radar parallel` frame.
+
+\*\*Note: this assumes that the lidar to `radar parallel` frame is either hardcoded or previously calibrated
+
+Next, we apply the SVD-based rigid transformation estimation algorithm between the lidar detections in the radar parallel frame and the radar detections in the radar frame. This allows us to estimate the transformation between the lidar and radar by multiplying the radar-to-radar-parallel transformation (calibrated) with the radar-parallel-to-lidar transformation (known before-handed). The SVD-based algorithm, provided by PCL, leverages SVD to find the optimal rotation component and then computes the translation component based on the rotation.
+
+### Yaw-only rotation method
+
+This method, on the other hand, utilizes the initial radar-to-lidar transformation to calculate lidar detections in the radar frame. We then calculate the average yaw angle difference of all pairs, considering only yaw rotation between the lidar and radar detections in the radar frame, to estimate a yaw-only rotation transformation in the radar frame. Finally, we estimate the transformation between the lidar and radar by multiplying the yaw-only rotation transformation with the initial radar-to-lidar transformation.
 
 Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-only rotation method is used as the calibration output.
 
@@ -58,42 +91,42 @@ Generally, the 2d SVD-based method is preferred when valid; otherwise, the yaw-o
 
 Below, you can see how the algorithm is implemented in the `marker_radar_lidar_calibrator` package.
 
-![marker_radar_lidar_calibrator](../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_calibrator.jpg)
+![marker_radar_lidar_calibrator](../../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_calibrator.jpg)
 
 ## ROS Interfaces
 
 ### Input
 
-| Name                     | Type                            | Description                                             |
-| ------------------------ | ------------------------------- | ------------------------------------------------------- |
-| `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2` | The topic of the lidar pointcloud used for calibration. |
-| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | The topic of radar objects used for calibration.        |
+| Name                     | Type                            | Description               |
+| ------------------------ | ------------------------------- | ------------------------- |
+| `input_lidar_pointcloud` | `sensor_msgs::msg::PointCloud2` | Lidar pointcloud's topic. |
+| `input_radar_msg`        | `radar_msgs::msg::RadarTracks`  | Radar objects' topic.     |
 
 ### Output
 
-| Name                          | Type                                   | Description                                     |
-| ----------------------------- | -------------------------------------- | ----------------------------------------------- |
-| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from the lidar.           |
-| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from the lidar.           |
-| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Colored pointcloud clusters from the lidar.     |
-| `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Lidar detections.                               |
-| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Background pointcloud from the radar.           |
-| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Foreground pointcloud from the radar.           |
-| `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Radar detections.                               |
-| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Matched lidar and radar detections.             |
-| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Reflectors' tracks.                             |
-| `text_markers`                | `visualization_msgs::msg::Marker`      | Text markers that show the calibration metrics. |
-| `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Calibration metrics.                            |
+| Name                          | Type                                   | Description                                               |
+| ----------------------------- | -------------------------------------- | --------------------------------------------------------- |
+| `lidar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Lidar's background pointcloud.                            |
+| `lidar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Lidar's foreground pointcloud.                            |
+| `lidar_colored_clusters`      | `sensor_msgs::msg::PointCloud2`        | Lidar's colored pointcloud clusters.                      |
+| `lidar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Lidar detections.                                         |
+| `radar_background_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Radar's background pointcloud from the radar.             |
+| `radar_foreground_pointcloud` | `sensor_msgs::msg::PointCloud2`        | Radar's foreground pointcloud from the radar.             |
+| `radar_detection_markers`     | `visualization_msgs::msg::MarkerArray` | Radar detections.                                         |
+| `matches_markers`             | `visualization_msgs::msg::MarkerArray` | Matched lidar and radar detections.                       |
+| `tracking_markers`            | `visualization_msgs::msg::MarkerArray` | Reflectors' tracks.                                       |
+| `text_markers`                | `visualization_msgs::msg::Marker`      | Calibration metrics' markers.                             |
+| `calibration_metrics`         | `std_msgs::msg::Float32MultiArray`     | Calibration metrics as vector for visualization purposes. |
 
 ### Services
 
-| Name                       | Type                                                  | Description                                                                              |
-| -------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `extrinsic_calibration`    | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
-| `extract_background_model` | `std_srvs::srv::Empty`                                | Starts to extract the background model from radar and lidar data.                        |
-| `add_lidar_radar_pair`     | `std_srvs::srv::Empty`                                | Adds lidar-radar pairs for calibration.                                                  |
-| `delete_lidar_radar_pair`  | `std_srvs::srv::Empty`                                | Deletes the previous lidar-radar pair.                                                   |
-| `send_calibration`         | `std_srvs::srv::Empty`                                | Sends the calibration result to the sensor calibration manager.                          |
+| Name                       | Type                                                  | Description                                                                                          |
+| -------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `extrinsic_calibration`    | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes.             |
+| `extract_background_model` | `std_srvs::srv::Empty`                                | Starts to extract the background model from radar and lidar data.                                    |
+| `add_lidar_radar_pair`     | `std_srvs::srv::Empty`                                | Adds lidar-radar pairs for calibration.                                                              |
+| `delete_lidar_radar_pair`  | `std_srvs::srv::Empty`                                | Deletes the latest lidar-radar pair.                                                                 |
+| `send_calibration`         | `std_srvs::srv::Empty`                                | Finishes the calibration process and sends the calibration result to the sensor calibration manager. |
 
 ## Parameters
 
@@ -101,7 +134,7 @@ Below, you can see how the algorithm is implemented in the `marker_radar_lidar_c
 
 | Name                                        | Type          | Default Value                                                 | Description                                                                                                                                                        |
 | ------------------------------------------- | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `radar_parallel_frame`                      | `std::string` | `base_link`                                                   | The reference frame to which the radar optimizes its transformation.                                                                                               |
+| `radar_parallel_frame`                      | `std::string` | `base_link`                                                   | Auxiliar frame used in the 2d SVD-based method.                                                                                                                    |
 | `msg_type`                                  | `std::string` | `radar tracks` / `radar scan`                                 | The type of input radar objects. (Not available yet, currently only support radar tracks.)                                                                         |
 | `transformation_type`                       | `std::string` | `yaw_only_rotation_2d` / `svd_2d` / `svd_3d` / `roll_zero_3d` | Specifies the algorithm used to optimize the transformation between the radar frame and the radar parallel frame. (Not available yet.)                             |
 | `use_lidar_initial_crop_box_filter`         | `bool`        | `true`                                                        | Enables or disables the initial cropping filter for lidar data processing.                                                                                         |
@@ -148,7 +181,7 @@ The type of reflector shown in the image below is crucial for our calibration be
 It is recommended that the user mount the radar reflector on a tripod and ensure it remains stable and secure. Additionally, nothing should be attached above the radar reflector; it must be the highest object on the entire calibration target. Furthermore, make sure the height of the radar reflector does not exceed the `reflector_max_height` parameter.
 
 <p align="center">
-    <img src="../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
+    <img src="../../docs/images/marker_radar_lidar_calibrator/radar_reflector.png" alt="radar_reflector" width="150">
 <p align="center">
 
 ## Known issues/limitations
@@ -165,5 +198,5 @@ It is recommended that the user mount the radar reflector on a tripod and ensure
 - Position the reflectors at various locations within the lidar's and radar's field of view (FOV). Additionally, ensure that the center of each radar reflector always faces the radar sensor, as illustrated in the image below.
 
 <p align="center">
-    <img src="../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_vis.svg" alt="radar_reflector" width="500">
+    <img src="../../docs/images/marker_radar_lidar_calibrator/marker_radar_lidar_vis.svg" alt="radar_reflector" width="500">
 <p align="center">

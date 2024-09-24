@@ -1,4 +1,4 @@
-// Copyright 2024 Tier IV, Inc.
+// Copyright 2024 TIER IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -665,6 +665,11 @@ std::vector<Eigen::Vector3d> ExtrinsicReflectorBasedCalibrator::extractReflector
   pcl::toROSMsg(*radar_background_model_.pointcloud_, background_msg);
   background_msg.header = radar_header_;
   radar_background_pub_->publish(background_msg);
+
+  sensor_msgs::msg::PointCloud2 foreground_msg;
+  pcl::toROSMsg(*radar_pointcloud_ptr, foreground_msg);
+  foreground_msg.header = radar_header_;
+  radar_foreground_pub_->publish(foreground_msg);
 
   return detections;
 }

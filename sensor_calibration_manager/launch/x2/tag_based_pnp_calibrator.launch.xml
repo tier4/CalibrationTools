@@ -59,7 +59,6 @@
       <arg name="image_topic" value="$(var image_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera_info_topic)"/>
       <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
-      <arg name="pointcloud_topic_ex" value="$(var camera_info_topic)"/>
       <arg name="lidar_model" value="$(var lidar_model)"/>
       <arg name="calibration_service_name" value="calibrate_camera_lidar"/>
 

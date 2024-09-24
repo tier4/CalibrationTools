@@ -11,7 +11,7 @@ Installation instructions can be found [here](../../../README.md).
 
 ## Data preparation
 
-Please download the data (rosbag) from [here](https://drive.google.com/drive/folders/1_pGds5HDyt8C55sD2qEH4TJMGzIOCCyV).
+Please download the data (rosbag) from this [link](https://drive.google.com/drive/folders/1_pGds5HDyt8C55sD2qEH4TJMGzIOCCyV).
 
 The rosbag includes four pointcloud topics published by different lidar sensors and also includes `/tf_static` information.
 
@@ -21,8 +21,7 @@ Note that in the real-world environment, the user should record a rosbag with al
 
 ### Overall calibration environment
 
-The required space for calibration depends on the vehicle and sensors used. It is recommended to have a large enough space for the vehicle
-to drive around 30 to 50 meters. It is also recommended to ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
+The required space for calibration depends on the vehicle and sensors used. It is recommended to have a large enough space for the vehicle to drive around 30 to 50 meters in away that the calibration lidars observe areas that are mapped through the vehicle's trajectory. It is also recommended to ensure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 
 ### Vehicle
 
@@ -30,7 +29,7 @@ Before starting the calibration, the user needs to drive the vehicle to collect 
 
 ## Launching the tool
 
-In this tutorial, we use the RDV of Tier IV (R&D Vehicle).
+In this tutorial, we use the RDV of TIER IV (R&D Vehicle).
 First, run the sensor calibration manager:
 
 ```text
@@ -56,17 +55,17 @@ If it does not become available, it means that either the required `tf` or servi
     <img src="../images/mapping_based_calibrator/menu3.jpg" alt="menu3">
 </p>
 
-Note: In the [launch file](../../sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml), the RDV vehicle set the top lidar as `mapping lidar`, and other lidars as `calibration lidars`.
+Note: In the [launch file](../../sensor_calibration_manager/launch/rdv/mapping_based_lidar_lidar_calibrator.launch.xml), the top lidar is set as `mapping lidar`, and other lidars as `calibration lidars`.
 
 ## Construct a map
 
-Once the user clicks the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT or GICP algorithm with the `mapping lidar`. He can visualize the process of building the map on `rviz`.
+Once the user clicks the `Calibrate` button, the first step of the calibration process will automatically start building the map by using the NDT or GICP algorithm with the `mapping lidar`. The user can visualize the process of building the map on `RViz`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map1.jpg" alt="menu3">
 </p>
 
-The user can also see the log in the console showing that the map is building.
+The user can also see the log in the console, which shows that the map is being built.
 
 ```text
 [mapping_based_calibrator-1] [calibration_mapper]: ROS: New pointcloud. Unprocessed=1 Frames=26 Keyframes=2
@@ -80,7 +79,7 @@ The user can also see the log in the console showing that the map is building.
 [mapping_based_calibrator-1] [calibration_mapper]: New frame (id=28 | kid=-1). Distance=2.26 Delta_distance0.11 Delta_time0.10. Unprocessed=0 Frames=29 Keyframes=3
 ```
 
-When the rosbag has finished playing, the user should see the pointcloud map and the path of the lidar frames, as shown in the picture below.
+When the rosbag finishes, the user should see the pointcloud map and the path of the lidar frames similar to the ones in the following figure:
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map2.jpg" alt="map2">
@@ -88,7 +87,7 @@ When the rosbag has finished playing, the user should see the pointcloud map and
 
 ## Estimate transformations
 
-The process of estimating transformations starts when the user sends the command `ros2 service call /stop_mapping std_srvs/srv/Empty` in the terminal. Note that the user can send this command before the rosbag ends if they think the data collected is sufficient for calibration.
+The process of estimating transformations sends the corresponding service call with `ros2 service call /stop_mapping std_srvs/srv/Empty` in the terminal. Note that the user can send this command before the rosbag ends if they think the data collected is sufficient for calibration.
 
 In this tutorial, we send the command after the rosbag runs until the end. Once the command is sent, the displayed text should be as follows:
 
@@ -117,7 +116,7 @@ Once the process is complete, the displayed text should be as follows:
 [mapping_based_calibrator-1] [mapping_based_calibrator_node]: Sending the results to the calibrator manager
 ```
 
-The user can also see the three different colors of pointcloud in `rviz`. White for the map from the `mapping lidar`, red for the initial pointcloud from the `calibration lidars`, and green for the calibrated pointcloud from the `calibration lidars`.
+The user can also see the three different colors of pointcloud in `RViz`. White for the map from the `mapping lidar`, red for the initial pointcloud from the `calibration lidars`, and green for the calibrated pointcloud from the `calibration lidars`.
 
 <p align="center">
     <img src="../images/mapping_based_calibrator/map3.jpg" alt="map3">
@@ -127,7 +126,7 @@ The user can also see the three different colors of pointcloud in `rviz`. White 
 
 After the estimation transformations process finishes, the `sensor_calibration_manager` will display the results in the UI and allow the user to save the calibration data to a file.
 
-In the UI of the X2 project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`.
+In the UI of the rdv project, three different TF trees are displayed: `Initial TF Tree`, `Calibration Tree`, and `Final TF Tree`.
 
 - The `Initial TF Tree` presents the initial TF connections between sensors needed for calibration.
 - The `Calibration Tree` shows the calibrated transformation between sensors, in this tutorial, `pandar_top`, `pandar_front`, `pandar_right`and `pandar_left`.
@@ -153,7 +152,8 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
     - Mapping failed. Angle between keyframes is too high.
     - Mapping failed. Interpolation error is too high.
     - Mapping failed. Acceleration is too high.
-  - Check the rviz to see if any keyframe number on the path is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. We recommend the user calibrate with more stable movement again.
+  - Bad initial calibration is also a common cause for failures in the calibration process. If the mapping succeeds and there are good calibration features, but still the calibration fails it is usually due to the nature of classic pointcloud registration algorithms.
+  - Check the `RViz` to see if any keyframe number on the path is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. We recommend the user calibrate with more stable movement again.
   - If it is not feasible to restart the experiment, the user could tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md). However, keep in mind that if the user sets the threshold too high, the accuracy of the calibration result will also decrease.
   - Check whether all of the lidars apply time synchronization.
   - Make sure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.

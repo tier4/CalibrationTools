@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Tier IV, Inc.
+# Copyright 2024 TIER IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -182,6 +182,7 @@ class InteractiveCalibratorUI(ImageViewUI):
             self.optimized_camera_info = camera_lidar_calibrate_intrinsics(
                 np.array(self.object_calibration_points + self.external_object_calibration_points),
                 np.array(self.image_calibration_points + self.external_image_calibration_points),
+                self.camera_info,
             )
             self.use_optimized_intrinsics_checkbox.setEnabled(True)
 
