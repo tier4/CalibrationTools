@@ -103,7 +103,7 @@ A complete example with real data is provided in our [tutorial](../../docs/tutor
 - Place the available tags within the field-of-view of the sensors (see the [Pro tips/recommendations](#pro-tipsrecommendations) for more information).
 - Ensure that both sensors detect the tags, and wait until the detections converge.
 - Once the detections are added to the calibration data, move the tags to a new location, making sure to fulfill the `new_hypothesis_distance` criteria.
-- If needed, just after moving the tag, stop its oscilattions with your hand.
+- If needed, just after moving the tag, stop its oscillations with your hand.
 - Repeat the process until `calibration_convergence_min_pairs` pairs have been obtained and the calibration process finishes.
 
 ## Known issues/limitations

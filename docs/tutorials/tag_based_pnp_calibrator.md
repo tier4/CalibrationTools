@@ -2,12 +2,12 @@
 
 In this tutorial, we present a hands-on tutorial of the `tag_based_pnp_calibrator`. Although we provide a pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
-General documentation regarding this calibrator can be found [here](../../tag_based_pnp_calibrator/README.md).
+General documentation regarding this calibrator can be found [here](../../calibrators/tag_based_pnp_calibrator/README.md).
 
 ## Setup
 
 This tutorial assumes that the user has already built the calibration tools.
-Installation instructions can be found [here](../../../README.md).
+Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 

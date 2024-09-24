@@ -212,7 +212,7 @@ Any intrinsic calibration board that can be used for this purpose is acceptable,
 
 A complete example with real data is provided in our [tutorial](../../docs/tutorials/tag_based_sfm_calibrator.md), so we recommend users interested in this tools to get hands-on-experience directly with that example. Nevertheless, the calibration process consists of the following steps:
 
-- External camera intrinsic calibration. This can be done directly throught this tool if you have either apriltags or dot boards.
+- External camera intrinsic calibration. This can be done directly with this tool if you have either apriltags or dot boards.
 - Place waypoint tags in positions where the calibrations can detect them accurately.
 - Obtain detections with the calibrations sensors (through the UI).
 - Using the external camera, obtain samples of the environment, taking care to avoid motion blur. The user should focus on connecting the calibrator sensors by taking photos containing multiple waypoints, ot at least photos that contain one waypoints and multiple other tags.

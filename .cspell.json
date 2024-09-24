@@ -37,6 +37,7 @@
     "imread",
     "imshow",
     "imwrite",
+    "innoviz",
     "intrinsics",
     "kalman",
     "keyframes",

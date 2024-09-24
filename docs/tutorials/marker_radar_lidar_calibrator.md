@@ -2,12 +2,12 @@
 
 In this tutorial, we present a hands-on tutorial of the `marker_radar_lidar_calibrator`. Although we provide a pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
-General documentation regarding this calibrator can be found [here](../../marker_radar_lidar_calibrator/README.md).
+General documentation regarding this calibrator can be found [here](../../calibrators/marker_radar_lidar_calibrator/README.md).
 
 ## Setup
 
 This tutorial assumes that the user has already built the calibration tools.
-Installation instructions can be found [here](../../../README.md).
+Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 
@@ -27,7 +27,7 @@ On the other side, the ground being leveled is not always a hard requirement. Ho
 
 ### Radar reflector
 
-It is recommended to utilize a tripod to adjust the height of the radar reflector and also modify its center to align with the radar sensor. More information about the radar reflector can be found in the [general documentation](../../marker_radar_lidar_calibrator/README.md#radar-reflector).
+It is recommended to utilize a tripod to adjust the height of the radar reflector and also modify its center to align with the radar sensor. More information about the radar reflector can be found in the [general documentation](../../calibrators/marker_radar_lidar_calibrator/README.md#radar-reflector).
 
 Before attempting to take calibration data from the reflectors, make sure that they can be detected by both sensors, which can be done visually with `RViz`.
 
@@ -116,7 +116,7 @@ In the same fashion, the upper right and lower right images correspond to the `l
 
 ### Adding lidar-radar pairs
 
-After the background model has been extracted, the user can carry the radar reflector (with the tripod) and place it in the [calibration area](../../marker_radar_lidar_calibrator/README.md#pro-tipsrecommendations). Once the reflector is positioned, the user should move away from it to avoid (otherwise, there is a hight risk of both objects coming part of the same cluster).
+After the background model has been extracted, the user can carry the radar reflector (with the tripod) and place it in the [calibration area](../../calibrators/marker_radar_lidar_calibrator/README.md#pro-tipsrecommendations). Once the reflector is positioned, the user should move away from it to avoid (otherwise, there is a hight risk of both objects coming part of the same cluster).
 
 In the tutorial rosbag, the user will see that both the human and the radar reflector (with a tripod) are identified as foreground objects in the image below.
 
@@ -134,7 +134,7 @@ Afterward, if the pair that the user added converges, it will be added to the da
     <img src="../images/marker_radar_lidar_calibrator/add2.jpg" alt="add2" width="300" height="300">
 </p>
 
-As described in the [Step 3: Matching and filtering](../../marker_radar_lidar_calibrator/README.md#step-3-matching-and-filtering) in the general documentation, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. Below, we show examples of good and bad initial calibration.
+As described in the [Step 3: Matching and filtering](../../calibrators/marker_radar_lidar_calibrator/README.md#step-3-matching-and-filtering) in the general documentation, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. Below, we show examples of good and bad initial calibration.
 
 In both images, the calibrator detects one lidar detection (blue points) and two radar detections (purple lines). The radar detections identify two potential reflectors: a human and a radar reflector (located closer to the bottom of the image). In the good initial calibration image, the blue point from lidar detection will correctly match the radar detection, as they are the closest to each other. However, in the image of bad initial calibration, the lidar detection will incorrectly match the radar detection of the human. If the user identifies that the initial calibration is not good enough for the matching process to succeed, he will need to address this issue before attempting to continue with this process.
 

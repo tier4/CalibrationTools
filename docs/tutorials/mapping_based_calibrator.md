@@ -2,12 +2,12 @@
 
 In this tutorial, we present a hands-on tutorial of the `mapping_based_calibrator`, particularly its lidar-lidar calibration capabilities. Although we provide a pre-recorded rosbag, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
-General documentation regarding this calibrator can be found [here](../../mapping_based_calibrator/README.md).
+General documentation regarding this calibrator can be found [here](../../calibrators/mapping_based_calibrator/README.md).
 
 ## Setup
 
 This tutorial assumes that the user has already built the calibration tools.
-Installation instructions can be found [here](../../../README.md).
+Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 
@@ -154,7 +154,7 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
     - Mapping failed. Acceleration is too high.
   - Bad initial calibration is also a common cause for failures in the calibration process. If the mapping succeeds and there are good calibration features, but still the calibration fails it is usually due to the nature of classic pointcloud registration algorithms.
   - Check the `RViz` to see if any keyframe number on the path is red (normally it is white). If it is red, there is a chance that the motion of the vehicle is not smooth. We recommend the user calibrate with more stable movement again.
-  - If it is not feasible to restart the experiment, the user could tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../mapping_based_calibrator/README.md). However, keep in mind that if the user sets the threshold too high, the accuracy of the calibration result will also decrease.
+  - If it is not feasible to restart the experiment, the user could tune the parameters in the `Calibration criteria parameters` described in the [documentation](../../calibrators/mapping_based_calibrator/README.md). However, keep in mind that if the user sets the threshold too high, the accuracy of the calibration result will also decrease.
   - Check whether all of the lidars apply time synchronization.
   - Make sure that the environment is rich in natural landmarks suitable for registration-based mapping in all directions. This will help the lidar capture sufficient details beyond simple features like lane surfaces or walls.
 

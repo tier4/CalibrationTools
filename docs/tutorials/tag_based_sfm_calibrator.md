@@ -2,12 +2,12 @@
 
 In this tutorial, we present a hands-on tutorial of the `tag_based_sfm_calibrator`, in particular, of its base-lidar calibration capabilities. Although we provide pre-recorded rosbags, the flow of the tutorial is meant to show the user the steps they must perform in their own use cases with live sensors.
 
-General documentation regarding this calibrator can be found [here](../../tag_based_sfm_calibrator/README.md).
+General documentation regarding this calibrator can be found [here](../../calibrators/tag_based_sfm_calibrator/README.md).
 
 ## Setup
 
 This tutorial assumes that the user has already built the calibration tools.
-Installation instructions can be found [here](../../../README.md).
+Installation instructions can be found [here](../../README.md).
 
 ## Data preparation
 
@@ -32,7 +32,7 @@ Since we need the initial intrinsics for the external camera, we need a way to c
 
 ### Calibration tags
 
-Although information on the different types of tags can be found in the [base documentation](../../tag_based_sfm_calibrator/README.md), here we provide additional practical guidelines:
+Although information on the different types of tags can be found in the [base documentation](../../calibrators/tag_based_sfm_calibrator/README.md), here we provide additional practical guidelines:
 
 #### Ground tags
 
