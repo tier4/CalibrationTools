@@ -45,7 +45,7 @@ However, not all pointclouds coming from the `mapping lidar` are used in the map
 
 The data required for calibration is created throughout the mapping process and right before the calibration itself. In particular, the mapping and calibration lidar are expected to have different timestamps so they can not be directly registered. Additionally, the mapping process produces a great amount of potential combinations of pointclouds to register, so the data best suited for calibration needs to be chosen.
 
-##### Data synchronization
+##### Data interpolation
 
 As explained in the previous section, pointclouds from the `mapping lidar` and `calibration lidar` have different timestamps which makes registration directly unfeasible. To address this problem, whenever a `keyframe` from the `mapping lidar` is generated, the temporally closest `calibration lidar` pointcloud is associated to it, and the pose of the `mapping lidar` pointcloud is interpolated to the stamp of the `calibration lidar` pointcloud using the map (adjacent frames to the `keyframe`).
 
