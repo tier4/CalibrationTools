@@ -33,7 +33,6 @@
   <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/objects_raw" if="$(eval &quot;'$(var msg_type)'=='radar_tracks'&quot;)"/>
   <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/scan_raw" if="$(eval &quot;'$(var msg_type)'=='radar_scan'&quot;)"/>
   <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/detection_points" if="$(eval &quot;'$(var msg_type)'=='radar_cloud'&quot;)"/>
-
   <let name="input_lidar_pointcloud" value="/sensing/lidar/top/pointcloud_raw"/>
 
   <node pkg="tf2_ros" exec="static_transform_publisher" name="lidar_broadcaster" output="screen" args="0 0 0 0 0 0 $(var radar_frame) radar_frame"/>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Tier IV, Inc.
+# Copyright 2024 TIER IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 from typing import Dict
 
 import numpy as np
+
 from sensor_calibration_manager.calibrator_base import CalibratorBase
 from sensor_calibration_manager.calibrator_registry import CalibratorRegistry
 from sensor_calibration_manager.ros_interface import RosInterface
