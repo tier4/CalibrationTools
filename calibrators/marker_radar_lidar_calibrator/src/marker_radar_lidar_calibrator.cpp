@@ -184,7 +184,7 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
   parameters_.lidar_cluster_min_points =
     this->declare_parameter<int>("lidar_cluster_min_points", 3);
   parameters_.lidar_cluster_max_points =
-    this->declare_parameter<int>("lidar_cluster_max_points", 2000);
+    this->declare_parameter<int>("lidar_cluster_max_points", 500);
   parameters_.radar_cluster_max_tolerance =
     this->declare_parameter<double>("radar_cluster_max_tolerance", 0.5);
   parameters_.radar_cluster_min_points =
