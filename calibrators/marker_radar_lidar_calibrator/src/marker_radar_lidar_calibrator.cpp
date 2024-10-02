@@ -476,7 +476,7 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
   std::vector<Eigen::Vector3d> radar_detections;
   if (msg_type_ == MsgType::radar_tracks) {
     if (!latest_radar_tracks_msgs_ || latest_radar_tracks_msgs_->tracks.size() == 0) {
-      RCLCPP_INFO(this->get_logger(), "There were no tracks");
+      RCLCPP_INFO(this->get_logger(), "There were no radar tracks");
       return;
     }
     pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr =
@@ -486,7 +486,7 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
   } else if (msg_type_ == MsgType::radar_scan) {
     if (!latest_radar_scan_msgs_ || latest_radar_scan_msgs_->returns.size() == 0) {
       if (latest_radar_scan_msgs_->returns.size() == 0)
-        RCLCPP_INFO(this->get_logger(), "There were no scan");
+        RCLCPP_INFO(this->get_logger(), "There were no radar scans");
       return;
     }
     pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr =
@@ -495,7 +495,7 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
     latest_radar_scan_msgs_->returns.clear();
   } else {
     if (!latest_radar_cloud_msgs_) {
-      RCLCPP_INFO(this->get_logger(), "There were no radar pointcloud");
+      RCLCPP_INFO(this->get_logger(), "There were no radar pointclouds");
       return;
     }
     pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr =
