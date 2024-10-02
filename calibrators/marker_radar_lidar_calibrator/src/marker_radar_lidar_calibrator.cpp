@@ -1547,7 +1547,7 @@ void ExtrinsicReflectorBasedCalibrator::selectCombinations(
   }
 }
 
-void ExtrinsicReflectorBasedCalibrator::doEvaluation(
+void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
   std::vector<std::vector<int>> & combinations, int num_of_samples)
 {
   TransformationEstimator crossval_estimator(
@@ -1641,7 +1641,7 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation()
 
     findCombinations(tracks_size - 1, num_of_samples, curr, 0, combinations);
     selectCombinations(tracks_size, num_of_samples, combinations);
-    doEvaluation(combinations, num_of_samples);
+    evaluateCombinations(combinations, num_of_samples);
   }
 }
 

@@ -144,7 +144,7 @@ protected:
     std::vector<std::vector<int>> & combinations);
   void selectCombinations(
     int tracks_size, int num_of_samples, std::vector<std::vector<int>> & combinations);
-  void doEvaluation(std::vector<std::vector<int>> & combinations, int num_of_samples);
+  void evaluateCombinations(std::vector<std::vector<int>> & combinations, int num_of_samples);
 
   void publishMetrics();
   void calibrateSensors();
