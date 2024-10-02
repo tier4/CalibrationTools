@@ -1530,8 +1530,6 @@ void ExtrinsicReflectorBasedCalibrator::evaluateTransformation(
   if (
     calibrated_translation_difference < parameters_.max_initial_calibration_translation_error &&
     calibrated_rotation_difference < parameters_.max_initial_calibration_rotation_error) {
-    RCLCPP_INFO(
-      this->get_logger(), "The calibration pose was chosen as the output calibration pose");
     calibrated_radar_to_lidar_eigen_ = calibrated_radar_to_lidar_transformation;
     calibration_valid_ = true;
     calibration_distance_score_ = calibrated_distance_error;
