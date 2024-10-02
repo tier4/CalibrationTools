@@ -132,7 +132,8 @@ protected:
     builtin_interfaces::msg::Time & time);
 
   std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr> getPointsSet();
-  std::tuple<double, double> getDelta(std::vector<Track> converged_tracks, bool is_crossval);
+  std::tuple<double, double> get2DRotationDelta(
+    std::vector<Track> converged_tracks, bool is_crossval);
 
   std::pair<double, double> computeCalibrationError(
     const Eigen::Isometry3d & radar_to_lidar_isometry);

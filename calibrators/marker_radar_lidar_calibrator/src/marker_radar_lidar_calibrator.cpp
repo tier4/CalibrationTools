@@ -1331,7 +1331,7 @@ bool ExtrinsicReflectorBasedCalibrator::trackMatches(
   return is_track_converged;
 }
 
-std::tuple<double, double> ExtrinsicReflectorBasedCalibrator::getDelta(
+std::tuple<double, double> ExtrinsicReflectorBasedCalibrator::get2DRotationDelta(
   std::vector<Track> converged_tracks, bool is_crossval)
 {
   double delta_cos_sum = 0.0;
@@ -1451,7 +1451,7 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformation()
     radar_optimization_to_lidar_eigen_);
   Eigen::Isometry3d calibrated_radar_to_lidar_transformation;
   if (transformation_type_ == TransformationType::yaw_only_rotation_2d) {
-    auto [delta_cos, delta_sin] = getDelta(converged_tracks_, false);
+    auto [delta_cos, delta_sin] = get2DRotationDelta(converged_tracks_, false);
     estimator.setDelta(delta_cos, delta_sin);
     estimator.estimateYawOnlyTransformation();
     calibrated_radar_to_lidar_transformation = estimator.getTransformation();
@@ -1619,7 +1619,7 @@ void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
       for (std::size_t i = 0; i < combination.size(); i++) {
         crossval_converged_tracks_.push_back(converged_tracks_[i]);
       }
-      auto [delta_cos, delta_sin] = getDelta(crossval_converged_tracks_, true);
+      auto [delta_cos, delta_sin] = get2DRotationDelta(crossval_converged_tracks_, true);
 
       crossval_estimator.setDelta(delta_cos, delta_sin);
       crossval_estimator.estimateYawOnlyTransformation();
