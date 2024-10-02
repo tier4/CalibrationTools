@@ -137,8 +137,8 @@ protected:
 
   std::pair<double, double> computeCalibrationError(
     const Eigen::Isometry3d & radar_to_lidar_isometry);
-  void estimateTransformation();
-  void calculateCalibrationError(Eigen::Isometry3d calibrated_radar_to_lidar_transformation);
+  Eigen::Isometry3d estimateTransformation();
+  void evaluateTransformation(Eigen::Isometry3d calibrated_radar_to_lidar_transformation);
   void crossValEvaluation();
   void findCombinations(
     int n, int k, std::vector<int> & curr, int first_num,
