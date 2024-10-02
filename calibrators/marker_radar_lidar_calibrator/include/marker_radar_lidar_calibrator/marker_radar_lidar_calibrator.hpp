@@ -56,7 +56,6 @@ namespace marker_radar_lidar_calibrator
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
 public:
-  using PointType = pcl::PointXYZ;
   using index_t = std::uint32_t;
   enum class TransformationType { svd_2d, yaw_only_rotation_2d, svd_3d, zero_roll_3d };
 
@@ -96,29 +95,31 @@ protected:
   void radarCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
   template <typename RadarMsgType>
-  pcl::PointCloud<PointType>::Ptr extractRadarPointcloud(const std::shared_ptr<RadarMsgType> & msg);
+  pcl::PointCloud<common_types::PointType>::Ptr extractRadarPointcloud(
+    const std::shared_ptr<RadarMsgType> & msg);
 
   std::vector<Eigen::Vector3d> extractLidarReflectors(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   std::vector<Eigen::Vector3d> extractRadarReflectors(
-    pcl::PointCloud<PointType>::Ptr radar_pointcloud_ptr);
+    pcl::PointCloud<common_types::PointType>::Ptr radar_pointcloud_ptr);
 
   void extractBackgroundModel(
-    const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
+    const pcl::PointCloud<common_types::PointType>::Ptr & sensor_pointcloud,
     const std_msgs::msg::Header & current_header, std_msgs::msg::Header & last_updated_header,
     std_msgs::msg::Header & first_header, BackgroundModel & background_model);
 
   void extractForegroundPoints(
-    const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
+    const pcl::PointCloud<common_types::PointType>::Ptr & sensor_pointcloud,
     const BackgroundModel & background_model, bool use_ransac,
-    pcl::PointCloud<PointType>::Ptr & foreground_points, Eigen::Vector4d & ground_model);
+    pcl::PointCloud<common_types::PointType>::Ptr & foreground_points,
+    Eigen::Vector4d & ground_model);
 
-  std::vector<pcl::PointCloud<PointType>::Ptr> extractClusters(
-    const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud,
+  std::vector<pcl::PointCloud<common_types::PointType>::Ptr> extractClusters(
+    const pcl::PointCloud<common_types::PointType>::Ptr & foreground_pointcloud,
     const double cluster_max_tolerance, const int cluster_min_points, const int cluster_max_points);
 
   std::vector<Eigen::Vector3d> findReflectorsFromClusters(
-    const std::vector<pcl::PointCloud<PointType>::Ptr> & clusters,
+    const std::vector<pcl::PointCloud<common_types::PointType>::Ptr> & clusters,
     const Eigen::Vector4d & ground_model);
 
   bool checkInitialTransforms();
@@ -131,7 +132,9 @@ protected:
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
     builtin_interfaces::msg::Time & time);
 
-  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr> getPointsSet();
+  std::tuple<
+    pcl::PointCloud<common_types::PointType>::Ptr, pcl::PointCloud<common_types::PointType>::Ptr>
+  getPointsSet();
   std::tuple<double, double> get2DRotationDelta(
     std::vector<Track> converged_tracks, bool is_crossval);
 
@@ -291,8 +294,8 @@ protected:
   std::vector<Track> converged_tracks_;
 
   // Converged points
-  pcl::PointCloud<PointType>::Ptr lidar_points_ocs_;
-  pcl::PointCloud<PointType>::Ptr radar_points_rcs_;
+  pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs_;
+  pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs_;
 
   // Metrics
   std::vector<float> output_metrics_;
