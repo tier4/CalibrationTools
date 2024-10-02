@@ -1398,7 +1398,7 @@ std::pair<double, double> ExtrinsicReflectorBasedCalibrator::computeCalibrationE
   return std::make_pair(distance_error, yaw_error);
 }
 
-void ExtrinsicReflectorBasedCalibrator::estimateTransformation()
+Eigen::Isometry3d ExtrinsicReflectorBasedCalibrator::estimateTransformation()
 {
   TransformationEstimator estimator(
     initial_radar_to_lidar_eigen_, initial_radar_optimization_to_radar_eigen_,
@@ -1446,10 +1446,10 @@ void ExtrinsicReflectorBasedCalibrator::estimateTransformation()
                             << calibrated_radar_to_lidar_transformation.matrix());
   }
 
-  calculateCalibrationError(calibrated_radar_to_lidar_transformation);
+  return calibrated_radar_to_lidar_transformation;
 }
 
-void ExtrinsicReflectorBasedCalibrator::calculateCalibrationError(
+void ExtrinsicReflectorBasedCalibrator::evaluateTransformation(
   Eigen::Isometry3d calibrated_radar_to_lidar_transformation)
 {
   // Estimate the pre & post calibration error
@@ -1667,7 +1667,8 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
     return;
   }
   output_metrics_.clear();
-  estimateTransformation();
+  auto calibrated_radar_to_lidar_transformation = estimateTransformation();
+  evaluateTransformation(calibrated_radar_to_lidar_transformation);
   crossValEvaluation();
   publishMetrics();
 }
