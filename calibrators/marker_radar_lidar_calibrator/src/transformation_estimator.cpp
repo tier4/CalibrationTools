@@ -142,7 +142,7 @@ void TransformationEstimator::estimateZeroRollTransformation()
 
     ceres::CostFunction * cost_function = new ceres::AutoDiffCostFunction<SensorResidual, 3, 5>(
       new SensorResidual(radar_point_eigen, lidar_point_eigen));
-    problem.AddResidualBlock(cost_function, NULL, params.data());
+    problem.AddResidualBlock(cost_function, nullptr, params.data());
   }
 
   // Solve
