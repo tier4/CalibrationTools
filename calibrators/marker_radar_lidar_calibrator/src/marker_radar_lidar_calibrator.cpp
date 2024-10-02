@@ -404,7 +404,7 @@ void ExtrinsicReflectorBasedCalibrator::backgroundModelRequestCallback(
     }
 
     RCLCPP_WARN_THROTTLE(
-      this->get_logger(), *this->get_clock(), 5000, "Waiting for the extracting background model");
+      this->get_logger(), *this->get_clock(), 5000, "Waiting to extract the background model");
   }
 
   RCLCPP_INFO(this->get_logger(), "Background model estimated");
