@@ -141,11 +141,13 @@ protected:
   void evaluateTransformation(Eigen::Isometry3d calibrated_radar_to_lidar_transformation);
   void crossValEvaluation();
   void findCombinations(
-    int n, int k, std::vector<int> & curr, int first_num,
-    std::vector<std::vector<int>> & combinations);
+    std::size_t n, std::size_t k, std::vector<std::size_t> & curr, std::size_t first_num,
+    std::vector<std::vector<std::size_t>> & combinations);
   void selectCombinations(
-    int tracks_size, int num_of_samples, std::vector<std::vector<int>> & combinations);
-  void evaluateCombinations(std::vector<std::vector<int>> & combinations, int num_of_samples);
+    std::size_t tracks_size, std::size_t num_of_samples,
+    std::vector<std::vector<std::size_t>> & combinations);
+  void evaluateCombinations(
+    std::vector<std::vector<std::size_t>> & combinations, std::size_t num_of_samples);
 
   void publishMetrics();
   void calibrateSensors();
@@ -201,7 +203,7 @@ protected:
     double max_matching_distance;
     double max_initial_calibration_translation_error;
     double max_initial_calibration_rotation_error;
-    int max_number_of_combination_samples;
+    std::size_t max_number_of_combination_samples;
   } parameters_;
 
   // ROS Interface

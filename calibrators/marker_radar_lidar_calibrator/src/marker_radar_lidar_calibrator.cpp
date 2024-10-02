@@ -33,6 +33,7 @@
 #include <tf2/utils.h>
 
 #include <chrono>
+#include <cstddef>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -194,8 +195,8 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
   parameters_.reflector_radius = this->declare_parameter<double>("reflector_radius", 0.1);
   parameters_.reflector_max_height = this->declare_parameter<double>("reflector_max_height", 1.2);
   parameters_.max_matching_distance = this->declare_parameter<double>("max_matching_distance", 1.0);
-  parameters_.max_number_of_combination_samples =
-    this->declare_parameter<int>("max_number_of_combination_samples", 10000);
+  parameters_.max_number_of_combination_samples = static_cast<std::size_t>(
+    this->declare_parameter<int>("max_number_of_combination_samples", 10000));
 
   auto msg_type = this->declare_parameter<std::string>("msg_type");
   auto transformation_type = this->declare_parameter<std::string>("transformation_type");
@@ -1546,20 +1547,20 @@ void ExtrinsicReflectorBasedCalibrator::evaluateTransformation(
 }
 
 void ExtrinsicReflectorBasedCalibrator::findCombinations(
-  int n, int k, std::vector<int> & curr, int first_num,
-  std::vector<std::vector<int>> & combinations)
+  std::size_t n, std::size_t k, std::vector<std::size_t> & curr, std::size_t first_num,
+  std::vector<std::vector<std::size_t>> & combinations)
 {
-  int curr_size = static_cast<int>(curr.size());
+  auto curr_size = curr.size();
   if (curr_size == k) {
     combinations.push_back(curr);
     return;
   }
 
-  int need = k - curr_size;
-  int remain = n - first_num + 1;
-  int available = remain - need;
+  auto need = k - curr_size;
+  auto remain = n - first_num + 1;
+  auto available = remain - need;
 
-  for (int num = first_num; num <= first_num + available; num++) {
+  for (auto num = first_num; num <= first_num + available; num++) {
     curr.push_back(num);
     findCombinations(n, k, curr, num + 1, combinations);
     curr.pop_back();
@@ -1569,30 +1570,30 @@ void ExtrinsicReflectorBasedCalibrator::findCombinations(
 }
 
 void ExtrinsicReflectorBasedCalibrator::selectCombinations(
-  int tracks_size, int num_of_samples, std::vector<std::vector<int>> & combinations)
+  std::size_t tracks_size, std::size_t num_of_samples,
+  std::vector<std::vector<std::size_t>> & combinations)
 {
   RCLCPP_INFO(
     this->get_logger(),
-    "Current number of combinations is: %d, converged_tracks_size: %d, num_of_samples: %d",
-    static_cast<int>(combinations.size()), tracks_size, num_of_samples);
+    "Current number of combinations is: %zu, converged_tracks_size: %zu, num_of_samples: %zu",
+    combinations.size(), tracks_size, num_of_samples);
 
   // random select the combinations if the number of combinations is too large
-  if (
-    combinations.size() > static_cast<std::size_t>(parameters_.max_number_of_combination_samples)) {
+  if (combinations.size() > parameters_.max_number_of_combination_samples) {
     std::random_device rd;
     std::mt19937 mt(rd());
     std::shuffle(combinations.begin(), combinations.end(), mt);
     combinations.resize(parameters_.max_number_of_combination_samples);
     RCLCPP_WARN(
       this->get_logger(),
-      "The number of combinations is set to: %d, because it exceeds the maximum number of "
-      "combination samples: %d",
-      static_cast<int>(combinations.size()), parameters_.max_number_of_combination_samples);
+      "The number of combinations is set to: %zu, because it exceeds the maximum number of "
+      "combination samples: %zu",
+      combinations.size(), parameters_.max_number_of_combination_samples);
   }
 }
 
 void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
-  std::vector<std::vector<int>> & combinations, int num_of_samples)
+  std::vector<std::vector<std::size_t>> & combinations, std::size_t num_of_samples)
 {
   TransformationEstimator crossval_estimator(
     initial_radar_to_lidar_eigen_, initial_radar_optimization_to_radar_eigen_,
@@ -1651,7 +1652,7 @@ void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
 
   auto calculate_std = [](std::vector<double> & data, double mean) -> double {
     double sum = 0.0;
-    for (size_t i = 0; i < data.size(); i++) {
+    for (std::size_t i = 0; i < data.size(); i++) {
       sum += (data[i] - mean) * (data[i] - mean);
     }
     double variance = sum / data.size();
@@ -1676,12 +1677,12 @@ void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
 
 void ExtrinsicReflectorBasedCalibrator::crossValEvaluation()
 {
-  int tracks_size = static_cast<int>(converged_tracks_.size());
+  auto tracks_size = converged_tracks_.size();
   if (tracks_size <= 3) return;
 
-  for (int num_of_samples = 3; num_of_samples < tracks_size; num_of_samples++) {
-    std::vector<std::vector<int>> combinations;
-    std::vector<int> curr;
+  for (std::size_t num_of_samples = 3; num_of_samples < tracks_size; num_of_samples++) {
+    std::vector<std::vector<std::size_t>> combinations;
+    std::vector<std::size_t> curr;
 
     findCombinations(tracks_size - 1, num_of_samples, curr, 0, combinations);
     selectCombinations(tracks_size, num_of_samples, combinations);
