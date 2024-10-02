@@ -113,7 +113,7 @@ void TransformationEstimator::estimateZeroRollTransformation()
 {
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"),
-    "Estimate 3D transformation with roll is always zero");
+    "Estimate the 3D transformation by restricting the roll to zero");
 
   ceres::Problem problem;
 
