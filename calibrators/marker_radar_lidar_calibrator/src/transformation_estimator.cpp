@@ -133,7 +133,7 @@ void TransformationEstimator::estimateZeroRollTransformation()
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"), "%s", initial_params_msg.c_str());
 
-  for (size_t i = 0; i < lidar_points_ocs_->points.size(); i++) {
+  for (std::size_t i = 0; i < lidar_points_ocs_->points.size(); i++) {
     auto lidar_point = lidar_points_ocs_->points[i];
     auto radar_point = radar_points_rcs_->points[i];
 
