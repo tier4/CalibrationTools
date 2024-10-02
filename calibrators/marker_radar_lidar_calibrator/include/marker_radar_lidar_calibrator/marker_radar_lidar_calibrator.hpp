@@ -255,7 +255,7 @@ protected:
   geometry_msgs::msg::Transform radar_optimization_to_lidar_msg_;
   Eigen::Isometry3d radar_optimization_to_lidar_eigen_;
 
-  geometry_msgs::msg::Transform init_radar_optimization_to_radar_msg_;
+  geometry_msgs::msg::Transform initial_radar_optimization_to_radar_msg_;
   Eigen::Isometry3d initial_radar_optimization_to_radar_eigen_;
 
   bool got_initial_transform_{false};
