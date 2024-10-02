@@ -1141,12 +1141,12 @@ bool ExtrinsicReflectorBasedCalibrator::checkInitialTransforms()
 
     radar_optimization_to_lidar_eigen_ = tf2::transformToEigen(radar_optimization_to_lidar_msg_);
 
-    init_radar_optimization_to_radar_msg_ =
+    initial_radar_optimization_to_radar_msg_ =
       tf_buffer_->lookupTransform(parameters_.radar_optimization_frame, radar_frame_, t, timeout)
         .transform;
 
     initial_radar_optimization_to_radar_eigen_ =
-      tf2::transformToEigen(init_radar_optimization_to_radar_msg_);
+      tf2::transformToEigen(initial_radar_optimization_to_radar_msg_);
 
     got_initial_transform_ = true;
   } catch (tf2::TransformException & ex) {
