@@ -43,7 +43,7 @@ public:
   void setPoints(
     pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs,
     pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs);
-  void setDelta(double delta_cos, double delta_sin);
+  void set2DRotationDelta(double delta_cos, double delta_sin);
   void estimateYawOnlyTransformation();
   void estimateSVDTransformation(
     ExtrinsicReflectorBasedCalibrator::TransformationType transformation_type);

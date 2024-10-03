@@ -39,7 +39,7 @@ void TransformationEstimator::setPoints(
   radar_points_rcs_ = radar_points_rcs;
 }
 
-void TransformationEstimator::setDelta(double delta_cos, double delta_sin)
+void TransformationEstimator::set2DRotationDelta(double delta_cos, double delta_sin)
 {
   delta_cos_ = delta_cos;
   delta_sin_ = delta_sin;
