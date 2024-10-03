@@ -33,22 +33,12 @@ class MappingBasedLidarLidarCalibrator(CalibratorBase):
     def __init__(self, ros_interface: RosInterface, **kwargs):
         super().__init__(ros_interface)
 
-        self.sensor_kit_frame = "sensor_kit_base_link"
-        self.mapping_lidar_frame = "pandar_top"
-        self.calibration_lidar_frames = ["pandar_front", "pandar_left", "pandar_right"]
-        self.calibration_base_lidar_frames = [
-            "pandar_front_base_link",
-            "pandar_left_base_link",
-            "pandar_right_base_link",
-        ]
+        self.base_link = kwargs["base_frame"]
+        self.mapping_lidar_frame = "lidar_front"
+        self.calibration_lidar_frames = ["lidar_left", "lidar_right", "lidar_rear"]
 
         self.required_frames.extend(
-            [
-                self.sensor_kit_frame,
-                self.mapping_lidar_frame,
-                *self.calibration_lidar_frames,
-                *self.calibration_base_lidar_frames,
-            ]
+            [self.base_link, self.mapping_lidar_frame, *self.calibration_lidar_frames]
         )
 
         self.add_calibrator(
@@ -60,33 +50,25 @@ class MappingBasedLidarLidarCalibrator(CalibratorBase):
         )
 
     def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
-        sensor_kit_to_lidar_transform = self.get_transform_matrix(
-            self.sensor_kit_frame, self.mapping_lidar_frame
+        base_to_mapping_transform = self.get_transform_matrix(
+            self.base_link, self.mapping_lidar_frame
         )
 
-        calibration_lidar_to_base_lidar_transforms = [
-            self.get_transform_matrix(calibration_lidar_frame, calibration_base_lidar_frame)
-            for calibration_lidar_frame, calibration_base_lidar_frame in zip(
-                self.calibration_lidar_frames, self.calibration_base_lidar_frames
-            )
-        ]
-
-        sensor_kit_to_calibration_lidar_transforms = [
-            sensor_kit_to_lidar_transform
+        base_to_calibration_lidar_transforms = [
+            base_to_mapping_transform
             @ calibration_transforms[self.mapping_lidar_frame][calibration_lidar_frame]
-            @ calibration_lidar_to_base_lidar_transform
-            for calibration_lidar_frame, calibration_lidar_to_base_lidar_transform in zip(
-                self.calibration_lidar_frames, calibration_lidar_to_base_lidar_transforms
-            )
+            for calibration_lidar_frame in self.calibration_lidar_frames
         ]
 
         result = {
-            self.sensor_kit_frame: {
-                calibration_base_lidar_frame: transform
-                for calibration_base_lidar_frame, transform in zip(
-                    self.calibration_base_lidar_frames, sensor_kit_to_calibration_lidar_transforms
+            self.base_link: {
+                calibration_lidar_frame: transform
+                for calibration_lidar_frame, transform in zip(
+                    self.calibration_lidar_frames, base_to_calibration_lidar_transforms
                 )
             }
         }
+
+        result[self.base_link][self.mapping_lidar_frame] = base_to_mapping_transform
 
         return result
