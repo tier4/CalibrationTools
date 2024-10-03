@@ -525,25 +525,17 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
 void ExtrinsicReflectorBasedCalibrator::radarTracksCallback(
   const radar_msgs::msg::RadarTracks::SharedPtr msg)
 {
-  if (!latest_radar_tracks_msgs_) {
-    latest_radar_tracks_msgs_ = msg;
-  } else {
-    latest_radar_tracks_msgs_->header = msg->header;
-    latest_radar_tracks_msgs_->tracks.insert(
-      latest_radar_tracks_msgs_->tracks.end(), msg->tracks.begin(), msg->tracks.end());
-  }
+  latest_radar_tracks_msgs_->header = msg->header;
+  latest_radar_tracks_msgs_->tracks.insert(
+    latest_radar_tracks_msgs_->tracks.end(), msg->tracks.begin(), msg->tracks.end());
 }
 
 void ExtrinsicReflectorBasedCalibrator::radarScanCallback(
   const radar_msgs::msg::RadarScan::SharedPtr msg)
 {
-  if (!latest_radar_scan_msgs_) {
-    latest_radar_scan_msgs_ = msg;
-  } else {
-    latest_radar_scan_msgs_->header = msg->header;
-    latest_radar_scan_msgs_->returns.insert(
-      latest_radar_scan_msgs_->returns.end(), msg->returns.begin(), msg->returns.end());
-  }
+  latest_radar_scan_msgs_->header = msg->header;
+  latest_radar_scan_msgs_->returns.insert(
+    latest_radar_scan_msgs_->returns.end(), msg->returns.begin(), msg->returns.end());
 }
 
 void ExtrinsicReflectorBasedCalibrator::radarCloudCallback(
