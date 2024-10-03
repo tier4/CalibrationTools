@@ -32,14 +32,14 @@ TransformationEstimator::TransformationEstimator(
 }
 
 void TransformationEstimator::setPoints(
-  pcl::PointCloud<PointType>::Ptr lidar_points_ocs,
-  pcl::PointCloud<PointType>::Ptr radar_points_rcs)
+  pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs,
+  pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs)
 {
   lidar_points_ocs_ = lidar_points_ocs;
   radar_points_rcs_ = radar_points_rcs;
 }
 
-void TransformationEstimator::setDelta(double delta_cos, double delta_sin)
+void TransformationEstimator::set2DRotationDelta(double delta_cos, double delta_sin)
 {
   delta_cos_ = delta_cos;
   delta_sin_ = delta_sin;
@@ -68,7 +68,8 @@ void TransformationEstimator::estimateSVDTransformation(
       rclcpp::get_logger("marker_radar_lidar_calibrator"), "Estimate 3D SVD transformation");
   }
 
-  pcl::registration::TransformationEstimationSVD<PointType, PointType> estimator;
+  pcl::registration::TransformationEstimationSVD<common_types::PointType, common_types::PointType>
+    estimator;
   Eigen::Matrix4f full_radar_to_radar_optimization_transformation;
   estimator.estimateRigidTransformation(
     *lidar_points_ocs_, *radar_points_rcs_, full_radar_to_radar_optimization_transformation);
@@ -113,7 +114,7 @@ void TransformationEstimator::estimateZeroRollTransformation()
 {
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"),
-    "Estimate 3D transformation with roll is always zero");
+    "Estimate the 3D transformation by restricting the roll to zero");
 
   ceres::Problem problem;
 
@@ -133,7 +134,7 @@ void TransformationEstimator::estimateZeroRollTransformation()
   RCLCPP_INFO(
     rclcpp::get_logger("marker_radar_lidar_calibrator"), "%s", initial_params_msg.c_str());
 
-  for (size_t i = 0; i < lidar_points_ocs_->points.size(); i++) {
+  for (std::size_t i = 0; i < lidar_points_ocs_->points.size(); i++) {
     auto lidar_point = lidar_points_ocs_->points[i];
     auto radar_point = radar_points_rcs_->points[i];
 
@@ -142,7 +143,7 @@ void TransformationEstimator::estimateZeroRollTransformation()
 
     ceres::CostFunction * cost_function = new ceres::AutoDiffCostFunction<SensorResidual, 3, 5>(
       new SensorResidual(radar_point_eigen, lidar_point_eigen));
-    problem.AddResidualBlock(cost_function, NULL, params.data());
+    problem.AddResidualBlock(cost_function, nullptr, params.data());
   }
 
   // Solve

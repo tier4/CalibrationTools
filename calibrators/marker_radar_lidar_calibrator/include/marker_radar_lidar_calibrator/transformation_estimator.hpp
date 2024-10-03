@@ -18,6 +18,7 @@
 #include <Eigen/Dense>
 #include <autoware/universe_utils/geometry/geometry.hpp>
 #include <marker_radar_lidar_calibrator/marker_radar_lidar_calibrator.hpp>
+#include <marker_radar_lidar_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
 
@@ -35,15 +36,14 @@ namespace marker_radar_lidar_calibrator
 class TransformationEstimator
 {
 public:
-  using PointType = pcl::PointXYZ;
   TransformationEstimator(
     Eigen::Isometry3d initial_radar_to_lidar_eigen,
     Eigen::Isometry3d initial_radar_to_radar_optimization_eigen,
     Eigen::Isometry3d radar_optimization_to_lidar_eigen);
   void setPoints(
-    pcl::PointCloud<PointType>::Ptr lidar_points_ocs,
-    pcl::PointCloud<PointType>::Ptr radar_points_rcs);
-  void setDelta(double delta_cos, double delta_sin);
+    pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs,
+    pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs);
+  void set2DRotationDelta(double delta_cos, double delta_sin);
   void estimateYawOnlyTransformation();
   void estimateSVDTransformation(
     ExtrinsicReflectorBasedCalibrator::TransformationType transformation_type);
@@ -52,8 +52,8 @@ public:
 
   double delta_cos_;
   double delta_sin_;
-  pcl::PointCloud<PointType>::Ptr lidar_points_ocs_;
-  pcl::PointCloud<PointType>::Ptr radar_points_rcs_;
+  pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs_;
+  pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs_;
   Eigen::Isometry3d calibrated_radar_to_lidar_transformation_;
 
   Eigen::Isometry3d initial_radar_to_lidar_eigen_;
