@@ -124,9 +124,7 @@ class CalibratorBase(QObject):
         self.calibrators.append(calibration_wrapper)
 
     def on_service_status_changed(self):
-        self.services_available = all(
-            [calibrator.is_available() for calibrator in self.calibrators]
-        )
+        self.services_available = all(calibrator.is_available() for calibrator in self.calibrators)
         self.update_status()
 
     def on_calibration_result(self):
