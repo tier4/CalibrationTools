@@ -1424,7 +1424,7 @@ TransformationResult ExtrinsicReflectorBasedCalibrator::estimateTransformation()
 
   if (transformation_type_ == TransformationType::yaw_only_rotation_2d) {
     auto [delta_cos, delta_sin] = get2DRotationDelta(converged_tracks_, false);
-    estimator.setDelta(delta_cos, delta_sin);
+    estimator.set2DRotationDelta(delta_cos, delta_sin);
     estimator.estimateYawOnlyTransformation();
     transformation_result.calibrated_radar_to_lidar_transformation = estimator.getTransformation();
     RCLCPP_INFO_STREAM(
@@ -1601,7 +1601,7 @@ void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
       }
       auto [delta_cos, delta_sin] = get2DRotationDelta(crossval_converged_tracks_, true);
 
-      crossval_estimator.setDelta(delta_cos, delta_sin);
+      crossval_estimator.set2DRotationDelta(delta_cos, delta_sin);
       crossval_estimator.estimateYawOnlyTransformation();
     } else {
       crossval_lidar_points_ocs->clear();
