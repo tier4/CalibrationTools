@@ -7,9 +7,9 @@
   <arg name="rviz" default="true"/>
 
   <arg name="mapping_min_range" default="7.0" description="Used to drop self reflections"/>
-  <arg name="mapping_max_range" default="100.0" description="Used to avoid innacurate points and speed up the process"/>
+  <arg name="mapping_max_range" default="100.0" description="Used to avoid inaccurate points and speed up the process"/>
   <arg name="calibration_min_distance_between_frames" default="4.0" description="Min separation between calibration clouds to avoid correlation"/>
-  <arg name="dense_pointcloud_num_keyframes" default="30" description="Used to compensate the differente fovs"/>
+  <arg name="dense_pointcloud_num_keyframes" default="30" description="Used to compensate the different field of views"/>
   <arg name="lidar_calibration_max_frames" default="3" description="Number of pointclouds used for calibration"/>
 
   <let name="calibration_camera_optical_link_frames" value="['']"/>

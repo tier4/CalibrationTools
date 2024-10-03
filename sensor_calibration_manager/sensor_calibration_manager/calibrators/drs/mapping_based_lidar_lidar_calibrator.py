@@ -61,14 +61,10 @@ class MappingBasedLidarLidarCalibrator(CalibratorBase):
         ]
 
         result = {
-            self.base_link: {
-                calibration_lidar_frame: transform
-                for calibration_lidar_frame, transform in zip(
-                    self.calibration_lidar_frames, base_to_calibration_lidar_transforms
-                )
-            }
+            self.base_link: dict(
+                zip(self.calibration_lidar_frames, base_to_calibration_lidar_transforms)
+            )
         }
-
         result[self.base_link][self.mapping_lidar_frame] = base_to_mapping_transform
 
         return result
