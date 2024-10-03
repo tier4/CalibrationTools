@@ -177,9 +177,10 @@ protected:
 
   struct Parameters
   {
-    std::string radar_optimization_frame;  // frame that is assumed to be parallel to the radar
-                                           // if estimating the transformation by 2d algorithms
-                                           // (needed for radars that do not provide elevation)
+    std::string radar_optimization_frame;  // If the radar does not provide elevation,
+                                           // this frame needs to be parallel to the radar
+                                           // and should only use the 2D transformation.
+
     bool use_lidar_initial_crop_box_filter;
     double lidar_initial_crop_box_min_x;
     double lidar_initial_crop_box_min_y;
