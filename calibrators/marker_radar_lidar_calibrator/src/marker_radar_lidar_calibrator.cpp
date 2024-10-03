@@ -38,6 +38,7 @@
 #include <limits>
 #include <numeric>
 #include <sstream>
+#include <tuple>
 
 #define UPDATE_PARAM(PARAM_STRUCT, NAME) update_param(parameters, #NAME, PARAM_STRUCT.NAME)
 
@@ -1188,9 +1189,14 @@ ExtrinsicReflectorBasedCalibrator::matchDetections(
   std::transform(
     lidar_detections.cbegin(), lidar_detections.cend(),
     std::back_inserter(lidar_detections_transformed),
-    [&radar_to_lidar_transform](const auto & lidar_detection) {
+    [&radar_to_lidar_transform,
+     &transformation_type = this->transformation_type_](const auto & lidar_detection) {
       auto transformed_point = radar_to_lidar_transform * lidar_detection;
-      transformed_point.z() = 0.f;
+      if (
+        transformation_type == TransformationType::yaw_only_rotation_2d ||
+        transformation_type == TransformationType::svd_2d) {
+        transformed_point.z() = 0.f;
+      }
       return transformed_point;
     });
 
@@ -1447,9 +1453,13 @@ std::pair<double, double> ExtrinsicReflectorBasedCalibrator::computeCalibrationE
     auto lidar_estimation = track.getLidarEstimation();
     auto radar_estimation = track.getRadarEstimation();
     auto lidar_estimation_transformed = radar_to_lidar_isometry * lidar_estimation;
-    lidar_estimation_transformed.z() = 0.0;
-    radar_estimation.z() = 0.0;
 
+    if (
+      transformation_type_ == TransformationType::yaw_only_rotation_2d ||
+      transformation_type_ == TransformationType::svd_2d) {
+      lidar_estimation_transformed.z() = 0.0;
+      radar_estimation.z() = 0.0;
+    }
     distance_error += (lidar_estimation_transformed - radar_estimation).norm();
     yaw_error += getYawError(lidar_estimation_transformed, radar_estimation);
   }
@@ -1460,55 +1470,63 @@ std::pair<double, double> ExtrinsicReflectorBasedCalibrator::computeCalibrationE
   return std::make_pair(distance_error, yaw_error);
 }
 
-Eigen::Isometry3d ExtrinsicReflectorBasedCalibrator::estimateTransformation()
+TransformationResult ExtrinsicReflectorBasedCalibrator::estimateTransformation()
 {
+  TransformationResult transformation_result;
   TransformationEstimator estimator(
     initial_radar_to_lidar_eigen_, initial_radar_optimization_to_radar_eigen_,
     radar_optimization_to_lidar_eigen_);
-  Eigen::Isometry3d calibrated_radar_to_lidar_transformation;
+
   if (transformation_type_ == TransformationType::yaw_only_rotation_2d) {
     auto [delta_cos, delta_sin] = get2DRotationDelta(converged_tracks_, false);
     estimator.setDelta(delta_cos, delta_sin);
     estimator.estimateYawOnlyTransformation();
-    calibrated_radar_to_lidar_transformation = estimator.getTransformation();
+    transformation_result.calibrated_radar_to_lidar_transformation = estimator.getTransformation();
     RCLCPP_INFO_STREAM(
       this->get_logger(), "Initial radar->lidar transform:\n"
                             << initial_radar_to_lidar_eigen_.matrix());
     RCLCPP_INFO_STREAM(
-      this->get_logger(), "Pure rotation calibration radar->lidar transform:\n"
-                            << calibrated_radar_to_lidar_transformation.matrix());
+      this->get_logger(),
+      "Pure rotation calibration radar->lidar transform:\n"
+        << transformation_result.calibrated_radar_to_lidar_transformation.matrix());
   } else if (transformation_type_ == TransformationType::svd_2d) {
-    std::tie(lidar_points_ocs_, radar_points_rcs_) = getPointsSet();
-    estimator.setPoints(lidar_points_ocs_, radar_points_rcs_);
+    std::tie(transformation_result.lidar_points_ocs, transformation_result.radar_points_rcs) =
+      getPointsSet();
+    estimator.setPoints(
+      transformation_result.lidar_points_ocs, transformation_result.radar_points_rcs);
     estimator.estimateSVDTransformation(transformation_type_);
-    calibrated_radar_to_lidar_transformation = estimator.getTransformation();
+    transformation_result.calibrated_radar_to_lidar_transformation = estimator.getTransformation();
     RCLCPP_INFO_STREAM(
       this->get_logger(), "Initial radar->lidar transform:\n"
                             << initial_radar_to_lidar_eigen_.matrix());
     RCLCPP_INFO_STREAM(
-      this->get_logger(), "2D calibration radar->lidar transform:\n"
-                            << calibrated_radar_to_lidar_transformation.matrix());
+      this->get_logger(),
+      "2D calibration radar->lidar transform:\n"
+        << transformation_result.calibrated_radar_to_lidar_transformation.matrix());
   } else if (
     transformation_type_ == TransformationType::svd_3d ||
     transformation_type_ == TransformationType::zero_roll_3d) {
-    std::tie(lidar_points_ocs_, radar_points_rcs_) = getPointsSet();
-    estimator.setPoints(lidar_points_ocs_, radar_points_rcs_);
+    std::tie(transformation_result.lidar_points_ocs, transformation_result.radar_points_rcs) =
+      getPointsSet();
+    estimator.setPoints(
+      transformation_result.lidar_points_ocs, transformation_result.radar_points_rcs);
 
     if (transformation_type_ == TransformationType::zero_roll_3d)
       estimator.estimateZeroRollTransformation();
     else if (transformation_type_ == TransformationType::svd_3d)
       estimator.estimateSVDTransformation(transformation_type_);
 
-    calibrated_radar_to_lidar_transformation = estimator.getTransformation();
+    transformation_result.calibrated_radar_to_lidar_transformation = estimator.getTransformation();
     RCLCPP_INFO_STREAM(
       this->get_logger(), "Initial radar->lidar transform:\n"
                             << initial_radar_to_lidar_eigen_.matrix());
     RCLCPP_INFO_STREAM(
-      this->get_logger(), "3D calibration radar->lidar transform:\n"
-                            << calibrated_radar_to_lidar_transformation.matrix());
+      this->get_logger(),
+      "3D calibration radar->lidar transform:\n"
+        << transformation_result.calibrated_radar_to_lidar_transformation.matrix());
   }
 
-  return calibrated_radar_to_lidar_transformation;
+  return transformation_result;
 }
 
 void ExtrinsicReflectorBasedCalibrator::evaluateTransformation(
@@ -1608,7 +1626,8 @@ void ExtrinsicReflectorBasedCalibrator::selectCombinations(
 }
 
 void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
-  std::vector<std::vector<std::size_t>> & combinations, std::size_t num_of_samples)
+  std::vector<std::vector<std::size_t>> & combinations, std::size_t num_of_samples,
+  TransformationResult transformation_result)
 {
   TransformationEstimator crossval_estimator(
     initial_radar_to_lidar_eigen_, initial_radar_optimization_to_radar_eigen_,
@@ -1645,8 +1664,10 @@ void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
 
       // calculate the transformation.
       for (std::size_t i = 0; i < combination.size(); i++) {
-        crossval_lidar_points_ocs->emplace_back(lidar_points_ocs_->points[combination[i]]);
-        crossval_radar_points_rcs->emplace_back(radar_points_rcs_->points[combination[i]]);
+        crossval_lidar_points_ocs->emplace_back(
+          transformation_result.lidar_points_ocs->points[combination[i]]);
+        crossval_radar_points_rcs->emplace_back(
+          transformation_result.radar_points_rcs->points[combination[i]]);
       }
       crossval_estimator.setPoints(crossval_lidar_points_ocs, crossval_radar_points_rcs);
       if (transformation_type_ == TransformationType::zero_roll_3d)
@@ -1692,7 +1713,8 @@ void ExtrinsicReflectorBasedCalibrator::evaluateCombinations(
   output_metrics_.push_back(static_cast<float>(std_crossval_calibrated_yaw_error));
 }
 
-void ExtrinsicReflectorBasedCalibrator::crossValEvaluation()
+void ExtrinsicReflectorBasedCalibrator::crossValEvaluation(
+  TransformationResult transformation_result)
 {
   auto tracks_size = converged_tracks_.size();
   if (tracks_size <= 3) return;
@@ -1703,7 +1725,7 @@ void ExtrinsicReflectorBasedCalibrator::crossValEvaluation()
 
     findCombinations(tracks_size - 1, num_of_samples, curr, 0, combinations);
     selectCombinations(tracks_size, num_of_samples, combinations);
-    evaluateCombinations(combinations, num_of_samples);
+    evaluateCombinations(combinations, num_of_samples, transformation_result);
   }
 }
 
@@ -1729,9 +1751,9 @@ void ExtrinsicReflectorBasedCalibrator::calibrateSensors()
     return;
   }
   output_metrics_.clear();
-  auto calibrated_radar_to_lidar_transformation = estimateTransformation();
-  evaluateTransformation(calibrated_radar_to_lidar_transformation);
-  crossValEvaluation();
+  auto transformation_result = estimateTransformation();
+  evaluateTransformation(transformation_result.calibrated_radar_to_lidar_transformation);
+  crossValEvaluation(transformation_result);
   publishMetrics();
 }
 

@@ -53,6 +53,13 @@
 namespace marker_radar_lidar_calibrator
 {
 
+struct TransformationResult
+{
+  pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs;
+  pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs;
+  Eigen::Isometry3d calibrated_radar_to_lidar_transformation;
+};
+
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
 public:
@@ -140,9 +147,9 @@ protected:
 
   std::pair<double, double> computeCalibrationError(
     const Eigen::Isometry3d & radar_to_lidar_isometry);
-  Eigen::Isometry3d estimateTransformation();
+  TransformationResult estimateTransformation();
   void evaluateTransformation(Eigen::Isometry3d calibrated_radar_to_lidar_transformation);
-  void crossValEvaluation();
+  void crossValEvaluation(TransformationResult transformation_result);
   void findCombinations(
     std::size_t n, std::size_t k, std::vector<std::size_t> & curr, std::size_t first_num,
     std::vector<std::vector<std::size_t>> & combinations);
@@ -150,7 +157,8 @@ protected:
     std::size_t tracks_size, std::size_t num_of_samples,
     std::vector<std::vector<std::size_t>> & combinations);
   void evaluateCombinations(
-    std::vector<std::vector<std::size_t>> & combinations, std::size_t num_of_samples);
+    std::vector<std::vector<std::size_t>> & combinations, std::size_t num_of_samples,
+    TransformationResult transformation_result);
 
   void publishMetrics();
   void calibrateSensors();
@@ -292,10 +300,6 @@ protected:
   TrackFactory::Ptr factory_ptr_;
   std::vector<Track> active_tracks_;
   std::vector<Track> converged_tracks_;
-
-  // Converged points
-  pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs_;
-  pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs_;
 
   // Metrics
   std::vector<float> output_metrics_;
