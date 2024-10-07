@@ -25,7 +25,7 @@ from sensor_calibration_manager.types import FramePair
 
 
 @CalibratorRegistry.register_calibrator(
-    project_name="x2", calibrator_name="marker_radar_lidar_calibrator"
+    project_name="xx1_gen2", calibrator_name="marker_radar_lidar_calibrator"
 )
 class MarkerRadarLidarCalibrator(CalibratorBase):
     required_frames = []
@@ -34,23 +34,12 @@ class MarkerRadarLidarCalibrator(CalibratorBase):
         super().__init__(ros_interface)
 
         self.radar_optimization_frame = kwargs["radar_optimization_frame"]
-        self.radar_parent_frame = kwargs["radar_parent_frame"]
         self.radar_frame = kwargs["radar_frame"]
         self.lidar_frame = kwargs["lidar_frame"]
 
-        if self.radar_optimization_frame == self.radar_parent_frame:
-            self.required_frames.extend(
-                [self.radar_optimization_frame, self.radar_frame, self.lidar_frame]
-            )
-        else:
-            self.required_frames.extend(
-                [
-                    self.radar_optimization_frame,
-                    self.radar_parent_frame,
-                    self.radar_frame,
-                    self.lidar_frame,
-                ]
-            )
+        self.required_frames.extend(
+            [self.radar_optimization_frame, self.radar_frame, self.lidar_frame]
+        )
 
         self.add_calibrator(
             service_name="calibrate_radar_lidar",
@@ -69,20 +58,8 @@ class MarkerRadarLidarCalibrator(CalibratorBase):
             @ lidar_to_radar_optimization_transform
         )
 
-        if self.radar_optimization_frame == self.radar_parent_frame:
-            results = {
-                self.radar_optimization_frame: {
-                    self.radar_frame: radar_optimization_to_radar_transform
-                }
-            }
-        else:
-            radar_parent_to_radar_optimization_transform = self.get_transform_matrix(
-                self.radar_parent_frame, self.radar_optimization_frame
-            )
-
-            radar_parent_to_radar_transform = (
-                radar_parent_to_radar_optimization_transform @ radar_optimization_to_radar_transform
-            )
-            results = {self.radar_parent_frame: {self.radar_frame: radar_parent_to_radar_transform}}
+        results = {
+            self.radar_optimization_frame: {self.radar_frame: radar_optimization_to_radar_transform}
+        }
 
         return results

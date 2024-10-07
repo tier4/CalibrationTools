@@ -28,11 +28,15 @@
 namespace marker_radar_lidar_calibrator
 {
 
+namespace common_types
+{
+using PointType = pcl::PointXYZ;
+}
+
 struct BackgroundModel
 {
 public:
-  using PointType = pcl::PointXYZ;
-  using TreeType = pcl::KdTreeFLANN<PointType>;  // cSpell:ignore FLANN
+  using TreeType = pcl::KdTreeFLANN<common_types::PointType>;  // cSpell:ignore FLANN
   using index_t = std::uint32_t;
 
   BackgroundModel()
@@ -44,7 +48,7 @@ public:
     max_point_(
       -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(),
       -std::numeric_limits<float>::max(), 1.f),
-    pointcloud_(new pcl::PointCloud<PointType>)
+    pointcloud_(new pcl::PointCloud<common_types::PointType>)
   {
   }
 
@@ -53,7 +57,7 @@ public:
   Eigen::Vector4f min_point_;
   Eigen::Vector4f max_point_;
   std::unordered_set<index_t> set_;
-  pcl::PointCloud<PointType>::Ptr pointcloud_;
+  pcl::PointCloud<common_types::PointType>::Ptr pointcloud_;
   TreeType tree_;
 };
 

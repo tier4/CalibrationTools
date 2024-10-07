@@ -24,6 +24,7 @@
 #include <std_srvs/srv/empty.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <radar_msgs/msg/radar_scan.hpp>
 #include <radar_msgs/msg/radar_tracks.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
@@ -40,7 +41,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -53,11 +53,20 @@
 namespace marker_radar_lidar_calibrator
 {
 
+struct TransformationResult
+{
+  pcl::PointCloud<common_types::PointType>::Ptr lidar_points_ocs;
+  pcl::PointCloud<common_types::PointType>::Ptr radar_points_rcs;
+  Eigen::Isometry3d calibrated_radar_to_lidar_transformation;
+};
+
 class ExtrinsicReflectorBasedCalibrator : public rclcpp::Node
 {
 public:
-  using PointType = pcl::PointXYZ;
   using index_t = std::uint32_t;
+  enum class TransformationType { svd_2d, yaw_only_rotation_2d, svd_3d, zero_roll_3d };
+
+  enum class MsgType { radar_tracks, radar_scan, radar_cloud };
 
   explicit ExtrinsicReflectorBasedCalibrator(const rclcpp::NodeOptions & options);
 
@@ -85,28 +94,39 @@ protected:
     const std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
   void lidarCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  void radarCallback(const radar_msgs::msg::RadarTracks::SharedPtr msg);
 
-  std::vector<Eigen::Vector3d> extractReflectors(
+  void radarTracksCallback(const radar_msgs::msg::RadarTracks::SharedPtr msg);
+
+  void radarScanCallback(const radar_msgs::msg::RadarScan::SharedPtr msg);
+
+  void radarCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+
+  template <typename RadarMsgType>
+  pcl::PointCloud<common_types::PointType>::Ptr extractRadarPointcloud(
+    const std::shared_ptr<RadarMsgType> & msg);
+
+  std::vector<Eigen::Vector3d> extractLidarReflectors(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  std::vector<Eigen::Vector3d> extractReflectors(const radar_msgs::msg::RadarTracks::SharedPtr msg);
+  std::vector<Eigen::Vector3d> extractRadarReflectors(
+    pcl::PointCloud<common_types::PointType>::Ptr radar_pointcloud_ptr);
 
   void extractBackgroundModel(
-    const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
+    const pcl::PointCloud<common_types::PointType>::Ptr & sensor_pointcloud,
     const std_msgs::msg::Header & current_header, std_msgs::msg::Header & last_updated_header,
     std_msgs::msg::Header & first_header, BackgroundModel & background_model);
 
   void extractForegroundPoints(
-    const pcl::PointCloud<PointType>::Ptr & sensor_pointcloud,
+    const pcl::PointCloud<common_types::PointType>::Ptr & sensor_pointcloud,
     const BackgroundModel & background_model, bool use_ransac,
-    pcl::PointCloud<PointType>::Ptr & foreground_points, Eigen::Vector4f & ground_model);
+    pcl::PointCloud<common_types::PointType>::Ptr & foreground_points,
+    Eigen::Vector4f & ground_model);
 
-  std::vector<pcl::PointCloud<PointType>::Ptr> extractClusters(
-    const pcl::PointCloud<PointType>::Ptr & foreground_pointcloud,
+  std::vector<pcl::PointCloud<common_types::PointType>::Ptr> extractClusters(
+    const pcl::PointCloud<common_types::PointType>::Ptr & foreground_pointcloud,
     const double cluster_max_tolerance, const int cluster_min_points, const int cluster_max_points);
 
   std::vector<Eigen::Vector3d> findReflectorsFromClusters(
-    const std::vector<pcl::PointCloud<PointType>::Ptr> & clusters,
+    const std::vector<pcl::PointCloud<common_types::PointType>::Ptr> & clusters,
     const Eigen::Vector4f & ground_model);
 
   bool checkInitialTransforms();
@@ -119,19 +139,27 @@ protected:
     const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> & matches,
     builtin_interfaces::msg::Time & time);
 
-  std::tuple<pcl::PointCloud<PointType>::Ptr, pcl::PointCloud<PointType>::Ptr, double, double>
-  getPointsSetAndDelta();
+  std::tuple<
+    pcl::PointCloud<common_types::PointType>::Ptr, pcl::PointCloud<common_types::PointType>::Ptr>
+  getPointsSet();
+  std::tuple<double, double> get2DRotationDelta(
+    std::vector<Track> converged_tracks, bool is_crossval);
+
   std::pair<double, double> computeCalibrationError(
     const Eigen::Isometry3d & radar_to_lidar_isometry);
-  void estimateTransformation(
-    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
-    pcl::PointCloud<PointType>::Ptr radar_points_rcs, double delta_cos_sum, double delta_sin_sum);
+  TransformationResult estimateTransformation();
+  void evaluateTransformation(Eigen::Isometry3d calibrated_radar_to_lidar_transformation);
+  void crossValEvaluation(TransformationResult transformation_result);
   void findCombinations(
-    int n, int k, std::vector<int> & curr, int first_num,
-    std::vector<std::vector<int>> & combinations);
-  void crossValEvaluation(
-    pcl::PointCloud<PointType>::Ptr lidar_points_pcs,
-    pcl::PointCloud<PointType>::Ptr radar_points_rcs);
+    std::size_t n, std::size_t k, std::vector<std::size_t> & curr, std::size_t first_num,
+    std::vector<std::vector<std::size_t>> & combinations);
+  void selectCombinations(
+    std::size_t tracks_size, std::size_t num_of_samples,
+    std::vector<std::vector<std::size_t>> & combinations);
+  void evaluateCombinations(
+    std::vector<std::vector<std::size_t>> & combinations, std::size_t num_of_samples,
+    TransformationResult transformation_result);
+
   void publishMetrics();
   void calibrateSensors();
   void visualizationMarkers(
@@ -149,8 +177,10 @@ protected:
 
   struct Parameters
   {
-    std::string radar_parallel_frame;  // frame that is assumed to be parallel to the radar (needed
-                                       // for radars that do not provide elevation)
+    std::string radar_optimization_frame;  // If the radar does not provide elevation,
+                                           // this frame needs to be parallel to the radar
+                                           // and should only use the 2D transformation.
+
     bool use_lidar_initial_crop_box_filter;
     double lidar_initial_crop_box_min_x;
     double lidar_initial_crop_box_min_y;
@@ -185,7 +215,7 @@ protected:
     double max_matching_distance;
     double max_initial_calibration_translation_error;
     double max_initial_calibration_rotation_error;
-    int max_number_of_combination_samples;
+    std::size_t max_number_of_combination_samples;
   } parameters_;
 
   // ROS Interface
@@ -212,7 +242,9 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr metrics_pub_;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub_;
-  rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_sub_;
+  rclcpp::Subscription<radar_msgs::msg::RadarTracks>::SharedPtr radar_tracks_sub_;
+  rclcpp::Subscription<radar_msgs::msg::RadarScan>::SharedPtr radar_scan_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr radar_cloud_sub_;
 
   rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
     calibration_request_server_;
@@ -233,8 +265,12 @@ protected:
   Eigen::Isometry3d initial_radar_to_lidar_eigen_;
   Eigen::Isometry3d calibrated_radar_to_lidar_eigen_;
 
-  geometry_msgs::msg::Transform radar_parallel_to_lidar_msg_;
-  Eigen::Isometry3d radar_parallel_to_lidar_eigen_;
+  // radar optimization is the frame that radar optimize the transformation to.
+  geometry_msgs::msg::Transform radar_optimization_to_lidar_msg_;
+  Eigen::Isometry3d radar_optimization_to_lidar_eigen_;
+
+  geometry_msgs::msg::Transform initial_radar_optimization_to_radar_msg_;
+  Eigen::Isometry3d initial_radar_optimization_to_radar_eigen_;
 
   bool got_initial_transform_{false};
   bool broadcast_tf_{false};
@@ -254,7 +290,9 @@ protected:
   BackgroundModel lidar_background_model_;
   BackgroundModel radar_background_model_;
 
-  radar_msgs::msg::RadarTracks::SharedPtr latest_radar_msgs_;
+  radar_msgs::msg::RadarTracks::SharedPtr latest_radar_tracks_msgs_;
+  radar_msgs::msg::RadarScan::SharedPtr latest_radar_scan_msgs_;
+  sensor_msgs::msg::PointCloud2::SharedPtr latest_radar_cloud_msgs_;
 
   // Tracking
   bool tracking_active_{false};
@@ -266,6 +304,8 @@ protected:
   // Metrics
   std::vector<float> output_metrics_;
 
+  MsgType msg_type_;
+  TransformationType transformation_type_;
   static constexpr int MARKER_SIZE_PER_TRACK = 8;
 };
 

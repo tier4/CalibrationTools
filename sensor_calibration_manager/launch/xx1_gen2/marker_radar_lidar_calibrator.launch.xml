@@ -26,13 +26,14 @@
 
   <let name="radar_optimization_frame" value="base_link"/>
   <let name="radar_frame" value="$(var radar_name)/radar_link"/>
-  <let name="lidar_frame" value="pandar_top"/>
+  <let name="lidar_frame" value="hesai_top"/>
   <let name="msg_type" value="$(var msg_type)"/>
   <let name="transformation_type" value="$(var transformation_type)"/>
 
   <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/objects_raw" if="$(eval &quot;'$(var msg_type)'=='radar_tracks'&quot;)"/>
   <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/scan_raw" if="$(eval &quot;'$(var msg_type)'=='radar_scan'&quot;)"/>
   <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/detection_points" if="$(eval &quot;'$(var msg_type)'=='radar_cloud'&quot;)"/>
+
   <let name="input_lidar_pointcloud" value="/sensing/lidar/top/pointcloud_raw"/>
 
   <node pkg="tf2_ros" exec="static_transform_publisher" name="lidar_broadcaster" output="screen" args="0 0 0 0 0 0 $(var radar_frame) radar_frame"/>

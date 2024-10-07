@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 TIER IV, Inc.
+# Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,41 +25,39 @@ from sensor_calibration_manager.types import FramePair
 
 
 @CalibratorRegistry.register_calibrator(
-    project_name="default_project", calibrator_name="marker_radar_lidar_calibrator"
+    project_name="xx1_gen2", calibrator_name="tag_based_sfm_base_lidar_calibrator"
 )
-class MarkerRadarLidarCalibrator(CalibratorBase):
+class TagBasedSfmBaseLidarCalibrator(CalibratorBase):
     required_frames = []
 
     def __init__(self, ros_interface: RosInterface, **kwargs):
         super().__init__(ros_interface)
 
-        self.radar_optimization_frame = kwargs["radar_optimization_frame"]
-        self.radar_frame = kwargs["radar_frame"]
-        self.lidar_frame = kwargs["lidar_frame"]
+        self.base_frame = kwargs["base_frame"]
+        self.sensor_kit_frame = "sensor_kit_base_link"
+
+        self.main_sensor_frame = kwargs["main_calibration_sensor_frame"]
 
         self.required_frames.extend(
-            [self.radar_optimization_frame, self.radar_frame, self.lidar_frame]
+            [self.base_frame, self.sensor_kit_frame, self.main_sensor_frame]
         )
 
         self.add_calibrator(
-            service_name="calibrate_radar_lidar",
+            service_name="calibrate_base_lidar",
             expected_calibration_frames=[
-                FramePair(parent=self.radar_frame, child=self.lidar_frame)
+                FramePair(parent=self.main_sensor_frame, child=self.base_frame)
             ],
         )
 
     def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
-        lidar_to_radar_optimization_transform = self.get_transform_matrix(
-            self.lidar_frame, self.radar_optimization_frame
+        sensor_kit_to_mapping_lidar_transform = self.get_transform_matrix(
+            self.sensor_kit_frame, self.main_sensor_frame
         )
 
-        radar_optimization_to_radar_transform = np.linalg.inv(
-            calibration_transforms[self.radar_frame][self.lidar_frame]
-            @ lidar_to_radar_optimization_transform
+        base_to_top_sensor_kit_transform = np.linalg.inv(
+            sensor_kit_to_mapping_lidar_transform
+            @ calibration_transforms[self.main_sensor_frame][self.base_frame]
         )
-
-        results = {
-            self.radar_optimization_frame: {self.radar_frame: radar_optimization_to_radar_transform}
-        }
+        results = {self.base_frame: {self.sensor_kit_frame: base_to_top_sensor_kit_transform}}
 
         return results
