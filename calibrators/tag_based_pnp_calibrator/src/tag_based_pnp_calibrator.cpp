@@ -25,6 +25,11 @@
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf2/utils.h>
 
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
 ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::NodeOptions & options)
 : Node("tag_based_pnp_calibrator_node", options),
   tf_broadcaster_(this),

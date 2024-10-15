@@ -28,8 +28,15 @@
 #include <tf2/utils.h>
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
+#include <limits>
+#include <memory>
 #include <numeric>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace lidar_to_lidar_2d_calibrator
 {

@@ -19,6 +19,9 @@
 #include <tf2/utils.h>
 
 #include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace ground_plane_calibrator
 {

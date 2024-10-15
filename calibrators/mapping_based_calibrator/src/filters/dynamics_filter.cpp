@@ -15,14 +15,15 @@
 #include <mapping_based_calibrator/filters/dynamics_filter.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#define UNUSED(x) (void)x;
+#include <string>
+#include <vector>
 
 void DynamicsFilter::setName(const std::string & name) { name_ = name + " (DynamicsFilter)"; }
 
 std::vector<CalibrationFrame> DynamicsFilter::filter(
-  const std::vector<CalibrationFrame> & calibration_frames, MappingData::Ptr & mapping_data)
+  const std::vector<CalibrationFrame> & calibration_frames,
+  [[maybe_unused]] MappingData::Ptr & mapping_data)
 {
-  UNUSED(mapping_data);
   std::vector<CalibrationFrame> filtered_frames;
 
   std::stringstream ss;

@@ -22,8 +22,8 @@
 
 #include <array>
 #include <limits>
-
-#define UNUSED(x) (void)x;
+#include <string>
+#include <vector>
 
 void ObjectDetectionFilter::setName(const std::string & name)
 {
@@ -68,8 +68,7 @@ std::vector<CalibrationFrame> ObjectDetectionFilter::filter(
     return calibration_frames;
   }
 
-  for (const auto & det : mapping_data->detected_objects_) {
-    UNUSED(det);
+  for ([[maybe_unused]] const auto & det : mapping_data->detected_objects_) {
     assert(mapping_data->detected_objects_.front().header_.frame_id == det.header_.frame_id);
   }
 

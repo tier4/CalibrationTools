@@ -18,7 +18,10 @@
 #include <tag_based_sfm_calibrator/math.hpp>
 #include <tag_based_sfm_calibrator/visualization.hpp>
 
+#include <algorithm>
 #include <iostream>
+#include <string>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {

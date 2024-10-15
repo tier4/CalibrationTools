@@ -24,7 +24,12 @@
 #include <apriltag/tag25h9.h>
 #include <apriltag/tag36h11.h>
 
+#include <algorithm>
 #include <iostream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {

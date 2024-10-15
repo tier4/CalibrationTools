@@ -17,6 +17,8 @@
 #include <marker_radar_lidar_calibrator/track.hpp>
 #include <marker_radar_lidar_calibrator/types.hpp>
 
+#include <iostream>
+
 namespace marker_radar_lidar_calibrator
 {
 

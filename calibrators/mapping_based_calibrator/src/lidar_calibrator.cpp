@@ -24,6 +24,11 @@
 
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
+
 LidarCalibrator::LidarCalibrator(
   const std::string & calibration_lidar_frame, CalibrationParameters::Ptr & parameters,
   MappingData::Ptr & mapping_data, std::shared_ptr<tf2_ros::Buffer> & tf_buffer,

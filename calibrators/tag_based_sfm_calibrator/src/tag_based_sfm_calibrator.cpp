@@ -41,8 +41,13 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <random>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {

@@ -32,8 +32,13 @@
 #include <cv_bridge/cv_bridge.h>
 
 #include <algorithm>
+#include <map>
+#include <memory>
 #include <numeric>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {

@@ -23,8 +23,12 @@
 #include <pcl/point_types.h>
 #include <tf2/utils.h>
 
+#include <algorithm>
 #include <limits>
+#include <memory>
 #include <random>
+#include <tuple>
+#include <vector>
 
 CalibrationEstimator::CalibrationEstimator()
 : min_pnp_pairs_(4),

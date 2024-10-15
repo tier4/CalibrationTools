@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef tag_based_sfm_calibrator__MATH_HPP_
-#define tag_based_sfm_calibrator__MATH_HPP_
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/SVD>
@@ -25,10 +22,17 @@
 #include <tag_based_sfm_calibrator/math.hpp>
 #include <tag_based_sfm_calibrator/types.hpp>
 
+#include <algorithm>
 #include <iostream>
 #include <limits>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {
@@ -494,5 +498,3 @@ void estimateInitialPoses(
 }
 
 }  // namespace tag_based_sfm_calibrator
-
-#endif  // tag_based_sfm_calibrator__MATH_HPP_
