@@ -15,6 +15,9 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tier4_tag_utils/apriltag_hypothesis.hpp>
 
+#include <algorithm>
+#include <vector>
+
 namespace tier4_tag_utils
 {
 

@@ -15,6 +15,7 @@
 #include <mapping_based_calibrator/mapping_based_calibrator.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <memory>
 #include <thread>
 
 int main(int argc, char ** argv)

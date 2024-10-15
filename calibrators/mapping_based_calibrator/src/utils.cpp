@@ -22,7 +22,10 @@
 #include <pcl/filters/voxel_grid.h>
 #include <tf2_ros/buffer.h>
 
+#include <iostream>
 #include <limits>
+#include <string>
+#include <vector>
 
 template <typename PointcloudType>
 void transformPointcloud(

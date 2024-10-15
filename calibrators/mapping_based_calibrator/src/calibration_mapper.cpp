@@ -21,6 +21,11 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2/utils.h>
 
+#include <algorithm>
+#include <list>
+#include <memory>
+#include <string>
+
 CalibrationMapper::CalibrationMapper(
   MappingParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
   PointPublisher::SharedPtr & map_pub,

@@ -30,6 +30,10 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <tuple>
+#include <utility>
+#include <vector>
+
 namespace tier4_ground_plane_utils
 {
 

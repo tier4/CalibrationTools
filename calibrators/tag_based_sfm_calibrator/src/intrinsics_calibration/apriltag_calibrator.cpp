@@ -19,8 +19,10 @@
 #include <tag_based_sfm_calibrator/intrinsics_calibration/apriltag_calibrator.hpp>
 
 #include <algorithm>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {

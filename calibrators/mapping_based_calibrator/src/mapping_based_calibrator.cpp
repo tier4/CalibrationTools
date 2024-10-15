@@ -28,6 +28,9 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 #define UPDATE_PARAM(PARAM_STRUCT, NAME) update_param(p, #NAME, PARAM_STRUCT.NAME##_)
 

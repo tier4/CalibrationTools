@@ -26,6 +26,9 @@
 
 #include <iostream>
 #include <numeric>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {
