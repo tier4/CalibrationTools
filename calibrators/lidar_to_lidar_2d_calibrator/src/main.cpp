@@ -15,6 +15,7 @@
 #include <lidar_to_lidar_2d_calibrator/lidar_to_lidar_2d_calibrator.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <memory>
 #include <thread>
 
 int main(int argc, char ** argv)

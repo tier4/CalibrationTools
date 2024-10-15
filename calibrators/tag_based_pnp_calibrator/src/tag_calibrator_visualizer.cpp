@@ -14,7 +14,10 @@
 
 #include <tag_based_pnp_calibrator/tag_calibrator_visualizer.hpp>
 
+#include <algorithm>
 #include <limits>
+#include <string>
+#include <vector>
 
 TagCalibratorVisualizer::TagCalibratorVisualizer(
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr & pub)

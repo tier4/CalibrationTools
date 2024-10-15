@@ -21,7 +21,10 @@
 #include <tag_based_sfm_calibrator/math.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
 
+#include <algorithm>
 #include <limits>
+#include <unordered_map>
+#include <vector>
 
 namespace tag_based_sfm_calibrator
 {
