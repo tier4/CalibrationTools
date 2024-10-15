@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="base_frame" default="base_link"/>
+  <arg name="lost_frame_max_acceleration" default="10.0"/>
+  <arg name="calibration_skip_keyframes" default="7"/>
+  <arg name="mapping_registrator" default="ndt" description="ndt or gicp"/>
+  <arg name="rviz" default="true"/>
+
+  <arg name="mapping_min_range" default="7.0" description="Used to drop self reflections"/>
+  <arg name="mapping_max_range" default="100.0" description="Used to avoid inaccurate points and speed up the process"/>
+  <arg name="calibration_min_distance_between_frames" default="4.0" description="Min separation between calibration clouds to avoid correlation"/>
+  <arg name="dense_pointcloud_num_keyframes" default="30" description="Used to compensate the different field of views"/>
+  <arg name="lidar_calibration_max_frames" default="3" description="Number of pointclouds used for calibration"/>
+
+  <let name="calibration_camera_optical_link_frames" value="['']"/>
+
+  <let name="calibration_lidar_frames" value="[
+    lidar_left,
+    lidar_right,
+    lidar_rear]"/>
+
+  <let name="mapping_lidar_frame" value="lidar_front"/>
+  <let name="mapping_pointcloud" value="/sensing/lidar/front/nebula_points"/>
+  <let name="detected_objects" value="/perception/object_recognition/detection/objects"/>
+
+  <let name="calibration_camera_info_topics" value="['']"/>
+
+  <let name="calibration_image_topics" value="[
+    '']"/>
+
+  <let name="calibration_pointcloud_topics" value="[
+    /sensing/lidar/left/nebula_points,
+    /sensing/lidar/right/nebula_points,
+    /sensing/lidar/rear/nebula_points]"/>
+
+  <!-- mapping based calibrator -->
+  <include file="$(find-pkg-share mapping_based_calibrator)/launch/calibrator.launch.xml">
+    <arg name="ns" value=""/>
+    <arg name="calibration_service_name" value="calibrate_lidar_lidar"/>
+
+    <arg name="rviz" value="$(var rviz)"/>
+    <arg name="base_frame" value="$(var base_frame)"/>
+
+    <arg name="calibration_camera_optical_link_frames" value="$(var calibration_camera_optical_link_frames)"/>
+    <arg name="calibration_lidar_frames" value="$(var calibration_lidar_frames)"/>
+    <arg name="mapping_lidar_frame" value="$(var mapping_lidar_frame)"/>
+
+    <arg name="mapping_pointcloud" value="$(var mapping_pointcloud)"/>
+    <arg name="detected_objects" value="$(var detected_objects)"/>
+
+    <arg name="calibration_camera_info_topics" value="$(var calibration_camera_info_topics)"/>
+    <arg name="calibration_image_topics" value="$(var calibration_image_topics)"/>
+    <arg name="calibration_pointcloud_topics" value="$(var calibration_pointcloud_topics)"/>
+
+    <arg name="mapping_registrator" value="$(var mapping_registrator)"/>
+    <arg name="lost_frame_max_acceleration" value="$(var lost_frame_max_acceleration)"/>
+    <arg name="calibration_skip_keyframes" value="$(var calibration_skip_keyframes)"/>
+
+    <arg name="mapping_min_range" value="$(var mapping_min_range)"/>
+    <arg name="mapping_max_range" value="$(var mapping_max_range)"/>
+    <arg name="calibration_min_distance_between_frames" value="$(var calibration_min_distance_between_frames)"/>
+    <arg name="dense_pointcloud_num_keyframes" value="$(var dense_pointcloud_num_keyframes)"/>
+    <arg name="lidar_calibration_max_frames" value="$(var lidar_calibration_max_frames)"/>
+  </include>
+
+  <node
+    pkg="tf2_ros"
+    exec="static_transform_publisher"
+    name="extrinsic_publisher"
+    args="--frame-id base_link --child-frame-id drs_base_link --x 0.6895 --y 0.0 --z 1.6785 --yaw 0.000 --pitch 0.000, --roll 0.000"
+  />
+  <node
+    pkg="tf2_ros"
+    exec="static_transform_publisher"
+    name="extrinsic_publisher"
+    args="--frame-id drs_base_link --child-frame-id lidar_front --x 0.3334 --y 0.0 --z -0.0702 --yaw -1.5708 --pitch 0.000, --roll 0.000"
+  />
+  <node
+    pkg="tf2_ros"
+    exec="static_transform_publisher"
+    name="extrinsic_publisher"
+    args="--frame-id drs_base_link --child-frame-id lidar_left --x 0.000 --y 0.560 --z -0.0532 --yaw 1.5708 --pitch 0.000, --roll 0.000"
+  />
+  <node
+    pkg="tf2_ros"
+    exec="static_transform_publisher"
+    name="extrinsic_publisher"
+    args="--frame-id drs_base_link --child-frame-id lidar_right --x 0.000 --y -0.560 --z -0.0532 --yaw -1.5708 --pitch 0.000, --roll 0.000"
+  />
+  <node
+    pkg="tf2_ros"
+    exec="static_transform_publisher"
+    name="extrinsic_publisher"
+    args="--frame-id drs_base_link --child-frame-id lidar_rear --x -0.2994 --y 0.0 --z -0.0373 --yaw 3.14 --pitch 0.000, --roll 0.000"
+  />
+</launch>
