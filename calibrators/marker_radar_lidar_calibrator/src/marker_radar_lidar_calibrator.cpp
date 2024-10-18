@@ -487,8 +487,7 @@ void ExtrinsicReflectorBasedCalibrator::lidarCallback(
     latest_radar_tracks_msgs_->tracks.clear();
   } else if (msg_type_ == MsgType::radar_scan) {
     if (!latest_radar_scan_msgs_ || latest_radar_scan_msgs_->returns.size() == 0) {
-      if (latest_radar_scan_msgs_->returns.size() == 0)
-        RCLCPP_INFO(this->get_logger(), "There were no radar scans");
+      RCLCPP_INFO(this->get_logger(), "There were no radar scans");
       return;
     }
     pcl::PointCloud<common_types::PointType>::Ptr radar_pointcloud_ptr =
