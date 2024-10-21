@@ -8,6 +8,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <exec_depend>ceres_intrinsic_camera_calibrator</exec_depend>
   <exec_depend>ground_plane_calibrator</exec_depend>
   <exec_depend>interactive_camera_lidar_calibrator</exec_depend>
   <exec_depend>intrinsic_camera_calibrator</exec_depend>
