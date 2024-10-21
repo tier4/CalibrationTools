@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="radar_name" default="front_center">
+    <choice value="front_left"/>
+    <choice value="front_center"/>
+    <choice value="front_right"/>
+    <choice value="rear_left"/>
+    <choice value="rear_center"/>
+    <choice value="rear_right"/>
+  </arg>
+
+  <arg name="msg_type" default="radar_tracks">
+    <choice value="radar_tracks"/>
+    <choice value="radar_scan"/>
+    <choice value="radar_cloud"/>
+  </arg>
+
+  <arg name="transformation_type" default="svd_2d">
+    <choice value="svd_2d"/>
+    <choice value="yaw_only_rotation_2d"/>
+    <choice value="svd_3d"/>
+    <choice value="zero_roll_3d"/>
+  </arg>
+
+  <arg name="rviz" default="true"/>
+
+  <!-- For x2 project, do not change radar_optimization_frame to base_link, if you are using radar that doesn't support elevation or z axis-->
+  <let name="radar_optimization_frame" value="base_link"/>
+  <let name="radar_parent_frame" value="base_link"/>
+
+  <let name="radar_frame" value="$(var radar_name)/radar_link"/>
+
+  <let name="lidar_frame" value="front_upper/lidar_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_left' &quot;)"/>
+  <let name="lidar_frame" value="front_upper/lidar_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>
+  <let name="lidar_frame" value="front_upper/lidar_base_link" if="$(eval &quot;'$(var radar_name)' == 'front_right' &quot;)"/>
+  <let name="lidar_frame" value="rear_upper/lidar_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_left' &quot;)"/>
+  <let name="lidar_frame" value="rear_upper/lidar_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_center' &quot;)"/>
+  <let name="lidar_frame" value="rear_upper/lidar_base_link" if="$(eval &quot;'$(var radar_name)' == 'rear_right' &quot;)"/>
+
+  <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/objects_raw" if="$(eval &quot;'$(var msg_type)'=='radar_tracks'&quot;)"/>
+  <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/scan_raw" if="$(eval &quot;'$(var msg_type)'=='radar_scan'&quot;)"/>
+  <let name="input_radar_msg" value="/sensing/radar/$(var radar_name)/detection_points" if="$(eval &quot;'$(var msg_type)'=='radar_cloud'&quot;)"/>
+
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/front_upper/pointcloud_raw_ex" if="$(eval &quot;'$(var radar_name)' == 'front_left' &quot;)"/>
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/front_upper/pointcloud_raw_ex" if="$(eval &quot;'$(var radar_name)' == 'front_center' &quot;)"/>
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/front_upper/pointcloud_raw_ex" if="$(eval &quot;'$(var radar_name)' == 'front_right' &quot;)"/>
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/rear_upper/pointcloud_raw_ex" if="$(eval &quot;'$(var radar_name)' == 'rear_left' &quot;)"/>
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/rear_upper/pointcloud_raw_ex" if="$(eval &quot;'$(var radar_name)' == 'rear_center' &quot;)"/>
+  <let name="input_lidar_pointcloud" value="/sensing/lidar/rear_upper/pointcloud_raw_ex" if="$(eval &quot;'$(var radar_name)' == 'rear_right' &quot;)"/>
+
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="lidar_broadcaster" output="screen" args="0 0 0 0 0 0 $(var radar_frame) radar_frame"/>
+
+  <!-- marker radar-lidar calibrator -->
+  <include file="$(find-pkg-share marker_radar_lidar_calibrator)/launch/calibrator.launch.xml">
+    <arg name="rviz" value="$(var rviz)"/>
+    <arg name="calibration_service_name" value="calibrate_radar_lidar"/>
+    <arg name="radar_optimization_frame" value="$(var radar_optimization_frame)"/>
+    <arg name="input_lidar_pointcloud" value="$(var input_lidar_pointcloud)"/>
+    <arg name="input_radar_msg" value="$(var input_radar_msg)"/>
+    <arg name="msg_type" value="$(var msg_type)"/>
+    <arg name="transformation_type" value="$(var transformation_type)"/>
+  </include>
+</launch>
