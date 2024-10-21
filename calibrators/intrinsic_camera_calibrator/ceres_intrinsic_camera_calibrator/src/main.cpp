@@ -181,31 +181,6 @@ int main(int argc, char ** argv)
 
   int flags = 0;
 
-  /* if (!use_tangent_distortion) {
-    flags |= cv::CALIB_ZERO_TANGENT_DIST;
-  }
-
-  if (num_radial_distortion_coeffs < 3) {
-    flags |= cv::CALIB_FIX_K3;
-  }
-
-  if (num_radial_distortion_coeffs < 2) {
-    flags |= cv::CALIB_FIX_K2;
-  }
-
-  if (num_radial_distortion_coeffs < 1) {
-    flags |= cv::CALIB_FIX_K1;
-  } */
-
-  /* flags |= cv2.CALIB_ZERO_TANGENT_DIST if not self.use_tangential_distortion.value else 0
-  flags |= cv2.CALIB_RATIONAL_MODEL if self.radial_distortion_coefficients.value > 3 else 0
-  flags |= cv2.CALIB_FIX_K6 if self.radial_distortion_coefficients.value < 6 else 0
-  flags |= cv2.CALIB_FIX_K5 if self.radial_distortion_coefficients.value < 5 else 0
-  flags |= cv2.CALIB_FIX_K4 if self.radial_distortion_coefficients.value < 4 else 0
-  flags |= cv2.CALIB_FIX_K3 if self.radial_distortion_coefficients.value < 3 else 0
-  flags |= cv2.CALIB_FIX_K2 if self.radial_distortion_coefficients.value < 2 else 0
-  flags |= cv2.CALIB_FIX_K1 if self.radial_distortion_coefficients.value < 1 else 0 */
-
   flags |= use_tangent_distortion ? 0 : cv::CALIB_ZERO_TANGENT_DIST;
   flags |= num_rational_distortion_coeffs > 0 ? cv::CALIB_RATIONAL_MODEL : 0;
   flags |= num_rational_distortion_coeffs < 3 ? cv::CALIB_FIX_K6 : 0;
@@ -216,7 +191,7 @@ int main(int argc, char ** argv)
   flags |= num_radial_distortion_coeffs < 1 ? cv::CALIB_FIX_K1 : 0;
 
   auto mini_opencv_start = std::chrono::high_resolution_clock::now();
-  double mini_reproj_error = cv::calibrateCamera(
+  double mini_reprojection_error = cv::calibrateCamera(
     mini_calibration_object_points, mini_calibration_image_points, size, mini_opencv_camera_matrix,
     mini_opencv_dist_coeffs, mini_opencv_calibration_rvecs, mini_opencv_calibration_tvecs, flags);
 
@@ -237,7 +212,7 @@ int main(int argc, char ** argv)
 
   auto opencv_start = std::chrono::high_resolution_clock::now();
 
-  double reproj_error = cv::calibrateCamera(
+  double reprojection_error = cv::calibrateCamera(
     calibration_object_points, calibration_image_points, size, opencv_camera_matrix,
     opencv_dist_coeffs, opencv_calibration_rvecs, opencv_calibration_tvecs, flags);
 
@@ -247,9 +222,9 @@ int main(int argc, char ** argv)
   std::cout << "\tcamera_matrix: \n" << opencv_camera_matrix << std::endl;
   std::cout << "\tdist_coeffs: \n" << opencv_dist_coeffs << std::endl;
 
-  std::cout << "Mini OpenCV calibration error (reported by the calibrator)=" << mini_reproj_error
-            << std::endl;
-  std::cout << "OpenCV calibration error (reported by the calibrator)=" << reproj_error
+  std::cout << "Mini OpenCV calibration error (reported by the calibrator)="
+            << mini_reprojection_error << std::endl;
+  std::cout << "OpenCV calibration error (reported by the calibrator)=" << reprojection_error
             << std::endl;
 
   // Need to compute the whole rvecs, tvecs for the whole calibration set
@@ -282,9 +257,8 @@ int main(int argc, char ** argv)
   optimizer.solve();
   optimizer.placeholdersToData();
   optimizer.evaluate();
-  double rms_rror = optimizer.getSolution(
+  [[maybe_unused]] double rms_error = optimizer.getSolution(
     ceres_camera_matrix, ceres_dist_coeffs, ceres_calibration_rvecs, ceres_calibration_tvecs);
-  (void)rms_rror;
 
   auto ceres_stop = std::chrono::high_resolution_clock::now();
 

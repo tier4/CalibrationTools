@@ -181,17 +181,17 @@ void CeresCameraIntrinsicsOptimizer::dataToPlaceholders()
     intrinsics_placeholder_[index++] = k6;
   }
 
-  // Convert the revcs, tvecs into the placeholders
+  // Convert the revcs, tvecs into the placeholders // cSpell:ignore rvecs,tvecs
   pose_placeholders_.resize(object_points_.size());
 
   for (std::size_t i = 0; i < object_points_.size(); i++) {
-    cv::Mat rmat;
-    cv::Rodrigues(rvecs_[i], rmat);
+    cv::Mat rotation_cv;
+    cv::Rodrigues(rvecs_[i], rotation_cv);
 
     Eigen::Vector3d translation;
     Eigen::Matrix3d rotation;
     cv::cv2eigen(tvecs_[i], translation);
-    cv::cv2eigen(rmat, rotation);
+    cv::cv2eigen(rotation_cv, rotation);
     Eigen::Quaterniond quat(rotation);
 
     std::array<double, POSE_OPT_DIM> & placeholder = pose_placeholders_[i];
@@ -367,7 +367,7 @@ void CeresCameraIntrinsicsOptimizer::solve()
   }
 
   ceres::Solver::Options options;
-  options.linear_solver_type = ceres::DENSE_SCHUR;
+  options.linear_solver_type = ceres::DENSE_SCHUR;  // cSpell:ignore SCHUR
   options.minimizer_progress_to_stdout = verbose_;
   options.max_num_iterations = 500;
   options.function_tolerance = 1e-10;

@@ -154,6 +154,7 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(ceres_intrinsic_camera_calibrator_py, m)
 {
+  // cSpell:ignore pbdoc,currentmodule,autosummary,toctree
   m.doc() = R"pbdoc(
         Ceres-based camera intrinsics calibrator module
         -----------------------
@@ -177,7 +178,7 @@ PYBIND11_MODULE(ceres_intrinsic_camera_calibrator_py, m)
             initial_camera_matrix (np.array): The initial camera matrix
             initial_dist_coeffs (np.array): The initial distortion coefficients
             num_radial_coeffs (int): The number of radial distortion coefficients used during calibration
-            use_tangential_distortion (bool): Whether we should use tangential distortion durin calibration
+            use_tangential_distortion (bool): Whether we should use tangential distortion during calibration
 
         Returns:
             The RMS reprojection error, the optimized camera intrinsics, and the board extrinsics
