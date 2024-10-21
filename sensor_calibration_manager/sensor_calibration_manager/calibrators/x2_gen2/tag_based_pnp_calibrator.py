@@ -17,6 +17,7 @@
 from typing import Dict
 
 import numpy as np
+
 from sensor_calibration_manager.calibrator_base import CalibratorBase
 from sensor_calibration_manager.calibrator_registry import CalibratorRegistry
 from sensor_calibration_manager.ros_interface import RosInterface
@@ -72,7 +73,9 @@ class TagBasedPNPCalibrator(CalibratorBase):
         self.add_calibrator(
             service_name="calibrate_camera_lidar",
             expected_calibration_frames=[
-                FramePair(parent=f"{self.camera_frame}/camera_optical_link", child=self.lidar_frame),
+                FramePair(
+                    parent=f"{self.camera_frame}/camera_optical_link", child=self.lidar_frame
+                ),
             ],
         )
 

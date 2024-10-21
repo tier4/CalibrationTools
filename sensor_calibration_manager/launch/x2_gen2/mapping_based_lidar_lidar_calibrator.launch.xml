@@ -27,14 +27,17 @@
 
   <let name="calibration_camera_optical_link_frames" value="['']"/>
 
-  <let name="calibration_lidar_frames" value="[
+  <let
+    name="calibration_lidar_frames"
+    value="[
     left_lower/lidar,
     right_upper/lidar,
     right_lower/lidar,
     front_upper/lidar,
     front_lower/lidar,
     rear_upper/lidar,
-    rear_lower/lidar]"/>
+    rear_lower/lidar]"
+  />
 
   <let name="mapping_lidar_frame" value="left_upper/lidar"/>
   <let name="mapping_pointcloud" value="/sensing/lidar/left_upper/pointcloud"/>

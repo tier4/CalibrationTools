@@ -38,7 +38,6 @@
   <let name="camera_frame_id" value="top_rear_center" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
   <let name="camera_frame_id" value="top_front_right" if="$(eval &quot;'$(var camera_name)' == 'camera3' &quot;)"/>
 
-
   <let name="camera_frame" value="$(var camera_frame_id)/camera_link"/>
   <let name="rviz_profile" value="$(find-pkg-share tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
   <let name="lidar_model" value="velodyne_vls128"/>

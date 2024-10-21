@@ -17,6 +17,7 @@
 from typing import Dict
 
 import numpy as np
+
 from sensor_calibration_manager.calibrator_base import CalibratorBase
 from sensor_calibration_manager.calibrator_registry import CalibratorRegistry
 from sensor_calibration_manager.ros_interface import RosInterface
@@ -103,4 +104,3 @@ class MappingBasedLidarLidarCalibrator(CalibratorBase):
         }
 
         return result
-
