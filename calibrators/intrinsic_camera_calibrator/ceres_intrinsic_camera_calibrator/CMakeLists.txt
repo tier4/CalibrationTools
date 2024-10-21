@@ -14,8 +14,6 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 
-#add_subdirectory(pybind11)
-
 autoware_package()
 
 # These need to be called after autoware_package to avoid being overwritten
@@ -42,8 +40,6 @@ ament_export_include_directories(
   ${OpenCV_INCLUDE_DIRS}
   )
 
-# Test
-
 # COMPILE THE SOURCE
 #========================================================================
 ament_auto_add_executable(${PROJECT_NAME}_test
@@ -59,8 +55,6 @@ target_link_libraries(${PROJECT_NAME}_test
 
 ament_python_install_package(${PROJECT_NAME})
 
-#ament_python_install_package(${PROJECT_NAME}_py)
-
 pybind11_add_module(${PROJECT_NAME}_py src/ceres_intrinsic_camera_calibrator_py.cpp)
 
 target_include_directories(${PROJECT_NAME}_py PRIVATE include ${OpenCV_INCLUDE_DIRS})
@@ -71,24 +65,12 @@ target_link_libraries(${PROJECT_NAME}_py PRIVATE
   ${PROJECT_NAME}
 )
 
-# EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a
-# define (VERSION_INFO) here.
 target_compile_definitions(${PROJECT_NAME}_py
                            PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
-
-
-message("====PYTHON_INSTALL_DIR=${PYTHON_INSTALL_DIR}")
-
 install(
   TARGETS ${PROJECT_NAME}_py
-  #DESTINATION "${PYTHON_INSTALL_DIR}"
   DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
 )
-
-#install(PROGRAMS
-#  scripts/calibrator_ui_node.py
-#  DESTINATION lib/${PROJECT_NAME}
-#)
 
 ament_export_dependencies(ament_cmake_python)
 

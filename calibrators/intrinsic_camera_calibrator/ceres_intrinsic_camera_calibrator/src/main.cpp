@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <algorithm>
 #include <chrono>
-#include <filesystem>
+#include <filesystem>  // NOLINT
 #include <iostream>
 #include <string>
 #include <thread>
@@ -122,7 +123,13 @@ int main(int argc, char ** argv)
 
   std::cout << "Board detections: " << all_object_points.size() << std::endl;
 
+  if (all_object_points.size() == 0) {
+    std::cout << "Calibration aborted due to a lack of observations" << std::endl;
+  }
+
   // Fill the calibration points
+  max_samples = std::min(max_samples, all_object_points.size());
+  mini_calibration_samples = std::min(mini_calibration_samples, all_object_points.size());
   calibration_object_points.insert(
     calibration_object_points.end(), all_object_points.begin(),
     all_object_points.begin() + max_samples);

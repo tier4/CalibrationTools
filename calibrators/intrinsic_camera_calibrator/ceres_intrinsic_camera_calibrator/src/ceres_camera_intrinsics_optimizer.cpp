@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 Tier IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,10 @@
 #include <cv_bridge/cv_bridge.h>
 
 #include <algorithm>
+#include <cstdio>
+#include <iostream>
 #include <numeric>
+#include <vector>
 
 void CeresCameraIntrinsicsOptimizer::setRadialDistortionCoefficients(
   int radial_distortion_coefficients)
