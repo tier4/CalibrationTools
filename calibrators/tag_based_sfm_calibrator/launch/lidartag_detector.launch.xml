@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="ns" default=""/>
+  <arg name="pointcloud_topic"/>
+  <arg name="filtered_detections_topic" default="lidartag/filtered/detections_array"/>
+
+  <arg name="lidar_model">
+    <choice value="aeva_aeries2"/>
+    <choice value="at128"/>
+    <choice value="innoviz2"/>
+    <choice value="ouster_os1_128"/>
+    <choice value="ouster_os2"/>
+    <choice value="pandar_40p"/>
+    <choice value="pandar_64"/>
+    <choice value="pandar_qt"/>
+    <choice value="pandar_xt32"/>
+    <choice value="robosense_m1"/>
+    <choice value="seyond_falcon"/>
+    <choice value="seyond_robin_w"/>
+    <choice value="velodyne_vlp16"/>
+    <choice value="velodyne_vls128"/>
+  </arg>
+
+  <group>
+    <push-ros-namespace namespace="$(var ns)"/>
+
+    <include file="$(find-pkg-share lidartag)/launch/lidartag.launch.xml">
+      <arg name="lidar_model" value="$(var lidar_model)"/>
+      <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
+    </include>
+
+    <node pkg="tier4_tag_utils" exec="lidartag_filter_node" name="lidartag_filter" output="screen">
+      <remap from="lidartag/filtered/detections_array" to="$(var filtered_detections_topic)"/>
+
+      <param name="max_no_observation_time" value="3.0"/>
+      <param name="new_hypothesis_distance" value="1.5"/>
+
+      <param name="new_hypothesis_translation" value="0.1"/>
+      <param name="new_hypothesis_rotation" value="15.0"/>
+      <param name="measurement_noise_translation" value="0.05"/>
+      <param name="measurement_noise_rotation" value="5.0"/>
+      <param name="process_noise_translation" value="0.01"/>
+      <param name="process_noise_translation_dot" value="0.001"/>
+      <param name="process_noise_rotation" value="1.0"/>
+      <param name="process_noise_rotation_dot" value="0.1"/>
+    </node>
+  </group>
+</launch>

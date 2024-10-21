@@ -1,8 +1,0 @@
-/**:
-  ros__parameters:
-    imu_deque_size: 30
-    not_running_acc: 0.005
-    not_running_vel: 0.1
-    stop_valid_imu_accel_num: 4
-    lpf_pitch_gain: 0.95
-    lpf_acc_gain: 0.2

@@ -1,4 +1,4 @@
-// Copyright 2023 Tier IV, Inc.
+// Copyright 2024 TIER IV, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -354,7 +354,7 @@ void pcl::JointIterativeClosestPointExtended<PointSource, PointTarget, Scalar>::
 
     ++nr_iterations_;
 
-    // Update the vizualization of icp convergence
+    // Update the visualization of icp convergence
     // if (update_visualizer_ != 0)
     //  update_visualizer_(output, source_indices_good, *target_, target_indices_good );
 
