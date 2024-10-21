@@ -181,7 +181,7 @@ void CeresCameraIntrinsicsOptimizer::dataToPlaceholders()
     intrinsics_placeholder_[index++] = k6;
   }
 
-  // Convert the revcs, tvecs into the placeholders // cSpell:ignore rvecs,tvecs
+  // Convert the rvecs, tvecs into the placeholders // cSpell:ignore rvecs,tvecs
   pose_placeholders_.resize(object_points_.size());
 
   for (std::size_t i = 0; i < object_points_.size(); i++) {
@@ -248,7 +248,7 @@ void CeresCameraIntrinsicsOptimizer::placeholdersToData()
     k6 = intrinsics_placeholder_[index++];
   }
 
-  // Convert the revcs, tvecs into the placeholders // cSpell:ignore rvecs,tvecs
+  // Convert the rvecs, tvecs into the placeholders // cSpell:ignore rvecs,tvecs
   rvecs_.resize(pose_placeholders_.size());
   tvecs_.resize(pose_placeholders_.size());
 
