@@ -30,16 +30,22 @@
 
 int main(int argc, char ** argv)
 {
-  CV_UNUSED(argc);
-  CV_UNUSED(argv);
+  if (argc != 5) {
+    std::cout
+      << "Usage: " << argv[0]
+      << " <data_path> <num_radial_coeffs> <use_tangential_distortion> <num_rational_coeffs>"
+      << std::endl;
+    return 1;
+  }
 
   // Global config
   int cols = 6;
   int rows = 8;
   std::size_t max_samples = 50;
   std::size_t mini_calibration_samples = 20;
-  bool use_tangent_distortion = true;
-  int num_radial_distortion_coeffs = 3;
+  int num_radial_distortion_coeffs = atoi(argv[2]);
+  bool use_tangent_distortion = atoi(argv[3]);
+  int num_rational_distortion_coeffs = atoi(argv[4]);
 
   // Placeholders
   std::vector<std::vector<cv::Point3f>> all_object_points;
@@ -102,16 +108,29 @@ int main(int argc, char ** argv)
     params.minDistBetweenBlobs =
       (min_dist_between_blobs_percentage * std::max(size.height, size.width) / 100.0);
 
-    cv::Size pattern(cols, rows);      // w x h format
-    std::vector<cv::Point2f> centers;  // this will be filled by the detected centers
+    cv::Size pattern(cols, rows);  // w x h format
+    std::vector<cv::Point2f> circle_centers,
+      chessboard_centers;  // this will be filled by the detected centers
 
-    bool found = cv::findCirclesGrid(
-      grayscale_img, pattern, centers, cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING,
+    bool found_circles = cv::findCirclesGrid(
+      grayscale_img, pattern, circle_centers, cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING,
       blobDetector);
 
-    if (found) {
+    bool found_chessboard = findChessboardCorners(
+      grayscale_img, pattern, chessboard_centers,
+      cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK);
+
+    if (found_chessboard)
+      cornerSubPix(
+        grayscale_img, chessboard_centers, cv::Size(11, 11), cv::Size(-1, -1),
+        cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 30, 0.1));
+
+    if (found_circles) {
       all_object_points.push_back(template_points);
-      all_image_points.push_back(centers);
+      all_image_points.push_back(circle_centers);
+    } else if (found_chessboard) {
+      all_object_points.push_back(template_points);
+      all_image_points.push_back(chessboard_centers);
     }
 
     if (all_object_points.size() >= max_samples) {
@@ -145,18 +164,24 @@ int main(int argc, char ** argv)
     all_image_points.begin() + mini_calibration_samples);
 
   cv::Mat_<double> mini_opencv_camera_matrix = cv::Mat_<double>::zeros(3, 3);
-  cv::Mat_<double> mini_opencv_dist_coeffs = cv::Mat_<double>::zeros(5, 1);
+  cv::Mat_<double> mini_opencv_dist_coeffs = num_rational_distortion_coeffs == 0
+                                               ? cv::Mat_<double>::zeros(5, 1)
+                                               : cv::Mat_<double>::zeros(8, 1);
 
   cv::Mat_<double> opencv_camera_matrix = cv::Mat_<double>::zeros(3, 3);
-  cv::Mat_<double> opencv_dist_coeffs = cv::Mat_<double>::zeros(5, 1);
+  cv::Mat_<double> opencv_dist_coeffs = num_rational_distortion_coeffs == 0
+                                          ? cv::Mat_<double>::zeros(5, 1)
+                                          : cv::Mat_<double>::zeros(8, 1);
   cv::Mat_<double> undistorted_camera_matrix = cv::Mat_<double>::zeros(3, 3);
 
   cv::Mat_<double> ceres_camera_matrix = cv::Mat_<double>::zeros(3, 3);
-  cv::Mat_<double> ceres_dist_coeffs = cv::Mat_<double>::zeros(5, 1);
+  cv::Mat_<double> ceres_dist_coeffs = num_rational_distortion_coeffs == 0
+                                         ? cv::Mat_<double>::zeros(5, 1)
+                                         : cv::Mat_<double>::zeros(8, 1);
 
   int flags = 0;
 
-  if (!use_tangent_distortion) {
+  /* if (!use_tangent_distortion) {
     flags |= cv::CALIB_ZERO_TANGENT_DIST;
   }
 
@@ -170,12 +195,35 @@ int main(int argc, char ** argv)
 
   if (num_radial_distortion_coeffs < 1) {
     flags |= cv::CALIB_FIX_K1;
-  }
+  } */
+
+  /* flags |= cv2.CALIB_ZERO_TANGENT_DIST if not self.use_tangential_distortion.value else 0
+  flags |= cv2.CALIB_RATIONAL_MODEL if self.radial_distortion_coefficients.value > 3 else 0
+  flags |= cv2.CALIB_FIX_K6 if self.radial_distortion_coefficients.value < 6 else 0
+  flags |= cv2.CALIB_FIX_K5 if self.radial_distortion_coefficients.value < 5 else 0
+  flags |= cv2.CALIB_FIX_K4 if self.radial_distortion_coefficients.value < 4 else 0
+  flags |= cv2.CALIB_FIX_K3 if self.radial_distortion_coefficients.value < 3 else 0
+  flags |= cv2.CALIB_FIX_K2 if self.radial_distortion_coefficients.value < 2 else 0
+  flags |= cv2.CALIB_FIX_K1 if self.radial_distortion_coefficients.value < 1 else 0 */
+
+  flags |= use_tangent_distortion ? 0 : cv::CALIB_ZERO_TANGENT_DIST;
+  flags |= num_rational_distortion_coeffs > 0 ? cv::CALIB_RATIONAL_MODEL : 0;
+  flags |= num_rational_distortion_coeffs < 3 ? cv::CALIB_FIX_K6 : 0;
+  flags |= num_rational_distortion_coeffs < 2 ? cv::CALIB_FIX_K5 : 0;
+  flags |= num_rational_distortion_coeffs < 1 ? cv::CALIB_FIX_K4 : 0;
+  flags |= num_radial_distortion_coeffs < 3 ? cv::CALIB_FIX_K3 : 0;
+  flags |= num_radial_distortion_coeffs < 2 ? cv::CALIB_FIX_K2 : 0;
+  flags |= num_radial_distortion_coeffs < 1 ? cv::CALIB_FIX_K1 : 0;
 
   auto mini_opencv_start = std::chrono::high_resolution_clock::now();
   double mini_reproj_error = cv::calibrateCamera(
     mini_calibration_object_points, mini_calibration_image_points, size, mini_opencv_camera_matrix,
     mini_opencv_dist_coeffs, mini_opencv_calibration_rvecs, mini_opencv_calibration_tvecs, flags);
+
+  // When the rational mode is enabled in opencv, it just created a vector of the maximum dimension
+  if (mini_opencv_dist_coeffs.rows * mini_opencv_dist_coeffs.cols > 8) {
+    mini_opencv_dist_coeffs = mini_opencv_dist_coeffs.rowRange(0, 8);
+  }
 
   auto mini_opencv_stop = std::chrono::high_resolution_clock::now();
 
@@ -224,6 +272,7 @@ int main(int argc, char ** argv)
   CeresCameraIntrinsicsOptimizer optimizer;
   optimizer.setRadialDistortionCoefficients(num_radial_distortion_coeffs);
   optimizer.setTangentialDistortion(use_tangent_distortion);
+  optimizer.setRationalDistortionCoefficients(num_rational_distortion_coeffs);
   optimizer.setVerbose(true);
   optimizer.setData(
     mini_opencv_camera_matrix, mini_opencv_dist_coeffs, calibration_object_points,

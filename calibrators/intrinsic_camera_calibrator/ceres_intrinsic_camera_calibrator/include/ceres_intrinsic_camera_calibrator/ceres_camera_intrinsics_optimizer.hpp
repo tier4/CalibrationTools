@@ -31,7 +31,7 @@ class CeresCameraIntrinsicsOptimizer
 {
 public:
   static constexpr int POSE_OPT_DIM = 7;
-  static constexpr int INTRINSICS_DIM = 9;
+  static constexpr int INTRINSICS_DIM = 12;
 
   static constexpr int ROTATION_W_INDEX = 0;
   static constexpr int ROTATION_X_INDEX = 1;
@@ -60,6 +60,13 @@ public:
    * @param[in] use_tangential_distortion whether or not to use tangential distortion
    */
   void setTangentialDistortion(bool use_tangential_distortion);
+
+  /*!
+   * Sets the number of rational distortion coefficients
+   * @param[in] rational_distortion_coefficients number of radial distortion coefficients
+   * optimized
+   */
+  void setRationalDistortionCoefficients(int rational_distortion_coefficients);
 
   /*!
    * Sets the verbose mode
@@ -118,6 +125,7 @@ public:
 protected:
   int radial_distortion_coefficients_;
   bool use_tangential_distortion_;
+  int rational_distortion_coefficients_;
   bool verbose_;
   cv::Mat_<double> camera_matrix_;
   cv::Mat_<double> distortion_coeffs_;

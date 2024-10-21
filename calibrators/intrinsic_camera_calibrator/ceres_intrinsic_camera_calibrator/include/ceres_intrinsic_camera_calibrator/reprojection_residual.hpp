@@ -46,12 +46,13 @@ struct ReprojectionResidual
 
   ReprojectionResidual(
     const cv::Point3f & object_point, const cv::Point2f & image_point, int radial_distortion_coeffs,
-    bool use_tangential_distortion)
+    bool use_tangential_distortion, int rational_distortion_coeffs)
   {
     object_point_ = Eigen::Vector3d(object_point.x, object_point.y, object_point.z);
     image_point_ = Eigen::Vector2d(image_point.x, image_point.y);
     radial_distortion_coeffs_ = radial_distortion_coeffs;
     use_tangential_distortion_ = use_tangential_distortion;
+    rational_distortion_coeffs_ = rational_distortion_coeffs;
   }
 
   /*!
@@ -76,22 +77,32 @@ struct ReprojectionResidual
     Vector3<T> object_point_ccs = board_quaternion * (T(1.0) * object_point_) + board_translation;
 
     const T null_value = T(0.0);
+    int distortion_index = 4;
     const T & cx = camera_intrinsics[INTRINSICS_CX_INDEX];
     const T & cy = camera_intrinsics[INTRINSICS_CY_INDEX];
     const T & fx = camera_intrinsics[INTRINSICS_FX_INDEX];
     const T & fy = camera_intrinsics[INTRINSICS_FY_INDEX];
-    const T & k1 = radial_distortion_coeffs_ > 0 ? camera_intrinsics[4] : null_value;
-    const T & k2 = radial_distortion_coeffs_ > 1 ? camera_intrinsics[5] : null_value;
-    const T & k3 = radial_distortion_coeffs_ > 2 ? camera_intrinsics[6] : null_value;
-    const T & p1 =
-      use_tangential_distortion_ ? camera_intrinsics[4 + radial_distortion_coeffs_] : null_value;
-    const T & p2 =
-      use_tangential_distortion_ ? camera_intrinsics[5 + radial_distortion_coeffs_] : null_value;
+    const T & k1 =
+      radial_distortion_coeffs_ > 0 ? camera_intrinsics[distortion_index++] : null_value;
+    const T & k2 =
+      radial_distortion_coeffs_ > 1 ? camera_intrinsics[distortion_index++] : null_value;
+    const T & k3 =
+      radial_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
+    const T & p1 = use_tangential_distortion_ ? camera_intrinsics[distortion_index++] : null_value;
+    const T & p2 = use_tangential_distortion_ ? camera_intrinsics[distortion_index++] : null_value;
+    const T & k4 =
+      rational_distortion_coeffs_ > 0 ? camera_intrinsics[distortion_index++] : null_value;
+    const T & k5 =
+      rational_distortion_coeffs_ > 1 ? camera_intrinsics[distortion_index++] : null_value;
+    const T & k6 =
+      rational_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
 
     const T xp = object_point_ccs.x() / object_point_ccs.z();
     const T yp = object_point_ccs.y() / object_point_ccs.z();
     const T r2 = xp * xp + yp * yp;
-    const T d = 1.0 + k1 * r2 + k2 * r2 * r2 + k3 * r2 * r2 * r2;
+    const T dn = 1.0 + k1 * r2 + k2 * r2 * r2 + k3 * r2 * r2 * r2;
+    const T dd = 1.0 + k4 * r2 + k5 * r2 * r2 + k6 * r2 * r2 * r2;
+    const T d = dn / dd;
     const T xy = xp * yp;
     const T tdx = 2.0 * p1 * xy + p2 * (r2 + 2.0 * xp * xp);
     const T tdy = 2.0 * p2 * xy + p1 * (r2 + 2.0 * yp * yp);
@@ -115,13 +126,15 @@ struct ReprojectionResidual
    */
   static ceres::CostFunction * createResidual(
     const cv::Point3f & object_point, const cv::Point2f & image_point, int radial_distortion_coeffs,
-    bool use_tangential_distortion)
+    bool use_tangential_distortion, int rational_distortion_coeffs)
   {
     auto f = new ReprojectionResidual(
-      object_point, image_point, radial_distortion_coeffs, use_tangential_distortion);
+      object_point, image_point, radial_distortion_coeffs, use_tangential_distortion,
+      rational_distortion_coeffs);
 
-    int distortion_coefficients =
-      radial_distortion_coeffs + 2 * static_cast<int>(use_tangential_distortion);
+    int distortion_coefficients = radial_distortion_coeffs +
+                                  2 * static_cast<int>(use_tangential_distortion) +
+                                  rational_distortion_coeffs;
     ceres::CostFunction * cost_function = nullptr;
 
     switch (distortion_coefficients) {
@@ -149,6 +162,20 @@ struct ReprojectionResidual
         cost_function =
           new ceres::AutoDiffCostFunction<ReprojectionResidual, RESIDUAL_DIM, 9, POSE_OPT_DIM>(f);
         break;
+      case 6:
+        cost_function =
+          new ceres::AutoDiffCostFunction<ReprojectionResidual, RESIDUAL_DIM, 10, POSE_OPT_DIM>(f);
+        break;
+      case 7:
+        cost_function =
+          new ceres::AutoDiffCostFunction<ReprojectionResidual, RESIDUAL_DIM, 11, POSE_OPT_DIM>(f);
+        break;
+      case 8:
+        cost_function =
+          new ceres::AutoDiffCostFunction<ReprojectionResidual, RESIDUAL_DIM, 12, POSE_OPT_DIM>(f);
+        break;
+      default:
+        throw std::runtime_error("Invalid number of distortion coefficients");
     }
 
     return cost_function;
@@ -158,6 +185,7 @@ struct ReprojectionResidual
   Eigen::Vector2d image_point_;
   int radial_distortion_coeffs_;
   bool use_tangential_distortion_;
+  int rational_distortion_coeffs_;
 };
 
 #endif  // CERES_INTRINSIC_CAMERA_CALIBRATOR__REPROJECTION_RESIDUAL_HPP_
