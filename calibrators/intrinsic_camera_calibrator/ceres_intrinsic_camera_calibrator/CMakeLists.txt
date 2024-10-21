@@ -92,7 +92,4 @@ install(
 
 ament_export_dependencies(ament_cmake_python)
 
-#ament_auto_package(
-#  INSTALL_TO_SHARE
-#  launch
-#)
+ament_auto_package()
