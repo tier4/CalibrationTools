@@ -292,7 +292,8 @@ class ImageView(QGraphicsItem, QObject):
         pen = QPen(QColor(255, 0.0, 255, int(255 * self.rendering_alpha)))
         painter.setPen(pen)
 
-        points = points * self.image_to_view_factor
+        if points.size > 0:
+            points = points * self.image_to_view_factor
         size = 3
         rect_list = [
             QRectF(point[0] - 0.5 * size, point[1] - 0.5 * size, size, size) for point in points
