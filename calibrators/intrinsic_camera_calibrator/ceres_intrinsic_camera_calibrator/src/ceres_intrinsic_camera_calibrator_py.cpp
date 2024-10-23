@@ -47,8 +47,9 @@ calibrate(
   const Eigen::MatrixXd & initial_dist_coeffs_eigen, int num_radial_coeffs, int num_rational_coeffs,
   bool use_tangential_distortion, bool verbose)
 {
-  int num_dist_coeffs = initial_dist_coeffs_eigen.rows() * initial_dist_coeffs_eigen.cols();
-  int expected_dist_coeffs = num_rational_coeffs > 0 ? 8 : 5;
+  Eigen::Index num_dist_coeffs =
+    initial_dist_coeffs_eigen.rows() * initial_dist_coeffs_eigen.cols();
+  Eigen::Index expected_dist_coeffs = num_rational_coeffs > 0 ? 8 : 5;
   if (
     initial_camera_matrix_eigen.cols() != 3 || initial_camera_matrix_eigen.rows() != 3 ||
     object_points_eigen_list.size() != image_points_eigen_list.size() || num_radial_coeffs < 0 ||
