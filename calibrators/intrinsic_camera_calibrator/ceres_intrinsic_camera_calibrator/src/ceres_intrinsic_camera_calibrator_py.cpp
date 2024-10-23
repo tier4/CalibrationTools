@@ -45,7 +45,7 @@ calibrate(
   const std::vector<Eigen::MatrixXd> & image_points_eigen_list,
   const Eigen::MatrixXd & initial_camera_matrix_eigen,
   const Eigen::MatrixXd & initial_dist_coeffs_eigen, int num_radial_coeffs,
-  bool use_tangential_distortion, int num_rational_coeffs, bool verbose)
+  int num_rational_coeffs, bool use_tangential_distortion, bool verbose)
 {
   if (
     initial_camera_matrix_eigen.cols() != 3 || initial_camera_matrix_eigen.rows() != 3 ||
@@ -178,7 +178,9 @@ PYBIND11_MODULE(ceres_intrinsic_camera_calibrator_py, m)
             initial_camera_matrix (np.array): The initial camera matrix
             initial_dist_coeffs (np.array): The initial distortion coefficients
             num_radial_coeffs (int): The number of radial distortion coefficients used during calibration
+            num_rational_coeffs (int): The number of rational distortion coefficients used during calibration
             use_tangential_distortion (bool): Whether we should use tangential distortion during calibration
+            verbose (bool): Whether we should print debug information
 
         Returns:
             The RMS reprojection error, the optimized camera intrinsics, and the board extrinsics
