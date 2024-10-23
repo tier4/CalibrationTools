@@ -51,8 +51,7 @@ calibrate(
     initial_camera_matrix_eigen.cols() != 3 || initial_camera_matrix_eigen.rows() != 3 ||
     object_points_eigen_list.size() != image_points_eigen_list.size() || num_radial_coeffs < 0 ||
     num_radial_coeffs > 3 || num_rational_coeffs < 0 || num_rational_coeffs > 3 ||
-    std::min<std::size_t>(initial_dist_coeffs_eigen.rows(), initial_dist_coeffs_eigen.cols()) > 1 ||
-    (initial_dist_coeffs_eigen.rows() * initial_dist_coeffs_eigen.cols()) != 5) {
+    std::min<std::size_t>(initial_dist_coeffs_eigen.rows(), initial_dist_coeffs_eigen.cols()) > 1) {
     std::cout << "Invalid parameters" << std::endl;
     std::cout << "\t object_points_list.size(): " << object_points_eigen_list.size() << std::endl;
     std::cout << "\t image_points_list.size(): " << image_points_eigen_list.size() << std::endl;
