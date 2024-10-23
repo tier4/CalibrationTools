@@ -44,8 +44,8 @@ calibrate(
   const std::vector<Eigen::MatrixXd> & object_points_eigen_list,
   const std::vector<Eigen::MatrixXd> & image_points_eigen_list,
   const Eigen::MatrixXd & initial_camera_matrix_eigen,
-  const Eigen::MatrixXd & initial_dist_coeffs_eigen, int num_radial_coeffs,
-  int num_rational_coeffs, bool use_tangential_distortion, bool verbose)
+  const Eigen::MatrixXd & initial_dist_coeffs_eigen, int num_radial_coeffs, int num_rational_coeffs,
+  bool use_tangential_distortion, bool verbose)
 {
   if (
     initial_camera_matrix_eigen.cols() != 3 || initial_camera_matrix_eigen.rows() != 3 ||
