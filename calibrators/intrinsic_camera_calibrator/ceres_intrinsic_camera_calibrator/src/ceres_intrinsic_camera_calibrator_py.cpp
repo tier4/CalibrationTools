@@ -142,8 +142,7 @@ calibrate(
   rvecs_eigen.resize(rvecs_cv.size());
   tvecs_eigen.resize(tvecs_cv.size());
 
-  for (std::size_t view_id = object_points_list_cv.size(); view_id < object_points_list_cv.size();
-       view_id++) {
+  for (std::size_t view_id = 0; view_id < object_points_list_cv.size(); view_id++) {
     cv::cv2eigen(rvecs_cv[view_id], rvecs_eigen[view_id]);
     cv::cv2eigen(tvecs_cv[view_id], tvecs_eigen[view_id]);
   }
