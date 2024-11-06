@@ -1,0 +1,11 @@
+board_type: chess_board
+board_parameters:
+  cols: 8
+  rows: 6
+  cell_size: 0.1
+calibrator_type: opencv
+calibration_parameters:
+  radial_distortion_coefficients: 2
+data_collector:
+  max_allowed_max_reprojection_error: 1.5
+  max_allowed_rms_reprojection_error: 1.0
