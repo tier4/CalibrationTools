@@ -461,7 +461,7 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
 
   if (
     std::abs(translation_angle_diff) > parameters_->lost_frame_max_angle_diff_ ||
-    std::abs(translation_angle_diff) > parameters_->lost_frame_max_angle_diff_) {
+    std::abs(rotation_angle_diff) > parameters_->lost_frame_max_angle_diff_) {
     keyframe->lost_ = true;
 
     RCLCPP_WARN(
