@@ -20,7 +20,7 @@ from typing import Optional
 from typing import Tuple
 
 import cv2
-from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_model import CameraModel
 import numpy as np
 
 
@@ -54,8 +54,9 @@ class BoardDetection:
         self._cached_pose = None
         self._cached_flattened_3d_points = None
 
-    def _precompute_single_shot_model(self, model: CameraModel):
+    def _precompute_single_shot_model(self):
         """Compute and caches a camera model calibrated with the current detection."""
+        model = CameraModel()
         model.calibrate(
             height=self.height,
             width=self.width,
@@ -64,10 +65,10 @@ class BoardDetection:
         )
         self._cached_camera_model = model
 
-    def _get_cached_model(self, model: CameraModel) -> CameraModel:
+    def _get_cached_model(self) -> CameraModel:
         """Return the single shot camera model and computes it is has not been pre-computed yet."""
         if self._cached_camera_model is None:
-            self._precompute_single_shot_model(model)
+            self._precompute_single_shot_model()
 
         return self._cached_camera_model
 
@@ -107,12 +108,16 @@ class BoardDetection:
         self._cached_center_2d = self.get_flattened_image_points().mean(axis=0)
         return self._cached_center_2d
 
-    def get_reprojection_errors(self, model: CameraModel) -> np.array:
+    def get_reprojection_errors(self, model: Optional[CameraModel] = None) -> np.array:
         """Return the error of projecting the object points into the image and comparing them with the detections."""
-        if self._cached_camera_model is None:
-            self._precompute_single_shot_model(model)
+        if model is None:
+            model = self._get_cached_model()
 
-        if model == self._cached_camera_model and self._cached_reprojection_errors is not None:
+        if (
+            self._cached_camera_model is not None
+            and model == self._cached_camera_model
+            and self._cached_reprojection_errors is not None
+        ):
             return self._cached_reprojection_errors
 
         self._cached_camera_model = model
@@ -120,13 +125,16 @@ class BoardDetection:
 
         return self._cached_reprojection_errors
 
-    def get_tilt(self, model: CameraModel) -> float:
+    def get_tilt(self, model: Optional[CameraModel] = None) -> float:
         """Return the angle difference between the detection and the camera. Specifically, the pose of the detection points considers +z pointing towards the camera and the camera itself uses +z pointing towards the scene."""
+        if model is None:
+            model = self._get_cached_model()
+
         if model == self._cached_camera_model and self._cached_tilt is not None:
             return self._cached_tilt
 
         # cSpell:enableCompoundWords
-        rvec, _ = self.get_pose(model)
+        rvec, _ = self.get_pose()
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
 
@@ -137,12 +145,15 @@ class BoardDetection:
 
         return self._cached_tilt
 
-    def get_rotation_angles(self, model: CameraModel) -> Tuple[float, float]:
+    def get_rotation_angles(self, model: Optional[CameraModel] = None) -> Tuple[float, float]:
         """Return the angle difference between the detection and the camera with respect to the x and y axes of the camera."""
+        if model is None:
+            model = self._get_cached_model()
+
         if model == self._cached_camera_model and self._cached_rotation_angles is not None:
             return self._cached_rotation_angles
 
-        rvec, _ = self.get_pose(model)
+        rvec, _ = self.get_pose()
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
 
@@ -155,8 +166,11 @@ class BoardDetection:
 
         return self._cached_rotation_angles
 
-    def get_pose(self, model: CameraModel) -> Tuple[np.array, np.array]:
+    def get_pose(self, model: Optional[CameraModel] = None) -> Tuple[np.array, np.array]:
         """Return the pose of the detection in rodrigues tuple formulation. If a model is not provided, whe single-shot version is used, which produced only a rough estimation in most cases, and a complete incorrect one in some."""
+        if model is None:
+            model = self._get_cached_model()
+
         if model == self._cached_camera_model and self._cached_pose is not None:
             return self._cached_pose
 
@@ -165,10 +179,13 @@ class BoardDetection:
 
         return self._cached_pose
 
-    def get_flattened_3d_points(self, model: CameraModel) -> np.array:
+    def get_flattened_3d_points(self, model: Optional[CameraModel] = None) -> np.array:
         """Get the image points reprojected into camera coordinates in the 3d space as a (M, 3) array."""
+        if model is None:
+            model = self._get_cached_model()
+
         if model == self._cached_camera_model and self._cached_flattened_3d_points is not None:
-            return self._cached_flattened_3d_points
+            return self._cached_pose
 
         self._cached_camera_model = model
 

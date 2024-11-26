@@ -122,7 +122,6 @@ struct ReprojectionResidual
    * @param[in] image_point The image point
    * @param[in] radial_distortion_coeffs The number of radial distortion coefficients
    * @param[in] use_tangential_distortion Whether to use or not tangential distortion
-   * @param[in] rational_distortion_coeffs The number of rational distortion coefficients
    * @returns the ceres residual
    */
   static ceres::CostFunction * createResidual(

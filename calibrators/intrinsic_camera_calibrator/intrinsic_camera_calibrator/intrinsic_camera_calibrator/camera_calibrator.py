@@ -54,8 +54,7 @@ from intrinsic_camera_calibrator.boards import BoardEnum
 from intrinsic_camera_calibrator.calibrators.calibrator import Calibrator
 from intrinsic_camera_calibrator.calibrators.calibrator import CalibratorEnum
 from intrinsic_camera_calibrator.calibrators.calibrator_factory import make_calibrator
-from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
-from intrinsic_camera_calibrator.camera_models.camera_model_factory import make_camera_model
+from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_collector import CollectionStatus
 from intrinsic_camera_calibrator.data_collector import DataCollector
 from intrinsic_camera_calibrator.data_sources.data_source import DataSource
@@ -63,7 +62,6 @@ from intrinsic_camera_calibrator.parameter import ParameterizedClass
 from intrinsic_camera_calibrator.types import ImageViewMode
 from intrinsic_camera_calibrator.types import OperationMode
 from intrinsic_camera_calibrator.utils import save_intrinsics
-from intrinsic_camera_calibrator.utils import set_logger_severity
 from intrinsic_camera_calibrator.views.data_collector_view import DataCollectorView
 from intrinsic_camera_calibrator.views.image_view import CustomQGraphicsView
 from intrinsic_camera_calibrator.views.image_view import ImageView
@@ -106,7 +104,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         # Camera models to use normally
         self.current_camera_model: CameraModel = None
-        self.current_calibrator_type: CalibratorEnum = None
         self.pending_partial_calibration = False
 
         # Camera model produced via a full calibration
@@ -325,7 +322,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_group.setFlat(True)
 
         self.calibrator_type_combobox = QComboBox()
-        self.calibrator_type_combobox.setEnabled(True)
+        self.calibrator_type_combobox.setEnabled(False)  # TODO: implement this later
 
         self.calibration_parameters_button = QPushButton("Calibration parameters")
         self.calibration_button = QPushButton("Calibrate")
@@ -347,8 +344,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_evaluation_inlier_rms_label = QLabel("\trms error (inlier):")
 
         def on_parameters_view_closed():
+            # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
             self.calibration_parameters_button.setEnabled(True)
-            self.calibrator_type_combobox.setEnabled(True)
 
         def on_parameters_button_clicked():
             self.calibrator_type_combobox.setEnabled(False)
@@ -390,9 +387,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
             self.calibration_status_label.setText("Calibration status: evaluating")
 
-        def on_calibrator_clicked():
-            self.current_calibrator_type = self.calibrator_type_combobox.currentData()
-
         self.calibration_parameters_button.clicked.connect(on_parameters_button_clicked)
 
         self.calibration_button.clicked.connect(on_calibration_clicked)
@@ -403,8 +397,6 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         self.save_button.clicked.connect(self.on_save_clicked)
         self.save_button.setEnabled(False)
-
-        self.calibrator_type_combobox.currentIndexChanged.connect(on_calibrator_clicked)
 
         for calibrator_type in CalibratorEnum:
             self.calibrator_type_combobox.addItem(calibrator_type.value["display"], calibrator_type)
@@ -734,7 +726,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"  # noqa E231
         )
 
-        self.calibrator_type_combobox.setEnabled(True)
+        # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(True)
         self.evaluation_button.setEnabled(True)
@@ -786,7 +778,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"  # noqa E231
         )
 
-        self.calibrator_type_combobox.setEnabled(True)
+        # self.calibrator_type_combobox.setEnabled(True) TODO implement this later
         self.calibration_parameters_button.setEnabled(True)
         self.calibration_button.setEnabled(self.operation_mode == OperationMode.CALIBRATION)
         self.evaluation_button.setEnabled(True)
@@ -862,11 +854,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.single_shot_reprojection_error_rms_label.setText("Reprojection error (rms):")
 
         else:
-            camera_model_cfg, camera_model_type = self.calibrator_dict[
-                self.current_calibrator_type
-            ].get_model_info()
-            camera_model = make_camera_model(camera_model_type)
-            camera_model.update_config(**camera_model_cfg)
+            camera_model = (
+                self.current_camera_model
+                if self.calibrated_camera_model is None
+                else self.calibrated_camera_model
+            )
 
             if self.image_view_type_combobox.currentData() == ImageViewMode.SOURCE_UNRECTIFIED:
                 filter_result = self.data_collector.process_detection(
@@ -905,7 +897,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             self.image_view.set_detection_ordered_points(ordered_image_points)
             self.image_view.set_grid_size_pixels(detection.get_flattened_cell_sizes().mean())
 
-            reprojection_errors = detection.get_reprojection_errors(camera_model)
+            reprojection_errors = detection.get_reprojection_errors()
             reprojection_errors_norm = np.linalg.norm(reprojection_errors, axis=-1)
             reprojection_error_max = reprojection_errors_norm.max()
             reprojection_error_mean = reprojection_errors_norm.mean()
@@ -927,7 +919,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 f"Linear error rms: {detection.get_linear_error_rms():.2f} px"  # noqa E231
             )
             self.rough_tilt_label.setText(
-                f"Rough tilt: {detection.get_tilt(camera_model):.2f} degrees"  # noqa E231
+                f"Rough tilt: {detection.get_tilt():.2f} degrees"  # noqa E231
             )
             self.rough_angles_label.setText(
                 f"Rough angles: x={rough_angles[0]:.2f} y={rough_angles[1]:.2f} degrees"  # noqa E231
@@ -1115,15 +1107,13 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         with self.lock:
             self.produced_image = img
             self.produced_stamp = stamp
-            # Using a signal from another thread results in the slot being executed in the class Qt thread
-            self.produced_data_signal.emit()
+            self.produced_data_signal.emit()  # Using a signal from another thread results in the slot being executed in the class Qt thread
 
     def on_parameter_changed(self):
         self.should_process_image.emit()
 
 
 def main(args=None):
-    set_logger_severity()
     parser = OptionParser()
     parser.add_option("-c", "--config-file", type="string", help="calibration file path")
 

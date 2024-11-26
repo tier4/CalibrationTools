@@ -18,13 +18,11 @@
 import threading
 from typing import Dict
 from typing import List
-from typing import Tuple
 
+import cv2
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
 from intrinsic_camera_calibrator.calibrators.calibrator import Calibrator
-from intrinsic_camera_calibrator.camera_models.camera_model import CameraModelEnum
-from intrinsic_camera_calibrator.camera_models.camera_model_factory import make_camera_model
-from intrinsic_camera_calibrator.camera_models.opencv_camera_model import OpenCVCameraModel
+from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.parameter import Parameter
 
 
@@ -33,36 +31,34 @@ class OpenCVCalibrator(Calibrator):
 
     def __init__(self, lock: threading.RLock, cfg: Dict = {}):
         super().__init__(lock, cfg)
-        self.radial_distortion_coefficients = Parameter(int, value=2, min_value=0, max_value=3)
-        self.rational_distortion_coefficients = Parameter(int, value=0, min_value=0, max_value=3)
+
+        self.radial_distortion_coefficients = Parameter(int, value=2, min_value=0, max_value=6)
         self.use_tangential_distortion = Parameter(
             bool, value=True, min_value=False, max_value=True
         )
-        self.enable_prism_model = Parameter(bool, value=False, min_value=False, max_value=True)
         self.fix_principal_point = Parameter(bool, value=False, min_value=False, max_value=True)
         self.fix_aspect_ratio = Parameter(bool, value=False, min_value=False, max_value=True)
 
         self.set_parameters(**cfg)
 
-    def get_model_info(self) -> Tuple[Dict, CameraModelEnum]:
-        with self.lock:
-            return self.get_parameters_values(), CameraModelEnum.OPENCV
-
-    def _calibration_impl(self, detections: List[BoardDetection]) -> OpenCVCameraModel:
+    def _calibration_impl(self, detections: List[BoardDetection]) -> CameraModel:
         """Implement the calibrator interface."""
+        flags = 0
+        flags |= cv2.CALIB_FIX_PRINCIPAL_POINT if self.fix_principal_point.value else 0
+        flags |= cv2.CALIB_FIX_ASPECT_RATIO if self.fix_principal_point.value else 0
+        flags |= cv2.CALIB_ZERO_TANGENT_DIST if not self.use_tangential_distortion.value else 0
+        flags |= cv2.CALIB_RATIONAL_MODEL if self.radial_distortion_coefficients.value > 3 else 0
+        flags |= cv2.CALIB_FIX_K6 if self.radial_distortion_coefficients.value < 6 else 0
+        flags |= cv2.CALIB_FIX_K5 if self.radial_distortion_coefficients.value < 5 else 0
+        flags |= cv2.CALIB_FIX_K4 if self.radial_distortion_coefficients.value < 4 else 0
+        flags |= cv2.CALIB_FIX_K3 if self.radial_distortion_coefficients.value < 3 else 0
+        flags |= cv2.CALIB_FIX_K2 if self.radial_distortion_coefficients.value < 2 else 0
+        flags |= cv2.CALIB_FIX_K1 if self.radial_distortion_coefficients.value < 1 else 0
+
         height = detections[0].get_image_height()
         width = detections[0].get_image_width()
 
-        camera_model = make_camera_model(camera_model_type=CameraModelEnum.OPENCV)
-        with self.lock:
-            camera_model.update_config(
-                radial_distortion_coefficients=self.radial_distortion_coefficients.value,
-                rational_distortion_coefficients=self.rational_distortion_coefficients.value,
-                use_tangential_distortion=self.use_tangential_distortion.value,
-                enable_prism_model=self.enable_prism_model.value,
-                fix_principal_point=self.fix_principal_point.value,
-                fix_aspect_ratio=self.fix_aspect_ratio.value,
-            )
+        camera_model = CameraModel()
         camera_model.calibrate(
             height=height,
             width=width,
@@ -70,6 +66,7 @@ class OpenCVCalibrator(Calibrator):
                 detection.get_flattened_object_points() for detection in detections
             ],
             image_points_list=[detection.get_flattened_image_points() for detection in detections],
+            flags=flags,
         )
 
         return camera_model

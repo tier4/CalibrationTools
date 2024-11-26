@@ -69,12 +69,6 @@ public:
   void setRationalDistortionCoefficients(int rational_distortion_coefficients);
 
   /*!
-   * Sets the regularization weight for the distortion coefficients
-   * @param[in] regularization_weight the regularization weight
-   */
-  void setRegularizationWeight(double regularization_weight);
-
-  /*!
    * Sets the verbose mode
    * @param[in] verbose whether or not to use tangential distortion
    */
@@ -132,7 +126,6 @@ protected:
   int radial_distortion_coefficients_;
   bool use_tangential_distortion_;
   int rational_distortion_coefficients_;
-  double regularization_weight_;
   bool verbose_;
   cv::Mat_<double> camera_matrix_;
   cv::Mat_<double> distortion_coeffs_;

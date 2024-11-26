@@ -27,7 +27,7 @@ from intrinsic_camera_calibrator.board_parameters.board_parameters_factory impor
     make_board_parameters,
 )
 from intrinsic_camera_calibrator.boards import BoardEnum
-from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_sources.data_source import DataSource
 from intrinsic_camera_calibrator.data_sources.data_source import DataSourceEnum
 from intrinsic_camera_calibrator.data_sources.data_source_factory import make_data_source

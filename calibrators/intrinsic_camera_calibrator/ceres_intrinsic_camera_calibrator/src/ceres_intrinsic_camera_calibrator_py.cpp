@@ -45,7 +45,7 @@ calibrate(
   const std::vector<Eigen::MatrixXd> & image_points_eigen_list,
   const Eigen::MatrixXd & initial_camera_matrix_eigen,
   const Eigen::MatrixXd & initial_dist_coeffs_eigen, int num_radial_coeffs, int num_rational_coeffs,
-  bool use_tangential_distortion, double regularization_weight, bool verbose)
+  bool use_tangential_distortion, bool verbose)
 {
   Eigen::Index num_dist_coeffs =
     initial_dist_coeffs_eigen.rows() * initial_dist_coeffs_eigen.cols();
@@ -54,7 +54,7 @@ calibrate(
     initial_camera_matrix_eigen.cols() != 3 || initial_camera_matrix_eigen.rows() != 3 ||
     object_points_eigen_list.size() != image_points_eigen_list.size() || num_radial_coeffs < 0 ||
     num_radial_coeffs > 3 || num_rational_coeffs < 0 || num_rational_coeffs > 3 ||
-    num_dist_coeffs != expected_dist_coeffs || regularization_weight < 0.0) {
+    num_dist_coeffs != expected_dist_coeffs) {
     std::cout << "Invalid parameters" << std::endl;
     std::cout << "\t object_points_list.size(): " << object_points_eigen_list.size() << std::endl;
     std::cout << "\t image_points_list.size(): " << image_points_eigen_list.size() << std::endl;
@@ -63,7 +63,6 @@ calibrate(
     std::cout << "\t num_radial_coeffs: " << num_radial_coeffs << std::endl;
     std::cout << "\t num_rational_coeffs: " << num_rational_coeffs << std::endl;
     std::cout << "\t use_tangential_distortion: " << use_tangential_distortion << std::endl;
-    std::cout << "\t regularization_weight: " << regularization_weight << std::endl;
     return std::tuple<
       double, Eigen::MatrixXd, Eigen::MatrixXd, std::vector<Eigen::Vector3d>,
       std::vector<Eigen::Vector3d>>();
@@ -122,7 +121,6 @@ calibrate(
   optimizer.setRadialDistortionCoefficients(num_radial_coeffs);
   optimizer.setTangentialDistortion(use_tangential_distortion);
   optimizer.setRationalDistortionCoefficients(num_rational_coeffs);
-  optimizer.setRegularizationWeight(regularization_weight);
   optimizer.setVerbose(verbose);
   optimizer.setData(
     initial_camera_matrix_cv, initial_dist_coeffs_cv, object_points_list_cv, image_points_list_cv,
@@ -183,7 +181,6 @@ PYBIND11_MODULE(ceres_intrinsic_camera_calibrator_py, m)
             num_radial_coeffs (int): The number of radial distortion coefficients used during calibration
             num_rational_coeffs (int): The number of rational distortion coefficients used during calibration
             use_tangential_distortion (bool): Whether we should use tangential distortion during calibration
-            regularization_weight (double): The regularization weight for distortion coefficients
             verbose (bool): Whether we should print debug information
 
         Returns:
@@ -191,8 +188,7 @@ PYBIND11_MODULE(ceres_intrinsic_camera_calibrator_py, m)
       )pbdoc",
     py::arg("object_points_list"), py::arg("image_points_list"), py::arg("initial_camera_matrix"),
     py::arg("initial_dist_coeffs"), py::arg("num_radial_coeffs"), py::arg("num_rational_coeffs"),
-    py::arg("use_tangential_distortion"), py::arg("regularization_weight"),
-    py::arg("verbose") = false);
+    py::arg("use_tangential_distortion"), py::arg("verbose") = false);
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

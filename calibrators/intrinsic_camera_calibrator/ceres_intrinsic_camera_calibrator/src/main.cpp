@@ -30,11 +30,11 @@
 
 int main(int argc, char ** argv)
 {
-  if (argc != 6) {
-    std::cout << "Usage: " << argv[0]
-              << " <data_path> <num_radial_coeffs> <use_tangential_distortion> "
-                 "<num_rational_coeffs> <regularization_weight>"
-              << std::endl;
+  if (argc != 5) {
+    std::cout
+      << "Usage: " << argv[0]
+      << " <data_path> <num_radial_coeffs> <use_tangential_distortion> <num_rational_coeffs>"
+      << std::endl;
     return 1;
   }
 
@@ -46,7 +46,6 @@ int main(int argc, char ** argv)
   int num_radial_distortion_coeffs = atoi(argv[2]);
   bool use_tangent_distortion = atoi(argv[3]);
   int num_rational_distortion_coeffs = atoi(argv[4]);
-  double regularization_weight = atof(argv[5]);
 
   // Placeholders
   std::vector<std::vector<cv::Point3f>> all_object_points;
@@ -249,7 +248,6 @@ int main(int argc, char ** argv)
   optimizer.setRadialDistortionCoefficients(num_radial_distortion_coeffs);
   optimizer.setTangentialDistortion(use_tangent_distortion);
   optimizer.setRationalDistortionCoefficients(num_rational_distortion_coeffs);
-  optimizer.setRegularizationWeight(regularization_weight);
   optimizer.setVerbose(true);
   optimizer.setData(
     mini_opencv_camera_matrix, mini_opencv_dist_coeffs, calibration_object_points,
