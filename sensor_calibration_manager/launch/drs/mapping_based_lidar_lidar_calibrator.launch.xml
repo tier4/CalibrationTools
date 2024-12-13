@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="base_frame" default="base_link"/>
+  <arg name="base_frame" default="drs_base_link"/>
   <arg name="lost_frame_max_acceleration" default="10.0"/>
   <arg name="calibration_skip_keyframes" default="7"/>
   <arg name="mapping_registrator" default="ndt" description="ndt or gicp"/>
@@ -11,6 +11,13 @@
   <arg name="calibration_min_distance_between_frames" default="4.0" description="Min separation between calibration clouds to avoid correlation"/>
   <arg name="dense_pointcloud_num_keyframes" default="30" description="Used to compensate the different field of views"/>
   <arg name="lidar_calibration_max_frames" default="3" description="Number of pointclouds used for calibration"/>
+
+  <arg name="imu_to_front_x" default="0.3334" description="x translation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_y" default="0.0" description="y translation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_z" default="-0.0702" description="z translation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_roll" default="0.000" description="roll rotation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_pitch" default="0.000" description="pitch rotation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_yaw" default="-1.5708" description="yaw rotation value from IMU origin to front LiDAR origin"/>
 
   <let name="calibration_camera_optical_link_frames" value="['']"/>
 
@@ -73,7 +80,7 @@
     pkg="tf2_ros"
     exec="static_transform_publisher"
     name="extrinsic_publisher"
-    args="--frame-id drs_base_link --child-frame-id lidar_front --x 0.3334 --y 0.0 --z -0.0702 --yaw -1.5708 --pitch 0.000, --roll 0.000"
+    args="--frame-id drs_base_link --child-frame-id lidar_front --x $(var imu_to_front_x) --y $(var imu_to_front_y) --z $(var imu_to_front_z) --yaw $(var imu_to_front_yaw) --pitch $(var imu_to_front_pitch), --roll $(var imu_to_front_roll)"
   />
   <node
     pkg="tf2_ros"
