@@ -21,7 +21,7 @@ from typing import Tuple
 
 from PySide2.QtCore import Signal
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
-from intrinsic_camera_calibrator.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
 from intrinsic_camera_calibrator.parameter import Parameter
 from intrinsic_camera_calibrator.parameter import ParameterizedClass
 from intrinsic_camera_calibrator.types import CollectionStatus
@@ -221,10 +221,10 @@ class DataCollector(ParameterizedClass):
             bool, value=True, min_value=False, max_value=True
         )
         self.max_allowed_max_reprojection_error = Parameter(
-            float, value=0.5, min_value=0.0, max_value=2.0
+            float, value=2.0, min_value=0.0, max_value=2.0
         )
         self.max_allowed_rms_reprojection_error = Parameter(
-            float, value=0.3, min_value=0.0, max_value=2.0
+            float, value=0.5, min_value=0.0, max_value=2.0
         )
 
         # New samples are required to be "different" from the ones already in the dataset
@@ -242,7 +242,7 @@ class DataCollector(ParameterizedClass):
 
         # Other criteria for new samples is using 3d statistics
         # They have the advantage of considering the different out-of-plane rotations instead of a single scalar (e.g., differentiation of left and right rotations)
-        self.filter_by_3d_redundancy = Parameter(bool, value=True, min_value=False, max_value=True)
+        self.filter_by_3d_redundancy = Parameter(bool, value=False, min_value=False, max_value=True)
         self.min_3d_center_difference = Parameter(float, value=1.0, min_value=0.1, max_value=100.0)
         self.min_tilt_difference = Parameter(float, value=15.0, min_value=0.0, max_value=90)
 
@@ -263,6 +263,7 @@ class DataCollector(ParameterizedClass):
 
         self.training_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
         self.evaluation_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
+        self.linearity_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
         self.training_occupancy_rate = 0.0
         self.evaluation_occupancy_rate = 0.0
 
@@ -362,6 +363,10 @@ class DataCollector(ParameterizedClass):
         """Return the training heatmap, which defines the parts of the pixel space that have image points in it."""
         return self.training_heatmap
 
+    def get_linearity_heatmap(self) -> np.array:
+        """Return the linearity map to evaluate the image rectification."""
+        return self.linearity_heatmap
+
     def get_evaluation_occupancy_heatmap(self) -> np.array:
         """Return the evaluation heatmap, which defines the parts of the pixel space that have image points in it."""
         return self.evaluation_heatmap
@@ -399,6 +404,53 @@ class DataCollector(ParameterizedClass):
 
         occupied = float(np.count_nonzero(heatmap > 0)) / np.prod(heatmap.shape)
         return occupied
+
+    def update_linearity_heatmap(self, heatmap: np.array, detection: BoardDetection) -> float:
+        """Update a heatmap with a single detection's image points."""
+
+        def squared_error(p, p1, p2):
+            p = p - p1
+            p2 = p2 - p1
+            p2 /= np.linalg.norm(p2)
+            squared_distance = np.abs(np.power(np.linalg.norm(p), 2) - np.power(np.dot(p, p2), 2))
+            return squared_distance
+
+        image_points = detection.get_ordered_image_points()
+        max_pct_error_tolerance = 0.04
+
+        for j in range(detection.rows):
+            p1 = image_points[j][0]
+            p2 = image_points[j][-1]
+            points_dist = np.linalg.norm(p2 - p1)
+            for i in range(1, detection.cols - 1):
+                p = image_points[j][i]
+                dist_error = np.sqrt(squared_error(p, p1, p2))
+                if dist_error / points_dist > max_pct_error_tolerance:
+                    # if distance is too big most likely is a miss detection
+                    dist_error = 0
+                x = int(heatmap.shape[1] * p[0] / detection.width)
+                y = int(heatmap.shape[0] * p[1] / detection.height)
+                if heatmap[y, x] < dist_error:
+                    heatmap[y, x] = 1 * dist_error
+
+        for j in range(detection.cols):
+            p1 = image_points[0][j]
+            p2 = image_points[-1][j]
+            points_dist = np.linalg.norm(p2 - p1)
+            for i in range(1, detection.rows - 1):
+                p = image_points[i][j]
+                dist_error = np.sqrt(squared_error(p, p1, p2))
+                if dist_error / points_dist > max_pct_error_tolerance:
+                    # if distance is too big most likely is a miss detection
+                    dist_error = 0
+                x = int(heatmap.shape[1] * p[0] / detection.width)
+                y = int(heatmap.shape[0] * p[1] / detection.height)
+                if heatmap[y, x] < dist_error:
+                    heatmap[y, x] = 1 * dist_error
+
+    def restart_linearity_heatmap(self):
+        """Restart heatmap created by aspect ratio."""
+        self.linearity_heatmap = np.zeros((self.heatmap_cells.value, self.heatmap_cells.value))
 
     def evaluate_redundancy(
         self,
@@ -457,20 +509,23 @@ class DataCollector(ParameterizedClass):
         self,
         image: np.array,
         detection: BoardDetection,
-        camera_model: Optional[CameraModel] = None,
+        camera_model: CameraModel,
         mode: OperationMode = OperationMode.CALIBRATION,
     ) -> CollectionStatus:
         """Evaluate if a detection should be added to either the training or evaluation dataset."""
         accepted = True
 
+        # process detections without filtering, only to get linearity heatmap
+        self.update_linearity_heatmap(self.linearity_heatmap, detection)
+
         if self.filter_by_speed.value:
             speed = 0 if self.last_detection is None else detection.get_speed(self.last_detection)
             self.last_detection = detection
 
-            accepted &= speed < self.max_allowed_speed
+            accepted &= speed < self.max_allowed_pixel_speed.value
 
         if self.filter_by_reprojection_error:
-            reprojection_errors = detection.get_reprojection_errors()
+            reprojection_errors = detection.get_reprojection_errors(camera_model)
             reprojection_errors_norm = np.linalg.norm(reprojection_errors, axis=-1)
 
             reprojection_error_max = reprojection_errors_norm.max()
@@ -530,3 +585,62 @@ class DataCollector(ParameterizedClass):
             return CollectionStatus.ACCEPTED
 
         return CollectionStatus.REDUNDANT
+
+    def process_detection_eval_mode(
+        self,
+        image: np.array,
+        detection: BoardDetection,
+        camera_model: Optional[CameraModel] = None,
+        mode: OperationMode = OperationMode.CALIBRATION,
+    ) -> CollectionStatus:
+        """Evaluate detections mad ein evaluation mode."""
+        # process witout filtering detections
+        self.update_linearity_heatmap(self.linearity_heatmap, detection)
+
+    def get_skew_coverage(self):
+        """Get skew percentage covered from a defined range for the indicators."""
+        # Define the number of intervals
+        num_intervals = 50
+        interval_size = 1 / num_intervals
+        # Create a unique set to store covered intervals
+        covered_intervals = set()
+        # range in radians ToDo: define the range
+        skew_range = np.array([0, 1.04])
+
+        for detection in self.training_data.get_detections():
+            if skew_range[0] <= detection.get_normalized_skew() < skew_range[1]:
+                interval_index = int(detection.get_normalized_skew() / interval_size)
+                covered_intervals.add(interval_index)
+
+        # Calculate the percentage of covered intervals
+        percentage_coverage = len(covered_intervals) / num_intervals  # * 100
+
+        return percentage_coverage
+
+    def get_skew_percentage(self):
+        """Get skew precentage with more useful name ToDo Refactor."""
+        return self.get_skew_coverage()
+
+    def get_size_coverage(self):
+        """Get board size percentage covered from a defined range for the indicators."""
+        # Define the number of intervals
+        num_intervals = 20
+        interval_size = 1 / num_intervals
+        # Create a set to store covered intervals
+        covered_intervals = set()
+        # range for board size ToDo: define the range
+        size_range = np.array([0.08, 0.21])
+
+        for detection in self.training_data.get_detections():
+            if size_range[0] <= detection.get_normalized_size() < size_range[1]:
+                interval_index = int(detection.get_normalized_size() / interval_size)
+                covered_intervals.add(interval_index)
+
+        # Calculate the percentage of covered intervals
+        percentage_coverage = len(covered_intervals) / num_intervals  # * 100
+
+        return percentage_coverage
+
+    def get_size_percentage(self):
+        """Get size precentage with more useful name ToDo Refactor."""
+        return self.get_size_coverage()

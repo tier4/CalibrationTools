@@ -1,0 +1,59 @@
+# yamllint disable-line rule:truthy
+board_type: chess_board
+board_parameters:
+  cols: 8
+  rows: 6
+  cell_size: 0.1
+
+calibration_parameters:
+  use_ransac_pre_rejection: true # yamllint disable-line rule:truthy
+  pre_rejection_iterations: 100
+  pre_rejection_min_hypotheses: 6
+  pre_rejection_max_rms_error: 0.35
+  max_calibration_samples: 80
+  max_fast_calibration_samples: 20
+  use_entropy_maximization_subsampling: true # yamllint disable-line rule:truthy
+  subsampling_pixel_cells: 16
+  subsampling_tilt_resolution: 15.0
+  subsampling_max_tilt_deg: 45.0
+  use_post_rejection: true # yamllint disable-line rule:truthy
+  post_rejection_max_rms_error: 0.35
+  plot_calibration_data_statistics: true # yamllint disable-line rule:truthy
+  plot_calibration_results_statistics: true # yamllint disable-line rule:truthy
+  viz_pixel_cells: 16
+  viz_tilt_resolution: 15.0
+  viz_max_tilt_deg: 45.0
+  viz_z_cells: 12
+  radial_distortion_coefficients: 5
+
+calibrator_type: opencv
+
+data_collector:
+  max_samples: 500
+  decorrelate_eval_samples: 5 # cspell:disable-line
+  max_allowed_tilt: 45.0
+  filter_by_speed: true # yamllint disable-line rule:truthy
+  max_allowed_pixel_speed: 10.0
+  max_allowed_speed: 0.1
+  filter_by_reprojection_error: true # yamllint disable-line rule:truthy
+  max_allowed_max_reprojection_error: 0.5
+  max_allowed_rms_reprojection_error: 0.3
+  filter_by_2d_redundancy: true # yamllint disable-line rule:truthy
+  min_normalized_2d_center_difference: 0.05
+  min_normalized_skew_difference: 0.05
+  min_normalized_2d_size_difference: 0.05
+  filter_by_3d_redundancy: true # yamllint disable-line rule:truthy
+  min_3d_center_difference: 1.0
+  min_tilt_difference: 15.0
+  heatmap_cells: 16
+  rotation_heatmap_angle_res: 10
+  point_2d_hist_bins: 20
+  point_3d_hist_bins: 20
+
+chess_board_detector:
+  adaptive_thresh: false
+  normalize_image: false
+  fast_check: false
+  resized_detection: false 
+  resized_max_resolution: 1000
+  sub_pixel_refinement: true

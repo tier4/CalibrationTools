@@ -23,6 +23,10 @@
 
 #include <image_geometry/pinhole_camera_model.h>
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 namespace tier4_tag_utils
 {
 

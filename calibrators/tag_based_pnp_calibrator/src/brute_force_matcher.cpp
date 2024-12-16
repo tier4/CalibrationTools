@@ -22,6 +22,9 @@
 #include <pcl/registration/sample_consensus_prerejective.h>
 #include <pcl/segmentation/sac_segmentation.h>
 
+#include <unordered_map>
+#include <vector>
+
 bool bruteForceMatcher(
   PointCloudT::Ptr & source, PointCloudT::Ptr & target, double thresh,
   std::vector<int> & source_indexes, std::vector<int> & target_indexes, bool debug)

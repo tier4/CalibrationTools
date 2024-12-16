@@ -17,15 +17,16 @@
 
 #include <pcl/common/pca.h>
 
-#define UNUSED(x) (void)x;
+#include <string>
+#include <utility>
+#include <vector>
 
 void BestFramesFilter::setName(const std::string & name) { name_ = name + " (BestFramesFilter)"; }
 
 std::vector<CalibrationFrame> BestFramesFilter::filter(
-  const std::vector<CalibrationFrame> & input_calibration_frames, MappingData::Ptr & mapping_data)
+  const std::vector<CalibrationFrame> & input_calibration_frames,
+  [[maybe_unused]] MappingData::Ptr & mapping_data)
 {
-  UNUSED(mapping_data);
-
   int max_keyframe = -1;
   int use_last_frames_only_min_frame = -1;
 

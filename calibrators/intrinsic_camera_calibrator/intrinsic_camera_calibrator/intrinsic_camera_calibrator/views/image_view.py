@@ -23,6 +23,7 @@ from PySide2.QtCore import QSize
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QBrush
 from PySide2.QtGui import QColor
+from PySide2.QtGui import QFont
 from PySide2.QtGui import QImage
 from PySide2.QtGui import QPainter
 from PySide2.QtGui import QPen
@@ -174,6 +175,10 @@ class ImageView(QGraphicsItem, QObject):
         """Set the flag of wether or not to draw the occupancy heatmap of the evaluation dataset."""
         self.is_draw_evaluation_heatmap = value
 
+    def set_draw_linearity_heatmap(self, value: bool):
+        """Set the flag of wether or not to draw the linearity heatmap."""
+        self.is_draw_linearity_heatmap = value
+
     def set_detection_ordered_points(self, points_list: List[np.array]):
         """Set the detection points to draw. The points are expected to be in a list of rows, where each row is rendered in a different color."""
         self.points_list = points_list
@@ -194,6 +199,10 @@ class ImageView(QGraphicsItem, QObject):
         """Set the occupancy heatmap to draw from the evaluation dataset."""
         self.evaluation_heatmap = value
 
+    def set_linearity_heatmap(self, value: np.array):
+        """Set the linearity heatmap to draw."""
+        self.linearity_heatmap = value
+
     def set_grid_size_pixels(self, cell_size_pixels):
         """Set the size in which to draw the detection's corners."""
         self.cell_size_pixels = cell_size_pixels
@@ -201,6 +210,162 @@ class ImageView(QGraphicsItem, QObject):
     def set_rendering_alpha(self, value: float):
         """Set the alpha channel of the drawings."""
         self.rendering_alpha = value
+
+    def set_draw_indicators(
+        self,
+        board_speed: float,
+        max_allowed_board_speed: float,
+        skew_percentage: float,
+        board_size_percentage: float,
+        rows_linear_error: float,
+        cols_linear_error: float,
+        pct_err_rows: float,
+        pct_err_cols: float,
+        aspect_ratio: float,
+        pan: float,
+        tilt: float,
+        alpha_indicators: float,
+        value: bool,
+    ):
+        """Set values for indicators."""
+        self.current_board_speed = board_speed
+        self.max_board_allowed_speed = max_allowed_board_speed
+        self.skew_percentage = skew_percentage
+        self.board_size_percentage = board_size_percentage
+        self.rows_linear_error = rows_linear_error
+        self.cols_linear_error = cols_linear_error
+        self.pct_err_rows = pct_err_rows
+        self.pct_err_cols = pct_err_cols
+        self.aspect_ratio = aspect_ratio
+        self.pan = pan
+        self.tilt = tilt
+        self.alpha_indicators = alpha_indicators
+        self.is_draw_indicators = value
+
+    def draw_indicators(self, painter: QPainter, display_size):
+        """Draw indicators for speed, skew, size aspect ratio, angles of the detected board."""
+        color_green = QColor(0.0, 255, 0.0, int(255 * self.alpha_indicators))
+        color_red = QColor(255, 0.0, 0.0, int(255 * self.alpha_indicators))
+        # Change color according tot he speed
+        if self.current_board_speed < self.max_board_allowed_speed:
+            pen = QPen(color_green)
+            brush = QBrush(color_green)
+        else:
+            pen = QPen(color_red)
+            brush = QBrush(color_red)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        speed_indicator = QRectF(
+            QPointF(0, 0), QSize(display_size.width(), int(display_size.height() * 0.04))
+        )
+        # Draw the rectangle for speed indication
+        painter.drawRect(speed_indicator)
+
+        # Set the font according to the window size
+        font_size = max(10, display_size.height() / 40)
+        font = QFont("Arial", font_size)
+        painter.setFont(font)
+        position_text_speed = QPointF(
+            int(display_size.width() * 0.01), int(display_size.height() * 0.10)
+        )
+        painter.drawText(position_text_speed, "Speed")
+
+        # ToDo: define percentage to change skew and pct size to change to green
+        threshold_to_be_green = 0.3
+        if self.skew_percentage < threshold_to_be_green:
+            pen_skew = QPen(color_red)
+            brush_skew = QBrush(color_red)
+        else:
+            pen_skew = QPen(color_green)
+            brush_skew = QBrush(color_green)
+        painter.setPen(pen_skew)
+        painter.setBrush(brush_skew)
+
+        # Draw Skew text
+        position_text_skew = QPointF(
+            int(display_size.width() * 0.01), int(display_size.height() * 0.88)
+        )
+        painter.drawText(position_text_skew, "Skew " + str(int(self.skew_percentage * 100)) + "%")
+
+        skew_indicator = QRectF(
+            QPointF(int(display_size.width() * 0.12), int(display_size.height() * 0.85)),
+            QSize(
+                display_size.width() * 0.08 * self.skew_percentage,
+                int(display_size.height() * 0.03),
+            ),
+        )
+        # Draw the skew progress bar
+        painter.drawRect(skew_indicator)
+
+        # ToDo: define percentage to change skew and pct size to change to green
+        threshold_to_be_green = 0.2
+        if self.board_size_percentage < threshold_to_be_green:
+            pen_size_board = QPen(color_red)
+            brush_size_board = QBrush(color_red)
+        else:
+            pen_size_board = QPen(color_green)
+            brush_size_board = QBrush(color_green)
+
+        painter.setPen(pen_size_board)
+        painter.setBrush(brush_size_board)
+
+        # Draw board size text
+        position_text_size = QPointF(
+            int(display_size.width() * 0.01), int(display_size.height() * 0.93)
+        )
+        painter.drawText(
+            position_text_size, "Size " + str(int(self.board_size_percentage * 100)) + "%"
+        )
+        board_size_indicator = QRectF(
+            QPointF(int(display_size.width() * 0.12), int(display_size.height() * 0.90)),
+            QSize(
+                display_size.width() * 0.08 * self.board_size_percentage,
+                int(display_size.height() * 0.03),
+            ),
+        )
+        # Draw the board size progress bar
+        painter.drawRect(board_size_indicator)
+
+        # Draw board pan tilt angle text
+        deg_sign = "\N{DEGREE SIGN}"
+        position_text_pan = QPointF(
+            int(display_size.width() * 0.01), int(display_size.height() * 0.98)
+        )
+        painter.drawText(
+            position_text_pan,
+            "Pan " + str(int(self.pan)) + deg_sign + " Tilt " + str(int(self.tilt)) + deg_sign,
+        )
+
+        # Draw Linear errors text
+        position_text_err_rows = QPointF(
+            int(display_size.width() * 0.80), int(display_size.height() * 0.88)
+        )
+        painter.drawText(
+            position_text_err_rows,
+            "ErrRows "
+            + str(round(self.rows_linear_error, 1))
+            + "px "
+            + str(round(self.pct_err_rows * 100, 1))
+            + "%",
+        )
+
+        position_text_err_cols = QPointF(
+            int(display_size.width() * 0.80), int(display_size.height() * 0.93)
+        )
+        painter.drawText(
+            position_text_err_cols,
+            "ErrCols "
+            + str(round(self.cols_linear_error, 1))
+            + "px "
+            + str(round(self.pct_err_cols * 100, 1))
+            + "%",
+        )
+
+        # Draw the aspect ratio text indicator
+        position_text_aspect_ratio = QPointF(
+            int(display_size.width() * 0.80), int(display_size.height() * 0.98)
+        )
+        painter.drawText(position_text_aspect_ratio, "AspectR " + str(round(self.aspect_ratio, 2)))
 
     def pixmap(self) -> QPixmap:
         """Return the rendering QPixmap."""
@@ -292,7 +457,8 @@ class ImageView(QGraphicsItem, QObject):
         pen = QPen(QColor(255, 0.0, 255, int(255 * self.rendering_alpha)))
         painter.setPen(pen)
 
-        points = points * self.image_to_view_factor
+        if points.size > 0:
+            points = points * self.image_to_view_factor
         size = 3
         rect_list = [
             QRectF(point[0] - 0.5 * size, point[1] - 0.5 * size, size, size) for point in points
@@ -439,6 +605,12 @@ class ImageView(QGraphicsItem, QObject):
 
         if self.is_draw_evaluation_heatmap and self.evaluation_heatmap is not None:
             self.draw_heatmap(painter, self.evaluation_heatmap, display_size)
+
+        if self.is_draw_linearity_heatmap and self.linearity_heatmap is not None:
+            self.draw_heatmap(painter, self.linearity_heatmap, display_size)
+
+        if self.is_draw_indicators and self.current_board_speed is not None:
+            self.draw_indicators(painter, display_size)
 
     def boundingRect(self):
         """Return the size of the Widget to let other widgets  adjust correctly."""

@@ -13,12 +13,12 @@
   <arg name="filter_estimations" default="true" description="Flag to enable filtering estimations"/>
 
   <arg name="use_crop_box_filter" default="true" description="Use an optional crop box filter to accelerate processing and ignore walls or other planes"/>
-  <arg name="crop_box_min_x" default="-50.0" description="Minimum x value of the crop box filter"/>
-  <arg name="crop_box_min_y" default="-50.0" description="Minimum y value of the crop box filter"/>
-  <arg name="crop_box_min_z" default="-50.0" description="Minimum z value of the crop box filter"/>
-  <arg name="crop_box_max_x" default="50.0" description="Maximum x value of the crop box filter"/>
-  <arg name="crop_box_max_y" default="50.0" description="Maximum y value of the crop box filter"/>
-  <arg name="crop_box_max_z" default="50.0" description="Maximum z value of the crop box filter"/>
+  <arg name="crop_box_min_x" default="-20.0" description="Minimum x value of the crop box filter"/>
+  <arg name="crop_box_min_y" default="-20.0" description="Minimum y value of the crop box filter"/>
+  <arg name="crop_box_min_z" default="-20.0" description="Minimum z value of the crop box filter"/>
+  <arg name="crop_box_max_x" default="20.0" description="Maximum x value of the crop box filter"/>
+  <arg name="crop_box_max_y" default="20.0" description="Maximum y value of the crop box filter"/>
+  <arg name="crop_box_max_z" default="20.0" description="Maximum z value of the crop box filter"/>
   <arg name="use_pca_rough_normal" default="false" description="Whether to use PCA or the initial calibration for normal plane estimation"/>
 
   <arg name="rviz" default="true" description="Launch rviz"/>

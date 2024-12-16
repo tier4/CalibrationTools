@@ -25,6 +25,10 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <memory>
+#include <tuple>
+#include <vector>
+
 BaseLidarCalibrator::BaseLidarCalibrator(
   CalibrationParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
   std::shared_ptr<tf2_ros::Buffer> & tf_buffer, tf2_ros::StaticTransformBroadcaster & broadcaster,

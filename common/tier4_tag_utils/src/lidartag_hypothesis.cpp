@@ -16,6 +16,9 @@
 #include <opencv2/core/eigen.hpp>
 #include <tier4_tag_utils/lidartag_hypothesis.hpp>
 
+#include <algorithm>
+#include <vector>
+
 namespace tier4_tag_utils
 {
 

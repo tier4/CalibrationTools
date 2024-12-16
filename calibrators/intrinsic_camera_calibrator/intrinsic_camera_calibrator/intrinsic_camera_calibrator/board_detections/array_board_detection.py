@@ -62,23 +62,55 @@ class ArrayBoardDetection(BoardDetection):
             p = p - p1
             p2 = p2 - p1
             p2 /= np.linalg.norm(p2)
-            return np.abs(np.power(np.linalg.norm(p), 2) - np.power(np.dot(p, p2), 2))
+            squared_distance = np.abs(np.power(np.linalg.norm(p), 2) - np.power(np.dot(p, p2), 2))
+            return squared_distance
 
-        if self._cached_linear_error_rms is not None:
-            return self._cached_linear_error_rms
+        if (
+            self._cached_linear_error_rows_rms is not None
+            and self._cached_linear_error_cols_rms is not None
+        ):
+            return self._cached_linear_error_rows_rms, self._cached_linear_error_cols_rms
 
-        error = 0
+        error_rows = 0
+        pct_err_rows = 0.0
 
         for j in range(self.rows):
             p1 = self.image_points[j, 0]
             p2 = self.image_points[j, -1]
+            points_dist = np.linalg.norm(p2 - p1)
 
             for i in range(1, self.cols - 1):
                 p = self.image_points[j, i]
-                error += squared_error(p, p1, p2)
+                sq_error = squared_error(p, p1, p2)
+                error_rows += sq_error
+                pct_err_rows += np.sqrt(sq_error) / points_dist
 
-        self._cached_linear_error_rms = np.sqrt(error / (self.rows * (self.cols - 2)))
-        return self._cached_linear_error_rms
+        self._cached_linear_error_rows_rms = np.sqrt(error_rows / (self.rows * (self.cols - 2)))
+        pct_err_rows = pct_err_rows / (self.rows * (self.cols - 2))
+
+        error_cols = 0
+        pct_err_cols = 0.0
+
+        for j in range(self.cols):
+            p1 = self.image_points[0, j]
+            p2 = self.image_points[-1, j]
+            points_dist = np.linalg.norm(p2 - p1)
+
+            for i in range(1, self.rows - 1):
+                p = self.image_points[i, j]
+                sq_error = squared_error(p, p1, p2)
+                error_cols += sq_error
+                pct_err_cols += np.sqrt(sq_error) / points_dist
+
+        self._cached_linear_error_cols_rms = np.sqrt(error_cols / (self.cols * (self.rows - 2)))
+        pct_err_cols = pct_err_cols / (self.cols * (self.rows - 2))
+
+        return (
+            self._cached_linear_error_rows_rms,
+            self._cached_linear_error_cols_rms,
+            pct_err_rows,
+            pct_err_cols,
+        )
 
     def get_flattened_cell_sizes(self):
         if self._cached_flattened_cell_sizes is not None:
@@ -96,3 +128,4 @@ class ArrayBoardDetection(BoardDetection):
 
         self._cached_flattened_cell_sizes = cell_sizes.flatten()
         return self._cached_flattened_cell_sizes
+

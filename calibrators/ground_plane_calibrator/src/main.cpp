@@ -15,6 +15,7 @@
 #include <ground_plane_calibrator/ground_plane_calibrator.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <memory>
 #include <thread>
 
 int main(int argc, char ** argv)

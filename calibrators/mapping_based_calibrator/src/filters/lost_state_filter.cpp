@@ -15,6 +15,10 @@
 #include <mapping_based_calibrator/filters/lost_state_filter.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <string>
+#include <unordered_set>
+#include <vector>
+
 void LostStateFilter::setName(const std::string & name) { name_ = name + " (LostStateFilter)"; }
 
 std::vector<CalibrationFrame> LostStateFilter::filter(

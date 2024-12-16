@@ -51,6 +51,8 @@ public:
     PointPublisher::SharedPtr & calibrated_source_aligned_map_pub,
     PointPublisher::SharedPtr & target_map_pub);
 
+  ~LidarCalibrator();
+
   /*!
    * Calibrate the sensor
    * @returns a tuple containing the calibration success status, the transform, and a score
@@ -63,14 +65,6 @@ public:
   void configureCalibrators() override;
 
 protected:
-  /*!
-   * Prepare calibrators for a specific pair of pointclouds
-   * @param[in] source_pointcloud_ptr Source pointcloud
-   * @param[in] target_pointcloud_ptr Target pointcloud
-   */
-  void setUpCalibrators(
-    PointcloudType::Ptr & source_pointcloud_ptr, PointcloudType::Ptr & target_pointcloud_ptr);
-
   // General methods
 
   /*!
@@ -107,6 +101,8 @@ protected:
 
   // Calibration
   std::vector<pcl::Registration<PointType, PointType>::Ptr> calibration_registrators_;
+  pcl::search::KdTree<PointType>::Ptr target_kdtree_;
+
   std::vector<pcl::JointIterativeClosestPointExtended<PointType, PointType>::Ptr>
     calibration_batch_registrators_;
   // cSpell:ignore pclomp

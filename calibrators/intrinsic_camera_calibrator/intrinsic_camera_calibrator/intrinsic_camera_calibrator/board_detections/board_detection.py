@@ -20,7 +20,7 @@ from typing import Optional
 from typing import Tuple
 
 import cv2
-from intrinsic_camera_calibrator.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
 import numpy as np
 
 
@@ -44,6 +44,8 @@ class BoardDetection:
         self._cached_normalized_skew = None
         self._cached_normalized_size = None
         self._cached_linear_error_rms = None
+        self._cached_linear_error_rows_rms = None
+        self._cached_linear_error_cols_rms = None
         self._cached_flattened_cell_sizes = None
         self._cached_center_2d = None
 
@@ -54,9 +56,8 @@ class BoardDetection:
         self._cached_pose = None
         self._cached_flattened_3d_points = None
 
-    def _precompute_single_shot_model(self):
+    def _precompute_single_shot_model(self, model: CameraModel):
         """Compute and caches a camera model calibrated with the current detection."""
-        model = CameraModel()
         model.calibrate(
             height=self.height,
             width=self.width,
@@ -65,10 +66,10 @@ class BoardDetection:
         )
         self._cached_camera_model = model
 
-    def _get_cached_model(self) -> CameraModel:
+    def _get_cached_model(self, model: CameraModel) -> CameraModel:
         """Return the single shot camera model and computes it is has not been pre-computed yet."""
         if self._cached_camera_model is None:
-            self._precompute_single_shot_model()
+            self._precompute_single_shot_model(model)
 
         return self._cached_camera_model
 
@@ -100,6 +101,11 @@ class BoardDetection:
         """Return RMS error product of the projection of the lines of each row of the detection into the line produced by the first and line point of each row."""
         raise NotImplementedError
 
+
+    def restart_linearity_heatmap(self):
+        """Restart linearity heatmap."""
+        raise NotImplementedError
+
     def get_center_2d(self) -> np.array:
         """Return the center of detection in the image."""
         if self._cached_center_2d is not None:
@@ -108,16 +114,12 @@ class BoardDetection:
         self._cached_center_2d = self.get_flattened_image_points().mean(axis=0)
         return self._cached_center_2d
 
-    def get_reprojection_errors(self, model: Optional[CameraModel] = None) -> np.array:
+    def get_reprojection_errors(self, model: CameraModel) -> np.array:
         """Return the error of projecting the object points into the image and comparing them with the detections."""
-        if model is None:
-            model = self._get_cached_model()
+        if self._cached_camera_model is None:
+            self._precompute_single_shot_model(model)
 
-        if (
-            self._cached_camera_model is not None
-            and model == self._cached_camera_model
-            and self._cached_reprojection_errors is not None
-        ):
+        if model == self._cached_camera_model and self._cached_reprojection_errors is not None:
             return self._cached_reprojection_errors
 
         self._cached_camera_model = model
@@ -125,16 +127,13 @@ class BoardDetection:
 
         return self._cached_reprojection_errors
 
-    def get_tilt(self, model: Optional[CameraModel] = None) -> float:
+    def get_tilt(self, model: CameraModel) -> float:
         """Return the angle difference between the detection and the camera. Specifically, the pose of the detection points considers +z pointing towards the camera and the camera itself uses +z pointing towards the scene."""
-        if model is None:
-            model = self._get_cached_model()
-
         if model == self._cached_camera_model and self._cached_tilt is not None:
             return self._cached_tilt
 
         # cSpell:enableCompoundWords
-        rvec, _ = self.get_pose()
+        rvec, _ = self.get_pose(model)
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
 
@@ -145,15 +144,12 @@ class BoardDetection:
 
         return self._cached_tilt
 
-    def get_rotation_angles(self, model: Optional[CameraModel] = None) -> Tuple[float, float]:
+    def get_rotation_angles(self, model: CameraModel) -> Tuple[float, float]:
         """Return the angle difference between the detection and the camera with respect to the x and y axes of the camera."""
-        if model is None:
-            model = self._get_cached_model()
-
         if model == self._cached_camera_model and self._cached_rotation_angles is not None:
             return self._cached_rotation_angles
 
-        rvec, _ = self.get_pose()
+        rvec, _ = self.get_pose(model)
         rotmat, _ = cv2.Rodrigues(rvec)
         rotmat[:2, :] *= -1
 
@@ -166,11 +162,8 @@ class BoardDetection:
 
         return self._cached_rotation_angles
 
-    def get_pose(self, model: Optional[CameraModel] = None) -> Tuple[np.array, np.array]:
+    def get_pose(self, model: CameraModel) -> Tuple[np.array, np.array]:
         """Return the pose of the detection in rodrigues tuple formulation. If a model is not provided, whe single-shot version is used, which produced only a rough estimation in most cases, and a complete incorrect one in some."""
-        if model is None:
-            model = self._get_cached_model()
-
         if model == self._cached_camera_model and self._cached_pose is not None:
             return self._cached_pose
 
@@ -179,13 +172,10 @@ class BoardDetection:
 
         return self._cached_pose
 
-    def get_flattened_3d_points(self, model: Optional[CameraModel] = None) -> np.array:
+    def get_flattened_3d_points(self, model: CameraModel) -> np.array:
         """Get the image points reprojected into camera coordinates in the 3d space as a (M, 3) array."""
-        if model is None:
-            model = self._get_cached_model()
-
         if model == self._cached_camera_model and self._cached_flattened_3d_points is not None:
-            return self._cached_pose
+            return self._cached_flattened_3d_points
 
         self._cached_camera_model = model
 
@@ -249,3 +239,27 @@ class BoardDetection:
         last_image_points = last.get_flattened_image_points()
 
         return np.linalg.norm(current_image_points - last_image_points, axis=-1).mean()
+    
+    def get_aspect_ratio_pattern(self, model: CameraModel) -> float:
+        """Get aspect ratio using the calibration pattern, which should be squared."""
+        tilt, pan = self.get_rotation_angles(model)
+        acceptance_angle = 10
+
+        # dont update if we the detection has big angles, calculation will not be accurate
+        if np.abs(tilt) > acceptance_angle or np.abs(pan) > acceptance_angle:
+            return 0.0
+        # Calculate distances between adjacent corners
+        aspect_ratio = 0
+        count = 0
+        for j in range(self.rows - 1):
+            for i in range(self.cols - 1):
+                p = self.image_points[j, i]
+                point_col = self.image_points[j + 1, i]
+                point_row = self.image_points[j, i + 1]
+                horizontal_distance = np.linalg.norm(p - point_row)
+                vertical_distance = np.linalg.norm(p - point_col)
+                aspect_ratio = aspect_ratio + (horizontal_distance / vertical_distance)
+                count += 1
+        aspect_ratio = aspect_ratio / ((self.rows - 1) * (self.cols - 1))
+
+        return aspect_ratio

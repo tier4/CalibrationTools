@@ -27,6 +27,11 @@
 #include <pcl/filters/frustum_culling.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
+
 CameraCalibrator::CameraCalibrator(
   const std::string & calibration_camera_optical_link_frame,
   CalibrationParameters::Ptr & parameters, MappingData::Ptr & mapping_data,

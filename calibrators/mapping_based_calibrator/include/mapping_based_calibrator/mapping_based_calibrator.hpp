@@ -91,6 +91,11 @@ protected:
   rcl_interfaces::msg::SetParametersResult paramCallback(
     const std::vector<rclcpp::Parameter> & parameters);
 
+  /*!
+   * Unsubscribe from all the topics to release associated resources
+   */
+  void unsubscribe();
+
   void loadDatabaseCallback(
     const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
     const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response);

@@ -14,8 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import os
+
 import cv2
-from intrinsic_camera_calibrator.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
 import numpy as np
 import ruamel.yaml
 import yaml
@@ -58,3 +61,24 @@ def load_intrinsics(file_path: str):
     camera_model.from_dict(data)
 
     return camera_model
+
+
+def toggle_flag(flags: int, flag: int, state: bool) -> int:
+    if state:
+        flags |= flag
+    else:
+        flags &= ~flag
+    return flags
+
+
+def set_logger_severity():
+    severity = os.getenv("GLOG_minloglevel")  # cSpell:ignore minloglevel
+    if severity is None:
+        return
+    mapping = {
+        "0": logging.INFO,
+        "1": logging.WARNING,
+        "2": logging.ERROR,
+        "3": logging.CRITICAL,
+    }
+    logging.basicConfig(level=mapping.get(severity, logging.INFO))

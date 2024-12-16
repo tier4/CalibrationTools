@@ -15,6 +15,8 @@
 #include <marker_radar_lidar_calibrator/marker_radar_lidar_calibrator.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <memory>
+
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);

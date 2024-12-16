@@ -22,7 +22,10 @@
 #include <pcl/filters/voxel_grid.h>
 #include <tf2_ros/buffer.h>
 
+#include <iostream>
 #include <limits>
+#include <string>
+#include <vector>
 
 template <typename PointcloudType>
 void transformPointcloud(
@@ -47,6 +50,7 @@ void transformPointcloud(
     pcl::transformPointCloud(*pc_ptr, *transformed_pc_ptr, transform);
 
     pc_ptr.swap(transformed_pc_ptr);
+    *transformed_pc_ptr = PointcloudType();
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN(rclcpp::get_logger("tf_buffer"), "could not get initial tf. %s", ex.what());
   }
@@ -151,7 +155,10 @@ float sourceTargetDistance(
   estimator.setInputSource(source_aligned);
   estimator.setInputTarget(target);
 
-  return sourceTargetDistance(estimator, max_corr_distance);
+  auto source_target_distance = sourceTargetDistance(estimator, max_corr_distance);
+  *source_aligned = pcl::PointCloud<PointType>();
+
+  return source_target_distance;
 }
 
 template <class PointType>
@@ -165,12 +172,12 @@ float sourceTargetDistance(
 
   assert(sources.size() == targets.size());
 
+  pcl::registration::CorrespondenceEstimation<PointType, PointType> estimator;
+
   for (std::size_t i = 0; i < sources.size(); i++) {
     typename pcl::PointCloud<PointType>::Ptr source_aligned(new
                                                             typename pcl::PointCloud<PointType>());
     transformPointCloud(*sources[i], *source_aligned, transform);
-
-    pcl::registration::CorrespondenceEstimation<PointType, PointType> estimator;
     estimator.setInputSource(source_aligned);
     estimator.setInputTarget(targets[i]);
 
@@ -197,6 +204,7 @@ void findBestTransform(
   best_transform = Eigen::Matrix4f::Identity();
   best_score = std::numeric_limits<float>::max();
   std::string best_name;
+  typename pcl::PointCloud<PointType> aligned_cloud;
 
   for (auto & registrator : registrators) {
     Eigen::Matrix4f best_registrator_transform = Eigen::Matrix4f::Identity();
@@ -207,8 +215,8 @@ void findBestTransform(
       auto & transform = transforms[i];
       auto & transform_name = transforms_names[i];
 
-      typename pcl::PointCloud<PointType>::Ptr aligned_cloud_ptr(new pcl::PointCloud<PointType>());
-      registrator->align(*aligned_cloud_ptr, transform);
+      aligned_cloud.clear();
+      registrator->align(aligned_cloud, transform);
 
       Eigen::Matrix4f candidate_transform = registrator->getFinalTransformation();
       float candidate_score =

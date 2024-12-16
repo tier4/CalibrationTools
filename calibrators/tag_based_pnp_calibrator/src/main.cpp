@@ -15,6 +15,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tag_based_pnp_calibrator/tag_based_pnp_calibrator.hpp>
 
+#include <memory>
 #include <thread>
 
 int main(int argc, char ** argv)

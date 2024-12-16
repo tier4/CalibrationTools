@@ -21,6 +21,11 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2/utils.h>
 
+#include <algorithm>
+#include <list>
+#include <memory>
+#include <string>
+
 CalibrationMapper::CalibrationMapper(
   MappingParameters::Ptr & parameters, MappingData::Ptr & mapping_data,
   PointPublisher::SharedPtr & map_pub,
@@ -456,7 +461,7 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
 
   if (
     std::abs(translation_angle_diff) > parameters_->lost_frame_max_angle_diff_ ||
-    std::abs(translation_angle_diff) > parameters_->lost_frame_max_angle_diff_) {
+    std::abs(rotation_angle_diff) > parameters_->lost_frame_max_angle_diff_) {
     keyframe->lost_ = true;
 
     RCLCPP_WARN(

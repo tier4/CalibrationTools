@@ -28,6 +28,9 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 #define UPDATE_PARAM(PARAM_STRUCT, NAME) update_param(p, #NAME, PARAM_STRUCT.NAME##_)
 
@@ -319,9 +322,11 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   auto base_lidar_augmented_pub =
     this->create_publisher<sensor_msgs::msg::PointCloud2>("ground_pointcloud", 10);
 
-  base_lidar_calibrator_ = std::make_shared<BaseLidarCalibrator>(
-    calibration_parameters_, mapping_data_, tf_buffer_, tf_broadcaster_,
-    base_lidar_augmented_pointcloud_pub, base_lidar_augmented_pub);
+  if (calibration_parameters_->calibrate_base_frame_) {
+    base_lidar_calibrator_ = std::make_shared<BaseLidarCalibrator>(
+      calibration_parameters_, mapping_data_, tf_buffer_, tf_broadcaster_,
+      base_lidar_augmented_pointcloud_pub, base_lidar_augmented_pub);
+  }
 
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -369,7 +374,9 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       this->create_subscription<sensor_msgs::msg::PointCloud2>(
         calibration_pointcloud_topic, rclcpp::SensorDataQoS().keep_all(),
         [&](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-          mapper_->calibrationPointCloudCallback(msg, calibration_frame_name);
+          if (mapper_) {
+            mapper_->calibrationPointCloudCallback(msg, calibration_frame_name);
+          }
         });
   }
 
@@ -393,6 +400,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     [&](
       [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Request> request,
       [[maybe_unused]] const std::shared_ptr<std_srvs::srv::Empty::Response> response) {
+      unsubscribe();
       mapper_->stop();
       RCLCPP_INFO_STREAM(this->get_logger(), "Mapper stopped through service");
     },
@@ -427,9 +435,17 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
   result.reason = "success";
 
   std::unique_lock<std::mutex> service_lock(service_mutex_);
+
+  if (!mapping_data_) {
+    RCLCPP_WARN(this->get_logger(), "Can not modify the parameters after finishing calibration");
+    result.successful = false;
+    result.reason = "Can not modify the parameters after finishing calibration";
+    return result;
+  }
+
   std::unique_lock<std::recursive_mutex> mapping_lock(mapping_data_->mutex_);
 
-  if (mapper_->getState() == CalibrationMapper::MAPPING || calibration_pending_) {
+  if ((mapper_ && mapper_->getState()) == CalibrationMapper::MAPPING || calibration_pending_) {
     RCLCPP_WARN(this->get_logger(), "Can not modify the parameters while mapping or calibrating");
     result.successful = false;
     result.reason = "Attempted to modify the parameters while mapping / calibrating";
@@ -507,6 +523,27 @@ rcl_interfaces::msg::SetParametersResult ExtrinsicMappingBasedCalibrator::paramC
   return result;
 }
 
+void ExtrinsicMappingBasedCalibrator::unsubscribe()
+{
+  for (std::size_t i = 0; i < mapping_data_->calibration_camera_optical_link_frame_names.size();
+       i++) {
+    const std::string & calibration_frame_name =
+      mapping_data_->calibration_camera_optical_link_frame_names[i];
+
+    calibration_camera_info_subs_[calibration_frame_name].reset();
+    calibration_image_subs_[calibration_frame_name].reset();
+  }
+
+  for (std::size_t i = 0; i < mapping_data_->calibration_lidar_frame_names_.size(); i++) {
+    const std::string & calibration_frame_name = mapping_data_->calibration_lidar_frame_names_[i];
+    calibration_pointcloud_subs_[calibration_frame_name].reset();
+  }
+
+  mapping_pointcloud_sub_.reset();
+  detected_objects_sub_.reset();
+  predicted_objects_sub_.reset();
+}
+
 void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
   [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
@@ -560,6 +597,8 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
       result.success = status;
       result.message.data = "Score corresponds to the source->target distance error";
       response->results.emplace_back(result);
+
+      lidar_calibrators_[calibration_frame_name].reset();
     });
   }
 
@@ -584,6 +623,8 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
       result.success = status;
       result.message.data = "Not implemented";
       response->results.emplace_back(result);
+
+      camera_calibrators_[calibration_frame_name].reset();
     });
   }
 
@@ -613,6 +654,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
       result.success = status;
       result.message.data = "Base calibration provides no score";
       response->results.emplace_back(result);
+      base_lidar_calibrator_.reset();
     });
   }
 
@@ -625,11 +667,21 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
 
   std::unique_lock<std::mutex> lock(service_mutex_);
   calibration_pending_ = false;
+
+  publisher_timer_.reset();
+  data_matching_timer_.reset();
+
+  mapper_.reset();
+  mapping_data_.reset();
 }
 
 void ExtrinsicMappingBasedCalibrator::detectedObjectsCallback(
   const autoware_perception_msgs::msg::DetectedObjects::SharedPtr objects)
 {
+  if (!mapper_ || mapper_->getState() != CalibrationMapper::MAPPING || calibration_pending_) {
+    RCLCPP_WARN_ONCE(this->get_logger(), "Received objects while not mapping. Ignoring...");
+  }
+
   // Convert objects into ObjectBB
   ObjectsBB new_objects;
   new_objects.header_ = objects->header;
@@ -655,6 +707,10 @@ void ExtrinsicMappingBasedCalibrator::detectedObjectsCallback(
 void ExtrinsicMappingBasedCalibrator::predictedObjectsCallback(
   const autoware_perception_msgs::msg::PredictedObjects::SharedPtr objects)
 {
+  if (!mapper_ || mapper_->getState() != CalibrationMapper::MAPPING || calibration_pending_) {
+    RCLCPP_WARN_ONCE(this->get_logger(), "Received objects while not mapping. Ignoring...");
+  }
+
   // Convert objects into ObjectBB
   ObjectsBB new_objects;
   new_objects.header_ = objects->header;
@@ -681,6 +737,13 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response)
 {
+  if (!mapper_) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Attempted to load a database when the mapper had already been released");
+    response->success = false;
+    return;
+  }
+
   // cSpell:ignore iarchive
   std::ifstream ifs(request->path);
   boost::archive::binary_iarchive ia(ifs);
@@ -719,6 +782,7 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
   ia >> mapping_data_->detected_objects_;
   RCLCPP_INFO(this->get_logger(), "Loaded %ld objects...", mapping_data_->detected_objects_.size());
 
+  unsubscribe();
   mapper_->stop();
 
   RCLCPP_INFO(this->get_logger(), "Finished");
@@ -730,6 +794,13 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
   const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
   const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response)
 {
+  if (!mapper_) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Attempted to save a database when the mapper had already been released");
+    response->success = false;
+    return;
+  }
+
   // cSpell:ignore oarchive
   std::ofstream ofs(request->path);
   boost::archive::binary_oarchive oa(ofs);
@@ -786,6 +857,7 @@ void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
   voxel_grid.filter(*map_subsampled_cloud_ptr);
   pcl::io::savePCDFileASCII("dense_map.pcd", *map_subsampled_cloud_ptr);
 
+  unsubscribe();
   mapper_->stop();
 
   RCLCPP_INFO(this->get_logger(), "Finished");

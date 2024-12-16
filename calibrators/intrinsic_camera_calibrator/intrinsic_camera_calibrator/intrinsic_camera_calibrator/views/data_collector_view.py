@@ -19,7 +19,7 @@ import multiprocessing as mp
 
 from PySide2.QtCore import QObject
 from PySide2.QtCore import Signal
-from intrinsic_camera_calibrator.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
 from intrinsic_camera_calibrator.data_collector import CollectedData
 from intrinsic_camera_calibrator.data_collector import DataCollector
 import matplotlib.pyplot as plt

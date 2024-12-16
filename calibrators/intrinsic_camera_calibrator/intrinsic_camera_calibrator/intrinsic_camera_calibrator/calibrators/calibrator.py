@@ -35,7 +35,9 @@ from intrinsic_camera_calibrator.calibrators.utils import (
 )
 from intrinsic_camera_calibrator.calibrators.utils import add_detection
 from intrinsic_camera_calibrator.calibrators.utils import get_entropy
-from intrinsic_camera_calibrator.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
+from intrinsic_camera_calibrator.camera_models.camera_model import CameraModelEnum
+from intrinsic_camera_calibrator.camera_models.camera_model_factory import make_camera_model
 from intrinsic_camera_calibrator.data_collector import DataCollector
 from intrinsic_camera_calibrator.parameter import Parameter
 from intrinsic_camera_calibrator.parameter import ParameterizedClass
@@ -86,7 +88,7 @@ class Calibrator(ParameterizedClass, QObject):
         self.pre_rejection_iterations = Parameter(int, value=100, min_value=1, max_value=100)
         self.pre_rejection_min_hypotheses = Parameter(int, value=6, min_value=1, max_value=20)
         self.pre_rejection_max_rms_error = Parameter(
-            float, value=0.35, min_value=0.001, max_value=10.0
+            float, value=0.5, min_value=0.001, max_value=10.0
         )
 
         self.max_calibration_samples = Parameter(int, value=80, min_value=10, max_value=1000)
@@ -101,7 +103,7 @@ class Calibrator(ParameterizedClass, QObject):
 
         self.use_post_rejection = Parameter(bool, value=True, min_value=False, max_value=True)
         self.post_rejection_max_rms_error = Parameter(
-            float, value=0.25, min_value=0.001, max_value=10.0
+            float, value=0.5, min_value=0.001, max_value=10.0
         )
 
         self.plot_calibration_data_statistics = Parameter(
@@ -121,6 +123,10 @@ class Calibrator(ParameterizedClass, QObject):
         self.calibration_request.connect(self._calibrate)
         self.evaluation_request.connect(self._evaluate)
         self.partial_calibration_request.connect(self._calibrate_fast)
+
+    def get_model_info(self) -> Tuple[Dict, CameraModelEnum]:
+        """Return the configuration of the camera model."""
+        raise NotImplementedError
 
     def _calibrate(self, data_collector: DataCollector):
         """
@@ -456,7 +462,10 @@ class Calibrator(ParameterizedClass, QObject):
                 detection.get_flattened_image_points() for detection in sampled_detections
             ]
 
-            model = CameraModel()
+            model_cfg, model_type = self.get_model_info()
+            model = make_camera_model(model_type)
+            model.update_config(**model_cfg)
+
             model.calibrate(
                 height=height,
                 width=width,
