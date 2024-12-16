@@ -54,6 +54,6 @@ chess_board_detector:
   adaptive_thresh: false
   normalize_image: false
   fast_check: false
-  resized_detection: false 
+  resized_detection: false
   resized_max_resolution: 1000
   sub_pixel_refinement: true

@@ -250,7 +250,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         def on_calibrator_clicked():
             self.current_calibrator_type = self.calibrator_type_combobox.currentData()
-       
+
         for calibrator_type in CalibratorEnum:
             self.calibrator_type_combobox.addItem(calibrator_type.value["display"], calibrator_type)
 
@@ -266,7 +266,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
         self.calibrator_type_combobox.currentIndexChanged.connect(on_calibrator_clicked)
         self.current_calibrator_type = self.calibrator_type_combobox.currentData()
-        
+
         solver_layout = QVBoxLayout()
         solver_layout.setAlignment(Qt.AlignTop)
         solver_layout.addWidget(self.calibrator_type_combobox)
@@ -615,7 +615,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         board_type: BoardEnum,
         board_parameters: ParameterizedClass,
         initial_intrinsics: CameraModel,
-        cfg : dict,
+        cfg: dict,
     ):
         self.operation_mode = mode
         self.data_source = data_source
@@ -647,7 +647,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             calibrator.partial_calibration_results_signal.connect(
                 self.process_partial_calibration_result
             )
-        
+
         # Qt logic
         self.should_process_image.connect(self.process_data)
         self.produced_data_signal.connect(self.process_new_data)
@@ -886,7 +886,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         calib_params = self.calibrator_dict[calibrator_type].get_parameters_values()
         with open(filename, "w") as file:
             yaml.dump({"board_parameters": board_params}, file, default_flow_style=False)
-            yaml.dump({"board_type" : self.board_type.value["name"]}, file, default_flow_style=False)
+            yaml.dump({"board_type": self.board_type.value["name"]}, file, default_flow_style=False)
             yaml.dump(
                 {"calibrator_type": calibrator_type.value["name"]}, file, default_flow_style=False
             )
@@ -949,7 +949,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
     def process_detection_results(self, img: np.array, detection: BoardDetection, img_stamp: float):
         """Process the results from an object detection."""
         # Signal that the detector is free
-        print("elapsedtime_Debug: ", time.time()- self.time_for_debug, flush=True)
+        print("elapsedtime_Debug: ", time.time() - self.time_for_debug, flush=True)
         self.consumed_data_signal.emit()
         self.time_for_debug = time.time()
 
@@ -997,7 +997,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 self.indicators_alpha_spinbox.value(),
                 False,
             )
-            self.skip_next_img = 3 # skips the next images if there are no detections
+            self.skip_next_img = 3  # skips the next images if there are no detections
 
         else:
             camera_model_cfg, camera_model_type = self.calibrator_dict[
@@ -1015,7 +1015,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                     mode=self.operation_mode,
                 )
                 # filter_result = CollectionStatus.REJECTED
-                print("dat_coll : ", time.time()-dat_coll_start, flush=True)
+                print("dat_coll : ", time.time() - dat_coll_start, flush=True)
             else:
                 filter_result = CollectionStatus.NOT_EVALUATED
 
@@ -1086,7 +1086,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 f"Linear error cols rms:  {err_rms_cols:.2f} px"  # noqa E231
             )
             self.aspect_ratio_label.setText(
-               f"Aspect Ratio:  {detection.get_aspect_ratio_pattern(camera_model):.2f} px"  # noqa E231
+                f"Aspect Ratio:  {detection.get_aspect_ratio_pattern(camera_model):.2f} px"  # noqa E231
             )
             self.rough_tilt_label.setText(
                 f"Rough tilt: {detection.get_tilt(camera_model):.2f} degrees"  # noqa E231
@@ -1203,10 +1203,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         detection_time = current_time - self.detection_request_time
 
         if self.operation_mode == OperationMode.CALIBRATION:
-            self.setWindowTitle(f"Camera intrinsics calibrator ({self.data_source.get_camera_name()}). Data delay={detection_delay: .2f} Detection time={detection_time: .2f} fps={self.estimated_fps: .2f} Data time={img_stamp: .2f}"
+            self.setWindowTitle(
+                f"Camera intrinsics calibrator ({self.data_source.get_camera_name()}). Data delay={detection_delay: .2f} Detection time={detection_time: .2f} fps={self.estimated_fps: .2f} Data time={img_stamp: .2f}"
             )
         if self.operation_mode == OperationMode.EVALUATION:
-            self.setWindowTitle(f"Camera intrinsics Evaluation Mode ({self.data_source.get_camera_name()}). Data delay={detection_delay: .2f} Detection time={detection_time: .2f} fps={self.estimated_fps: .2f} Data time={img_stamp: .2f}"
+            self.setWindowTitle(
+                f"Camera intrinsics Evaluation Mode ({self.data_source.get_camera_name()}). Data delay={detection_delay: .2f} Detection time={detection_time: .2f} fps={self.estimated_fps: .2f} Data time={img_stamp: .2f}"
             )
 
         self.image_view.update()

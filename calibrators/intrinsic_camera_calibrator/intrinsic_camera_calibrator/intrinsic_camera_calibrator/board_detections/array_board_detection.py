@@ -128,4 +128,3 @@ class ArrayBoardDetection(BoardDetection):
 
         self._cached_flattened_cell_sizes = cell_sizes.flatten()
         return self._cached_flattened_cell_sizes
-

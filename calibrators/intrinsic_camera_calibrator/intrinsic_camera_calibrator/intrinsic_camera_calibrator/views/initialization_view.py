@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import yaml
 from collections import defaultdict
+import logging
+import os
+
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QFileDialog
@@ -25,6 +26,7 @@ from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QRadioButton
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
+from ament_index_python.packages import get_package_share_directory
 from intrinsic_camera_calibrator.board_parameters.board_parameters_factory import (
     make_board_parameters,
 )
@@ -39,8 +41,7 @@ from intrinsic_camera_calibrator.views.image_files_view import ImageFilesView
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 from intrinsic_camera_calibrator.views.ros_bag_view import RosBagView
 from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
-from ament_index_python.packages import get_package_share_directory
-import os
+import yaml
 
 
 class InitializationView(QWidget):
@@ -65,9 +66,9 @@ class InitializationView(QWidget):
         }
 
         # Get the package share directory
-        package_share_dir = get_package_share_directory('intrinsic_camera_calibrator')
+        package_share_dir = get_package_share_directory("intrinsic_camera_calibrator")
         # Get the path to the config directory
-        config_dir = os.path.join(package_share_dir, 'config')
+        config_dir = os.path.join(package_share_dir, "config")
 
         self.layout = QVBoxLayout(self)
 
@@ -94,22 +95,19 @@ class InitializationView(QWidget):
         def on_params_combo_box_changed(index):
             if self.params_combobox.currentText() == "Load File":
                 file_name, _ = QFileDialog.getOpenFileName(
-                    self,
-                    "Open File",
-                    "",
-                    "All Files (*.*);;Text Files (*.yaml)"
+                    self, "Open File", "", "All Files (*.*);;Text Files (*.yaml)"
                 )
                 if file_name:
                     print(f"Selected file: {file_name}")
                     config_file_path = file_name
             elif self.params_combobox.currentText() == "C1":
-                config_file_path = os.path.join(config_dir, 'c1_intrinsics_calibrator.yaml')
+                config_file_path = os.path.join(config_dir, "c1_intrinsics_calibrator.yaml")
             elif self.params_combobox.currentText() == "C2":
-                config_file_path = os.path.join(config_dir, 'c2_intrinsics_calibrator.yaml')
+                config_file_path = os.path.join(config_dir, "c2_intrinsics_calibrator.yaml")
             elif self.params_combobox.currentText() == "Ceres Calib":
-                config_file_path = os.path.join(config_dir, 'intrinsics_calibrator_ceres.yaml')
+                config_file_path = os.path.join(config_dir, "intrinsics_calibrator_ceres.yaml")
             elif self.params_combobox.currentText() == "General":
-                config_file_path = os.path.join(config_dir, 'intrinsics_calibrator.yaml')
+                config_file_path = os.path.join(config_dir, "intrinsics_calibrator.yaml")
 
             if config_file_path:
                 cfg = {}
@@ -238,7 +236,7 @@ class InitializationView(QWidget):
                 board_type,
                 self.board_parameters_dict[board_type],
                 self.initial_intrinsics,
-                self.cfg
+                self.cfg,
             )
             self.close()
 

@@ -101,7 +101,6 @@ class BoardDetection:
         """Return RMS error product of the projection of the lines of each row of the detection into the line produced by the first and line point of each row."""
         raise NotImplementedError
 
-
     def restart_linearity_heatmap(self):
         """Restart linearity heatmap."""
         raise NotImplementedError
@@ -239,7 +238,7 @@ class BoardDetection:
         last_image_points = last.get_flattened_image_points()
 
         return np.linalg.norm(current_image_points - last_image_points, axis=-1).mean()
-    
+
     def get_aspect_ratio_pattern(self, model: CameraModel) -> float:
         """Get aspect ratio using the calibration pattern, which should be squared."""
         tilt, pan = self.get_rotation_angles(model)

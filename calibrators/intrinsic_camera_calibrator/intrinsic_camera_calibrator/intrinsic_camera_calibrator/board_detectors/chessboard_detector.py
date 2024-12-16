@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 import cv2
 from intrinsic_camera_calibrator.board_detections.chess_board_detection import ChessBoardDetection
 from intrinsic_camera_calibrator.board_detectors.board_detector import BoardDetector
 from intrinsic_camera_calibrator.parameter import Parameter
 from intrinsic_camera_calibrator.utils import to_grayscale
 import numpy as np
-import time
 
 
 class ChessBoardDetector(BoardDetector):
@@ -59,7 +60,7 @@ class ChessBoardDetector(BoardDetector):
             resized_detection = self.resized_detection.value
             resized_max_resolution = self.resized_max_resolution.value
 
-        def get_roi(corners, frame_shape, padding = 120):
+        def get_roi(corners, frame_shape, padding=120):
             x_min, y_min = np.min(corners, axis=0).ravel().astype(int) - padding
             x_max, y_max = np.max(corners, axis=0).ravel().astype(int) + padding
             x_min, y_min = max(0, x_min), max(0, y_min)
@@ -81,7 +82,7 @@ class ChessBoardDetector(BoardDetector):
                     self.detection_results_signal.emit(img, None, stamp)
                     return
             else:
-                roi_frame = grayscale[self.roi[1]:self.roi[3], self.roi[0]:self.roi[2]]
+                roi_frame = grayscale[self.roi[1] : self.roi[3], self.roi[0] : self.roi[2]]
                 (ok, corners) = cv2.findChessboardCorners(roi_frame, (cols, rows), flags=flags)
                 if ok:
                     corners += (self.roi[0], self.roi[1])
@@ -93,7 +94,9 @@ class ChessBoardDetector(BoardDetector):
                     return
 
             if self.roi:
-                cv2.rectangle(img, (self.roi[0], self.roi[1]), (self.roi[2], self.roi[3]), (0, 255, 0), 2)
+                cv2.rectangle(
+                    img, (self.roi[0], self.roi[1]), (self.roi[2], self.roi[3]), (0, 255, 0), 2
+                )
 
         else:
             # Find the resized dimensions
@@ -164,5 +167,5 @@ class ChessBoardDetector(BoardDetector):
             object_points=object_points,
             image_points=image_points,
         )
-        print("detect_fcn: ", time.time()-st_time, flush=True)
+        print("detect_fcn: ", time.time() - st_time, flush=True)
         self.detection_results_signal.emit(img, detection, stamp)
