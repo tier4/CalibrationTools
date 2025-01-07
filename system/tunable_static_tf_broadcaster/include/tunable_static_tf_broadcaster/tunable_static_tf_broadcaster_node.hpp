@@ -32,7 +32,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "tf2_ros/transform_broadcaster.h"
-#include "tier4_autoware_utils/geometry/geometry.hpp"
+#include "autoware/universe_utils/geometry/geometry.hpp"
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 
@@ -45,7 +45,7 @@ namespace tunable_static_tf_broadcaster
 using geometry_msgs::msg::TransformStamped;
 using rcl_interfaces::msg::SetParametersResult;
 using tf2_ros::TransformBroadcaster;
-using tier4_autoware_utils::createQuaternionFromRPY;
+using autoware::universe_utils::createQuaternionFromRPY;
 
 class TunableStaticTfBroadcasterNode : public rclcpp::Node
 {
