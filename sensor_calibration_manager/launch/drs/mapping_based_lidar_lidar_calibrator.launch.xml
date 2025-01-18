@@ -14,10 +14,10 @@
 
   <arg name="imu_to_front_x" default="0.3334" description="x translation value from IMU origin to front LiDAR origin"/>
   <arg name="imu_to_front_y" default="0.0" description="y translation value from IMU origin to front LiDAR origin"/>
-  <arg name="imu_to_front_z" default="-0.0702" description="z translation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_z" default="0.0702" description="z translation value from IMU origin to front LiDAR origin"/>
   <arg name="imu_to_front_roll" default="0.000" description="roll rotation value from IMU origin to front LiDAR origin"/>
   <arg name="imu_to_front_pitch" default="0.000" description="pitch rotation value from IMU origin to front LiDAR origin"/>
-  <arg name="imu_to_front_yaw" default="-1.5708" description="yaw rotation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_yaw" default="0.000" description="yaw rotation value from IMU origin to front LiDAR origin"/>
 
   <let name="calibration_camera_optical_link_frames" value="['']"/>
 
@@ -98,6 +98,6 @@
     pkg="tf2_ros"
     exec="static_transform_publisher"
     name="extrinsic_publisher"
-    args="--frame-id drs_base_link --child-frame-id lidar_rear --x -0.2994 --y 0.0 --z -0.0373 --yaw 3.14 --pitch 0.000, --roll 0.000"
+    args="--frame-id drs_base_link --child-frame-id lidar_rear --x -0.2994 --y 0.0 --z 0.0373 --yaw 3.14 --pitch 0.000, --roll 0.000"
   />
 </launch>
