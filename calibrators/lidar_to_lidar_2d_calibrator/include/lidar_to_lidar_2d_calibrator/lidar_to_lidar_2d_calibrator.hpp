@@ -16,7 +16,7 @@
 #define LIDAR_TO_LIDAR_2D_CALIBRATOR__LIDAR_TO_LIDAR_2D_CALIBRATOR_HPP_
 
 #include <Eigen/Dense>
-#include <autoware/kalman_filter/kalman_filter.hpp>
+#include <kalman_filter/kalman_filter.hpp>
 #include <pcl/kdtree/impl/kdtree_flann.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -47,7 +47,7 @@
 namespace lidar_to_lidar_2d_calibrator
 {
 
-using autoware::kalman_filter::KalmanFilter;
+// using autoware::kalman_filter::KalmanFilter;
 using PointType = pcl::PointXYZ;
 
 /**

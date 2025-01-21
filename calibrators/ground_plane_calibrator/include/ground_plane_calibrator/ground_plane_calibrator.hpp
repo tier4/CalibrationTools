@@ -16,7 +16,7 @@
 #define GROUND_PLANE_CALIBRATOR__GROUND_PLANE_CALIBRATOR_HPP_
 
 #include <Eigen/Dense>
-#include <autoware/kalman_filter/kalman_filter.hpp>
+#include <kalman_filter/kalman_filter.hpp>
 #include <ground_plane_calibrator/utils.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -46,7 +46,7 @@
 namespace ground_plane_calibrator
 {
 
-using autoware::kalman_filter::KalmanFilter;
+// using autoware::kalman_filter::KalmanFilter;
 using PointType = pcl::PointXYZ;
 using tier4_ground_plane_utils::GroundPlaneExtractorParameters;
 

@@ -4,7 +4,7 @@ project(lidar_to_lidar_2d_calibrator)
 
 find_package(autoware_cmake REQUIRED)
 find_package(OpenCV REQUIRED) # TODO: consider removing this one later
-
+find_package(kalman_filter REQUIRED)
 autoware_package()
 
 ament_export_include_directories(
