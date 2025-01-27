@@ -60,7 +60,8 @@ struct FOVResidual
   {
     const T null_value = T(0.0);
     const T depth = T(1.0);
-    std::vector<T> shifts = {T(0.01), T(0.03), T(0.05), T(0.1), T(0.3), T(0.5), T(1.0), T(3.0)};
+    const std::vector<T> shifts = {T(0.01), T(0.03), T(0.05), T(0.1),
+                                   T(0.3),  T(0.5),  T(1.0),  T(3.0)};
 
     const T width_t = static_cast<T>(width_);
     const T height_t = static_cast<T>(height_);
@@ -84,42 +85,53 @@ struct FOVResidual
     const T & k6 =
       rational_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
 
-    auto apply_residual =
-      [this, residuals, shifts, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth](
-        const int & idx, const T & u, const T & v, const T & sign_shift_x, const T & sign_shift_y) {
-        residuals[idx] = T(0.0);
-        for (const auto & shift : shifts) {
-          auto [x, y] = imageToCamera(u, v, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6);
-          auto [u_shifted, v_shifted] = cameraToImage(
-            x + shift * sign_shift_x, y + shift * sign_shift_y, cx, cy, fx, fy, k1, k2, k3, p1, p2,
-            k4, k5, k6, depth);
-          residuals[idx] += getFovResidual(u_shifted, v_shifted);
-        }
-      };
+    auto apply_residual = [this, residuals, shifts, width_t, height_t, cx, cy, fx, fy, k1, k2, k3,
+                           p1, p2, k4, k5, k6, depth](
+                            const int & idx, const T & u, const T & v,
+                            const T & backprojection_err_thr = T(10.0)) -> void {
+      residuals[idx] = T(0.0);
+      auto [x, y] = imageToCamera(u, v, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth);
+      auto [u_bpr, v_bpr] =
+        cameraToImage(x, y, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth);
+      auto backprojection_err = ceres::sqrt(ceres::pow(u - u_bpr, 2) + ceres::pow(v - v_bpr, 2));
+      if (ceres::IsNaN(backprojection_err) || backprojection_err > backprojection_err_thr) {
+        return;
+      }
+      auto sign_shift_x = u <= T(0.0) ? T(-1.0) : u >= width_t - T(1.0) ? T(1.0) : T(0.0);
+      auto sign_shift_y = v <= T(0.0) ? T(-1.0) : v >= height_t - T(1.0) ? T(1.0) : T(0.0);
+      for (const auto & shift : shifts) {
+        auto [u_shifted, v_shifted] = cameraToImage(
+          x + shift * sign_shift_x, y + shift * sign_shift_y, cx, cy, fx, fy, k1, k2, k3, p1, p2,
+          k4, k5, k6, depth);
+        auto residual = getFovResidual(u_shifted, v_shifted);
+        // Weigh the residuals by the backprojection error
+        residuals[idx] += residual * (T(1.0) / (backprojection_err + T(1.0)));
+      }
+    };
 
     // Middle top
-    apply_residual(0, width_t / T(2.0), T(0.0), T(0.0), T(-1.0));
+    apply_residual(0, width_t / T(2.0) - T(1.0), T(0.0));
 
     // Middle left
-    apply_residual(1, T(0.0), height_t / T(2.0), T(-1.0), T(0.0));
+    apply_residual(1, T(0.0), height_t / T(2.0) - T(1.0));
 
     // Middle bottom
-    apply_residual(2, width_t / T(2.0), height_t - T(1.0), T(0.0), T(1.0));
+    apply_residual(2, width_t / T(2.0) - T(1.0), height_t - T(1.0));
 
     // Middle right
-    apply_residual(3, width_t - T(1.0), height_t / T(2.0), T(1.0), T(0.0));
+    apply_residual(3, width_t - T(1.0), height_t / T(2.0) - T(1.0));
 
     // Top left
-    apply_residual(4, T(0.0), T(0.0), T(-1.0), T(-1.0));
+    apply_residual(4, T(0.0), T(0.0));
 
     // Top right
-    apply_residual(5, width_t - T(1.0), T(0.0), T(1.0), T(-1.0));
+    apply_residual(5, width_t - T(1.0), T(0.0));
 
     // Bottom left
-    apply_residual(6, T(0.0), height_t - T(1.0), T(-1.0), T(1.0));
+    apply_residual(6, T(0.0), height_t - T(1.0));
 
     // Bottom right
-    apply_residual(7, width_t - T(1.0), height_t - T(1.0), T(1.0), T(1.0));
+    apply_residual(7, width_t - T(1.0), height_t - T(1.0));
 
     return true;
   }
@@ -171,9 +183,7 @@ struct FOVResidual
     const T xp = x / depth;
     const T yp = y / depth;
     const T r2 = xp * xp + yp * yp;
-    const T dn = 1.0 + k1 * r2 + k2 * r2 * r2 + k3 * r2 * r2 * r2;
-    const T dd = 1.0 + k4 * r2 + k5 * r2 * r2 + k6 * r2 * r2 * r2;
-    const T d = dn / dd;
+    const T d = getRadialDist(xp, yp, k1, k2, k3, k4, k5, k6);
     const T xy = xp * yp;
     const T tdx = 2.0 * p1 * xy + p2 * (r2 + 2.0 * xp * xp);
     const T tdy = 2.0 * p2 * xy + p1 * (r2 + 2.0 * yp * yp);
@@ -214,9 +224,7 @@ struct FOVResidual
 
     for (int i = 0; i < UNDIST_ITERS; i++) {
       const T r2 = xp * xp + yp * yp;
-      const T dn = 1.0 + k1 * r2 + k2 * r2 * r2 + k3 * r2 * r2 * r2;
-      const T dd = 1.0 + k4 * r2 + k5 * r2 * r2 + k6 * r2 * r2 * r2;
-      const T d = dn / dd;
+      const T d = getRadialDist(xp, yp, k1, k2, k3, k4, k5, k6);
       const T xy = xp * yp;
       const T tdx = 2.0 * p1 * xy + p2 * (r2 + 2.0 * xp * xp);
       const T tdy = 2.0 * p2 * xy + p1 * (r2 + 2.0 * yp * yp);
@@ -239,6 +247,43 @@ struct FOVResidual
     const T y = yp * depth;
 
     return std::make_pair(x, y);
+  }
+
+  /*!
+   * Calculates radial distortion
+   *
+   * Approximation is applied if any rational distortion coefficient is negative. This approximation
+   * follows Taylor series expansion of a function around x0=0, also known as a Maclaurin series.
+   * In given context, only constant term of P''(x0) is not equal to zero, which sipmlifies the
+   * polynomial to a 2nd degree polynomial.
+   *
+   * @param[in] x Normalized input coordinate along x-axis
+   * @param[in] y Normalized input coordinate along y-axis
+   * @param[in] k1 The radial distortion coefficient k1
+   * @param[in] k2 The radial distortion coefficient k2
+   * @param[in] k3 The radial distortion coefficient k3
+   * @param[in] k4 The rational distortion coefficient k4
+   * @param[in] k5 The rational distortion coefficient k5
+   * @param[in] k6 The rational distortion coefficient k6
+   * @returns The 3rd degree polynomial coefficients
+   */
+  template <typename T>
+  T getRadialDist(
+    const T x, const T y, const T k1, const T k2, const T k3, const T k4, const T k5,
+    const T k6) const
+  {
+    const T r2 = x * x + y * y;
+
+    // Use approximation if any rational distortion coefficient is negative
+    if (k4 < T(0.0) || k5 < T(0.0) || k6 < T(0.0)) {
+      const T dn = 1.0 + k1 * r2;
+      const T dd = 1.0 + k4 * r2;
+      return dn / dd;
+    }
+
+    const T dn = 1.0 + k1 * r2 + k2 * r2 * r2 + k3 * r2 * r2 * r2;
+    const T dd = 1.0 + k4 * r2 + k5 * r2 * r2 + k6 * r2 * r2 * r2;
+    return dn / dd;
   }
 
   /*!
