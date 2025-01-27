@@ -36,7 +36,7 @@ struct FOVResidual
 
   static constexpr int RESIDUAL_DIM = 8;
 
-  static constexpr int UNDIST_ITERS = 100;
+  static constexpr int UNDIST_ITERS = 100;  // cSpell:ignore UNDIST
 
   FOVResidual(
     int radial_distortion_coeffs, bool use_tangential_distortion, int rational_distortion_coeffs,
@@ -85,6 +85,7 @@ struct FOVResidual
     const T & k6 =
       rational_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
 
+    // cSpell:ignore backprojection
     auto apply_residual = [this, residuals, shifts, width_t, height_t, cx, cy, fx, fy, k1, k2, k3,
                            p1, p2, k4, k5, k6, depth](
                             const int & idx, const T & u, const T & v,
@@ -249,12 +250,13 @@ struct FOVResidual
     return std::make_pair(x, y);
   }
 
+  // cSpell:ignore Maclaurin
   /*!
    * Calculates radial distortion
    *
    * Approximation is applied if any rational distortion coefficient is negative. This approximation
    * follows Taylor series expansion of a function around x0=0, also known as a Maclaurin series.
-   * In given context, only constant term of P''(x0) is not equal to zero, which sipmlifies the
+   * In given context, only constant term of P''(x0) is not equal to zero, which simplifies the
    * polynomial to a 2nd degree polynomial.
    *
    * @param[in] x Normalized input coordinate along x-axis
