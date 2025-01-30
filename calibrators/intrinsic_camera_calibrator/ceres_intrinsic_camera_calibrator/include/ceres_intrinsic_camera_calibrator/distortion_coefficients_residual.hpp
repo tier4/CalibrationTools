@@ -21,7 +21,6 @@
 struct DistortionCoefficientsResidual
 {
   static constexpr int RESIDUAL_DIM = 8;
-  static constexpr double LOSS_THRESHOLD = 5.0;
 
   DistortionCoefficientsResidual(
     int radial_distortion_coeffs, bool use_tangential_distortion, int rational_distortion_coeffs)
@@ -77,8 +76,7 @@ struct DistortionCoefficientsResidual
   template <typename T>
   T getResidual(const T & value) const
   {
-    return ceres::abs(value) > LOSS_THRESHOLD ? ceres::pow(ceres::abs(value) - LOSS_THRESHOLD, 2)
-                                              : T(0.0);
+    return ceres::log(ceres::abs(value) + T(1.0));
   }
 
   /*!
