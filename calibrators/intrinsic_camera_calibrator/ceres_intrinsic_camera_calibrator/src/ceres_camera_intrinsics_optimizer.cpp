@@ -373,16 +373,14 @@ void CeresCameraIntrinsicsOptimizer::solve()
     }
   }
 
-  if (coeffs_regularization_weight_ > 0.0) {
-    problem.AddResidualBlock(
-      DistortionCoefficientsResidual::createResidual(
-        radial_distortion_coefficients_, use_tangential_distortion_,
-        rational_distortion_coefficients_),
-      new ceres::ScaledLoss(
-        nullptr, coeffs_regularization_weight_ * object_points_.size(),
-        ceres::TAKE_OWNERSHIP),  // L2
-      intrinsics_placeholder_.data());
-  }
+  problem.AddResidualBlock(
+    DistortionCoefficientsResidual::createResidual(
+      radial_distortion_coefficients_, use_tangential_distortion_,
+      rational_distortion_coefficients_),
+    new ceres::ScaledLoss(
+      nullptr, coeffs_regularization_weight_ * object_points_.size(),
+      ceres::TAKE_OWNERSHIP),  // L2
+    intrinsics_placeholder_.data());
 
   if (fov_regularization_weight_ > 0.0) {
     problem.AddResidualBlock(
