@@ -60,8 +60,8 @@ struct FOVResidual
     const std::vector<T> shifts = {T(0.01), T(0.03), T(0.05), T(0.1),
                                    T(0.3),  T(0.5),  T(1.0),  T(3.0)};
 
-    const T width_t = static_cast<T>(width_);
-    const T height_t = static_cast<T>(height_);
+    const T width_t = T(width_);
+    const T height_t = T(height_);
     int distortion_index = 4;
     const T & cx = camera_intrinsics[INTRINSICS_CX_INDEX];
     const T & cy = camera_intrinsics[INTRINSICS_CY_INDEX];
@@ -143,8 +143,8 @@ struct FOVResidual
   template <typename T>
   T getFovResidual(const T u, const T v) const
   {
-    T width_t = static_cast<T>(width_);
-    T height_t = static_cast<T>(height_);
+    T width_t = T(width_);
+    T height_t = T(height_);
 
     if (u >= T(0.0) && u <= width_t - T(1.0) && v >= T(0.0) && v <= height_t - T(1.0)) {
       T closest_u = std::min(u, width_t - u - T(1.0)) / (std::max(height_t, width_t) - T(1.0));
