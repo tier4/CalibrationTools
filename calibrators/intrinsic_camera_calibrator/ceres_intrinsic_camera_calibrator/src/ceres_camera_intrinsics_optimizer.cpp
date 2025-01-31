@@ -376,7 +376,7 @@ void CeresCameraIntrinsicsOptimizer::solve()
   problem.Evaluate(eval_opt, &initial_cost, &residuals, nullptr, nullptr);
 
   if (verbose_) {
-    std::cout << "Initial cost: " << initial_cost;
+    std::cout << "Initial cost: " << initial_cost << std::endl;
   }
 
   ceres::Solver::Options options;
@@ -392,6 +392,6 @@ void CeresCameraIntrinsicsOptimizer::solve()
   ceres::Solve(options, &problem, &summary);
 
   if (verbose_) {
-    std::cout << "Report: " << summary.FullReport();
+    std::cout << "Report: " << std::endl << summary.FullReport() << std::endl;
   }
 }
