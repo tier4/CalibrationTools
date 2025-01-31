@@ -16,10 +16,7 @@
 #define CERES_INTRINSIC_CAMERA_CALIBRATOR__FOV_RESIDUAL_HPP_
 
 #include <Eigen/Core>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/core.hpp>
 
-#include <Eigen/src/Core/Matrix.h>
 #include <ceres/autodiff_cost_function.h>
 #include <ceres/ceres.h>
 
