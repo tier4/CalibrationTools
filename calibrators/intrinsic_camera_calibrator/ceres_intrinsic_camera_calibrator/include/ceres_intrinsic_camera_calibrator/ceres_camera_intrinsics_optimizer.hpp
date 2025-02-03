@@ -141,6 +141,11 @@ public:
    */
   void solve();
 
+  /*!
+   * Applies the optimization for the field of view
+   */
+  void solveFov();
+
 protected:
   int radial_distortion_coefficients_;
   bool use_tangential_distortion_;

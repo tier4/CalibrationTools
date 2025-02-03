@@ -270,6 +270,9 @@ int main(int argc, char ** argv)
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
   optimizer.solve();
+  if (fov_regularization_weight > 0.0) {
+    optimizer.solveFov();
+  }
   optimizer.placeholdersToData();
   optimizer.evaluate();
   [[maybe_unused]] double rms_error = optimizer.getSolution(

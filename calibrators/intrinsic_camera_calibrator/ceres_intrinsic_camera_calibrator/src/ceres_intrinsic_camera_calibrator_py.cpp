@@ -137,6 +137,9 @@ calibrate(
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
   optimizer.solve();
+  if (fov_regularization_weight > 0.0) {
+    optimizer.solveFov();
+  }
   optimizer.placeholdersToData();
   optimizer.evaluate();
   double rms_error = optimizer.getSolution(camera_matrix_cv, dist_coeffs_cv, rvecs_cv, tvecs_cv);

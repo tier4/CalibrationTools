@@ -382,16 +382,6 @@ void CeresCameraIntrinsicsOptimizer::solve()
       ceres::TAKE_OWNERSHIP),  // L2
     intrinsics_placeholder_.data());
 
-  if (fov_regularization_weight_ > 0.0) {
-    problem.AddResidualBlock(
-      FOVResidual::createResidual(
-        radial_distortion_coefficients_, use_tangential_distortion_,
-        rational_distortion_coefficients_, width_, height_),
-      new ceres::ScaledLoss(
-        nullptr, fov_regularization_weight_ * object_points_.size(), ceres::TAKE_OWNERSHIP),  // L2
-      intrinsics_placeholder_.data());
-  }
-
   double initial_cost = 0.0;
   std::vector<double> residuals;
   ceres::Problem::EvaluateOptions eval_opt;
@@ -418,4 +408,40 @@ void CeresCameraIntrinsicsOptimizer::solve()
   if (verbose_) {
     std::cout << "Report: " << summary.FullReport();
   }
+}
+
+void CeresCameraIntrinsicsOptimizer::solveFov()
+{
+  ceres::Problem problem;
+
+  problem.AddResidualBlock(
+    FOVResidual::createResidual(
+      radial_distortion_coefficients_, use_tangential_distortion_,
+      rational_distortion_coefficients_, width_, height_),
+    new ceres::ScaledLoss(
+      nullptr, fov_regularization_weight_ * object_points_.size(), ceres::TAKE_OWNERSHIP),  // L2
+    intrinsics_placeholder_.data());
+
+  double initial_cost = 0.0;
+  std::vector<double> residuals;
+  ceres::Problem::EvaluateOptions eval_opt;
+  eval_opt.num_threads = 1;
+  problem.GetResidualBlocks(&eval_opt.residual_blocks);
+  problem.Evaluate(eval_opt, &initial_cost, &residuals, nullptr, nullptr);
+
+  if (verbose_) {
+    std::cout << "[FOV] Initial cost: " << initial_cost << std::endl;
+  }
+
+  ceres::Solver::Options options;
+  options.linear_solver_type = ceres::DENSE_SCHUR;  // cSpell:ignore SCHUR
+  options.minimizer_progress_to_stdout = verbose_;
+  options.max_num_iterations = 500;
+  options.function_tolerance = 1e-10;
+  options.gradient_tolerance = 1e-14;
+  options.num_threads = 8;
+  options.max_num_consecutive_invalid_steps = 1000;
+  options.use_inner_iterations = false;
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
 }
