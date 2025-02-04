@@ -7,6 +7,9 @@ repositories:
     type: git
     url: https://github.com/autowarefoundation/autoware_common.git
     version: main
+  autoware/core:
+    type: git
+    url: https://github.com/autowarefoundation/autoware.core.git
   autoware/autoware_internal_msgs:
     type: git
     url: https://github.com/autowarefoundation/autoware_internal_msgs.git
