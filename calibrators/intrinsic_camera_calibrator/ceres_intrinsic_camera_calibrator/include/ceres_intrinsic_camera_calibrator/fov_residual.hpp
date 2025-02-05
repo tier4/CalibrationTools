@@ -25,6 +25,17 @@
 #include <utility>
 #include <vector>
 
+template <typename T>
+struct CameraPoint
+{
+  T x;
+  T y;
+  T depth;
+  T sign_shift_x;
+  T sign_shift_y;
+  T backprojection_err;  // cSpell:ignore backprojection
+};
+
 struct FOVResidual
 {
   static constexpr int INTRINSICS_CX_INDEX = 0;
@@ -38,13 +49,14 @@ struct FOVResidual
 
   FOVResidual(
     int radial_distortion_coeffs, bool use_tangential_distortion, int rational_distortion_coeffs,
-    int width, int height)
+    int width, int height, const std::vector<CameraPoint<double>> & camera_points)
   {
     radial_distortion_coeffs_ = radial_distortion_coeffs;
     use_tangential_distortion_ = use_tangential_distortion;
     rational_distortion_coeffs_ = rational_distortion_coeffs;
     width_ = width;
     height_ = height;
+    camera_points_ = camera_points;
   }
 
   /*!
@@ -60,9 +72,6 @@ struct FOVResidual
     const T depth = T(1.0);
     const std::vector<T> shifts = {T(0.01), T(0.03), T(0.05), T(0.1),
                                    T(0.3),  T(0.5),  T(1.0),  T(3.0)};
-
-    const T width_t = T(width_);
-    const T height_t = T(height_);
     int distortion_index = 4;
     const T & cx = camera_intrinsics[INTRINSICS_CX_INDEX];
     const T & cy = camera_intrinsics[INTRINSICS_CY_INDEX];
@@ -83,59 +92,23 @@ struct FOVResidual
     const T & k6 =
       rational_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
 
-    // cSpell:ignore backprojection
-    auto apply_residual = [this, residuals, shifts, width_t, height_t, cx, cy, fx, fy, k1, k2, k3,
-                           p1, p2, k4, k5, k6, depth](
-                            const int & idx, const T & u, const T & v,
-                            const T & backprojection_err_thr = T(10.0)) -> bool {
-      residuals[idx] = T(0.0);
-      auto [x, y] = imageToCamera(u, v, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth);
-      auto [u_bpr, v_bpr] =
-        cameraToImage(x, y, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth);
-      auto backprojection_err = ceres::sqrt(ceres::pow(u - u_bpr, 2) + ceres::pow(v - v_bpr, 2));
-      if (ceres::IsNaN(backprojection_err) || backprojection_err > backprojection_err_thr) {
-        return false;
-      }
-      auto sign_shift_x = u <= T(0.0) ? T(-1.0) : u >= width_t - T(1.0) ? T(1.0) : T(0.0);
-      auto sign_shift_y = v <= T(0.0) ? T(-1.0) : v >= height_t - T(1.0) ? T(1.0) : T(0.0);
-      for (const auto & shift : shifts) {
+    if (RESIDUAL_DIM != shifts.size()) {
+      throw std::runtime_error("The number of residuals should match the number of shifts");
+    }
+    std::fill(residuals, residuals + RESIDUAL_DIM, T(0.0));
+    for (const auto & cp : camera_points_) {
+      for (std::size_t i = 0; i < shifts.size(); i++) {
         auto [u_shifted, v_shifted] = cameraToImage(
-          x + shift * sign_shift_x, y + shift * sign_shift_y, cx, cy, fx, fy, k1, k2, k3, p1, p2,
-          k4, k5, k6, depth);
+          cp.x + shifts[i] * cp.sign_shift_x, cp.y + shifts[i] * cp.sign_shift_y, cx, cy, fx, fy,
+          k1, k2, k3, p1, p2, k4, k5, k6, depth);
         auto residual = getFovResidual(u_shifted, v_shifted);
         // Weigh the residuals by the backprojection error
-        residuals[idx] += residual * (T(1.0) / (backprojection_err + T(1.0)));
+        auto residual_weighted = residual / (cp.backprojection_err + T(1.0));
+        // Increase residual magnitude & soften
+        residual_weighted = ceres::log(T(1.0) + residual_weighted);
+        residuals[i] += residual_weighted;
       }
-      return true;
-    };
-
-    std::size_t valid_residuals = 0;
-
-    // Middle top
-    valid_residuals += apply_residual(0, width_t / T(2.0) - T(1.0), T(0.0));
-
-    // Middle left
-    valid_residuals += apply_residual(1, T(0.0), height_t / T(2.0) - T(1.0));
-
-    // Middle bottom
-    valid_residuals += apply_residual(2, width_t / T(2.0) - T(1.0), height_t - T(1.0));
-
-    // Middle right
-    valid_residuals += apply_residual(3, width_t - T(1.0), height_t / T(2.0) - T(1.0));
-
-    // Top left
-    valid_residuals += apply_residual(4, T(0.0), T(0.0));
-
-    // Top right
-    valid_residuals += apply_residual(5, width_t - T(1.0), T(0.0));
-
-    // Bottom left
-    valid_residuals += apply_residual(6, T(0.0), height_t - T(1.0));
-
-    // Bottom right
-    valid_residuals += apply_residual(7, width_t - T(1.0), height_t - T(1.0));
-
-    LOG(INFO) << "Valid FOV residuals: " << valid_residuals << " / 8" << std::endl;
+    }
 
     return true;
   }
@@ -180,9 +153,9 @@ struct FOVResidual
    * @returns The pixel x and y coordinates
    */
   template <typename T>
-  std::pair<T, T> cameraToImage(
+  static std::pair<T, T> cameraToImage(
     const T x, const T y, const T cx, const T cy, const T fx, const T fy, const T k1, const T k2,
-    const T k3, const T p1, const T p2, const T k4, const T k5, const T k6, T depth = T(1.0)) const
+    const T k3, const T p1, const T p2, const T k4, const T k5, const T k6, T depth = T(1.0))
   {
     const T xp = x / depth;
     const T yp = y / depth;
@@ -220,10 +193,10 @@ struct FOVResidual
    * @returns The real world x and y coordinates in camera frame
    */
   template <typename T>
-  std::pair<T, T> imageToCamera(
+  static std::pair<T, T> imageToCamera(
     const T u, const T v, const T cx, const T cy, const T fx, const T fy, const T k1, const T k2,
     const T k3, const T p1, const T p2, const T k4, const T k5, const T k6, T depth = T(1.0),
-    const T tol = T(1e-6)) const
+    const T tol = T(1e-6))
   {
     T xp = (u - cx) / fx;
     T yp = (v - cy) / fy;
@@ -269,11 +242,11 @@ struct FOVResidual
    */
   static ceres::CostFunction * createResidual(
     int radial_distortion_coeffs, bool use_tangential_distortion, int rational_distortion_coeffs,
-    int width, int height)
+    int width, int height, const std::vector<CameraPoint<double>> & camera_points)
   {
     auto f = new FOVResidual(
       radial_distortion_coeffs, use_tangential_distortion, rational_distortion_coeffs, width,
-      height);
+      height, camera_points);
 
     int distortion_coefficients = radial_distortion_coeffs +
                                   2 * static_cast<int>(use_tangential_distortion) +
@@ -320,6 +293,91 @@ struct FOVResidual
   int rational_distortion_coeffs_;
   int width_;
   int height_;
+  std::vector<CameraPoint<double>> camera_points_;
 };
+
+/*!
+ * Get points around image border represented in camera frame
+ * @param[in] camera_intrinsics The camera intrinsics
+ * @param[in] radial_distortion_coeffs The number of radial distortion coefficients
+ * @param[in] use_tangential_distortion Whether to use or not tangential distortion
+ * @param[in] rational_distortion_coeffs The number of rational distortion coefficients
+ * @param[in] width the source image width
+ * @param[in] height the source image height
+ * @returns The points in camera frame
+ */
+template <typename T>
+std::vector<CameraPoint<T>> getCameraPoints(
+  const T * const camera_intrinsics, int radial_distortion_coeffs, int use_tangential_distortion,
+  int rational_distortion_coeffs, const T width, const T height)
+{
+  const T null_value = T(0.0);
+  const T depth = T(1.0);
+
+  int distortion_index = 0;
+  const T & cx = camera_intrinsics[distortion_index++];
+  const T & cy = camera_intrinsics[distortion_index++];
+  const T & fx = camera_intrinsics[distortion_index++];
+  const T & fy = camera_intrinsics[distortion_index++];
+  const T & k1 = radial_distortion_coeffs > 0 ? camera_intrinsics[distortion_index++] : null_value;
+  const T & k2 = radial_distortion_coeffs > 1 ? camera_intrinsics[distortion_index++] : null_value;
+  const T & k3 = radial_distortion_coeffs > 2 ? camera_intrinsics[distortion_index++] : null_value;
+  const T & p1 = use_tangential_distortion ? camera_intrinsics[distortion_index++] : null_value;
+  const T & p2 = use_tangential_distortion ? camera_intrinsics[distortion_index++] : null_value;
+  const T & k4 =
+    rational_distortion_coeffs > 0 ? camera_intrinsics[distortion_index++] : null_value;
+  const T & k5 =
+    rational_distortion_coeffs > 1 ? camera_intrinsics[distortion_index++] : null_value;
+  const T & k6 =
+    rational_distortion_coeffs > 2 ? camera_intrinsics[distortion_index++] : null_value;
+
+  auto getPoints = [width, height, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth](
+                     const T u, const T v, std::vector<CameraPoint<T>> & camera_points,
+                     const T backprojection_err_thr = T(10.0)) -> bool {
+    auto [x, y] =
+      FOVResidual::imageToCamera<T>(u, v, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth);
+    auto [u_bpr, v_bpr] =
+      FOVResidual::cameraToImage<T>(x, y, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth);
+    auto backprojection_err = ceres::sqrt(ceres::pow(u - u_bpr, 2) + ceres::pow(v - v_bpr, 2));
+    if (ceres::IsNaN(backprojection_err) || backprojection_err > backprojection_err_thr) {
+      return false;
+    }
+    auto sign_shift_x = u <= T(0.0) ? T(-1.0) : u >= width - T(1.0) ? T(1.0) : T(0.0);
+    auto sign_shift_y = v <= T(0.0) ? T(-1.0) : v >= height - T(1.0) ? T(1.0) : T(0.0);
+    camera_points.push_back({x, y, depth, sign_shift_x, sign_shift_y, backprojection_err});
+    return true;
+  };
+
+  std::vector<CameraPoint<T>> camera_points;
+  std::size_t valid_points = 0;
+
+  // Middle top
+  valid_points += getPoints(width / T(2.0) - T(1.0), T(0.0), camera_points);
+
+  // Middle left
+  valid_points += getPoints(T(0.0), height / T(2.0) - T(1.0), camera_points);
+
+  // Middle bottom
+  valid_points += getPoints(width / T(2.0) - T(1.0), height - T(1.0), camera_points);
+
+  // Middle right
+  valid_points += getPoints(width - T(1.0), height / T(2.0) - T(1.0), camera_points);
+
+  // Top left
+  valid_points += getPoints(T(0.0), T(0.0), camera_points);
+
+  // Top right
+  valid_points += getPoints(width - T(1.0), T(0.0), camera_points);
+
+  // Bottom left
+  valid_points += getPoints(T(0.0), height - T(1.0), camera_points);
+
+  // Bottom right
+  valid_points += getPoints(width - T(1.0), height - T(1.0), camera_points);
+
+  LOG(INFO) << "Valid camera points: " << valid_points << " / 8" << std::endl;
+
+  return camera_points;
+}
 
 #endif  // CERES_INTRINSIC_CAMERA_CALIBRATOR__FOV_RESIDUAL_HPP_

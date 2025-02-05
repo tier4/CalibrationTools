@@ -301,6 +301,35 @@ void CeresCameraIntrinsicsOptimizer::placeholdersToData()
   }
 }
 
+double CeresCameraIntrinsicsOptimizer::getTotalReprojectionError()
+{
+  double total_ceres_error = 0;
+
+  for (std::size_t view_index = 0; view_index < object_points_.size(); view_index++) {
+    const auto & view_object_points = object_points_[view_index];
+    const auto & view_image_points = image_points_[view_index];
+    auto & pose_placeholder = pose_placeholders_[view_index];
+
+    for (std::size_t point_index = 0; point_index < view_object_points.size(); point_index++) {
+      auto f = ReprojectionResidual(
+        view_object_points[point_index], view_image_points[point_index],
+        radial_distortion_coefficients_, use_tangential_distortion_,
+        rational_distortion_coefficients_);
+      std::array<double, 2> residuals;
+      f(intrinsics_placeholder_.data(), pose_placeholder.data(), residuals.data());
+      total_ceres_error += residuals[0] * residuals[0] + residuals[1] * residuals[1];
+    }
+  }
+
+  return total_ceres_error;
+}
+
+double CeresCameraIntrinsicsOptimizer::getAvgReprojectionError()
+{
+  double total_ceres_error = getTotalReprojectionError();
+  return total_ceres_error / object_points_.size();
+}
+
 void CeresCameraIntrinsicsOptimizer::evaluate()
 {
   // Start developing the ceres optimizer
@@ -330,30 +359,36 @@ void CeresCameraIntrinsicsOptimizer::evaluate()
     printf("summary | calibration_error=%.3f\n", total_calibration_error / object_points_.size());
   }
 
-  double total_ceres_error = 0;
-
-  for (std::size_t view_index = 0; view_index < object_points_.size(); view_index++) {
-    const auto & view_object_points = object_points_[view_index];
-    const auto & view_image_points = image_points_[view_index];
-    auto & pose_placeholder = pose_placeholders_[view_index];
-
-    for (std::size_t point_index = 0; point_index < view_object_points.size(); point_index++) {
-      auto f = ReprojectionResidual(
-        view_object_points[point_index], view_image_points[point_index],
-        radial_distortion_coefficients_, use_tangential_distortion_,
-        rational_distortion_coefficients_);
-      std::array<double, 2> residuals;
-      f(intrinsics_placeholder_.data(), pose_placeholder.data(), residuals.data());
-      total_ceres_error += residuals[0] * residuals[0] + residuals[1] * residuals[1];
-    }
-  }
+  double total_ceres_error = getTotalReprojectionError();
 
   if (verbose_) {
     std::cout << "total_ceres_error: " << 0.5 * total_ceres_error << std::endl;
   }
 }
 
-void CeresCameraIntrinsicsOptimizer::solve()
+double CeresCameraIntrinsicsOptimizer::evaluateFov()
+{
+  double total_ceres_fov_error = 0;
+  auto camera_points = getCameraPoints<double>(
+    intrinsics_placeholder_.data(), radial_distortion_coefficients_, use_tangential_distortion_,
+    rational_distortion_coefficients_, width_, height_);
+
+  auto f = FOVResidual(
+    radial_distortion_coefficients_, use_tangential_distortion_, rational_distortion_coefficients_,
+    width_, height_, camera_points);
+
+  std::array<double, 8> residuals;
+  f(intrinsics_placeholder_.data(), residuals.data());
+  total_ceres_fov_error = std::accumulate(residuals.begin(), residuals.end(), 0.0);
+
+  if (verbose_) {
+    std::cout << "total_ceres_fov_error: " << total_ceres_fov_error << std::endl;
+  }
+
+  return total_ceres_fov_error;
+}
+
+void CeresCameraIntrinsicsOptimizer::solve(bool use_fov_block)
 {
   ceres::Problem problem;
 
@@ -373,14 +408,28 @@ void CeresCameraIntrinsicsOptimizer::solve()
     }
   }
 
-  problem.AddResidualBlock(
-    DistortionCoefficientsResidual::createResidual(
-      radial_distortion_coefficients_, use_tangential_distortion_,
-      rational_distortion_coefficients_),
-    new ceres::ScaledLoss(
-      nullptr, coeffs_regularization_weight_ * object_points_.size(),
-      ceres::TAKE_OWNERSHIP),  // L2
-    intrinsics_placeholder_.data());
+  if (use_fov_block) {
+    auto camera_points = getCameraPoints<double>(
+      intrinsics_placeholder_.data(), radial_distortion_coefficients_, use_tangential_distortion_,
+      rational_distortion_coefficients_, width_, height_);
+    problem.AddResidualBlock(
+      FOVResidual::createResidual(
+        radial_distortion_coefficients_, use_tangential_distortion_,
+        rational_distortion_coefficients_, width_, height_, camera_points),
+      new ceres::ScaledLoss(
+        nullptr, fov_regularization_weight_ * 1e6 * object_points_.size(),
+        ceres::TAKE_OWNERSHIP),  // L2
+      intrinsics_placeholder_.data());
+  } else {
+    problem.AddResidualBlock(
+      DistortionCoefficientsResidual::createResidual(
+        radial_distortion_coefficients_, use_tangential_distortion_,
+        rational_distortion_coefficients_),
+      new ceres::ScaledLoss(
+        nullptr, coeffs_regularization_weight_ * object_points_.size(),
+        ceres::TAKE_OWNERSHIP),  // L2
+      intrinsics_placeholder_.data());
+  }
 
   double initial_cost = 0.0;
   std::vector<double> residuals;
@@ -390,7 +439,7 @@ void CeresCameraIntrinsicsOptimizer::solve()
   problem.Evaluate(eval_opt, &initial_cost, &residuals, nullptr, nullptr);
 
   if (verbose_) {
-    std::cout << "Initial cost: " << initial_cost;
+    std::cout << "Initial cost: " << initial_cost << std::endl;
   }
 
   ceres::Solver::Options options;
@@ -406,42 +455,6 @@ void CeresCameraIntrinsicsOptimizer::solve()
   ceres::Solve(options, &problem, &summary);
 
   if (verbose_) {
-    std::cout << "Report: " << summary.FullReport();
+    std::cout << "Report: " << summary.FullReport() << std::endl;
   }
-}
-
-void CeresCameraIntrinsicsOptimizer::solveFov()
-{
-  ceres::Problem problem;
-
-  problem.AddResidualBlock(
-    FOVResidual::createResidual(
-      radial_distortion_coefficients_, use_tangential_distortion_,
-      rational_distortion_coefficients_, width_, height_),
-    new ceres::ScaledLoss(
-      nullptr, fov_regularization_weight_ * object_points_.size(), ceres::TAKE_OWNERSHIP),  // L2
-    intrinsics_placeholder_.data());
-
-  double initial_cost = 0.0;
-  std::vector<double> residuals;
-  ceres::Problem::EvaluateOptions eval_opt;
-  eval_opt.num_threads = 1;
-  problem.GetResidualBlocks(&eval_opt.residual_blocks);
-  problem.Evaluate(eval_opt, &initial_cost, &residuals, nullptr, nullptr);
-
-  if (verbose_) {
-    std::cout << "[FOV] Initial cost: " << initial_cost << std::endl;
-  }
-
-  ceres::Solver::Options options;
-  options.linear_solver_type = ceres::DENSE_SCHUR;  // cSpell:ignore SCHUR
-  options.minimizer_progress_to_stdout = verbose_;
-  options.max_num_iterations = 500;
-  options.function_tolerance = 1e-10;
-  options.gradient_tolerance = 1e-14;
-  options.num_threads = 8;
-  options.max_num_consecutive_invalid_steps = 1000;
-  options.use_inner_iterations = false;
-  ceres::Solver::Summary summary;
-  ceres::Solve(options, &problem, &summary);
 }

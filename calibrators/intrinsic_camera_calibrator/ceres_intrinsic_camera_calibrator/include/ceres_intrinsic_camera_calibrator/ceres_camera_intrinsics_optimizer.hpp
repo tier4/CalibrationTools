@@ -48,6 +48,10 @@ public:
 
   static constexpr int RESIDUAL_DIM = 2;
 
+  static constexpr int SOLVE_MAX_ATTEMPTS = 5;
+  static constexpr double REPR_THR = 0.1;
+  static constexpr double FOV_THR = 1e-6;
+
   /*!
    * Sets the number of radial distortion coefficients
    * @param[in] radial_distortion_coefficients number of radial distortion coefficients
@@ -121,6 +125,18 @@ public:
     std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
 
   /*!
+   * Calculates the ceres total reprojection error
+   * @return the ceres total reprojection error
+   */
+  double getTotalReprojectionError();
+
+  /*!
+   * Calculates the average total reprojection error
+   * @return the ceres average reprojection error
+   */
+  double getAvgReprojectionError();
+
+  /*!
    * Formats the input data into optimization placeholders
    */
   void dataToPlaceholders();
@@ -137,14 +153,16 @@ public:
   void evaluate();
 
   /*!
-   * Formulates and solves the optimization problem
+   * Evaluates the current optimization variables with the ceres cost function for the field of view
+   * @return the Ceres total field of view error
    */
-  void solve();
+  double evaluateFov();
 
   /*!
-   * Applies the optimization for the field of view
+   * Formulates and solves the optimization problem
+   * @param[in] use_fov_block whether or not to use the field of view regularization
    */
-  void solveFov();
+  void solve(bool use_fov_block = false);
 
 protected:
   int radial_distortion_coefficients_;

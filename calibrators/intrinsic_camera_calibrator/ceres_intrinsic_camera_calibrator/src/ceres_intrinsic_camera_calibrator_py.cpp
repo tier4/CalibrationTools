@@ -137,11 +137,45 @@ calibrate(
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
   optimizer.solve();
-  if (fov_regularization_weight > 0.0) {
-    optimizer.solveFov();
-  }
   optimizer.placeholdersToData();
-  optimizer.evaluate();
+
+  if (fov_regularization_weight > 0.0) {
+    auto init_avg_repr_error = optimizer.getAvgReprojectionError();
+    auto best_fov_eval = optimizer.evaluateFov();
+
+    if (best_fov_eval > CeresCameraIntrinsicsOptimizer::FOV_THR) {
+      std::cout << "FOV anomaly detected..." << std::endl;
+      int ex_solve_attempt = 0;
+      while (true) {
+        if (ex_solve_attempt >= CeresCameraIntrinsicsOptimizer::SOLVE_MAX_ATTEMPTS) {
+          std::cout << "Max solve attempts reached. Failed to converge with FOV regularization."
+                    << std::endl;
+          break;
+        }
+        if (ex_solve_attempt > 0) {
+          optimizer.solve();
+        }
+        ex_solve_attempt++;
+        std::cout << "Retrying with FOV regularization, attempt " << ex_solve_attempt << "..."
+                  << std::endl;
+        optimizer.solve(true);
+        auto adjustment = init_avg_repr_error - optimizer.getAvgReprojectionError();
+        std::cout << "Ceres error adjustment: " << adjustment << std::endl;
+        auto fov_eval = optimizer.evaluateFov();
+
+        if (fov_eval < best_fov_eval && adjustment >= -CeresCameraIntrinsicsOptimizer::REPR_THR) {
+          std::cout << "Found better solution!" << std::endl;
+          best_fov_eval = fov_eval;
+          optimizer.placeholdersToData();
+          if (best_fov_eval <= CeresCameraIntrinsicsOptimizer::FOV_THR) {
+            std::cout << "Converged!" << std::endl;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   double rms_error = optimizer.getSolution(camera_matrix_cv, dist_coeffs_cv, rvecs_cv, tvecs_cv);
 
   // Extract the results
