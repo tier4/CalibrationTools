@@ -360,13 +360,15 @@ void CeresCameraIntrinsicsOptimizer::solve()
     }
   }
 
-  problem.AddResidualBlock(
-    DistortionCoefficientsResidual::createResidual(
-      radial_distortion_coefficients_, use_tangential_distortion_,
-      rational_distortion_coefficients_),
-    new ceres::ScaledLoss(
-      nullptr, regularization_weight_ * object_points_.size(), ceres::TAKE_OWNERSHIP),  // L2
-    intrinsics_placeholder_.data());
+  if (regularization_weight_ > 0.0) {
+    problem.AddResidualBlock(
+      DistortionCoefficientsResidual::createResidual(
+        radial_distortion_coefficients_, use_tangential_distortion_,
+        rational_distortion_coefficients_),
+      new ceres::ScaledLoss(
+        nullptr, regularization_weight_ * object_points_.size(), ceres::TAKE_OWNERSHIP),  // L2
+      intrinsics_placeholder_.data());
+  }
 
   double initial_cost = 0.0;
   std::vector<double> residuals;
@@ -376,7 +378,7 @@ void CeresCameraIntrinsicsOptimizer::solve()
   problem.Evaluate(eval_opt, &initial_cost, &residuals, nullptr, nullptr);
 
   if (verbose_) {
-    std::cout << "Initial cost: " << initial_cost;
+    std::cout << "Initial cost: " << initial_cost << std::endl;
   }
 
   ceres::Solver::Options options;
@@ -392,6 +394,6 @@ void CeresCameraIntrinsicsOptimizer::solve()
   ceres::Solve(options, &problem, &summary);
 
   if (verbose_) {
-    std::cout << "Report: " << summary.FullReport();
+    std::cout << "Report: " << std::endl << summary.FullReport() << std::endl;
   }
 }

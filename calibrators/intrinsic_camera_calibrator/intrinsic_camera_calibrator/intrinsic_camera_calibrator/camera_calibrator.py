@@ -811,6 +811,8 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         self.calibration_evaluation_inlier_rms_label.setText(
             f"\trms error (inliers): {evaluation_inlier_rms_error:.3f}"  # noqa E231
         )
+        logging.info(f"Camera matrix:\n{calibrated_model.k}")
+        logging.info(f"Distortion coefficients:\n{calibrated_model.d}")
 
         self.calibrator_type_combobox.setEnabled(True)
         self.calibration_parameters_button.setEnabled(True)
