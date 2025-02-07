@@ -125,16 +125,16 @@ public:
     std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
 
   /*!
-   * Calculates the ceres total reprojection error
-   * @return the ceres total reprojection error
+   * Calculates the ceres total error
+   * @return the ceres total error
    */
-  double getTotalReprojectionError();
+  double getTotalCeresError();
 
   /*!
-   * Calculates the average total reprojection error
-   * @return the ceres average reprojection error
+   * Calculates the average ceres error
+   * @return the ceres average error
    */
-  double getAvgReprojectionError();
+  double getAvgCeresError();
 
   /*!
    * Formats the input data into optimization placeholders

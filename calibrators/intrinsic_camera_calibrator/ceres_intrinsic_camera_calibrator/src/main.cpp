@@ -273,7 +273,7 @@ int main(int argc, char ** argv)
   optimizer.placeholdersToData();
 
   if (fov_regularization_weight > 0.0) {
-    auto init_avg_repr_error = optimizer.getAvgReprojectionError();
+    auto init_avg_ceres_error = optimizer.getAvgCeresError();
     auto best_fov_eval = optimizer.evaluateFov();
 
     if (best_fov_eval > CeresCameraIntrinsicsOptimizer::FOV_THR) {
@@ -292,7 +292,7 @@ int main(int argc, char ** argv)
         std::cout << "Retrying with FOV regularization, attempt " << ex_solve_attempt << "..."
                   << std::endl;
         optimizer.solve(true);
-        auto adjustment = init_avg_repr_error - optimizer.getAvgReprojectionError();
+        auto adjustment = init_avg_ceres_error - optimizer.getAvgCeresError();
         std::cout << "Ceres error adjustment: " << adjustment << std::endl;
         auto fov_eval = optimizer.evaluateFov();
 

@@ -301,7 +301,7 @@ void CeresCameraIntrinsicsOptimizer::placeholdersToData()
   }
 }
 
-double CeresCameraIntrinsicsOptimizer::getTotalReprojectionError()
+double CeresCameraIntrinsicsOptimizer::getTotalCeresError()
 {
   double total_ceres_error = 0;
 
@@ -324,9 +324,9 @@ double CeresCameraIntrinsicsOptimizer::getTotalReprojectionError()
   return total_ceres_error;
 }
 
-double CeresCameraIntrinsicsOptimizer::getAvgReprojectionError()
+double CeresCameraIntrinsicsOptimizer::getAvgCeresError()
 {
-  double total_ceres_error = getTotalReprojectionError();
+  double total_ceres_error = getTotalCeresError();
   return total_ceres_error / object_points_.size();
 }
 
@@ -359,7 +359,7 @@ void CeresCameraIntrinsicsOptimizer::evaluate()
     printf("summary | calibration_error=%.3f\n", total_calibration_error / object_points_.size());
   }
 
-  double total_ceres_error = getTotalReprojectionError();
+  double total_ceres_error = getTotalCeresError();
 
   if (verbose_) {
     std::cout << "total_ceres_error: " << 0.5 * total_ceres_error << std::endl;
