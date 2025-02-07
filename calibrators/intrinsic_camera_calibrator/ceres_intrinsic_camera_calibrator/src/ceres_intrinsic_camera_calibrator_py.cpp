@@ -159,10 +159,14 @@ calibrate(
         std::cout << "Retrying with FOV regularization, attempt " << ex_solve_attempt << "..."
                   << std::endl;
         optimizer.solve(true);
-        auto adjustment = init_avg_ceres_error - optimizer.getAvgCeresError();
-        std::cout << "Ceres error adjustment: " << adjustment << std::endl;
+        auto avg_ceres_error = optimizer.getAvgCeresError();
+        auto adjustment = init_avg_ceres_error - avg_ceres_error;
+        std::cout << "Average ceres error [init / updated | adjustment]: " << init_avg_ceres_error
+                  << " / " << avg_ceres_error << " | " << adjustment << std::endl;
         auto fov_eval = optimizer.evaluateFov();
-
+        std::cout << "Ceres total field of view error [best / updated | adjustment]: "
+                  << best_fov_eval << " / " << fov_eval << " | " << best_fov_eval - fov_eval
+                  << std::endl;
         if (fov_eval < best_fov_eval && adjustment >= -CeresCameraIntrinsicsOptimizer::REPR_THR) {
           std::cout << "Found better solution!" << std::endl;
           best_fov_eval = fov_eval;
