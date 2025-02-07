@@ -420,7 +420,7 @@ void CeresCameraIntrinsicsOptimizer::solve(bool use_fov_block)
         nullptr, fov_regularization_weight_ * 1e6 * object_points_.size(),
         ceres::TAKE_OWNERSHIP),  // L2
       intrinsics_placeholder_.data());
-  } else {
+  } else if (fov_regularization_weight_ > 0.0) {
     problem.AddResidualBlock(
       DistortionCoefficientsResidual::createResidual(
         radial_distortion_coefficients_, use_tangential_distortion_,
