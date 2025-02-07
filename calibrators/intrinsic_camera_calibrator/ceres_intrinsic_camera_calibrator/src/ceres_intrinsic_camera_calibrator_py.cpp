@@ -136,7 +136,7 @@ calibrate(
     initial_rvecs_cv, initial_tvecs_cv);
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
-  optimizer.solve();
+  optimizer.solve(false);
   optimizer.placeholdersToData();
 
   if (fov_regularization_weight > 0.0) {
@@ -153,7 +153,7 @@ calibrate(
           break;
         }
         if (ex_solve_attempt > 0) {
-          optimizer.solve();
+          optimizer.solve(false);
         }
         ex_solve_attempt++;
         std::cout << "Retrying with FOV regularization, attempt " << ex_solve_attempt << "..."

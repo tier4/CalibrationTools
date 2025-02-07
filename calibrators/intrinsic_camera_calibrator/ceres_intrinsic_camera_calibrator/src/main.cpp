@@ -269,7 +269,7 @@ int main(int argc, char ** argv)
     calibration_image_points, mini_opencv_calibration_rvecs, mini_opencv_calibration_tvecs);
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
-  optimizer.solve();
+  optimizer.solve(false);
   optimizer.placeholdersToData();
 
   if (fov_regularization_weight > 0.0) {
@@ -286,7 +286,7 @@ int main(int argc, char ** argv)
           break;
         }
         if (ex_solve_attempt > 0) {
-          optimizer.solve();
+          optimizer.solve(false);
         }
         ex_solve_attempt++;
         std::cout << "Retrying with FOV regularization, attempt " << ex_solve_attempt << "..."
