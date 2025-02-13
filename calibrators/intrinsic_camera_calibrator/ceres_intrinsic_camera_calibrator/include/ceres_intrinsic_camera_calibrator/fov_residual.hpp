@@ -38,13 +38,7 @@ struct CameraPoint
 
 struct FOVResidual
 {
-  static constexpr int INTRINSICS_CX_INDEX = 0;
-  static constexpr int INTRINSICS_CY_INDEX = 1;
-  static constexpr int INTRINSICS_FX_INDEX = 2;
-  static constexpr int INTRINSICS_FY_INDEX = 3;
-
   static constexpr int RESIDUAL_DIM = 8;
-
   static constexpr int UNDIST_ITERS = 100;  // cSpell:ignore UNDIST
 
   FOVResidual(
@@ -72,25 +66,25 @@ struct FOVResidual
     const T depth = T(1.0);
     const std::vector<T> shifts = {T(0.01), T(0.03), T(0.05), T(0.1),
                                    T(0.3),  T(0.5),  T(1.0),  T(3.0)};
-    int distortion_index = 4;
-    const T & cx = camera_intrinsics[INTRINSICS_CX_INDEX];
-    const T & cy = camera_intrinsics[INTRINSICS_CY_INDEX];
-    const T & fx = camera_intrinsics[INTRINSICS_FX_INDEX];
-    const T & fy = camera_intrinsics[INTRINSICS_FY_INDEX];
+    int intrinsics_index = 0;
+    const T & cx = camera_intrinsics[intrinsics_index++];
+    const T & cy = camera_intrinsics[intrinsics_index++];
+    const T & fx = camera_intrinsics[intrinsics_index++];
+    const T & fy = camera_intrinsics[intrinsics_index++];
     const T & k1 =
-      radial_distortion_coeffs_ > 0 ? camera_intrinsics[distortion_index++] : null_value;
+      radial_distortion_coeffs_ > 0 ? camera_intrinsics[intrinsics_index++] : null_value;
     const T & k2 =
-      radial_distortion_coeffs_ > 1 ? camera_intrinsics[distortion_index++] : null_value;
+      radial_distortion_coeffs_ > 1 ? camera_intrinsics[intrinsics_index++] : null_value;
     const T & k3 =
-      radial_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
-    const T & p1 = use_tangential_distortion_ ? camera_intrinsics[distortion_index++] : null_value;
-    const T & p2 = use_tangential_distortion_ ? camera_intrinsics[distortion_index++] : null_value;
+      radial_distortion_coeffs_ > 2 ? camera_intrinsics[intrinsics_index++] : null_value;
+    const T & p1 = use_tangential_distortion_ ? camera_intrinsics[intrinsics_index++] : null_value;
+    const T & p2 = use_tangential_distortion_ ? camera_intrinsics[intrinsics_index++] : null_value;
     const T & k4 =
-      rational_distortion_coeffs_ > 0 ? camera_intrinsics[distortion_index++] : null_value;
+      rational_distortion_coeffs_ > 0 ? camera_intrinsics[intrinsics_index++] : null_value;
     const T & k5 =
-      rational_distortion_coeffs_ > 1 ? camera_intrinsics[distortion_index++] : null_value;
+      rational_distortion_coeffs_ > 1 ? camera_intrinsics[intrinsics_index++] : null_value;
     const T & k6 =
-      rational_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
+      rational_distortion_coeffs_ > 2 ? camera_intrinsics[intrinsics_index++] : null_value;
 
     if (RESIDUAL_DIM != shifts.size()) {
       throw std::runtime_error("The number of residuals should match the number of shifts");
@@ -316,22 +310,22 @@ std::vector<CameraPoint<T>> getCameraPoints(
   const T null_value = T(0.0);
   const T depth = T(1.0);
 
-  int distortion_index = 0;
-  const T & cx = camera_intrinsics[distortion_index++];
-  const T & cy = camera_intrinsics[distortion_index++];
-  const T & fx = camera_intrinsics[distortion_index++];
-  const T & fy = camera_intrinsics[distortion_index++];
-  const T & k1 = radial_distortion_coeffs > 0 ? camera_intrinsics[distortion_index++] : null_value;
-  const T & k2 = radial_distortion_coeffs > 1 ? camera_intrinsics[distortion_index++] : null_value;
-  const T & k3 = radial_distortion_coeffs > 2 ? camera_intrinsics[distortion_index++] : null_value;
-  const T & p1 = use_tangential_distortion ? camera_intrinsics[distortion_index++] : null_value;
-  const T & p2 = use_tangential_distortion ? camera_intrinsics[distortion_index++] : null_value;
+  int intrinsics_index = 0;
+  const T & cx = camera_intrinsics[intrinsics_index++];
+  const T & cy = camera_intrinsics[intrinsics_index++];
+  const T & fx = camera_intrinsics[intrinsics_index++];
+  const T & fy = camera_intrinsics[intrinsics_index++];
+  const T & k1 = radial_distortion_coeffs > 0 ? camera_intrinsics[intrinsics_index++] : null_value;
+  const T & k2 = radial_distortion_coeffs > 1 ? camera_intrinsics[intrinsics_index++] : null_value;
+  const T & k3 = radial_distortion_coeffs > 2 ? camera_intrinsics[intrinsics_index++] : null_value;
+  const T & p1 = use_tangential_distortion ? camera_intrinsics[intrinsics_index++] : null_value;
+  const T & p2 = use_tangential_distortion ? camera_intrinsics[intrinsics_index++] : null_value;
   const T & k4 =
-    rational_distortion_coeffs > 0 ? camera_intrinsics[distortion_index++] : null_value;
+    rational_distortion_coeffs > 0 ? camera_intrinsics[intrinsics_index++] : null_value;
   const T & k5 =
-    rational_distortion_coeffs > 1 ? camera_intrinsics[distortion_index++] : null_value;
+    rational_distortion_coeffs > 1 ? camera_intrinsics[intrinsics_index++] : null_value;
   const T & k6 =
-    rational_distortion_coeffs > 2 ? camera_intrinsics[distortion_index++] : null_value;
+    rational_distortion_coeffs > 2 ? camera_intrinsics[intrinsics_index++] : null_value;
 
   auto getPoints = [width, height, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth](
                      const T u, const T v, std::vector<CameraPoint<T>> & camera_points,
