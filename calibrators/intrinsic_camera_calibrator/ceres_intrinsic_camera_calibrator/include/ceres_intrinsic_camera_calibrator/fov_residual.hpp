@@ -126,9 +126,9 @@ struct FOVResidual
     T height_t = T(height_);
 
     if (u >= T(0.0) && u <= width_t - T(1.0) && v >= T(0.0) && v <= height_t - T(1.0)) {
-      T closest_u = std::min(u, width_t - u - T(1.0)) / (std::max(height_t, width_t) - T(1.0));
-      T closest_v = std::min(v, height_t - v - T(1.0)) / (std::max(height_t, width_t) - T(1.0));
-      return std::min(closest_u, closest_v);
+      T closest_u = ceres::fmin(u, width_t - u - T(1.0)) / (ceres::fmax(height_t, width_t) - T(1.0));
+      T closest_v = ceres::fmin(v, height_t - v - T(1.0)) / (ceres::fmax(height_t, width_t) - T(1.0));
+      return ceres::fmin(closest_u, closest_v);
     }
     return T(0.0);
   }
