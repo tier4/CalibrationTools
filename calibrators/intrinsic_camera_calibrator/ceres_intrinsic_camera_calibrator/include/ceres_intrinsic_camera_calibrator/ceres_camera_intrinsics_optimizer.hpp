@@ -47,6 +47,7 @@ public:
   static constexpr int INTRINSICS_FY_INDEX = 3;
 
   static constexpr int RESIDUAL_DIM = 2;
+  static constexpr int FOV_RESIDUAL_DIM = 64;
 
   static constexpr int SOLVE_MAX_ATTEMPTS = 5;
   static constexpr double REPR_THR = 0.1;

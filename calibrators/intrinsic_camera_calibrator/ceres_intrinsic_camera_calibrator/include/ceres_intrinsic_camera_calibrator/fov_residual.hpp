@@ -34,11 +34,12 @@ struct CameraPoint
   T sign_shift_x;
   T sign_shift_y;
   T backprojection_err;  // cSpell:ignore backprojection
+  bool valid;
 };
 
 struct FOVResidual
 {
-  static constexpr int RESIDUAL_DIM = 8;
+  static constexpr int FOV_RESIDUAL_DIM = 64;
   static constexpr int UNDIST_ITERS = 100;  // cSpell:ignore UNDIST
 
   FOVResidual(
@@ -86,21 +87,21 @@ struct FOVResidual
     const T & k6 =
       rational_distortion_coeffs_ > 2 ? camera_intrinsics[intrinsics_index++] : null_value;
 
-    if (RESIDUAL_DIM != shifts.size()) {
-      throw std::runtime_error("The number of residuals should match the number of shifts");
+    std::fill(residuals, residuals + FOV_RESIDUAL_DIM, T(0.0));
+    if (FOV_RESIDUAL_DIM != shifts.size() * camera_points_.size()) {
+      throw std::runtime_error(
+        "The number of residuals should match the number of shifts times the number of points");
     }
-    std::fill(residuals, residuals + RESIDUAL_DIM, T(0.0));
-    for (const auto & cp : camera_points_) {
-      for (std::size_t i = 0; i < shifts.size(); i++) {
-        auto [u_shifted, v_shifted] = cameraToImage(
-          cp.x + shifts[i] * cp.sign_shift_x, cp.y + shifts[i] * cp.sign_shift_y, cx, cy, fx, fy,
-          k1, k2, k3, p1, p2, k4, k5, k6, depth);
-        auto residual = getFovResidual(u_shifted, v_shifted);
-        // Weigh the residuals by the backprojection error
-        auto residual_weighted = residual / (cp.backprojection_err + T(1.0));
-        // Increase residual magnitude & soften
-        residual_weighted = ceres::log(T(1.0) + residual_weighted);
-        residuals[i] += residual_weighted;
+    for (std::size_t i = 0; i < camera_points_.size(); i++) {
+      for (std::size_t j = 0; j < shifts.size(); j++) {
+        if (camera_points_[i].valid) {
+          auto [u_shifted, v_shifted] = cameraToImage(
+            camera_points_[i].x + shifts[j] * camera_points_[i].sign_shift_x,
+            camera_points_[i].y + shifts[j] * camera_points_[i].sign_shift_y, cx, cy, fx, fy, k1,
+            k2, k3, p1, p2, k4, k5, k6, depth);
+          auto res = getFovResidual(u_shifted, v_shifted, camera_points_[i].backprojection_err);
+          residuals[i * camera_points_.size() + j] = res;
+        }
       }
     }
 
@@ -111,10 +112,11 @@ struct FOVResidual
    * Calculates FOV residual (closest border) for given pixel in image coordinate system
    * @param[in] u The pixel x coordinate
    * @param[in] v The pixel y coordinate
+   * @param[in] backprojection_error The backprojection error
    * @returns The residual
    */
   template <typename T>
-  T getFovResidual(const T u, const T v) const
+  T getFovResidual(const T u, const T v, [[maybe_unused]] const double backprojection_error) const
   {
     T width_t = T(width_);
     T height_t = T(height_);
@@ -124,7 +126,12 @@ struct FOVResidual
         ceres::fmin(u, width_t - u - T(1.0)) / (ceres::fmax(height_t, width_t) - T(1.0));
       T closest_v =
         ceres::fmin(v, height_t - v - T(1.0)) / (ceres::fmax(height_t, width_t) - T(1.0));
-      return ceres::fmin(closest_u, closest_v);
+      T closest = ceres::fmin(closest_u, closest_v);
+      T res = ceres::log(T(1.0) + closest / (backprojection_error + T(1.0)));
+      // T res_u = ceres::log(T(1.0) + closest_u / (backprojection_error + T(1.0)));
+      // T res_v = ceres::log(T(1.0) + closest_v / (backprojection_error + T(1.0)));
+      // return std::make_pair(res_u, res_v);
+      return res;
     }
     return T(0.0);
   }
@@ -251,31 +258,31 @@ struct FOVResidual
 
     switch (distortion_coefficients) {
       case 0:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 4>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 4>(f);
         break;
       case 1:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 5>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 5>(f);
         break;
       case 2:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 6>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 6>(f);
         break;
       case 3:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 7>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 7>(f);
         break;
       case 4:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 8>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 8>(f);
         break;
       case 5:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 9>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 9>(f);
         break;
       case 6:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 10>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 10>(f);
         break;
       case 7:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 11>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 11>(f);
         break;
       case 8:
-        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, RESIDUAL_DIM, 12>(f);
+        cost_function = new ceres::AutoDiffCostFunction<FOVResidual, FOV_RESIDUAL_DIM, 12>(f);
         break;
       default:
         throw std::runtime_error("Invalid number of distortion coefficients");
@@ -335,12 +342,13 @@ std::vector<CameraPoint<T>> getCameraPoints(
     auto [u_bpr, v_bpr] =
       FOVResidual::cameraToImage<T>(x, y, cx, cy, fx, fy, k1, k2, k3, p1, p2, k4, k5, k6, depth);
     auto backprojection_err = ceres::sqrt(ceres::pow(u - u_bpr, 2) + ceres::pow(v - v_bpr, 2));
-    if (ceres::IsNaN(backprojection_err) || backprojection_err > backprojection_err_thr) {
-      return false;
-    }
     auto sign_shift_x = u <= T(0.0) ? T(-1.0) : u >= width - T(1.0) ? T(1.0) : T(0.0);
     auto sign_shift_y = v <= T(0.0) ? T(-1.0) : v >= height - T(1.0) ? T(1.0) : T(0.0);
-    camera_points.push_back({x, y, depth, sign_shift_x, sign_shift_y, backprojection_err});
+    if (ceres::IsNaN(backprojection_err) || backprojection_err > backprojection_err_thr) {
+      camera_points.push_back({x, y, depth, sign_shift_x, sign_shift_y, backprojection_err, false});
+      return false;
+    }
+    camera_points.push_back({x, y, depth, sign_shift_x, sign_shift_y, backprojection_err, true});
     return true;
   };
 

@@ -377,7 +377,7 @@ double CeresCameraIntrinsicsOptimizer::evaluateFov()
     radial_distortion_coefficients_, use_tangential_distortion_, rational_distortion_coefficients_,
     width_, height_, camera_points);
 
-  std::array<double, 8> residuals;
+  std::array<double, FOV_RESIDUAL_DIM> residuals;
   f(intrinsics_placeholder_.data(), residuals.data());
   total_ceres_fov_error = std::accumulate(residuals.begin(), residuals.end(), 0.0);
 
@@ -420,7 +420,7 @@ void CeresCameraIntrinsicsOptimizer::solve(bool use_fov_block)
         nullptr, fov_regularization_weight_ * 1e6 * object_points_.size(),
         ceres::TAKE_OWNERSHIP),  // L2
       intrinsics_placeholder_.data());
-  } else if (fov_regularization_weight_ > 0.0) {
+  } else if (coeffs_regularization_weight_ > 0.0) {
     problem.AddResidualBlock(
       DistortionCoefficientsResidual::createResidual(
         radial_distortion_coefficients_, use_tangential_distortion_,
