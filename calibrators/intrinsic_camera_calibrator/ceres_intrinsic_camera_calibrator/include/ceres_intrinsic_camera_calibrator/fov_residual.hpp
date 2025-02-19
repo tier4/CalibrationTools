@@ -128,9 +128,6 @@ struct FOVResidual
         ceres::fmin(v, height_t - v - T(1.0)) / (ceres::fmax(height_t, width_t) - T(1.0));
       T closest = ceres::fmin(closest_u, closest_v);
       T res = ceres::log(T(1.0) + closest / (backprojection_error + T(1.0)));
-      // T res_u = ceres::log(T(1.0) + closest_u / (backprojection_error + T(1.0)));
-      // T res_v = ceres::log(T(1.0) + closest_v / (backprojection_error + T(1.0)));
-      // return std::make_pair(res_u, res_v);
       return res;
     }
     return T(0.0);
