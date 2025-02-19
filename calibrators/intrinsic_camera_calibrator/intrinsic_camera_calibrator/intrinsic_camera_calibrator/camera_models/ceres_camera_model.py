@@ -39,7 +39,8 @@ class CeresCameraModel(CameraModel):
         self.rational_distortion_coefficients: Optional[int] = None
         self.use_tangential_distortion: Optional[bool] = None
         self.pre_calibration_num_samples: Optional[int] = None
-        self.regularization_weight: Optional[float] = None
+        self.coeffs_regularization_weight: Optional[float] = None
+        self.fov_regularization_weight: Optional[float] = None
         self.verbose = (
             True if os.getenv("GLOG_minloglevel") == "0" else False
         )  # cSpell:ignore minloglevel
@@ -93,7 +94,10 @@ class CeresCameraModel(CameraModel):
             num_radial_coeffs=self.radial_distortion_coefficients,
             num_rational_coeffs=self.rational_distortion_coefficients,
             use_tangential_distortion=self.use_tangential_distortion,
-            regularization_weight=self.regularization_weight,
+            coeffs_regularization_weight=self.coeffs_regularization_weight,
+            fov_regularization_weight=self.fov_regularization_weight,
+            width=self.width,
+            height=self.height,
             verbose=self.verbose,
         )
 
@@ -106,7 +110,8 @@ class CeresCameraModel(CameraModel):
         rational_distortion_coefficients: int,
         use_tangential_distortion: bool,
         pre_calibration_num_samples: int,
-        regularization_weight: float,
+        coeffs_regularization_weight: float,
+        fov_regularization_weight: float,
         **kwargs
     ):
         """Update parameters."""
@@ -114,4 +119,5 @@ class CeresCameraModel(CameraModel):
         self.rational_distortion_coefficients = rational_distortion_coefficients
         self.use_tangential_distortion = use_tangential_distortion
         self.pre_calibration_num_samples = pre_calibration_num_samples
-        self.regularization_weight = regularization_weight
+        self.coeffs_regularization_weight = coeffs_regularization_weight
+        self.fov_regularization_weight = fov_regularization_weight

@@ -30,10 +30,10 @@
 
 int main(int argc, char ** argv)
 {
-  if (argc != 6) {
+  if (argc != 7) {
     std::cout << "Usage: " << argv[0]
               << " <data_path> <num_radial_coeffs> <use_tangential_distortion> "
-                 "<num_rational_coeffs> <regularization_weight>"
+                 "<num_rational_coeffs> <coeffs_regularization_weight> <fov_regularization_weight>"
               << std::endl;
     return 1;
   }
@@ -46,7 +46,10 @@ int main(int argc, char ** argv)
   int num_radial_distortion_coeffs = atoi(argv[2]);
   bool use_tangent_distortion = atoi(argv[3]);
   int num_rational_distortion_coeffs = atoi(argv[4]);
-  double regularization_weight = atof(argv[5]);
+  double coeffs_regularization_weight = atof(argv[5]);
+  double fov_regularization_weight = atof(argv[6]);
+  int width = 0;
+  int height = 0;
 
   // Placeholders
   std::vector<std::vector<cv::Point3f>> all_object_points;
@@ -99,6 +102,14 @@ int main(int argc, char ** argv)
   for (std::size_t i = 0; i < image_paths.size(); ++i) {
     cv::Mat grayscale_img =
       cv::imread(image_paths[i], cv::IMREAD_GRAYSCALE | cv::IMREAD_IGNORE_ORIENTATION);
+
+    if (width == 0 || height == 0) {
+      width = grayscale_img.cols;
+      height = grayscale_img.rows;
+    } else {
+      assert(width == grayscale_img.cols);
+      assert(height == grayscale_img.rows);
+    }
 
     assert(size.height == -1 || size.height == grayscale_img.rows);
     assert(size.width == -1 || size.width == grayscale_img.cols);
@@ -249,16 +260,59 @@ int main(int argc, char ** argv)
   optimizer.setRadialDistortionCoefficients(num_radial_distortion_coeffs);
   optimizer.setTangentialDistortion(use_tangent_distortion);
   optimizer.setRationalDistortionCoefficients(num_rational_distortion_coeffs);
-  optimizer.setRegularizationWeight(regularization_weight);
+  optimizer.setCoeffsRegularizationWeight(coeffs_regularization_weight);
+  optimizer.setFovRegularizationWeight(fov_regularization_weight);
+  optimizer.setSourceDimensions(width, height);
   optimizer.setVerbose(true);
   optimizer.setData(
     mini_opencv_camera_matrix, mini_opencv_dist_coeffs, calibration_object_points,
     calibration_image_points, mini_opencv_calibration_rvecs, mini_opencv_calibration_tvecs);
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
-  optimizer.solve();
+  optimizer.solve(false);
   optimizer.placeholdersToData();
-  optimizer.evaluate();
+
+  if (fov_regularization_weight > 0.0) {
+    auto init_avg_ceres_error = optimizer.getAvgCeresError();
+    auto best_fov_eval = optimizer.evaluateFov();
+
+    if (best_fov_eval > CeresCameraIntrinsicsOptimizer::FOV_THR) {
+      std::cout << "FOV anomaly detected..." << std::endl;
+      int ex_solve_attempt = 0;
+      while (true) {
+        if (ex_solve_attempt >= CeresCameraIntrinsicsOptimizer::SOLVE_MAX_ATTEMPTS) {
+          std::cout << "Max solve attempts reached. Failed to converge with FOV regularization."
+                    << std::endl;
+          break;
+        }
+        if (ex_solve_attempt > 0) {
+          optimizer.solve(false);
+        }
+        ex_solve_attempt++;
+        std::cout << "Retrying with FOV regularization, attempt " << ex_solve_attempt << "..."
+                  << std::endl;
+        optimizer.solve(true);
+        auto avg_ceres_error = optimizer.getAvgCeresError();
+        auto adjustment = init_avg_ceres_error - avg_ceres_error;
+        std::cout << "Average ceres error [init / updated | adjustment]: " << init_avg_ceres_error
+                  << " / " << avg_ceres_error << " | " << adjustment << std::endl;
+        auto fov_eval = optimizer.evaluateFov();
+        std::cout << "Ceres total field of view error [best / updated | adjustment]: "
+                  << best_fov_eval << " / " << fov_eval << " | " << best_fov_eval - fov_eval
+                  << std::endl;
+        if (fov_eval < best_fov_eval && adjustment >= -CeresCameraIntrinsicsOptimizer::REPR_THR) {
+          std::cout << "Found better solution!" << std::endl;
+          best_fov_eval = fov_eval;
+          optimizer.placeholdersToData();
+          if (best_fov_eval <= CeresCameraIntrinsicsOptimizer::FOV_THR) {
+            std::cout << "Converged!" << std::endl;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   [[maybe_unused]] double rms_error = optimizer.getSolution(
     ceres_camera_matrix, ceres_dist_coeffs, ceres_calibration_rvecs, ceres_calibration_tvecs);
 

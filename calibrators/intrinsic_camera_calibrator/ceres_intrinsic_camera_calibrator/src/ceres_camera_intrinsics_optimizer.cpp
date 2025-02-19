@@ -15,6 +15,7 @@
 #include <Eigen/Core>
 #include <ceres_intrinsic_camera_calibrator/ceres_camera_intrinsics_optimizer.hpp>
 #include <ceres_intrinsic_camera_calibrator/distortion_coefficients_residual.hpp>
+#include <ceres_intrinsic_camera_calibrator/fov_residual.hpp>
 #include <ceres_intrinsic_camera_calibrator/reprojection_residual.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core.hpp>
@@ -51,9 +52,21 @@ void CeresCameraIntrinsicsOptimizer::setRationalDistortionCoefficients(
   rational_distortion_coefficients_ = rational_distortion_coefficients;
 }
 
-void CeresCameraIntrinsicsOptimizer::setRegularizationWeight(double regularization_weight)
+void CeresCameraIntrinsicsOptimizer::setCoeffsRegularizationWeight(
+  double coeffs_regularization_weight)
 {
-  regularization_weight_ = regularization_weight;
+  coeffs_regularization_weight_ = coeffs_regularization_weight;
+}
+
+void CeresCameraIntrinsicsOptimizer::setFovRegularizationWeight(double fov_regularization_weight)
+{
+  fov_regularization_weight_ = fov_regularization_weight;
+}
+
+void CeresCameraIntrinsicsOptimizer::setSourceDimensions(int width, int height)
+{
+  width_ = width;
+  height_ = height;
 }
 
 void CeresCameraIntrinsicsOptimizer::setVerbose(bool verbose) { verbose_ = verbose; }
@@ -288,6 +301,35 @@ void CeresCameraIntrinsicsOptimizer::placeholdersToData()
   }
 }
 
+double CeresCameraIntrinsicsOptimizer::getTotalCeresError()
+{
+  double total_ceres_error = 0;
+
+  for (std::size_t view_index = 0; view_index < object_points_.size(); view_index++) {
+    const auto & view_object_points = object_points_[view_index];
+    const auto & view_image_points = image_points_[view_index];
+    auto & pose_placeholder = pose_placeholders_[view_index];
+
+    for (std::size_t point_index = 0; point_index < view_object_points.size(); point_index++) {
+      auto f = ReprojectionResidual(
+        view_object_points[point_index], view_image_points[point_index],
+        radial_distortion_coefficients_, use_tangential_distortion_,
+        rational_distortion_coefficients_);
+      std::array<double, 2> residuals;
+      f(intrinsics_placeholder_.data(), pose_placeholder.data(), residuals.data());
+      total_ceres_error += residuals[0] * residuals[0] + residuals[1] * residuals[1];
+    }
+  }
+
+  return total_ceres_error;
+}
+
+double CeresCameraIntrinsicsOptimizer::getAvgCeresError()
+{
+  double total_ceres_error = getTotalCeresError();
+  return total_ceres_error / object_points_.size();
+}
+
 void CeresCameraIntrinsicsOptimizer::evaluate()
 {
   // Start developing the ceres optimizer
@@ -317,30 +359,36 @@ void CeresCameraIntrinsicsOptimizer::evaluate()
     printf("summary | calibration_error=%.3f\n", total_calibration_error / object_points_.size());
   }
 
-  double total_ceres_error = 0;
-
-  for (std::size_t view_index = 0; view_index < object_points_.size(); view_index++) {
-    const auto & view_object_points = object_points_[view_index];
-    const auto & view_image_points = image_points_[view_index];
-    auto & pose_placeholder = pose_placeholders_[view_index];
-
-    for (std::size_t point_index = 0; point_index < view_object_points.size(); point_index++) {
-      auto f = ReprojectionResidual(
-        view_object_points[point_index], view_image_points[point_index],
-        radial_distortion_coefficients_, use_tangential_distortion_,
-        rational_distortion_coefficients_);
-      std::array<double, 2> residuals;
-      f(intrinsics_placeholder_.data(), pose_placeholder.data(), residuals.data());
-      total_ceres_error += residuals[0] * residuals[0] + residuals[1] * residuals[1];
-    }
-  }
+  double total_ceres_error = getTotalCeresError();
 
   if (verbose_) {
     std::cout << "total_ceres_error: " << 0.5 * total_ceres_error << std::endl;
   }
 }
 
-void CeresCameraIntrinsicsOptimizer::solve()
+double CeresCameraIntrinsicsOptimizer::evaluateFov()
+{
+  double total_ceres_fov_error = 0;
+  auto camera_points = getCameraPoints<double>(
+    intrinsics_placeholder_.data(), radial_distortion_coefficients_, use_tangential_distortion_,
+    rational_distortion_coefficients_, width_, height_);
+
+  auto f = FOVResidual(
+    radial_distortion_coefficients_, use_tangential_distortion_, rational_distortion_coefficients_,
+    width_, height_, camera_points);
+
+  std::array<double, FOV_RESIDUAL_DIM> residuals;
+  f(intrinsics_placeholder_.data(), residuals.data());
+  total_ceres_fov_error = std::accumulate(residuals.begin(), residuals.end(), 0.0);
+
+  if (verbose_) {
+    std::cout << "total_ceres_fov_error: " << total_ceres_fov_error << std::endl;
+  }
+
+  return total_ceres_fov_error;
+}
+
+void CeresCameraIntrinsicsOptimizer::solve(bool use_fov_block)
 {
   ceres::Problem problem;
 
@@ -360,13 +408,26 @@ void CeresCameraIntrinsicsOptimizer::solve()
     }
   }
 
-  if (regularization_weight_ > 0.0) {
+  if (use_fov_block) {
+    auto camera_points = getCameraPoints<double>(
+      intrinsics_placeholder_.data(), radial_distortion_coefficients_, use_tangential_distortion_,
+      rational_distortion_coefficients_, width_, height_);
+    problem.AddResidualBlock(
+      FOVResidual::createResidual(
+        radial_distortion_coefficients_, use_tangential_distortion_,
+        rational_distortion_coefficients_, width_, height_, camera_points),
+      new ceres::ScaledLoss(
+        nullptr, fov_regularization_weight_ * 1e6 * object_points_.size(),
+        ceres::TAKE_OWNERSHIP),  // L2
+      intrinsics_placeholder_.data());
+  } else if (coeffs_regularization_weight_ > 0.0) {
     problem.AddResidualBlock(
       DistortionCoefficientsResidual::createResidual(
         radial_distortion_coefficients_, use_tangential_distortion_,
         rational_distortion_coefficients_),
       new ceres::ScaledLoss(
-        nullptr, regularization_weight_ * object_points_.size(), ceres::TAKE_OWNERSHIP),  // L2
+        nullptr, coeffs_regularization_weight_ * object_points_.size(),
+        ceres::TAKE_OWNERSHIP),  // L2
       intrinsics_placeholder_.data());
   }
 
@@ -394,6 +455,6 @@ void CeresCameraIntrinsicsOptimizer::solve()
   ceres::Solve(options, &problem, &summary);
 
   if (verbose_) {
-    std::cout << "Report: " << std::endl << summary.FullReport() << std::endl;
+    std::cout << "Report: " << summary.FullReport() << std::endl;
   }
 }

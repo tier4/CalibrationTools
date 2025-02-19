@@ -37,7 +37,10 @@ class CeresCalibrator(Calibrator):
             bool, value=True, min_value=False, max_value=True
         )
         self.pre_calibration_num_samples = Parameter(int, value=40, min_value=1, max_value=100)
-        self.regularization_weight = Parameter(float, value=0.001, min_value=0.0, max_value=1.0)
+        self.coeffs_regularization_weight = Parameter(
+            float, value=0.001, min_value=0.0, max_value=1.0
+        )
+        self.fov_regularization_weight = Parameter(float, value=0.0, min_value=0.0, max_value=1.0)
 
         self.set_parameters(**cfg)
 
@@ -57,7 +60,8 @@ class CeresCalibrator(Calibrator):
                 rational_distortion_coefficients=self.rational_distortion_coefficients.value,
                 use_tangential_distortion=self.use_tangential_distortion.value,
                 pre_calibration_num_samples=self.pre_calibration_num_samples.value,
-                regularization_weight=self.regularization_weight.value,
+                coeffs_regularization_weight=self.coeffs_regularization_weight.value,
+                fov_regularization_weight=self.fov_regularization_weight.value,
             )
         camera_model.calibrate(
             height=height,

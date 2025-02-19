@@ -47,6 +47,11 @@ public:
   static constexpr int INTRINSICS_FY_INDEX = 3;
 
   static constexpr int RESIDUAL_DIM = 2;
+  static constexpr int FOV_RESIDUAL_DIM = 64;
+
+  static constexpr int SOLVE_MAX_ATTEMPTS = 5;
+  static constexpr double REPR_THR = 0.1;
+  static constexpr double FOV_THR = 1e-6;
 
   /*!
    * Sets the number of radial distortion coefficients
@@ -70,9 +75,22 @@ public:
 
   /*!
    * Sets the regularization weight for the distortion coefficients
-   * @param[in] regularization_weight the regularization weight
+   * @param[in] coeffs_regularization_weight the regularization weight
    */
-  void setRegularizationWeight(double regularization_weight);
+  void setCoeffsRegularizationWeight(double coeffs_regularization_weight);
+
+  /*!
+   * Sets the regularization weight for the field of view
+   * @param[in] fov_regularization_weight the regularization weight
+   */
+  void setFovRegularizationWeight(double fov_regularization_weight);
+
+  /*!
+   * Sets the source dimensions
+   * @param[in] width the width of the source image
+   * @param[in] height the height of the source image
+   */
+  void setSourceDimensions(int width, int height);
 
   /*!
    * Sets the verbose mode
@@ -108,6 +126,18 @@ public:
     std::vector<cv::Mat> & rvecs, std::vector<cv::Mat> & tvecs);
 
   /*!
+   * Calculates the ceres total error
+   * @return the ceres total error
+   */
+  double getTotalCeresError();
+
+  /*!
+   * Calculates the average ceres error
+   * @return the ceres average error
+   */
+  double getAvgCeresError();
+
+  /*!
    * Formats the input data into optimization placeholders
    */
   void dataToPlaceholders();
@@ -124,15 +154,25 @@ public:
   void evaluate();
 
   /*!
-   * Formulates and solves the optimization problem
+   * Evaluates the current optimization variables with the ceres cost function for the field of view
+   * @return the Ceres total field of view error
    */
-  void solve();
+  double evaluateFov();
+
+  /*!
+   * Formulates and solves the optimization problem
+   * @param[in] use_fov_block whether or not to use the field of view regularization
+   */
+  void solve(bool use_fov_block = false);
 
 protected:
   int radial_distortion_coefficients_;
   bool use_tangential_distortion_;
   int rational_distortion_coefficients_;
-  double regularization_weight_;
+  double coeffs_regularization_weight_;
+  double fov_regularization_weight_;
+  int width_;
+  int height_;
   bool verbose_;
   cv::Mat_<double> camera_matrix_;
   cv::Mat_<double> distortion_coeffs_;

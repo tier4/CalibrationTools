@@ -28,7 +28,8 @@ calibration_parameters:
   rational_distortion_coefficients: 3
   use_tangential_distortion: true
   pre_calibration_num_samples: 40
-  regularization_weight: 0.2
+  coeffs_regularization_weight: 0.2
+  fov_regularization_weight: 0.0
 
 calibrator_type: ceres
 
