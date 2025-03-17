@@ -4,9 +4,11 @@
   <arg name="calibration_service_name" default="calibrate_radar_lidar"/>
   <arg name="rviz" default="true"/>
   <let name="rviz_profile" value="$(find-pkg-share marker_radar_lidar_calibrator)/rviz/default.rviz"/>
-  <arg name="radar_parallel_frame" default="front_unit_base_link"/>
+  <arg name="radar_optimization_frame" default="base_link"/>
   <arg name="input_lidar_pointcloud" default="/sensing/lidar/front_lower/pointcloud_raw"/>
-  <arg name="input_radar_objects" default="/sensing/radar/front_center/objects_raw"/>
+  <arg name="input_radar_msg" default="/sensing/radar/front_center/objects_raw"/>
+  <arg name="msg_type" default="objects_raw"/>
+  <arg name="transformation_type" default="svd_2d"/>
 
   <arg name="use_lidar_initial_crop_box_filter" default="false"/>
   <arg name="lidar_initial_crop_box_min_x" default="-50.0"/>
@@ -29,11 +31,13 @@
   <group>
     <push-ros-namespace namespace="$(var ns)"/>
     <node pkg="marker_radar_lidar_calibrator" exec="marker_radar_lidar_calibrator" name="marker_radar_lidar_calibrator" output="screen">
-      <param name="radar_parallel_frame" value="$(var radar_parallel_frame)"/>
+      <param name="radar_optimization_frame" value="$(var radar_optimization_frame)"/>
+      <param name="msg_type" value="$(var msg_type)"/>
+      <param name="transformation_type" value="$(var transformation_type)"/>
 
       <remap from="extrinsic_calibration" to="$(var calibration_service_name)"/>
       <remap from="input_lidar_pointcloud" to="$(var input_lidar_pointcloud)"/>
-      <remap from="input_radar_objects" to="$(var input_radar_objects)"/>
+      <remap from="input_radar_msg" to="$(var input_radar_msg)"/>
 
       <param name="use_lidar_initial_crop_box_filter" value="$(var use_lidar_initial_crop_box_filter)"/>
       <param name="lidar_initial_crop_box_min_x" value="$(var lidar_initial_crop_box_min_x)"/>

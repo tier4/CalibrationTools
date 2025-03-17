@@ -17,8 +17,12 @@ ament_auto_find_build_dependencies()
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/CalibrationPoints.msg"
   "msg/CalibrationResult.msg"
+  "msg/CalibrationMetrics.msg"
+  "msg/MethodMetrics.msg"
   "msg/Files.msg"
   "srv/Empty.srv"
+  "srv/DeleteLidarRadarPair.srv"
+  "srv/FileSrv.srv"
   "srv/FilesSrv.srv"
   "srv/FilesListSrv.srv"
   "srv/CalibrationDatabase.srv"

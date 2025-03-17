@@ -2,11 +2,23 @@
 <launch>
   <arg name="rviz" default="true"/>
 
-  <arg name="radar_parallel_frame"/>
+  <arg name="radar_optimization_frame"/>
   <arg name="radar_frame"/>
   <arg name="lidar_frame"/>
+  <arg name="msg_type" default="radar_tracks">
+    <choice value="radar_tracks"/>
+    <choice value="radar_scan"/>
+    <choice value="radar_cloud"/>
+  </arg>
 
-  <arg name="input_radar_objects"/>
+  <arg name="transformation_type" default="svd_2d">
+    <choice value="svd_2d"/>
+    <choice value="yaw_only_rotation_2d"/>
+    <choice value="svd_3d"/>
+    <choice value="zero_roll_3d"/>
+  </arg>
+
+  <arg name="input_radar_msg"/>
   <arg name="input_lidar_pointcloud"/>
 
   <node pkg="tf2_ros" exec="static_transform_publisher" name="lidar_broadcaster" output="screen" args="0 0 0 0 0 0 $(var radar_frame) radar_frame"/>
@@ -15,8 +27,10 @@
   <include file="$(find-pkg-share marker_radar_lidar_calibrator)/launch/calibrator.launch.xml">
     <arg name="rviz" value="$(var rviz)"/>
     <arg name="calibration_service_name" value="calibrate_radar_lidar"/>
-    <arg name="radar_parallel_frame" value="$(var radar_parallel_frame)"/>
+    <arg name="radar_optimization_frame" value="$(var radar_optimization_frame)"/>
     <arg name="input_lidar_pointcloud" value="$(var input_lidar_pointcloud)"/>
-    <arg name="input_radar_objects" value="$(var input_radar_objects)"/>
+    <arg name="input_radar_msg" value="$(var input_radar_msg)"/>
+    <arg name="msg_type" value="$(var msg_type)"/>
+    <arg name="transformation_type" value="$(var transformation_type)"/>
   </include>
 </launch>

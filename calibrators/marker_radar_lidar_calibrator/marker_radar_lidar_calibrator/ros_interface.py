@@ -19,6 +19,8 @@ import threading
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from std_srvs.srv import Empty
+from tier4_calibration_msgs.srv import DeleteLidarRadarPair
+from tier4_calibration_msgs.srv import FileSrv
 
 
 class ServiceWrapper:
@@ -57,6 +59,28 @@ class EmptyServiceWrapper(ServiceWrapper):
         self.future = self.client.call_async(req)
 
 
+class DeleteLidarRadarPairServiceWrapper(ServiceWrapper):
+    def __init__(self, node, name):
+        super().__init__()
+        self.client = node.create_client(DeleteLidarRadarPair, name)
+
+    def __call__(self, pair_id):
+        req = DeleteLidarRadarPair.Request()
+        req.pair_id = pair_id  # Set the pair_id in the request
+        self.future = self.client.call_async(req)
+
+
+class FileServiceWrapper(ServiceWrapper):
+    def __init__(self, node, name):
+        super().__init__()
+        self.client = node.create_client(FileSrv, name)
+
+    def __call__(self, file):
+        req = FileSrv.Request()
+        req.file = file
+        self.future = self.client.call_async(req)
+
+
 class RosInterface(Node):
     def __init__(self):
         super().__init__("marker_radar_lidar_calibrator_ui")
@@ -67,14 +91,20 @@ class RosInterface(Node):
 
         self.extract_background_model_client = EmptyServiceWrapper(self, "extract_background_model")
         self.add_lidar_radar_pair_client = EmptyServiceWrapper(self, "add_lidar_radar_pair")
-        self.delete_lidar_radar_pair_client = EmptyServiceWrapper(self, "delete_lidar_radar_pair")
+        self.delete_lidar_radar_pair_client = DeleteLidarRadarPairServiceWrapper(
+            self, "delete_lidar_radar_pair"
+        )
         self.send_calibration_client = EmptyServiceWrapper(self, "send_calibration")
+        self.load_database_client = FileServiceWrapper(self, "load_database")
+        self.save_database_client = FileServiceWrapper(self, "save_database")
 
         self.client_list = [
             self.extract_background_model_client,
             self.add_lidar_radar_pair_client,
             self.delete_lidar_radar_pair_client,
             self.send_calibration_client,
+            self.load_database_client,
+            self.save_database_client,
         ]
 
         self.timer = self.create_timer(0.1, self.timer_callback)
@@ -99,17 +129,34 @@ class RosInterface(Node):
             self.send_calibration_client.set_result_callback(result_callback)
             self.send_calibration_client.set_status_callback(status_callback)
 
+    def set_load_database_callback(self, result_callback, status_callback):
+        with self.lock:
+            self.load_database_client.set_result_callback(result_callback)
+            self.load_database_client.set_status_callback(status_callback)
+
+    def set_save_database_callback(self, result_callback, status_callback):
+        with self.lock:
+            self.save_database_client.set_result_callback(result_callback)
+            self.save_database_client.set_status_callback(status_callback)
+
     def extract_background_model(self):
         self.extract_background_model_client()
 
     def add_lidar_radar_pair(self):
         self.add_lidar_radar_pair_client()
 
-    def delete_lidar_radar_pair(self):
-        self.delete_lidar_radar_pair_client()
+    def delete_lidar_radar_pair(self, pair_id):
+        print(f"Requesting deletion of lidar-radar pair with ID: {pair_id}")
+        self.delete_lidar_radar_pair_client(pair_id)
 
     def send_calibration(self):
         self.send_calibration_client()
+
+    def load_database(self, file):
+        self.load_database_client(file)
+
+    def save_database(self, file):
+        self.save_database_client(file)
 
     def timer_callback(self):
         with self.lock:

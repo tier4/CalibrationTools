@@ -1,0 +1,7 @@
+string method_name
+float64[] calibrated_distance_errors
+float64[] calibrated_yaw_errors
+float64[] avg_crossval_calibrated_distance_errors
+float64[] avg_crossval_calibrated_yaw_errors
+float64[] std_crossval_calibrated_distance_errors
+float64[] std_crossval_calibrated_yaw_errors

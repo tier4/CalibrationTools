@@ -15,6 +15,8 @@ Please download the data (rosbag) from this [link](https://drive.google.com/driv
 
 The rosbag includes three different topics: `/sensing/radar/front_center/objects_raw`, `/sensing/lidar/front_lower/pointcloud_raw`, and `/tf_static`.
 
+Please note that in this rosbag, the data recorded from the ARS408 radar does not include elevation angles for detections. To estimate the transformation between the radar and LiDAR sensors, we will use the `svd_2d` method.
+
 ## Environment preparation
 
 ### Overall calibration environment
@@ -50,7 +52,7 @@ A menu titled `Launcher configuration` should appear in the UI, and the user may
 For this tutorial, we modify the default value of `radar_name` from `front_left` to `front_center`. After configuring the parameters, click `Launch`.
 
 <p align="center">
-    <img src="../images/marker_radar_lidar_calibrator/menu2.jpg" alt="menu2">
+    <img src="../images/marker_radar_lidar_calibrator/menu2.png" alt="menu2">
 </p>
 
 The following UI should be displayed, and when the `Calibrate` button becomes available, click it to start the calibration process.
@@ -67,19 +69,19 @@ Once the user starts playing the tutorial rosbag, the pointcloud should appear i
 Note that the user should remove the radar reflector from the calibration area before this step. If any moving object enters the calibration area at this point, the area that these objects pass through will be marked as background and thus will not be usable for calibration in later steps.
 
 <p align="center">
-    <img src="../images/marker_radar_lidar_calibrator/rviz1.jpg" alt="rviz1" width="500">
+    <img src="../images/marker_radar_lidar_calibrator/rviz1.png" alt="rviz1" width="500">
 </p>
 
 Once the user clicks the button, it will become unavailable in the UI until the process finishes. For a more detailed status of the background extraction process, the user can check the console logs.
 
 <p align="center">
-    <img src="../images/marker_radar_lidar_calibrator/rviz2.jpg" alt="rviz2" width="500">
+    <img src="../images/marker_radar_lidar_calibrator/rviz2.png" alt="rviz2" width="500">
 </p>
 
 Once the background is extracted, the `Add lidar-radar pair` button will become enabled, as shown in the following image. After this, the user can start moving radar reflectors into the calibration area.
 
 <p align="center">
-    <img src="../images/marker_radar_lidar_calibrator/rviz3.jpg" alt="rviz3" width="500">
+    <img src="../images/marker_radar_lidar_calibrator/rviz3.png" alt="rviz3" width="500">
 </p>
 
 Another way to confirm that the background model extraction finished, is to check the console output. The following text should be displayed upon completion:
@@ -120,18 +122,27 @@ After the background model has been extracted, the user can carry the radar refl
 
 In the tutorial rosbag, the user will see that both the human and the radar reflector (with a tripod) are identified as foreground objects in the image below.
 
-In the image, the colored points represent different lidar foreground clusters. The purple lines indicate radar foreground detections, appearing as lines due to the radar's lack of elevation data, making the z-axis unknown. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud. There is no blue point on the human cluster because the calibrator filters out clusters where the highest point in the cluster exceeds the specified threshold.
+In the left image below, the colored points represent different lidar foreground clusters. The purple lines indicate radar foreground detections, appearing as lines due to the radar's lack of elevation data, making the z-axis unknown. The blue point is the estimated center of the radar reflector derived from the lidar pointcloud. There is no blue point on the human cluster because the calibrator filters out clusters where the highest point in the cluster exceeds the specified threshold.
 
-<p align="center">
-    <img src="../images/marker_radar_lidar_calibrator/add1.jpg" alt="add1" width="300" height="300">
-</p>
+On the other hand, if the radar provides elevation data, the detections appear as points, as shown in the right image below.
+
+<table>
+  <tr>
+    <td><img src="../images/marker_radar_lidar_calibrator/add2d_1.png"  alt="2d" width = 700px height = 300px></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/add3d_1.png"  alt="3d" width = 700px height = 300px ></td>
+   </tr>
+   <tr>
+    <td><p style="text-align: center;">Radar without elevation.</p></td>
+    <td><p style="text-align: center;">Radar with elevation.</p></td>
+  </tr>
+</table>
 
 When a purple line connects the purple point (the radar estimation of the reflector) and the blue point (the lidar estimation of the reflector), the user can press the `Add lidar-radar pair` button to register them as a pair. The line represents that the detections in each modality recognize each other as their best match, thus forming a valid pair. If this does not happen, the initial calibration may be too far from the real value for the pairing heuristic to succeed.
 
 Afterward, if the pair that the user added converges, it will be added to the data used for calibration. Additionally, the colors of the markers will change: the white point indicates the lidar estimation, the red point marks the initial radar estimation, and the green point signifies the calibrated radar estimation.
 
 <p align="center">
-    <img src="../images/marker_radar_lidar_calibrator/add2.jpg" alt="add2" width="300" height="300">
+    <img src="../images/marker_radar_lidar_calibrator/add2.png" alt="add2" width="300" height="300">
 </p>
 
 As described in the [Step 3: Matching and filtering](../../calibrators/marker_radar_lidar_calibrator/README.md#step-3-matching-and-filtering) in the general documentation, we rely on the initial calibration to pair each lidar detection with its closest radar detection, and vice versa. Below, we show examples of good and bad initial calibration.
@@ -157,8 +168,9 @@ To test this feature, the user can click the previous button to delete the lates
 
 <table>
   <tr>
-    <td><img src="../images/marker_radar_lidar_calibrator/delete1.jpg" alt="delete1" width = 700px ></td>
-    <td><img src="../images/marker_radar_lidar_calibrator/delete2.jpg" alt="delete2" width = 700px ></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/delete1.png" alt="delete1" width =
+    700px ></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/delete2.png" alt="delete2" width = 700px ></td>
    </tr>
    <tr>
     <td><p style="text-align: center;">Before deletion.</p></td>
@@ -177,10 +189,10 @@ The console should also show the following text.
 This package also provides a metric plotter for real-time visualization to help users determine whether enough samples have been collected and identify potential errors in sampling or the presence of outliers.
 
 <p align="center">
-    <img src="../images/marker_radar_lidar_calibrator/metric_plotter1.jpg" alt="metric_plotter1" width="500">
+    <img src="../images/marker_radar_lidar_calibrator/metric_plotter1.png" alt="metric_plotter1" width="500">
 </p>
 
-The top subplots display the cross-validation errors, while the bottom subplot shows the average errors in the calibration procedure. Plotting for the average errors begins after three pairs have been collected. For the cross-validation errors, plotting starts after four pairs have been collected.
+The plots not only display the average errors and cross-validation errors for the selected algorithm but also provide metrics for an alternative method to facilitate result comparison. For example, if the user selects `svd_2d`, the plotter will display errors for both `yaw_only_rotation_2d` and `svd_2d`. Similarly, if the user selects `roll_zero_3d`, errors for both `roll_zero_3d` and `svd_3d` will be shown. Average errors are plotted after three data pairs have been collected, whereas cross-validation errors begin plotting after four pairs have been gathered.
 
 The cross-validation error is computed as follows: At any points in time, N pairs have been collected (5 in the previous example), and the cross-validation error is computed for every number of pairs K between 3 and N-1. For every value of K, all potential combinations of size K (NCK or N choose K) are computed, calibration is attempted using those K pairs, and the calibration error is computed over the remaining N - K pairs. Finally, the value of the cross-validation error at `x=K` is the averaged calibration error with the area shown representing the standard deviation of said calibration error.
 
@@ -188,23 +200,24 @@ Note that the value of `x=N-1` represents the leave-on-out cross-validation stra
 
 The previous process is valid for both cross-validation distance and angle errors, and the users can use these values to determine when to stop the calibration process. When the cross-validation converges both in mean and has a low standard deviation, it can be considered a good point to stop calibrating. The particular criteria is left up to the user, since depending on the use cases, the required accuracy is also affected.
 
+Additionally, the plotter displays the distribution of the range, pitch, and yaw of the detections. This helps users assess whether they have collected a sufficient variety of calibration data.
+
 ### Sending the calibration result to the sensor calibration manager
 
 The user can click the `Send calibration` button once it is enabled. However, it is recommended to stop the calibration when the curve in the cross-validation error has converged. Therefore, in this tutorial, we run the calibration process until the bag is finished. Once the calibration has ended, the console should show similar message to the following ones:
 
 ```text
-[marker_radar_lidar_calibrator]: Initial calibration error: detection2detection.distance=0.3279m yaw=1.5119 degrees
-[marker_radar_lidar_calibrator]: Final calibration error: detection2detection.distance=0.0576m yaw=0.1642 degrees
-[marker_radar_lidar_calibrator]: Final calibration error (rotation only): detection2detection.distance=0.0634m yaw=0.1774 degrees
-[marker_radar_lidar_calibrator]: The 2D calibration pose was chosen as the output calibration pose
+[marker_radar_lidar_calibrator]: Initial calibration error: detection2detection.distance=0.3254m yaw=1.4958 degrees (evaluateTransformation())
+[marker_radar_lidar_calibrator]: Type: svd_2d, distance error: 0.0614m, yaw error: 0.1638 degrees (evaluateTransformation())
+[marker_radar_lidar_calibrator]: Type: yaw_only_rotation_2d, distance error: 0.0639m, yaw error: 0.1646 degrees (evaluateTransformation())
 ```
 
 Once the `Send calibration` button is clicked, the result will be sent to the sensor calibration manager. Afterward, no pairs can be added or deleted, as shown in the image below. Please make sure you want to end the calibration process before clicking the button.
 
 <table>
   <tr>
-    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration1.jpg" alt = "end_calibration1" width = 700px></td>
-    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration2.jpg" alt = "end_calibration2" width = 700px></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration1.png" alt = "end_calibration1" width = 700px></td>
+    <td><img src="../images/marker_radar_lidar_calibrator/end_calibration2.png" alt = "end_calibration2" width = 700px></td>
    </tr>
    <tr>
     <td><p style="text-align: center;">Rosbag finished.</p></td>
