@@ -507,12 +507,14 @@ std::vector<Eigen::Vector3d> ExtrinsicReflectorBasedCalibrator::extractReflector
       this->get_logger(), "crop box parameters=%f | %f | %f",
       parameters_.lidar_initial_crop_box_max_x, parameters_.lidar_initial_crop_box_max_y,
       parameters_.lidar_initial_crop_box_max_z);
-    box_filter.setMin(Eigen::Vector4f(
-      parameters_.lidar_initial_crop_box_min_x, parameters_.lidar_initial_crop_box_min_y,
-      parameters_.lidar_initial_crop_box_min_z, 1.0));
-    box_filter.setMax(Eigen::Vector4f(
-      parameters_.lidar_initial_crop_box_max_x, parameters_.lidar_initial_crop_box_max_y,
-      parameters_.lidar_initial_crop_box_max_z, 1.0));
+    box_filter.setMin(
+      Eigen::Vector4f(
+        parameters_.lidar_initial_crop_box_min_x, parameters_.lidar_initial_crop_box_min_y,
+        parameters_.lidar_initial_crop_box_min_z, 1.0));
+    box_filter.setMax(
+      Eigen::Vector4f(
+        parameters_.lidar_initial_crop_box_max_x, parameters_.lidar_initial_crop_box_max_y,
+        parameters_.lidar_initial_crop_box_max_z, 1.0));
     box_filter.setInputCloud(lidar_pointcloud_ptr);
     box_filter.filter(*tmp_lidar_pointcloud_ptr);
     lidar_pointcloud_ptr.swap(tmp_lidar_pointcloud_ptr);
@@ -618,12 +620,14 @@ std::vector<Eigen::Vector3d> ExtrinsicReflectorBasedCalibrator::extractReflector
   if (parameters_.use_radar_initial_crop_box_filter) {
     pcl::CropBox<PointType> box_filter;
     pcl::PointCloud<PointType>::Ptr tmp_radar_pointcloud_ptr(new pcl::PointCloud<PointType>);
-    box_filter.setMin(Eigen::Vector4f(
-      parameters_.radar_initial_crop_box_min_x, parameters_.radar_initial_crop_box_min_y,
-      parameters_.radar_initial_crop_box_min_z, 1.0));
-    box_filter.setMax(Eigen::Vector4f(
-      parameters_.radar_initial_crop_box_max_x, parameters_.radar_initial_crop_box_max_y,
-      parameters_.radar_initial_crop_box_max_z, 1.0));
+    box_filter.setMin(
+      Eigen::Vector4f(
+        parameters_.radar_initial_crop_box_min_x, parameters_.radar_initial_crop_box_min_y,
+        parameters_.radar_initial_crop_box_min_z, 1.0));
+    box_filter.setMax(
+      Eigen::Vector4f(
+        parameters_.radar_initial_crop_box_max_x, parameters_.radar_initial_crop_box_max_y,
+        parameters_.radar_initial_crop_box_max_z, 1.0));
     box_filter.setInputCloud(radar_pointcloud_ptr);
     box_filter.filter(*tmp_radar_pointcloud_ptr);
     radar_pointcloud_ptr.swap(tmp_radar_pointcloud_ptr);

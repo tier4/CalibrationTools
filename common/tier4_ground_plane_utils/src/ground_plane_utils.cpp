@@ -46,10 +46,12 @@ std::tuple<bool, Eigen::Vector4d, pcl::PointCloud<PointType>::Ptr> extractGround
 
   if (parameters.use_crop_box_filter_) {
     pcl::CropBox<PointType> boxFilter;
-    boxFilter.setMin(Eigen::Vector4f(
-      parameters.crop_box_min_x_, parameters.crop_box_min_y_, parameters.crop_box_min_z_, 1.0));
-    boxFilter.setMax(Eigen::Vector4f(
-      parameters.crop_box_max_x_, parameters.crop_box_max_y_, parameters.crop_box_max_z_, 1.0));
+    boxFilter.setMin(
+      Eigen::Vector4f(
+        parameters.crop_box_min_x_, parameters.crop_box_min_y_, parameters.crop_box_min_z_, 1.0));
+    boxFilter.setMax(
+      Eigen::Vector4f(
+        parameters.crop_box_max_x_, parameters.crop_box_max_y_, parameters.crop_box_max_z_, 1.0));
     boxFilter.setInputCloud(pointcloud);
     boxFilter.filter(*pointcloud);
   }

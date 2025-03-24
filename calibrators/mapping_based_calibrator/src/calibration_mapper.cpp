@@ -455,9 +455,10 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
 
   float rotation_angle_diff =
     (180.0 / M_PI) *
-    std::acos(std::min(
-      1.0, 0.5 * ((delta_pose1.rotation().inverse() * delta_pose2.rotation()).trace() -
-                  1.0)));  // Tr(R) = 1 + 2*cos(theta)
+    std::acos(
+      std::min(
+        1.0, 0.5 * ((delta_pose1.rotation().inverse() * delta_pose2.rotation()).trace() -
+                    1.0)));  // Tr(R) = 1 + 2*cos(theta)
 
   if (
     std::abs(translation_angle_diff) > parameters_->lost_frame_max_angle_diff_ ||
@@ -490,9 +491,10 @@ void CalibrationMapper::checkKeyframeLost(Frame::Ptr keyframe)
     float trans_diff = (interpolated_pose.inverse() * frame_pose).translation().norm();
     float rotation_angle_diff =
       (180.0 / M_PI) *
-      std::acos(std::min(
-        1.0, 0.5 * ((interpolated_pose.rotation().inverse() * frame_pose.rotation()).trace() -
-                    1.0)));  // Tr(R) = 1 + 2*cos(theta)
+      std::acos(
+        std::min(
+          1.0, 0.5 * ((interpolated_pose.rotation().inverse() * frame_pose.rotation()).trace() -
+                      1.0)));  // Tr(R) = 1 + 2*cos(theta)
 
     if (
       (!left_frame->stopped_ && !right_frame->stopped_) &&
@@ -938,12 +940,14 @@ bool CalibrationMapper::addNewLidarCalibrationFrame(
   if (parameters_->crop_z_calibration_pointclouds_) {
     pcl::CropBox<PointType> box_filter;
 
-    box_filter.setMin(Eigen::Vector4f(
-      -parameters_->mapping_max_range_, -parameters_->mapping_max_range_,
-      -parameters_->mapping_max_range_, 1.0));
-    box_filter.setMax(Eigen::Vector4f(
-      parameters_->mapping_max_range_, parameters_->mapping_max_range_,
-      parameters_->crop_z_calibration_pointclouds_value_, 1.0));
+    box_filter.setMin(
+      Eigen::Vector4f(
+        -parameters_->mapping_max_range_, -parameters_->mapping_max_range_,
+        -parameters_->mapping_max_range_, 1.0));
+    box_filter.setMax(
+      Eigen::Vector4f(
+        parameters_->mapping_max_range_, parameters_->mapping_max_range_,
+        parameters_->crop_z_calibration_pointclouds_value_, 1.0));
     box_filter.setInputCloud(pc_ptr);
     box_filter.filter(*pc_ptr);
   }

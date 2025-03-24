@@ -331,8 +331,9 @@ void pcl::JointIterativeClosestPointExtended<PointSource, PointTarget, Scalar>::
         "[pcl::%s::computeTransformation] Not enough correspondences found. "
         "Relax your threshold parameters.\n",
         getClassName().c_str());
-      convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<
-                                                 Scalar>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
+      convergence_criteria_->setConvergenceState(
+        pcl::registration::DefaultConvergenceCriteria<
+          Scalar>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
       converged_ = false;
       break;
     }
