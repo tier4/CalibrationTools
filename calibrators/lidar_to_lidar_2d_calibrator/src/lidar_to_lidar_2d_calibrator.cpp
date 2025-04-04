@@ -121,8 +121,9 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   kalman_filter_.setA(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
   kalman_filter_.setB(Eigen::DiagonalMatrix<double, 3>(0.0, 0.0, 0.0));
   kalman_filter_.setC(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
-  kalman_filter_.setQ(Eigen::DiagonalMatrix<double, 3>(
-    angle_measurement_cov_, xy_measurement_cov_, xy_measurement_cov_));
+  kalman_filter_.setQ(
+    Eigen::DiagonalMatrix<double, 3>(
+      angle_measurement_cov_, xy_measurement_cov_, xy_measurement_cov_));
   kalman_filter_.setR(
     Eigen::DiagonalMatrix<double, 3>(angle_process_cov_, xy_process_cov_, xy_process_cov_));
 

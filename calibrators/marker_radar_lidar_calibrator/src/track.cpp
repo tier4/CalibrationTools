@@ -125,16 +125,18 @@ TrackFactory::TrackFactory(
   lidar_filter_.setA(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
   lidar_filter_.setB(Eigen::DiagonalMatrix<double, 3>(0.0, 0.0, 0.0));
   lidar_filter_.setC(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
-  lidar_filter_.setR(Eigen::DiagonalMatrix<double, 3>(
-    lidar_measurement_cov, lidar_measurement_cov, lidar_measurement_cov));
+  lidar_filter_.setR(
+    Eigen::DiagonalMatrix<double, 3>(
+      lidar_measurement_cov, lidar_measurement_cov, lidar_measurement_cov));
   lidar_filter_.setQ(
     Eigen::DiagonalMatrix<double, 3>(lidar_process_cov, lidar_process_cov, lidar_process_cov));
 
   radar_filter_.setA(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
   radar_filter_.setB(Eigen::DiagonalMatrix<double, 3>(0.0, 0.0, 0.0));
   radar_filter_.setC(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
-  radar_filter_.setR(Eigen::DiagonalMatrix<double, 3>(
-    radar_measurement_cov, radar_measurement_cov, radar_measurement_cov));
+  radar_filter_.setR(
+    Eigen::DiagonalMatrix<double, 3>(
+      radar_measurement_cov, radar_measurement_cov, radar_measurement_cov));
   radar_filter_.setQ(
     Eigen::DiagonalMatrix<double, 3>(radar_process_cov, radar_process_cov, radar_process_cov));
 }

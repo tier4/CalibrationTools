@@ -38,9 +38,10 @@ bool LidartagHypothesis::update(
   latest_rotation_matrix_ = pose_rotation;
 
   double trans_diff = cv::norm(filtered_translation_vector_ - pose_translation);
-  double ang_diff = std::acos(std::min(
-    1.0, 0.5 * (cv::trace(filtered_rotation_matrix_.inv() * pose_rotation) -
-                1.0)));  // Tr(R) = 1 + 2*cos(theta)
+  double ang_diff = std::acos(
+    std::min(
+      1.0, 0.5 * (cv::trace(filtered_rotation_matrix_.inv() * pose_rotation) -
+                  1.0)));  // Tr(R) = 1 + 2*cos(theta)
 
   if (first_observation_) {
     first_observation_ = false;
