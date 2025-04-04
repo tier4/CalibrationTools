@@ -1,39 +1,52 @@
 repositories:
+  autoware/autoware_cmake:
+    type: git
+    url: https://github.com/autowarefoundation/autoware_cmake.git
+    version: main
+  autoware/autoware_core:
+    type: git
+    url: https://github.com/autowarefoundation/autoware_core.git
+    version: main
+  autoware/autoware_internal_msgs:
+    type: git
+    url: https://github.com/autowarefoundation/autoware_internal_msgs.git
+    version: main
   autoware/autoware_msgs:
     type: git
     url: https://github.com/autowarefoundation/autoware_msgs.git
     version: main
-  autoware/universe:
+  autoware/autoware_utils:
     type: git
-    url: https://github.com/autowarefoundation/autoware.universe.git
+    url: https://github.com/autowarefoundation/autoware_utils.git
     version: main
-  autoware/core:
-    type: git
-    url: https://github.com/autowarefoundation/autoware.core.git
   autoware/tier4_autoware_msgs:
     type: git
     url: https://github.com/tier4/tier4_autoware_msgs.git
     version: tier4/universe
-  missing_packages/astuff_sensor_msgs:
+  autoware/universe:
     type: git
-    url: https://github.com/astuff/astuff_sensor_msgs.git
-    version: 3.2.0
-  core/autoware_internal_msgs:
-    type: git
-    url: https://github.com/autowarefoundation/autoware_internal_msgs.git
+    url: https://github.com/autowarefoundation/autoware.universe.git
     version: main
-  core/common:
+  vendor/lidartag:
     type: git
-    url: https://github.com/autowarefoundation/autoware_common.git
-    version: main
+    url: https://github.com/tier4/LiDARTag.git
+    version: humble
   vendor/lidartag_msgs:
     type: git
-    url: git@github.com:tier4/LiDARTag_msgs.git
+    url: https://github.com/tier4/LiDARTag_msgs.git
     version: tier4/universe
   vendor/apriltag_msgs:
     type: git
-    url: git@github.com:christianrauch/apriltag_msgs.git
-    version: master
+    url: https://github.com/christianrauch/apriltag_msgs.git
+    version: 2.0.0
+  vendor/apriltag_ros:
+    type: git
+    url: https://github.com/christianrauch/apriltag_ros.git
+    version: e814e9e5d5f1bfb60a4aa685d30977c632bbc540
+  vendor/ros2_numpy:
+    type: git
+    url: https://github.com/Box-Robotics/ros2_numpy.git
+    version: humble
   vendor/ndt_omp:
     type: git
     url: https://github.com/tier4/ndt_omp.git
