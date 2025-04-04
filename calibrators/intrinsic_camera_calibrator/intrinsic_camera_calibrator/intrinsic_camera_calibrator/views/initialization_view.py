@@ -223,6 +223,7 @@ class InitializationView(QWidget):
 
     def on_start(self):
         """Start the calibration process after receiving the user settings."""
+        source_type = self.data_source_combobox.currentData()
 
         def on_success():
             """Handle the successful initialization of the data source."""
@@ -235,6 +236,7 @@ class InitializationView(QWidget):
             self.calibrator.start(
                 mode,
                 self.data_source,
+                source_type,
                 board_type,
                 self.board_parameters_dict[board_type],
                 self.initial_intrinsics,
@@ -247,8 +249,6 @@ class InitializationView(QWidget):
             self.setEnabled(True)
             self.data_source = None
             self.data_source_view = None
-
-        source_type = self.data_source_combobox.currentData()
 
         if source_type == DataSourceEnum.TOPIC:
             self.data_source = make_data_source(self.data_source_combobox.currentData())

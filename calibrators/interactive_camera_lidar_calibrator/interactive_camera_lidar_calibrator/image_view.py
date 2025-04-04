@@ -540,8 +540,6 @@ class ImageView(QGraphicsItem, QObject):
             painter.drawEllipse if self.data_renderer.marker_type == "circles" else painter.drawRect
         )
 
-        # print(f"Drawing pointcloud size: {scale_px.shape[0]}")
-
         for point, radius, color_channel in zip(pointcloud_wcs, scale_px, color_scalars):
             if self.data_renderer.color_channel == "intensity":
                 color = intensity_to_rainbow_qcolor(

@@ -445,11 +445,11 @@ void CeresCameraIntrinsicsOptimizer::solve(bool use_fov_block)
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_SCHUR;  // cSpell:ignore SCHUR
   options.minimizer_progress_to_stdout = verbose_;
-  options.max_num_iterations = 500;
+  options.max_num_iterations = 100;
   options.function_tolerance = 1e-10;
   options.gradient_tolerance = 1e-14;
   options.num_threads = 8;
-  options.max_num_consecutive_invalid_steps = 1000;
+  options.max_num_consecutive_invalid_steps = 100;
   options.use_inner_iterations = true;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

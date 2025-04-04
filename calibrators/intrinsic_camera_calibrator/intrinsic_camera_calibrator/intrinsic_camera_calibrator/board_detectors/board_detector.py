@@ -47,3 +47,6 @@ class BoardDetector(ParameterizedClass, QObject):
 
     def single_shot_calibration_error(self, object_points, image_points) -> Tuple[float, float]:
         raise NotImplementedError
+
+    def restart_lost_frames_counter(self):
+        raise NotImplementedError

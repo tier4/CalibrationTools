@@ -42,3 +42,10 @@ class CollectionStatus(Enum):
     REJECTED = 2
     REDUNDANT = 3
     ACCEPTED = 4
+
+
+class RectifyMode(Enum):
+    """Methods to rectify the image."""
+
+    OPENCV = "OpenCV"
+    FIXED_ASPECT_RATIO = "Fixed aspect ratio"

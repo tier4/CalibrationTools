@@ -49,7 +49,7 @@ data_collector:
   min_normalized_2d_center_difference: 0.05
   min_normalized_skew_difference: 0.05
   min_normalized_2d_size_difference: 0.05
-  filter_by_3d_redundancy: true # yamllint disable-line rule:truthy
+  filter_by_3d_redundancy: false # yamllint disable-line rule:truthy
   min_3d_center_difference: 1.0
   min_tilt_difference: 15.0
   heatmap_cells: 16

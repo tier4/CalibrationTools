@@ -19,6 +19,7 @@ import os
 
 import cv2
 from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
+from intrinsic_camera_calibrator.types import RectifyMode
 import numpy as np
 import ruamel.yaml
 import yaml
@@ -32,8 +33,14 @@ def to_grayscale(img: np.array) -> np.array:
         return img
 
 
-def save_intrinsics(camera_model: CameraModel, alpha, camera_name, file_path: str):
-    data = camera_model.as_dict(alpha)
+def save_intrinsics(
+    camera_model: CameraModel,
+    alpha: float,
+    camera_name: str,
+    file_path: str,
+    rectify_option: RectifyMode,
+):
+    data = camera_model.as_dict(alpha, rectify_option)
     data["camera_name"] = camera_name
 
     def format_list(data):

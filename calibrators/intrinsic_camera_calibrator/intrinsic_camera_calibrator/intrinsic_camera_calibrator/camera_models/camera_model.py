@@ -21,6 +21,7 @@ from typing import Optional
 from typing import Tuple
 
 import cv2
+from intrinsic_camera_calibrator.types import RectifyMode
 import numpy as np
 
 
@@ -155,8 +156,8 @@ class CameraModel:
         projected_points = projected_points.reshape((num_points, 2))
         return projected_points - image_points
 
-    def as_dict(self, alpha: float = 0.0) -> Dict:
-        undistorted = self.get_undistorted_camera_model(alpha)
+    def as_dict(self, alpha: float = 0.0, rectify_option=0) -> Dict:
+        undistorted = self.get_undistorted_camera_model(alpha, rectify_option=rectify_option)
         p = np.zeros((3, 4))
         p[0:3, 0:3] = undistorted.k
 
@@ -167,23 +168,26 @@ class CameraModel:
         d["camera_matrix"] = {
             "rows": 3,
             "cols": 3,
-            "data": [round(e.item(), 5) for e in self.k.flatten()],
+            "data": [round(e.item(), 11) for e in self.k.flatten()],
         }
-        d["distortion_model"] = "plumb_bob"
+        distortion_model_used = "plumb_bob"
+        if self.d.size > 5:
+            distortion_model_used = "rational_polynomial"
+        d["distortion_model"] = distortion_model_used
         d["distortion_coefficients"] = {
             "rows": 1,
-            "cols": 5,
-            "data": [round(e.item(), 5) for e in self.d.flatten()],
+            "cols": int(self.d.size),
+            "data": [round(e.item(), 11) for e in self.d.flatten()],
         }
         d["projection_matrix"] = {
             "rows": 3,
             "cols": 4,
-            "data": [round(e.item(), 5) for e in p.flatten()],
+            "data": [round(e.item(), 11) for e in p.flatten()],
         }
         d["rectification_matrix"] = {
             "rows": 3,
             "cols": 3,
-            "data": [round(e.item(), 5) for e in np.eye(3).flatten()],
+            "data": [round(e.item(), 11) for e in np.eye(3).flatten()],
         }
 
         return d
@@ -206,24 +210,131 @@ class CameraModel:
         """Update the camera model configuration."""
         self._update_config_impl(**kwargs)
 
-    def get_undistorted_camera_model(self, alpha: float):
+    def get_undistorted_camera_model(self, alpha: float, rectify_option):
         """Compute the undistorted version of the camera model."""
-        undistorted_k, _ = cv2.getOptimalNewCameraMatrix(
-            self.k, self.d, (self.width, self.height), alpha
-        )
+        if rectify_option == RectifyMode.FIXED_ASPECT_RATIO:
 
-        return type(self)(
-            k=undistorted_k, d=np.zeros_like(self.d), height=self.height, width=self.width
-        )
+            def get_rectangles(camera_matrix, dist_coeffs, img_size, new_camera_matrix=None):
+                N = 101
+                # Generate grid points
+                pts = np.zeros((1, N * N, 2), dtype=np.float64)
+                k = 0
+                for y in range(N):
+                    for x in range(N):
+                        pts[0, k] = [
+                            (x * (img_size[0] - 1)) / (N - 1),
+                            (y * (img_size[1] - 1)) / (N - 1),
+                        ]
+                        k += 1
 
-    def rectify(self, img: np.array, alpha=0.0) -> np.array:
+                # Undistort points
+                undistorted_pts = cv2.undistortPoints(
+                    pts, camera_matrix, dist_coeffs, P=new_camera_matrix
+                )
+                undistorted_pts = undistorted_pts.reshape(-1, 2)
+
+                # Initialize variables for inscribed and outer rectangle
+                iX0, iX1 = -np.inf, np.inf
+                iY0, iY1 = -np.inf, np.inf
+                oX0, oX1 = np.inf, -np.inf
+                oY0, oY1 = np.inf, -np.inf
+
+                # Calculate inscribed and outer rectangle boundaries
+                k = 0
+                for y in range(N):
+                    for x in range(N):
+                        p = undistorted_pts[k]
+                        oX0 = min(oX0, p[0])
+                        oX1 = max(oX1, p[0])
+                        oY0 = min(oY0, p[1])
+                        oY1 = max(oY1, p[1])
+
+                        if x == 0:
+                            iX0 = max(iX0, p[0])
+                        if x == N - 1:
+                            iX1 = min(iX1, p[0])
+                        if y == 0:
+                            iY0 = max(iY0, p[1])
+                        if y == N - 1:
+                            iY1 = min(iY1, p[1])
+
+                        k += 1
+
+                # Create the rectangles for inner and outer bounds
+                inner = (iX0, iY0, iX1 - iX0, iY1 - iY0)
+                outer = (oX0, oY0, oX1 - oX0, oY1 - oY0)
+
+                return inner, outer
+
+            size = (self.width, self.height)
+            (image_width, image_height) = size
+            camera_matrix = self.k
+            distortion_coefficients = self.d
+            force_aspect_ratio = True
+            inner, outer = get_rectangles(camera_matrix, distortion_coefficients, size)
+
+            def roi_to_intrinsics(roi):
+                fx = (image_width - 1) / roi[2]
+                fy = (image_height - 1) / roi[3]
+                cx = -fx * roi[0]
+                cy = -fy * roi[1]
+
+                new_image_width = image_width
+                new_image_height = image_height
+
+                if force_aspect_ratio:
+                    # we want to make sure that fx = fy while also making sure all the roi is valid
+                    if fx * roi[3] < image_height - 1:
+                        fx = fy
+                    else:
+                        fy = fx
+
+                intrinsics = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]])
+                return intrinsics, (new_image_width, new_image_height)
+
+            new_intrinsics = None
+
+            if alpha == 0:
+                new_intrinsics, new_image_size = roi_to_intrinsics(inner)
+            elif alpha == 1:
+                new_intrinsics, new_image_size = roi_to_intrinsics(outer)
+            else:
+                inner_intrinsics, new_image_size = roi_to_intrinsics(inner)
+                outer_intrinsics, new_image_size = roi_to_intrinsics(outer)
+                new_intrinsics = inner_intrinsics * (1.0 - alpha) + outer_intrinsics * alpha
+
+            roi, _ = get_rectangles(
+                camera_matrix, distortion_coefficients, size, new_camera_matrix=new_intrinsics
+            )
+            roi = list(roi)
+
+            new_image_width, new_image_height = new_image_size
+
+            return type(self)(
+                k=new_intrinsics,
+                d=np.zeros_like(self.d),
+                height=new_image_height,
+                width=new_image_width,
+            )
+        elif rectify_option == RectifyMode.OPENCV:
+            undistorted_k, _ = cv2.getOptimalNewCameraMatrix(
+                self.k, self.d, (self.width, self.height), alpha
+            )
+
+            return type(self)(
+                k=undistorted_k, d=np.zeros_like(self.d), height=self.height, width=self.width
+            )
+
+    def rectify(self, img: np.array, alpha=0.0, rectify_option=0) -> np.array:
         """Rectifies an image using the current camera model. Alpha is a value in the [0,1] range to regulate how the rectified image is cropped. 0 means that all the pixels in the rectified image are valid whereas 1 keeps all the original pixels from the unrectified image into the rectifies one, filling with zeroes the invalid pixels."""
         if np.all(self.d == 0.0):
             return img
 
         if self._cached_undistorted_model is None or alpha != self._cached_undistortion_alpha:
             self._cached_undistortion_alpha = alpha
-            self._cached_undistorted_model = self.get_undistorted_camera_model(alpha=alpha)
+            self._cached_undistorted_model = self.get_undistorted_camera_model(
+                alpha=alpha, rectify_option=rectify_option
+            )
             (
                 self._cached_undistortion_map_x,
                 self._cached_undistortion_map_y,
@@ -244,6 +355,10 @@ class CameraModel:
     def _update_config_impl(self, **kwargs):
         """Abstract method to update the camera model configuration."""
         raise NotImplementedError
+
+    def restart_camera_cached_model(self):
+        """Restarts the current cached camera model."""
+        self._cached_undistorted_model = None
 
 
 class CameraModelWithBoardDistortion(CameraModel):

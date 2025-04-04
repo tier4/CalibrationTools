@@ -22,6 +22,7 @@ from typing import Tuple
 from PySide2.QtCore import Signal
 from intrinsic_camera_calibrator.board_detections.board_detection import BoardDetection
 from intrinsic_camera_calibrator.camera_models.camera_model import CameraModel
+from intrinsic_camera_calibrator.data_sources.data_source import DataSourceEnum
 from intrinsic_camera_calibrator.parameter import Parameter
 from intrinsic_camera_calibrator.parameter import ParameterizedClass
 from intrinsic_camera_calibrator.types import CollectionStatus
@@ -206,7 +207,7 @@ class DataCollector(ParameterizedClass):
         super().__init__(cfg=cfg, **kwargs)
 
         # Option to limit the amount of collection samples in case there are resource constraints
-        self.max_samples = Parameter(int, value=500, min_value=6, max_value=5000)
+        self.max_samples = Parameter(int, value=500, min_value=6, max_value=7000)
 
         # In addition to the training dataset we also
         self.decorrelate_eval_samples = Parameter(int, value=5, min_value=1, max_value=100)
@@ -256,6 +257,10 @@ class DataCollector(ParameterizedClass):
         self.rotation_heatmap_angle_res = Parameter(int, value=10, min_value=5, max_value=20)
         self.point_2d_hist_bins = Parameter(int, value=20, min_value=2, max_value=100)
         self.point_3d_hist_bins = Parameter(int, value=20, min_value=2, max_value=100)
+
+        self.skip_frames_when_not_detection = Parameter(
+            bool, value=True, min_value=False, max_value=True
+        )
 
         self.set_parameters(**cfg)
 
@@ -516,6 +521,7 @@ class DataCollector(ParameterizedClass):
         detection: BoardDetection,
         camera_model: CameraModel,
         mode: OperationMode = OperationMode.CALIBRATION,
+        source_type: DataSourceEnum = DataSourceEnum.TOPIC,
     ) -> CollectionStatus:
         """Evaluate if a detection should be added to either the training or evaluation dataset."""
         accepted = True
@@ -523,7 +529,9 @@ class DataCollector(ParameterizedClass):
         # process detections without filtering, only to get linearity heatmap
         self.update_linearity_heatmap(self.linearity_heatmap, detection)
 
-        if self.filter_by_speed.value:
+        if (
+            self.filter_by_speed.value and source_type != DataSourceEnum.FILES
+        ):  # remove the speed filter if we are calibrating from image files
             speed = 0 if self.last_detection is None else detection.get_speed(self.last_detection)
             self.last_detection = detection
 
