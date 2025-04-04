@@ -72,12 +72,14 @@ std::tuple<bool, Eigen::Matrix4d, float> BaseLidarCalibrator::calibrate()
     initial_base_to_lidar_transform.cast<float>());
 
   pcl::CropBox<PointType> box_filter;
-  box_filter.setMin(Eigen::Vector4f(
-    parameters_->base_lidar_crop_box_min_x_, parameters_->base_lidar_crop_box_min_y_,
-    parameters_->base_lidar_crop_box_min_z_, 1.0));
-  box_filter.setMax(Eigen::Vector4f(
-    parameters_->base_lidar_crop_box_max_x_, parameters_->base_lidar_crop_box_max_y_,
-    parameters_->base_lidar_crop_box_max_z_, 1.0));
+  box_filter.setMin(
+    Eigen::Vector4f(
+      parameters_->base_lidar_crop_box_min_x_, parameters_->base_lidar_crop_box_min_y_,
+      parameters_->base_lidar_crop_box_min_z_, 1.0));
+  box_filter.setMax(
+    Eigen::Vector4f(
+      parameters_->base_lidar_crop_box_max_x_, parameters_->base_lidar_crop_box_max_y_,
+      parameters_->base_lidar_crop_box_max_z_, 1.0));
   box_filter.setInputCloud(augmented_pointcloud_base_ptr);
   box_filter.filter(*augmented_pointcloud_base_ptr);
 
