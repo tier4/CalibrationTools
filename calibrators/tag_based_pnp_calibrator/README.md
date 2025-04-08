@@ -34,16 +34,16 @@ The following figure presents a diagram of the nodes, launchers and relevant met
 
 ### Output
 
-| Name                   | Type                                             | Description                               |
-| ---------------------- | ------------------------------------------------ | ----------------------------------------- |
-| `filtered_projections` | `visualization_msgs::msg::MarkerArray`           | Calibration markers for visualization.    |
-| `calibration_points`   | `tier4_calibration_msgs::msg::CalibrationPoints` | Corresponding points used in calibration. |
+| Name                   | Type                                                    | Description                               |
+| ---------------------- | ------------------------------------------------------- | ----------------------------------------- |
+| `filtered_projections` | `visualization_msgs::msg::MarkerArray`                  | Calibration markers for visualization.    |
+| `calibration_points`   | `tier4_sensor_calibration_msgs::msg::CalibrationPoints` | Corresponding points used in calibration. |
 
 ### Services
 
-| Name                    | Type                                                  | Description                                                                              |
-| ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
+| Name                    | Type                                                         | Description                                                                              |
+| ----------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `extrinsic_calibration` | `tier4_sensor_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
 
 ## Parameters
 

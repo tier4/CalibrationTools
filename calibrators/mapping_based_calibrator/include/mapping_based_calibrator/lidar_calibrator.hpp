@@ -21,7 +21,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tier4_calibration_pcl_extensions/joint_icp_extended.hpp>
 
-#include <tier4_calibration_msgs/srv/frame.hpp>
+#include <tier4_sensor_calibration_msgs/srv/frame.hpp>
 
 #include <pcl/point_types.h>
 #include <pcl/registration/correspondence_estimation.h>
@@ -42,7 +42,7 @@ public:
   using Ptr = std::shared_ptr<LidarCalibrator>;
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
-  using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
+  using FrameService = rclcpp::Service<tier4_sensor_calibration_msgs::srv::Frame>;
 
   LidarCalibrator(
     const std::string & calibration_lidar_frame, CalibrationParameters::Ptr & parameters,

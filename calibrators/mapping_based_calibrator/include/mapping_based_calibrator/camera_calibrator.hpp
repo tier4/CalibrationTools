@@ -20,7 +20,7 @@
 #include <mapping_based_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <tier4_calibration_msgs/srv/frame.hpp>
+#include <tier4_sensor_calibration_msgs/srv/frame.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/point_types.h>
@@ -38,7 +38,7 @@ public:
   using MarkersPublisher = rclcpp::Publisher<visualization_msgs::msg::MarkerArray>;
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
-  using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
+  using FrameService = rclcpp::Service<tier4_sensor_calibration_msgs::srv::Frame>;
 
   CameraCalibrator(
     const std::string & calibration_camera_optical_link_frame,

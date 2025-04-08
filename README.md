@@ -128,14 +128,14 @@ The architecture of the extrinsic calibration process consists of two entities: 
 
 ### Calibrator node
 
-The calibrator node is a regular node that implements the [ExtrinsicCalibrator](common/tier4_calibration_msgs/srv/ExtrinsicCalibrator.srv) service:
+The calibrator node is a regular node that implements the [ExtrinsicCalibrator](common/tier4_sensor_calibration_msgs/srv/ExtrinsicCalibrator.srv) service:
 
 ```text
 ---
-tier4_calibration_msgs/CalibrationResult[] results
+tier4_sensor_calibration_msgs/CalibrationResult[] results
 ```
 
-where [CalibrationResult](common/tier4_calibration_msgs/msg/CalibrationResult.msg) contains a transformation between frames, a status flag, and optional scores and text messages for evaluation and debug purposes.
+where [CalibrationResult](common/tier4_sensor_calibration_msgs/msg/CalibrationResult.msg) contains a transformation between frames, a status flag, and optional scores and text messages for evaluation and debug purposes.
 
 ```text
 geometry_msgs/TransformStamped transform_stamped
@@ -394,7 +394,7 @@ In the previous Section, we created a new calibrator interface and added it to t
 In the case the user wants to integrate his own algorithms, he must comply with the following the instructions, which assume the reader knows and is used to creating ROS2 packages. <!--cSpell:ignore ROS2 -->
 
 - Create a ROS2 package called `my_new_calibrator_package`. The node itself needs to be part of a multi-thread executor with at least two threads. This is due to the calibration service call only returning once the calibration process finishes.<!--cSpell:ignore ROS2 -->
-- Add a dependency to the `tier4_calibration_msgs` package in `package.xml` to use the calibration services.
+- Add a dependency to the `tier4_sensor_calibration_msgs` package in `package.xml` to use the calibration services.
 - In the node's header file add a calibration service.
 - In most cases, creating a group exclusive to the services is also required.
 
@@ -402,7 +402,7 @@ In the header file:
 
 ```c++
 ...
-rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
+rclcpp::Service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
 rclcpp::CallbackGroup::SharedPtr srv_callback_group_
 ...
 ```
@@ -414,7 +414,7 @@ In the source file:
 // The service server runs in a dedicated thread since it is a blocking call
 srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+service_server_ = this->create_service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>(
   "extrinsic_calibration_service_name",
   std::bind(
     &MyNewCalibratorPackage::requestReceivedCallback, this, std::placeholders::_1,

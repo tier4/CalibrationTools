@@ -264,7 +264,7 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
     std::bind(&ExtrinsicReflectorBasedCalibrator::paramCallback, this, std::placeholders::_1));
 
   calibration_request_server_ =
-    this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+    this->create_service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>(
       "extrinsic_calibration",
       std::bind(
         &ExtrinsicReflectorBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -284,9 +284,10 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
 }
 
 void ExtrinsicReflectorBasedCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
 
@@ -308,7 +309,7 @@ void ExtrinsicReflectorBasedCalibrator::requestReceivedCallback(
   ss << "Calibration successful. distance_score=" << calibration_distance_score_
      << " yaw_score=" << calibration_yaw_score_;
 
-  tier4_calibration_msgs::msg::CalibrationResult result;
+  tier4_sensor_calibration_msgs::msg::CalibrationResult result;
   result.message.data = ss.str();
   result.score = calibration_distance_score_;
   result.success = true;

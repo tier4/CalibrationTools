@@ -98,7 +98,7 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
   // The service server runs in a dedicated thread
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &ExtrinsicGroundPlaneCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -120,9 +120,10 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
 }
 
 void ExtrinsicGroundPlaneCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   // This tool uses several tfs, so for consistency we take the initial calibration using lookups
   using std::chrono_literals::operator""s;
@@ -145,7 +146,7 @@ void ExtrinsicGroundPlaneCalibrator::requestReceivedCallback(
       this->get_logger(), *this->get_clock(), 10000, "Waiting for the calibration to end");
   }
 
-  tier4_calibration_msgs::msg::CalibrationResult result;
+  tier4_sensor_calibration_msgs::msg::CalibrationResult result;
   result.transform_stamped = tf2::eigenToTransform(calibrated_base_to_lidar_transform_);
   result.transform_stamped.header.frame_id = base_frame_;
   result.transform_stamped.child_frame_id = lidar_frame_;

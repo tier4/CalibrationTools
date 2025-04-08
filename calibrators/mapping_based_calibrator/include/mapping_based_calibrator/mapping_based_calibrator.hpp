@@ -31,9 +31,9 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <tier4_calibration_msgs/srv/calibration_database.hpp>
-#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
-#include <tier4_calibration_msgs/srv/frame.hpp>
+#include <tier4_sensor_calibration_msgs/srv/calibration_database.hpp>
+#include <tier4_sensor_calibration_msgs/srv/extrinsic_calibrator.hpp>
+#include <tier4_sensor_calibration_msgs/srv/frame.hpp>
 
 #include <tf2/convert.h>
 #include <tf2_ros/buffer.h>
@@ -54,7 +54,7 @@ public:
   using ImageSubscription = rclcpp::Subscription<sensor_msgs::msg::CompressedImage>;
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
-  using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
+  using FrameService = rclcpp::Service<tier4_sensor_calibration_msgs::srv::Frame>;
 
   explicit ExtrinsicMappingBasedCalibrator(const rclcpp::NodeOptions & options);
 
@@ -67,8 +67,9 @@ protected:
    * @param response A vector of calibration results
    */
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response>
+      response);
 
   /*!
    * Message callback for detected objects
@@ -97,11 +98,13 @@ protected:
   void unsubscribe();
 
   void loadDatabaseCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response);
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Request> request,
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Response>
+      response);
   void saveDatabaseCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response);
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Request> request,
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Response>
+      response);
 
   // ROS Interface
   tf2_ros::StaticTransformBroadcaster tf_broadcaster_;
@@ -121,15 +124,16 @@ protected:
   rclcpp::Subscription<autoware_perception_msgs::msg::PredictedObjects>::SharedPtr
     predicted_objects_sub_;
 
-  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
-  rclcpp::Service<tier4_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
+  rclcpp::Service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
+    service_server_;
+  rclcpp::Service<tier4_sensor_calibration_msgs::srv::Frame>::SharedPtr keyframe_map_server_;
   std::map<std::string, FrameService::SharedPtr> single_lidar_calibration_server_map_;
   std::map<std::string, FrameService::SharedPtr> multiple_lidar_calibration_server_map_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr base_link_calibration_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stop_mapping_server_;
-  rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
+  rclcpp::Service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
     load_database_server_;
-  rclcpp::Service<tier4_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
+  rclcpp::Service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>::SharedPtr
     save_database_server_;
 
   rclcpp::TimerBase::SharedPtr publisher_timer_;

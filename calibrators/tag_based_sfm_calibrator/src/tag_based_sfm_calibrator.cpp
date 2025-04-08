@@ -298,22 +298,24 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
   // The service servers runs in a dedicated threads since they are blocking
   calibration_api_srv_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  calibration_api_srv_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
-    "/extrinsic_calibration",
-    std::bind(
-      &ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback, this, std::placeholders::_1,
-      std::placeholders::_2),
-    rmw_qos_profile_services_default, calibration_api_srv_group_);
+  calibration_api_srv_ =
+    this->create_service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>(
+      "/extrinsic_calibration",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback, this, std::placeholders::_1,
+        std::placeholders::_2),
+      rmw_qos_profile_services_default, calibration_api_srv_group_);
 
   // Scene related services
-  add_external_camera_images_srv_ = this->create_service<tier4_calibration_msgs::srv::FilesListSrv>(
-    "add_external_camera_images_to_scenes",
-    std::bind(
-      &ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback, this,
-      std::placeholders::_1, std::placeholders::_2));
+  add_external_camera_images_srv_ =
+    this->create_service<tier4_sensor_calibration_msgs::srv::FilesListSrv>(
+      "add_external_camera_images_to_scenes",
+      std::bind(
+        &ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback, this,
+        std::placeholders::_1, std::placeholders::_2));
 
   add_calibration_sensor_detections_to_scene_srv_ =
-    this->create_service<tier4_calibration_msgs::srv::Empty>(
+    this->create_service<tier4_sensor_calibration_msgs::srv::Empty>(
       "add_calibration_sensor_detections_to_new_scene",
       std::bind(
         &ExtrinsicTagBasedBaseCalibrator::addCalibrationSensorDetectionsCallback, this,
@@ -321,40 +323,40 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 
   // Intrinsics related services
   load_external_camera_intrinsics_srv_ =
-    this->create_service<tier4_calibration_msgs::srv::FilesSrv>(
+    this->create_service<tier4_sensor_calibration_msgs::srv::FilesSrv>(
       "load_external_camera_intrinsics",
       std::bind(
         &ExtrinsicTagBasedBaseCalibrator::loadExternalIntrinsicsCallback, this,
         std::placeholders::_1, std::placeholders::_2));
   save_external_camera_intrinsics_srv_ =
-    this->create_service<tier4_calibration_msgs::srv::FilesSrv>(
+    this->create_service<tier4_sensor_calibration_msgs::srv::FilesSrv>(
       "save_external_camera_intrinsics",
       std::bind(
         &ExtrinsicTagBasedBaseCalibrator::saveExternalIntrinsicsCallback, this,
         std::placeholders::_1, std::placeholders::_2));
   calibrate_external_camera_intrinsics_srv_ =
-    this->create_service<tier4_calibration_msgs::srv::FilesSrv>(
+    this->create_service<tier4_sensor_calibration_msgs::srv::FilesSrv>(
       "calibrate_external_camera_intrinsics",
       std::bind(
         &ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback, this,
         std::placeholders::_1, std::placeholders::_2));
 
   // Calibration related services
-  process_scenes_srv_ = this->create_service<tier4_calibration_msgs::srv::Empty>(
+  process_scenes_srv_ = this->create_service<tier4_sensor_calibration_msgs::srv::Empty>(
     "process_scenes", std::bind(
                         &ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback, this,
                         std::placeholders::_1, std::placeholders::_2));
-  calibration_srv_ = this->create_service<tier4_calibration_msgs::srv::Empty>(
+  calibration_srv_ = this->create_service<tier4_sensor_calibration_msgs::srv::Empty>(
     "calibrate", std::bind(
                    &ExtrinsicTagBasedBaseCalibrator::calibrationCallback, this,
                    std::placeholders::_1, std::placeholders::_2));
 
   // Calibration related services
-  load_database_srv_ = this->create_service<tier4_calibration_msgs::srv::FilesSrv>(
+  load_database_srv_ = this->create_service<tier4_sensor_calibration_msgs::srv::FilesSrv>(
     "load_database", std::bind(
                        &ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback, this,
                        std::placeholders::_1, std::placeholders::_2));
-  save_database_srv_ = this->create_service<tier4_calibration_msgs::srv::FilesSrv>(
+  save_database_srv_ = this->create_service<tier4_sensor_calibration_msgs::srv::FilesSrv>(
     "save_database", std::bind(
                        &ExtrinsicTagBasedBaseCalibrator::saveDatabaseCallback, this,
                        std::placeholders::_1, std::placeholders::_2));
@@ -382,9 +384,11 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
 }
 
 void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response>
     response)
 {
   using std::chrono_literals::operator""s;
@@ -502,7 +506,7 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
   RCLCPP_INFO(this->get_logger(), "\td=%.4f", calibrated_ground_model.w());
 
   // Format the output
-  tier4_calibration_msgs::msg::CalibrationResult base_link_result;
+  tier4_sensor_calibration_msgs::msg::CalibrationResult base_link_result;
   base_link_result.message.data =
     "Calibration successful. Base calibration does not provide a direct score";
   base_link_result.score = 0.f;
@@ -516,7 +520,7 @@ void ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback(
   UID main_sensor_uid = getMainSensorUID();
 
   for (const auto & [sensor_uid, pose] : data_->optimized_sensor_poses_map) {
-    tier4_calibration_msgs::msg::CalibrationResult result;
+    tier4_sensor_calibration_msgs::msg::CalibrationResult result;
     result.message.data =
       "Calibration successful. The error corresponds to reprojection error in pixel units";
     result.score = data_->optimized_sensor_residuals_map[sensor_uid];
@@ -985,8 +989,8 @@ Eigen::Isometry3d ExtrinsicTagBasedBaseCalibrator::cvToEigenPose(const cv::Affin
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::FilesListSrv::Request> request,
-  std::shared_ptr<tier4_calibration_msgs::srv::FilesListSrv::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesListSrv::Request> request,
+  std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesListSrv::Response> response)
 {
   int camera_scenes = std::transform_reduce(
     scenes_calibration_apriltag_detections_.begin(), scenes_calibration_apriltag_detections_.end(),
@@ -1033,8 +1037,9 @@ bool ExtrinsicTagBasedBaseCalibrator::addExternalCameraImagesCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::addCalibrationSensorDetectionsCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
-  [[maybe_unused]] std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
+  [[maybe_unused]] const std::shared_ptr<tier4_sensor_calibration_msgs::srv::Empty::Request>
+    request,
+  [[maybe_unused]] std::shared_ptr<tier4_sensor_calibration_msgs::srv::Empty::Response> response)
 {
   response->success = false;
 
@@ -1107,8 +1112,8 @@ bool ExtrinsicTagBasedBaseCalibrator::addCalibrationSensorDetectionsCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::loadExternalIntrinsicsCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
-  std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Request> request,
+  std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Response> response)
 {
   RCLCPP_INFO(this->get_logger(), "Loading external camera intrinsics");
 
@@ -1130,8 +1135,8 @@ bool ExtrinsicTagBasedBaseCalibrator::loadExternalIntrinsicsCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::saveExternalIntrinsicsCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
-  std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Request> request,
+  std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Response> response)
 {
   RCLCPP_INFO(this->get_logger(), "Saving external camera intrinsics");
 
@@ -1144,8 +1149,8 @@ bool ExtrinsicTagBasedBaseCalibrator::saveExternalIntrinsicsCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
-  std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Request> request,
+  std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Response> response)
 {
   RCLCPP_INFO(this->get_logger(), "Calibrating external cameras intrinsics");
 
@@ -1176,8 +1181,9 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrateExternalIntrinsicsCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
-  [[maybe_unused]] std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
+  [[maybe_unused]] const std::shared_ptr<tier4_sensor_calibration_msgs::srv::Empty::Request>
+    request,
+  [[maybe_unused]] std::shared_ptr<tier4_sensor_calibration_msgs::srv::Empty::Response> response)
 {
   std::size_t num_external_camera_scenes = scenes_external_camera_images_.size();
 
@@ -1370,8 +1376,9 @@ bool ExtrinsicTagBasedBaseCalibrator::preprocessScenesCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::Empty::Request> request,
-  [[maybe_unused]] std::shared_ptr<tier4_calibration_msgs::srv::Empty::Response> response)
+  [[maybe_unused]] const std::shared_ptr<tier4_sensor_calibration_msgs::srv::Empty::Request>
+    request,
+  [[maybe_unused]] std::shared_ptr<tier4_sensor_calibration_msgs::srv::Empty::Response> response)
 {
   UID main_sensor_uid = getMainSensorUID();
 
@@ -1499,8 +1506,8 @@ bool ExtrinsicTagBasedBaseCalibrator::calibrationCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
-  std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Request> request,
+  std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Response> response)
 {
   RCLCPP_INFO(this->get_logger(), "Loading database...");
   std::ifstream ifs(request->files.files[0]);
@@ -1558,8 +1565,8 @@ bool ExtrinsicTagBasedBaseCalibrator::loadDatabaseCallback(
 }
 
 bool ExtrinsicTagBasedBaseCalibrator::saveDatabaseCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Request> request,
-  std::shared_ptr<tier4_calibration_msgs::srv::FilesSrv::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Request> request,
+  std::shared_ptr<tier4_sensor_calibration_msgs::srv::FilesSrv::Response> response)
 {
   RCLCPP_INFO(this->get_logger(), "Saving database");
   std::ofstream ofs(request->files.files[0]);

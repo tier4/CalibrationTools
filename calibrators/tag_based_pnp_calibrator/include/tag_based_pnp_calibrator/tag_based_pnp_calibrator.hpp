@@ -29,8 +29,8 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
-#include <tier4_calibration_msgs/msg/calibration_points.hpp>
-#include <tier4_calibration_msgs/srv/extrinsic_calibrator.hpp>
+#include <tier4_sensor_calibration_msgs/msg/calibration_points.hpp>
+#include <tier4_sensor_calibration_msgs/srv/extrinsic_calibrator.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <tf2/convert.h>
@@ -66,8 +66,9 @@ protected:
   void clickedPointCallback(const geometry_msgs::msg::PointStamped::SharedPtr point_msg);
 
   void requestReceivedCallback(
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
-    const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response);
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request> request,
+    const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response>
+      response);
 
   void tfTimerCallback();
   void manualCalibrationTimerCallback();
@@ -105,7 +106,7 @@ protected:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
     filtered_projections_markers_pub_;
 
-  rclcpp::Publisher<tier4_calibration_msgs::msg::CalibrationPoints>::SharedPtr
+  rclcpp::Publisher<tier4_sensor_calibration_msgs::msg::CalibrationPoints>::SharedPtr
     calibration_points_pub_;
 
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
@@ -117,7 +118,8 @@ protected:
 
   rclcpp::TimerBase::SharedPtr calib_timer_;
   rclcpp::TimerBase::SharedPtr tf_timer_;
-  rclcpp::Service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr service_server_;
+  rclcpp::Service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>::SharedPtr
+    service_server_;
 
   // Threading, sync, and result
   bool request_received_;

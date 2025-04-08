@@ -110,7 +110,7 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
   // The service server runs in a dedicated thread since it is a blocking call
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &LidarToLidar2DCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -148,9 +148,10 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
 }
 
 void LidarToLidar2DCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
 
@@ -172,7 +173,7 @@ void LidarToLidar2DCalibrator::requestReceivedCallback(
       this->get_logger(), *this->get_clock(), 10000, "Waiting for the calibration to end");
   }
 
-  tier4_calibration_msgs::msg::CalibrationResult result;
+  tier4_sensor_calibration_msgs::msg::CalibrationResult result;
   result.message.data = "Calibration successful";
   result.score = 0.f;
   result.success = true;

@@ -18,10 +18,10 @@ import threading
 
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
-from tier4_calibration_msgs.msg import Files
-from tier4_calibration_msgs.srv import Empty
-from tier4_calibration_msgs.srv import FilesListSrv
-from tier4_calibration_msgs.srv import FilesSrv
+from tier4_sensor_calibration_msgs.msg import Files
+from tier4_sensor_calibration_msgs.srv import Empty
+from tier4_sensor_calibration_msgs.srv import FilesListSrv
+from tier4_sensor_calibration_msgs.srv import FilesSrv
 
 
 class ServiceWrapper:

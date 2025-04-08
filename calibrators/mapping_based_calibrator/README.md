@@ -127,12 +127,12 @@ The transformation between the lidar and the ground pose is calculated by utiliz
 
 ### Services
 
-| Name                    | Type                                                  | Description                                                                              |
-| ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `extrinsic_calibration` | `tier4_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
-| `stop_mapping`          | `std_srvs::srv::Empty`                                | Stops building the map and starts the calibration process.                               |
-| `load_database`         | `std_srvs::srv::Empty`                                | Loads lidar and camera calibration frames from the database (for developers).            |
-| `save_database`         | `std_srvs::srv::Empty`                                | Saves lidar and camera calibration frames to the database (for developers).              |
+| Name                    | Type                                                         | Description                                                                              |
+| ----------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `extrinsic_calibration` | `tier4_sensor_calibration_msgs::` `srv::ExtrinsicCalibrator` | Generic calibration service. The call is blocked until the calibration process finishes. |
+| `stop_mapping`          | `std_srvs::srv::Empty`                                       | Stops building the map and starts the calibration process.                               |
+| `load_database`         | `std_srvs::srv::Empty`                                       | Loads lidar and camera calibration frames from the database (for developers).            |
+| `save_database`         | `std_srvs::srv::Empty`                                       | Saves lidar and camera calibration frames to the database (for developers).              |
 
 ## Parameters
 
