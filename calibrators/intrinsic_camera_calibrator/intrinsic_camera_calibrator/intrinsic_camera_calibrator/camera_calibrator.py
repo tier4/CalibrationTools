@@ -947,8 +947,16 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
         if not os.path.exists(evaluation_folder):
             os.mkdir(evaluation_folder)
 
+        database_dict = {}
+        database_dict["camera_name"] = self.data_source.get_camera_name()
+        database_dict["training_folder"] = training_folder
+        database_dict["evaluation_folder"] = evaluation_folder
+        database_dict["training_samples"] = []
+        database_dict["evaluation_samples"] = []
+
         for index, image in enumerate(self.data_collector.get_training_images()):
-            cv2.imwrite(os.path.join(training_folder, f"{index:04d}.jpg"), image)  # noqa E231
+            img_name = f"{index:04d}.jpg"
+            cv2.imwrite(os.path.join(training_folder, img_name), image)  # noqa E231
             np.savetxt(
                 os.path.join(training_folder, f"{index:04d}_training_img_points.txt"),
                 self.data_collector.get_training_detection(index).get_flattened_image_points(),
@@ -958,8 +966,19 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 self.data_collector.get_training_detection(index).get_flattened_object_points(),
             )
 
+            sample = {}
+            sample["image_name"] = img_name
+            sample["img_points"] = self.data_collector.get_training_detection(
+                index
+            ).get_flattened_image_points()
+            sample["obj_points"] = self.data_collector.get_training_detection(
+                index
+            ).get_flattened_object_points()
+            database_dict["training_samples"].append(sample)
+
         for index, image in enumerate(self.data_collector.get_evaluation_images()):
-            cv2.imwrite(os.path.join(evaluation_folder, f"{index:04d}.jpg"), image)  # noqa E231
+            img_name = f"{index:04d}.jpg"
+            cv2.imwrite(os.path.join(evaluation_folder, img_name), image)  # noqa E231
             np.savetxt(
                 os.path.join(evaluation_folder, f"{index:04d}_eval_img_points.txt"),
                 self.data_collector.get_evaluation_detection(index).get_flattened_image_points(),
@@ -968,6 +987,25 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
                 os.path.join(evaluation_folder, f"{index:04d}_eval_obj_points.txt"),
                 self.data_collector.get_evaluation_detection(index).get_flattened_object_points(),
             )
+
+            sample = {}
+            sample["image_name"] = img_name
+            sample["img_points"] = self.data_collector.get_evaluation_detection(
+                index
+            ).get_flattened_image_points()
+            sample["obj_points"] = self.data_collector.get_evaluation_detection(
+                index
+            ).get_flattened_object_points()
+            database_dict["evaluation_samples"].append(sample)
+
+        try:
+            import pickle
+
+            with open(os.path.join(output_folder, "database.pkl"), "wb") as f:
+                pickle.dump(database_dict, f)
+
+        except Exception:
+            logging.warning("Pickle not available, skipping pickle output")
 
     def process_detection_results(self, img: np.array, detection: BoardDetection, img_stamp: float):
         """Process the results from an object detection."""
