@@ -24,7 +24,7 @@ from rclpy.node import Node
 from tf2_msgs.msg import TFMessage
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from tier4_calibration_msgs.srv import ExtrinsicCalibrator
+from tier4_sensor_calibration_msgs.srv import ExtrinsicCalibrator
 
 
 class RosInterface(Node):

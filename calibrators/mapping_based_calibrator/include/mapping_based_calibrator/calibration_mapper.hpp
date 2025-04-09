@@ -25,7 +25,7 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <tier4_calibration_msgs/srv/frame.hpp>
+#include <tier4_sensor_calibration_msgs/srv/frame.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <pcl/point_types.h>
@@ -46,7 +46,7 @@ public:
   using Ptr = std::shared_ptr<CalibrationMapper>;
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
-  using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
+  using FrameService = rclcpp::Service<tier4_sensor_calibration_msgs::srv::Frame>;
 
   enum State { INITIAL, MAPPING, FINISHED };
 

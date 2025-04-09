@@ -20,7 +20,7 @@
 #include <mapping_based_calibrator/types.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <tier4_calibration_msgs/srv/frame.hpp>
+#include <tier4_sensor_calibration_msgs/srv/frame.hpp>
 
 #include <pcl/point_types.h>
 #include <tf2_ros/buffer.h>
@@ -37,7 +37,7 @@ public:
   using Ptr = std::shared_ptr<BaseLidarCalibrator>;
   using PointPublisher = rclcpp::Publisher<sensor_msgs::msg::PointCloud2>;
   using PointSubscription = rclcpp::Subscription<sensor_msgs::msg::PointCloud2>;
-  using FrameService = rclcpp::Service<tier4_calibration_msgs::srv::Frame>;
+  using FrameService = rclcpp::Service<tier4_sensor_calibration_msgs::srv::Frame>;
 
   BaseLidarCalibrator(
     CalibrationParameters::Ptr & parameters, MappingData::Ptr & mapping_data,

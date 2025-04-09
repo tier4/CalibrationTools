@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(tier4_calibration_msgs)
+project(tier4_sensor_calibration_msgs)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)

@@ -25,8 +25,8 @@ from PySide2.QtCore import QObject
 from PySide2.QtCore import QTimer
 from PySide2.QtCore import Signal
 from geometry_msgs.msg import Transform
-from tier4_calibration_msgs.msg import CalibrationResult
-from tier4_calibration_msgs.srv import ExtrinsicCalibrator
+from tier4_sensor_calibration_msgs.msg import CalibrationResult
+from tier4_sensor_calibration_msgs.srv import ExtrinsicCalibrator
 
 from sensor_calibration_manager.ros_interface import RosInterface
 from sensor_calibration_manager.types import FramePair

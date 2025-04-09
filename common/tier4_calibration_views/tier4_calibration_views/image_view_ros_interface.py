@@ -41,9 +41,9 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros.transform_listener import TransformListener
-from tier4_calibration_msgs.msg import CalibrationPoints
 from tier4_calibration_views.utils import stamp_to_seconds
 from tier4_calibration_views.utils import tf_message_to_transform_matrix
+from tier4_sensor_calibration_msgs.msg import CalibrationPoints
 
 
 class ImageViewRosInterface(Node):

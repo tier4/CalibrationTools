@@ -20,7 +20,7 @@
 #include <tag_based_pnp_calibrator/tag_based_pnp_calibrator.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
 
-#include <tier4_calibration_msgs/msg/calibration_result.hpp>
+#include <tier4_sensor_calibration_msgs/msg/calibration_result.hpp>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_geometry/pinhole_camera_model.h>
@@ -114,8 +114,9 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   filtered_projections_markers_pub_ =
     this->create_publisher<visualization_msgs::msg::MarkerArray>("filtered_projections", 10);
 
-  calibration_points_pub_ = this->create_publisher<tier4_calibration_msgs::msg::CalibrationPoints>(
-    "calibration_points", 10);
+  calibration_points_pub_ =
+    this->create_publisher<tier4_sensor_calibration_msgs::msg::CalibrationPoints>(
+      "calibration_points", 10);
 
   estimator_.setCrossvalidationTrainingRatio(calibration_crossvalidation_training_ratio);
   estimator_.setCalibrationConvergenceCriteria(
@@ -153,7 +154,7 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
   // initialize service server
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -283,9 +284,10 @@ void ExtrinsicTagBasedPNPCalibrator::cameraInfoCallback(
 }
 
 void ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
   RCLCPP_INFO(this->get_logger(), "Received calibration request");
@@ -323,7 +325,7 @@ void ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback(
   geometry_msgs::msg::Transform transform_msg;
   transform_msg = tf2::toMsg(optical_axis_to_lidar_tf2);
 
-  tier4_calibration_msgs::msg::CalibrationResult result;
+  tier4_sensor_calibration_msgs::msg::CalibrationResult result;
   result.success = true;
   result.score = crossval_reprojection_error;
   result.message.data = message_ss.str();
@@ -474,7 +476,7 @@ void ExtrinsicTagBasedPNPCalibrator::automaticCalibrationTimerCallback()
 void ExtrinsicTagBasedPNPCalibrator::publishCalibrationPoints(
   const std::vector<cv::Point3d> & object_points, const std::vector<cv::Point2d> & image_points)
 {
-  tier4_calibration_msgs::msg::CalibrationPoints msg;
+  tier4_sensor_calibration_msgs::msg::CalibrationPoints msg;
   geometry_msgs::msg::Point object_point;
   geometry_msgs::msg::Point image_point;
 

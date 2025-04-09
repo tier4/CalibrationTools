@@ -330,7 +330,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
 
   srv_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-  service_server_ = this->create_service<tier4_calibration_msgs::srv::ExtrinsicCalibrator>(
+  service_server_ = this->create_service<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator>(
     "extrinsic_calibration",
     std::bind(
       &ExtrinsicMappingBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
@@ -406,19 +406,21 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     },
     rmw_qos_profile_services_default);
 
-  load_database_server_ = this->create_service<tier4_calibration_msgs::srv::CalibrationDatabase>(
-    "load_database",
-    std::bind(
-      &ExtrinsicMappingBasedCalibrator::loadDatabaseCallback, this, std::placeholders::_1,
-      std::placeholders::_2),
-    rmw_qos_profile_services_default);
+  load_database_server_ =
+    this->create_service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>(
+      "load_database",
+      std::bind(
+        &ExtrinsicMappingBasedCalibrator::loadDatabaseCallback, this, std::placeholders::_1,
+        std::placeholders::_2),
+      rmw_qos_profile_services_default);
 
-  save_database_server_ = this->create_service<tier4_calibration_msgs::srv::CalibrationDatabase>(
-    "save_database",
-    std::bind(
-      &ExtrinsicMappingBasedCalibrator::saveDatabaseCallback, this, std::placeholders::_1,
-      std::placeholders::_2),
-    rmw_qos_profile_services_default);
+  save_database_server_ =
+    this->create_service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>(
+      "save_database",
+      std::bind(
+        &ExtrinsicMappingBasedCalibrator::saveDatabaseCallback, this, std::placeholders::_1,
+        std::placeholders::_2),
+      rmw_qos_profile_services_default);
 
   publisher_timer_ = rclcpp::create_timer(
     this, this->get_clock(), 5s, std::bind(&CalibrationMapper::publisherTimerCallback, mapper_));
@@ -545,9 +547,10 @@ void ExtrinsicMappingBasedCalibrator::unsubscribe()
 }
 
 void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
-  [[maybe_unused]] const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Request>
+  [[maybe_unused]] const std::shared_ptr<
+    tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Request>
     request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::ExtrinsicCalibrator::Response> response)
 {
   using std::chrono_literals::operator""s;
 
@@ -589,7 +592,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
       std::unique_lock<std::mutex> lock(service_mutex_);
       calibration_pending_map_[calibration_frame_name] = false;
 
-      tier4_calibration_msgs::msg::CalibrationResult result;
+      tier4_sensor_calibration_msgs::msg::CalibrationResult result;
       result.transform_stamped = tf2::eigenToTransform(Eigen::Isometry3d(transform));
       result.transform_stamped.header.frame_id = mapping_data_->mapping_lidar_frame_;
       result.transform_stamped.child_frame_id = calibration_frame_name;
@@ -615,7 +618,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
 
       std::unique_lock<std::mutex> lock(service_mutex_);
       calibration_pending_map_[calibration_frame_name] = false;
-      tier4_calibration_msgs::msg::CalibrationResult result;
+      tier4_sensor_calibration_msgs::msg::CalibrationResult result;
       result.transform_stamped = tf2::eigenToTransform(Eigen::Isometry3d(transform));
       result.transform_stamped.header.frame_id = mapping_data_->mapping_lidar_frame_;
       result.transform_stamped.child_frame_id = calibration_frame_name;
@@ -646,7 +649,7 @@ void ExtrinsicMappingBasedCalibrator::requestReceivedCallback(
 
       std::unique_lock<std::mutex> lock(service_mutex_);
       calibration_pending_map_[base_frame] = false;
-      tier4_calibration_msgs::msg::CalibrationResult result;
+      tier4_sensor_calibration_msgs::msg::CalibrationResult result;
       result.transform_stamped = tf2::eigenToTransform(Eigen::Isometry3d(transform));
       result.transform_stamped.header.frame_id = mapping_data_->mapping_lidar_frame_;
       result.transform_stamped.child_frame_id = base_frame;
@@ -734,8 +737,8 @@ void ExtrinsicMappingBasedCalibrator::predictedObjectsCallback(
 }
 
 void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Request> request,
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Response> response)
 {
   if (!mapper_) {
     RCLCPP_ERROR(
@@ -791,8 +794,8 @@ void ExtrinsicMappingBasedCalibrator::loadDatabaseCallback(
 }
 
 void ExtrinsicMappingBasedCalibrator::saveDatabaseCallback(
-  const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Request> request,
-  const std::shared_ptr<tier4_calibration_msgs::srv::CalibrationDatabase::Response> response)
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Request> request,
+  const std::shared_ptr<tier4_sensor_calibration_msgs::srv::CalibrationDatabase::Response> response)
 {
   if (!mapper_) {
     RCLCPP_ERROR(
