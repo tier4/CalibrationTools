@@ -15,7 +15,7 @@
   <let name="calibration_lidar_model" value="velodyne_vls128"/>
 
   <!-- Topic configuration -->
-  <let name="calibration_lidar_topic" value="/sensing/lidar/top/pointcloud_raw"/>
+  <let name="calibration_lidar_topic" value="/sensing/lidar/top/pointcloud_raw_ex"/>
 
   <arg
     name="auxiliar_tag_ids"
