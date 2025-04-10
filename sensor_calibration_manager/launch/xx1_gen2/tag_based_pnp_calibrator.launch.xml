@@ -22,8 +22,8 @@
   <let name="image_compressed_topic" value="/sensing/camera/$(var camera_name)/image_raw/compressed"/>
 
   <let name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
-	<let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw_ex"/>
-  
+  <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw_ex"/>
+
   <let name="camera_frame" value="$(var camera_name)/camera_link"/>
   <let name="rviz_profile" value="$(find-pkg-share tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
   <let name="lidar_model" value="velodyne_vls128"/>
