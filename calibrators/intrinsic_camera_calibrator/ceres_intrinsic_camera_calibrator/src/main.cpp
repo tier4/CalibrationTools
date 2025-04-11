@@ -241,6 +241,7 @@ int main(int argc, char ** argv)
 
   // Need to compute the whole rvecs, tvecs for the whole calibration set
   auto ceres_start = std::chrono::high_resolution_clock::now();
+  std::vector<std::vector<double>> points_weight;
 
   for (std::size_t i = mini_calibration_object_points.size(); i < calibration_object_points.size();
        i++) {
@@ -254,6 +255,7 @@ int main(int argc, char ** argv)
     CV_UNUSED(status);
     mini_opencv_calibration_rvecs.push_back(rvec);
     mini_opencv_calibration_tvecs.push_back(tvec);
+    points_weight[i].push_back(1.0);
   }
 
   CeresCameraIntrinsicsOptimizer optimizer;
@@ -266,7 +268,8 @@ int main(int argc, char ** argv)
   optimizer.setVerbose(true);
   optimizer.setData(
     mini_opencv_camera_matrix, mini_opencv_dist_coeffs, calibration_object_points,
-    calibration_image_points, mini_opencv_calibration_rvecs, mini_opencv_calibration_tvecs);
+    calibration_image_points, points_weight, mini_opencv_calibration_rvecs,
+    mini_opencv_calibration_tvecs);
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
   optimizer.solve(false);

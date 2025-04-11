@@ -110,7 +110,8 @@ public:
   void setData(
     const cv::Mat_<double> & camera_matrix, const cv::Mat_<double> & distortion_coeffs,
     const std::vector<std::vector<cv::Point3f>> & object_points,
-    const std::vector<std::vector<cv::Point2f>> & image_points, const std::vector<cv::Mat> & rvecs,
+    const std::vector<std::vector<cv::Point2f>> & image_points,
+    const std::vector<std::vector<double>> & points_weight, const std::vector<cv::Mat> & rvecs,
     const std::vector<cv::Mat> & tvecs);
 
   /*!
@@ -179,6 +180,7 @@ protected:
 
   std::vector<std::vector<cv::Point3f>> object_points_;
   std::vector<std::vector<cv::Point2f>> image_points_;
+  std::vector<std::vector<double>> points_weight_;
   std::vector<cv::Mat> rvecs_, tvecs_;
 
   // Optimization placeholders

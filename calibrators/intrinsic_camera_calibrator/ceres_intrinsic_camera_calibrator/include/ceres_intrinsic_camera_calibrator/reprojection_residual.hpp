@@ -45,11 +45,12 @@ struct ReprojectionResidual
   static constexpr int RESIDUAL_DIM = 2;
 
   ReprojectionResidual(
-    const cv::Point3f & object_point, const cv::Point2f & image_point, int radial_distortion_coeffs,
-    bool use_tangential_distortion, int rational_distortion_coeffs)
+    const cv::Point3f & object_point, const cv::Point2f & image_point, const double points_weight,
+    int radial_distortion_coeffs, bool use_tangential_distortion, int rational_distortion_coeffs)
   {
     object_point_ = Eigen::Vector3d(object_point.x, object_point.y, object_point.z);
     image_point_ = Eigen::Vector2d(image_point.x, image_point.y);
+    points_weight_ = points_weight;
     radial_distortion_coeffs_ = radial_distortion_coeffs;
     use_tangential_distortion_ = use_tangential_distortion;
     rational_distortion_coeffs_ = rational_distortion_coeffs;
@@ -110,8 +111,8 @@ struct ReprojectionResidual
     const T predicted_ics_x = cx + fx * (xp * d + tdx);
     const T predicted_ics_y = cy + fy * (yp * d + tdy);
 
-    residuals[0] = predicted_ics_x - image_point_.x();
-    residuals[1] = predicted_ics_y - image_point_.y();
+    residuals[0] = (predicted_ics_x - image_point_.x()) * points_weight_;
+    residuals[1] = (predicted_ics_y - image_point_.y()) * points_weight_;
 
     return true;
   }
@@ -126,11 +127,11 @@ struct ReprojectionResidual
    * @returns the ceres residual
    */
   static ceres::CostFunction * createResidual(
-    const cv::Point3f & object_point, const cv::Point2f & image_point, int radial_distortion_coeffs,
-    bool use_tangential_distortion, int rational_distortion_coeffs)
+    const cv::Point3f & object_point, const cv::Point2f & image_point, const double points_weight,
+    int radial_distortion_coeffs, bool use_tangential_distortion, int rational_distortion_coeffs)
   {
     auto f = new ReprojectionResidual(
-      object_point, image_point, radial_distortion_coeffs, use_tangential_distortion,
+      object_point, image_point, points_weight, radial_distortion_coeffs, use_tangential_distortion,
       rational_distortion_coeffs);
 
     int distortion_coefficients = radial_distortion_coeffs +
@@ -184,6 +185,7 @@ struct ReprojectionResidual
 
   Eigen::Vector3d object_point_;
   Eigen::Vector2d image_point_;
+  double points_weight_;
   int radial_distortion_coeffs_;
   bool use_tangential_distortion_;
   int rational_distortion_coeffs_;

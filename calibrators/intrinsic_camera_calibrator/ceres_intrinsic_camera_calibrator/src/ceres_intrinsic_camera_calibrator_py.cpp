@@ -43,6 +43,7 @@ std::tuple<
 calibrate(
   const std::vector<Eigen::MatrixXd> & object_points_eigen_list,
   const std::vector<Eigen::MatrixXd> & image_points_eigen_list,
+  const std::vector<Eigen::MatrixXd> & points_weights_eigen_list,
   const Eigen::MatrixXd & initial_camera_matrix_eigen,
   const Eigen::MatrixXd & initial_dist_coeffs_eigen, int num_radial_coeffs, int num_rational_coeffs,
   bool use_tangential_distortion, double coeffs_regularization_weight,
@@ -87,25 +88,31 @@ calibrate(
 
   std::vector<std::vector<cv::Point3f>> object_points_list_cv;
   std::vector<std::vector<cv::Point2f>> image_points_list_cv;
+  std::vector<std::vector<double>> weight_points_list_cv;
 
   for (std::size_t view_id = 0; view_id < object_points_eigen_list.size(); view_id++) {
     std::vector<cv::Point3f> object_points;
     std::vector<cv::Point2f> image_points;
+    std::vector<double> weight_points;
 
     const auto & input_object_points = object_points_eigen_list[view_id];
     const auto & input_image_points = image_points_eigen_list[view_id];
+    const auto & input_weight_points = points_weights_eigen_list[view_id];
 
     object_points.reserve(input_object_points.rows());
     image_points.reserve(input_image_points.rows());
+    weight_points.reserve(input_image_points.rows());
 
     for (int i = 0; i < input_image_points.rows(); i++) {
       object_points.emplace_back(
         input_object_points(i, 0), input_object_points(i, 1), input_object_points(i, 2));
       image_points.emplace_back(input_image_points(i, 0), input_image_points(i, 1));
+      weight_points.emplace_back(input_weight_points(i, 0));
     }
 
     object_points_list_cv.push_back(object_points);
     image_points_list_cv.push_back(image_points);
+    weight_points_list_cv.push_back(weight_points);
   }
 
   // Use PnP to get the initial board poses
@@ -133,7 +140,7 @@ calibrate(
   optimizer.setVerbose(verbose);
   optimizer.setData(
     initial_camera_matrix_cv, initial_dist_coeffs_cv, object_points_list_cv, image_points_list_cv,
-    initial_rvecs_cv, initial_tvecs_cv);
+    weight_points_list_cv, initial_rvecs_cv, initial_tvecs_cv);
   optimizer.dataToPlaceholders();
   optimizer.evaluate();
   optimizer.solve(false);
@@ -240,11 +247,11 @@ PYBIND11_MODULE(ceres_intrinsic_camera_calibrator_py, m)
         Returns:
             The RMS reprojection error, the optimized camera intrinsics, and the board extrinsics
       )pbdoc",
-    py::arg("object_points_list"), py::arg("image_points_list"), py::arg("initial_camera_matrix"),
-    py::arg("initial_dist_coeffs"), py::arg("num_radial_coeffs"), py::arg("num_rational_coeffs"),
-    py::arg("use_tangential_distortion"), py::arg("coeffs_regularization_weight"),
-    py::arg("fov_regularization_weight"), py::arg("width"), py::arg("height"),
-    py::arg("verbose") = false);
+    py::arg("object_points_list"), py::arg("image_points_list"), py::arg("points_weight_list"),
+    py::arg("initial_camera_matrix"), py::arg("initial_dist_coeffs"), py::arg("num_radial_coeffs"),
+    py::arg("num_rational_coeffs"), py::arg("use_tangential_distortion"),
+    py::arg("coeffs_regularization_weight"), py::arg("fov_regularization_weight"), py::arg("width"),
+    py::arg("height"), py::arg("verbose") = false);
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

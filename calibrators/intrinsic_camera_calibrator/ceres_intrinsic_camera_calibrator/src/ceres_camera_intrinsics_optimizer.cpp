@@ -74,7 +74,8 @@ void CeresCameraIntrinsicsOptimizer::setVerbose(bool verbose) { verbose_ = verbo
 void CeresCameraIntrinsicsOptimizer::setData(
   const cv::Mat_<double> & camera_matrix, const cv::Mat_<double> & distortion_coeffs,
   const std::vector<std::vector<cv::Point3f>> & object_points,
-  const std::vector<std::vector<cv::Point2f>> & image_points, const std::vector<cv::Mat> & rvecs,
+  const std::vector<std::vector<cv::Point2f>> & image_points,
+  const std::vector<std::vector<double>> & points_weight, const std::vector<cv::Mat> & rvecs,
   const std::vector<cv::Mat> & tvecs)
 {
   if (camera_matrix.cols != 3 || camera_matrix.rows != 3) {
@@ -115,6 +116,7 @@ void CeresCameraIntrinsicsOptimizer::setData(
   distortion_coeffs_ = distortion_coeffs.clone();
   object_points_ = object_points;
   image_points_ = image_points;
+  points_weight_ = points_weight;
   rvecs_ = rvecs;
   tvecs_ = tvecs;
 }
@@ -308,11 +310,12 @@ double CeresCameraIntrinsicsOptimizer::getTotalCeresError()
   for (std::size_t view_index = 0; view_index < object_points_.size(); view_index++) {
     const auto & view_object_points = object_points_[view_index];
     const auto & view_image_points = image_points_[view_index];
+    const auto & points_weight = points_weight_[view_index];
     auto & pose_placeholder = pose_placeholders_[view_index];
 
     for (std::size_t point_index = 0; point_index < view_object_points.size(); point_index++) {
       auto f = ReprojectionResidual(
-        view_object_points[point_index], view_image_points[point_index],
+        view_object_points[point_index], view_image_points[point_index], points_weight[point_index],
         radial_distortion_coefficients_, use_tangential_distortion_,
         rational_distortion_coefficients_);
       std::array<double, 2> residuals;
@@ -395,13 +398,14 @@ void CeresCameraIntrinsicsOptimizer::solve(bool use_fov_block)
   for (std::size_t view_index = 0; view_index < object_points_.size(); view_index++) {
     const auto & view_object_points = object_points_[view_index];
     const auto & view_image_points = image_points_[view_index];
+    const auto & points_weight = points_weight_[view_index];
     auto & pose_placeholder = pose_placeholders_[view_index];
 
     for (std::size_t point_index = 0; point_index < view_object_points.size(); point_index++) {
       problem.AddResidualBlock(
         ReprojectionResidual::createResidual(
           view_object_points[point_index], view_image_points[point_index],
-          radial_distortion_coefficients_, use_tangential_distortion_,
+          points_weight[point_index], radial_distortion_coefficients_, use_tangential_distortion_,
           rational_distortion_coefficients_),
         nullptr,  // L2
         intrinsics_placeholder_.data(), pose_placeholder.data());
@@ -448,7 +452,7 @@ void CeresCameraIntrinsicsOptimizer::solve(bool use_fov_block)
   options.max_num_iterations = 100;
   options.function_tolerance = 1e-10;
   options.gradient_tolerance = 1e-14;
-  options.num_threads = 8;
+  options.num_threads = 20;
   options.max_num_consecutive_invalid_steps = 100;
   options.use_inner_iterations = true;
   ceres::Solver::Summary summary;
