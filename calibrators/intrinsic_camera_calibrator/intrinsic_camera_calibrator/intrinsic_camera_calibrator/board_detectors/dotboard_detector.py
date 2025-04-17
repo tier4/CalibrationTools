@@ -106,7 +106,7 @@ class DotBoardDetector(BoardDetector):
 
             if not ok:
                 (ok, corners) = cv2.findCirclesGrid(
-                    detection_image, (cols, rows), flags=flags, blobDetector=detector
+                    detection_image, (rows, cols), flags=flags, blobDetector=detector
                 )
 
                 # we need to swap the axes of the detections back to make it consistent

@@ -1302,7 +1302,7 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
             and self.skip_next_img > 1
             and self.data_source_type != DataSourceEnum.FILES
         ):
-            self.detector.restart_lost_frames_counter()  # to force next frame detection
+            #self.detector.restart_lost_frames_counter()  # to force next frame detection
             self.skip_next_img -= 1
             self.consumed_data_signal.emit()
             return
