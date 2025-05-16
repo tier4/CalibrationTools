@@ -1,5 +1,6 @@
 <launch>
   <arg name="image_topic" description="Raw image topic (currently we do not support rectified images)"/>
+  <arg name="image_compressed_topic" description="Compressed image topic"/>
   <arg name="camera_info_topic"/>
   <arg name="pointcloud_topic"/>
   <arg name="base_frame" default="base_link"/>
@@ -37,6 +38,7 @@
   <!-- apriltag detector -->
   <include file="$(find-pkg-share tag_based_pnp_calibrator)/launch/apriltag_16h5.launch.py">
     <arg name="image_topic" value="$(var image_topic)"/>
+    <arg name="image_compressed_topic" value="$(var image_compressed_topic)"/>
     <arg name="camera_info_topic" value="$(var camera_info_topic)"/>
   </include>
 
