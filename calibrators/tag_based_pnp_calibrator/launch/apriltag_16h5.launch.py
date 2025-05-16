@@ -21,8 +21,22 @@ def generate_launch_description():
         launch_arguments.append(DeclareLaunchArgument(name, default_value=default_value))
 
     add_launch_arg("image_topic", "/camera/image")
+    add_launch_arg("image_compressed_topic", "/camera/image/compressed")
     add_launch_arg("camera_info_topic", "/camera/camera_info")
     add_launch_arg("apriltag_detections_topic", "apriltag/detection_array")
+
+    decompressor_node = ComposableNode(
+        package="autoware_image_transport_decompressor", # The package containing the component
+        plugin="autoware::image_preprocessor::ImageTransportDecompressor", # The registered plugin name
+        name="decompressor",                             # Node name within the container
+        remappings=[
+            ("decompressor/input/compressed_image", LaunchConfiguration("image_compressed_topic")),
+            ("decompressor/output/raw_image", LaunchConfiguration("image_topic")),
+        ],
+        parameters=[
+            {"encoding": "default"}
+        ]
+    )
 
     composable_node = ComposableNode(
         name="apriltag",
@@ -42,7 +56,7 @@ def generate_launch_description():
         namespace="apriltag",
         package="rclcpp_components",
         executable="component_container",
-        composable_node_descriptions=[composable_node],
+        composable_node_descriptions=[decompressor_node, composable_node],
         output="screen",
     )
 

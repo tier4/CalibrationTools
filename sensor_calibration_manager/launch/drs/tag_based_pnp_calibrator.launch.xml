@@ -46,17 +46,9 @@
   <let name="use_rectified_image" value="false"/>
 
   <group>
-    <!-- image decompressor -->
-    <node pkg="autoware_image_transport_decompressor" exec="image_transport_decompressor_node" name="decompressor" output="screen">
-      <remap from="decompressor/input/compressed_image" to="$(var image_compressed_topic)"/>
-      op
-      <remap from="decompressor/output/raw_image" to="$(var image_decompressed_topic)"/>
-
-      <param name="encoding" value="default"/>
-    </node>
-
     <!-- tag based calibrator -->
     <include file="$(find-pkg-share tag_based_pnp_calibrator)/launch/calibrator.launch.xml">
+      <arg name="image_compressed_topic" value="$(var image_compressed_topic)"/>
       <arg name="image_topic" value="$(var image_decompressed_topic)"/>
       <arg name="camera_info_topic" value="$(var camera_info_topic)"/>
       <arg name="pointcloud_topic" value="$(var pointcloud_topic)"/>
