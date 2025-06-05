@@ -3,9 +3,10 @@ board_parameters:
   cols: 8
   rows: 6
   cell_size: 0.1
-calibrator_type: opencv
+calibrator_type: ceres
 calibration_parameters:
-  radial_distortion_coefficients: 4
+  radial_distortion_coefficients: 3
+  rational_distortion_coefficients: 3
   pre_rejection_max_rms_error: 5.0
   post_rejection_max_rms_error: 3.0
 data_collector:
