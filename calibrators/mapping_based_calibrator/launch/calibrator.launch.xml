@@ -130,6 +130,9 @@
 
       <param name="calibration_min_distance_between_frames" value="$(var calibration_min_distance_between_frames)"/>
 
+      <param name="max_allowed_interpolated_distance" value="0.08"/>
+      <param name="max_allowed_interpolated_distance_straight" value="0.12"/> 
+
       <param name="use_rosbag" value="true"/>
     </node>
   </group>
