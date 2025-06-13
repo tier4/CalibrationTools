@@ -9,8 +9,8 @@
   <let name="calibration_camera_optical_link_frames" value="['']"/>
 
   <let name="calibration_lidar_frames" value="[
-    hesai_left,
-    hesai_right,
+    hesai_side_left,
+    hesai_side_right,
     hesai_front_left,
     hesai_front_right]"/>
 
@@ -26,8 +26,8 @@
   <let
     name="calibration_pointcloud_topics"
     value="[
-    /sensing/lidar/left/rectified/pointcloud_ex,
-    /sensing/lidar/right/rectified/pointcloud_ex,
+    /sensing/lidar/side_left/rectified/pointcloud_ex,
+    /sensing/lidar/side_right/rectified/pointcloud_ex,
     /sensing/lidar/front_left/rectified/pointcloud_ex,
     /sensing/lidar/front_right/rectified/pointcloud_ex]"
   />
