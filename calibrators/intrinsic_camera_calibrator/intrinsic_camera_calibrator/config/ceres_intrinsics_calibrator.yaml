@@ -1,5 +1,5 @@
 # yamllint disable-line rule:truthy
-board_type: chess_board
+board_type: dot_board
 board_parameters:
   cols: 8
   rows: 6
