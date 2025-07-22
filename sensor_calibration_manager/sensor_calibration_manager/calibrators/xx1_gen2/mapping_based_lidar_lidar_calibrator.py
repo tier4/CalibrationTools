@@ -40,12 +40,14 @@ class MappingBasedLidarLidarCalibrator(CalibratorBase):
             "hesai_side_right",
             "hesai_front_left",
             "hesai_front_right",
+            "hesai_rear",
         ]
         self.calibration_base_lidar_frames = [
             "hesai_side_left_base_link",
             "hesai_side_right_base_link",
             "hesai_front_left_base_link",
             "hesai_front_right_base_link",
+            "hesai_rear_base_link",
         ]
 
         self.required_frames.extend(

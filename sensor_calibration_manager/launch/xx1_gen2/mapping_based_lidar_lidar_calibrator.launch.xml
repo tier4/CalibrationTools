@@ -12,7 +12,8 @@
     hesai_side_left,
     hesai_side_right,
     hesai_front_left,
-    hesai_front_right]"/>
+    hesai_front_right,
+    hesai_rear]"/>
 
   <let name="mapping_lidar_frame" value="hesai_top"/>
   <let name="mapping_pointcloud" value="/sensing/lidar/top/pointcloud"/>
@@ -29,7 +30,8 @@
     /sensing/lidar/side_left/rectified/pointcloud_ex,
     /sensing/lidar/side_right/rectified/pointcloud_ex,
     /sensing/lidar/front_left/rectified/pointcloud_ex,
-    /sensing/lidar/front_right/rectified/pointcloud_ex]"
+    /sensing/lidar/front_right/rectified/pointcloud_ex,
+    /sensing/lidar/rear/rectified/pointcloud_ex]"
   />
 
   <!-- mapping based calibrator -->
