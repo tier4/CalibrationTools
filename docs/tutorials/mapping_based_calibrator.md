@@ -147,6 +147,7 @@ The image below displays the vehicle within the pointcloud, allowing for a compa
 ## FAQ
 
 - Why does the calibration fail?
+
   - In most cases, the failure is due to mapping issues. The possible error messages are listed below and should be displayed in the console. For these cases, restart the experiment and drive more stably and slowly.
     - Mapping failed. Angle between keyframes is too high.
     - Mapping failed. Interpolation error is too high.
