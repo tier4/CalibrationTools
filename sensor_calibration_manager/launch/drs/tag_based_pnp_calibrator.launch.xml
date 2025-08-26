@@ -95,7 +95,7 @@
       exec="static_transform_publisher"
       name="tf_broadcaster"
       output="screen"
-      args="--frame-id  $(var lidar_frame) --child-frame-id $(var camera_frame) --x 0.0 --y 0.0 --z 0.0 --yaw 1.54 --roll 0.0 --pitch 0.0"
+      args="--frame-id  $(var lidar_frame) --child-frame-id $(var camera_frame) --x 0.0 --y 0.0 --z 0.0 --yaw 0.0 --roll 0.0 --pitch 0.0"
       if="$(eval &quot;'$(var lidar_frame)' == 'lidar_front' &quot;)"
     />
     <node
