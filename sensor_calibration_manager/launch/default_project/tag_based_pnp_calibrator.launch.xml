@@ -23,6 +23,9 @@
     <choice value="seyond_robin_w"/>
     <choice value="velodyne_vlp16"/>
     <choice value="velodyne_vls128"/>
+    <choice value="ot128"/>
+    <choice value="ot128_clipped"/>
+    <choice value="qt128"/>
   </arg>
 
   <let name="rviz_profile" value=""/>
