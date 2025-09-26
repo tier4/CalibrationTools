@@ -26,7 +26,7 @@
 
   <let name="camera_frame" value="$(var camera_name)/camera_link"/>
   <let name="rviz_profile" value="$(find-pkg-share tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
-  <let name="lidar_model" value="velodyne_vls128"/>
+  <let name="lidar_model" value="ot128"/>
   <!--Note: The OT128 should work with the same profile as the VLS128 -->
   <let name="lidar_frame" value="hesai_top"/>
   <let name="use_rectified_image" value="false"/>

@@ -12,7 +12,7 @@
   <let name="main_calibration_sensor_frame" value="hesai_top"/>
 
   <!-- Lidar configuration -->
-  <let name="calibration_lidar_model" value="velodyne_vls128"/>
+  <let name="calibration_lidar_model" value="ot128"/>
 
   <!-- Topic configuration -->
   <let name="calibration_lidar_topic" value="/sensing/lidar/top/pointcloud_raw_ex"/>
