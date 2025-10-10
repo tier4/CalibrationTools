@@ -16,7 +16,9 @@
 
 import logging
 
-from PySide2.QtCore import Signal, QSettings, Qt
+from PySide2.QtCore import QSettings
+from PySide2.QtCore import Qt
+from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QGroupBox
 from PySide2.QtWidgets import QPushButton
@@ -28,6 +30,7 @@ from sensor_calibration_manager.calibrator_registry import CalibratorRegistry
 PREFERENCES_GROUP = "calibrator_selector_view"
 PROJECT_PREFERENCES_KEY = PREFERENCES_GROUP + "/project"
 CALIBRATOR_PREFERENCES_KEY = PREFERENCES_GROUP + "/calibrator"
+
 
 class CalibrationSelectorView(QWidget):
     """Initial widget to let the user configure the calibrator."""
@@ -75,7 +78,7 @@ class CalibrationSelectorView(QWidget):
             self.calibrator_combobox.clear()
             for calibrator_name in CalibratorRegistry.getProjectCalibrators(new_project):
                 self.calibrator_combobox.addItem(calibrator_name)
-            
+
             ## initialize calibrator preference
             calibrator = self.settings.value(CALIBRATOR_PREFERENCES_KEY, "", type=str)
             if calibrator:
