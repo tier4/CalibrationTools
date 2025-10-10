@@ -316,6 +316,9 @@ def main(args=None):
     os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
     app = QApplication(sys.argv)
 
+    app.setOrganizationName("TIER IV")
+    app.setApplicationName("sensor_calibration_manager")
+
     rclpy.init(args=args)
 
     signal.signal(signal.SIGINT, sigint_handler)
