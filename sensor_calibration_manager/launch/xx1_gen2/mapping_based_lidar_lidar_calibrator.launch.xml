@@ -27,11 +27,11 @@
   <let
     name="calibration_pointcloud_topics"
     value="[
-    /sensing/lidar/side_left/rectified/pointcloud_ex,
-    /sensing/lidar/side_right/rectified/pointcloud_ex,
-    /sensing/lidar/front_left/rectified/pointcloud_ex,
-    /sensing/lidar/front_right/rectified/pointcloud_ex,
-    /sensing/lidar/rear/rectified/pointcloud_ex]"
+    /sensing/lidar/side_left/pointcloud_raw_ex,
+    /sensing/lidar/side_right/pointcloud_raw_ex,
+    /sensing/lidar/front_left/pointcloud_raw_ex,
+    /sensing/lidar/front_right/pointcloud_raw_ex,
+    /sensing/lidar/rear/pointcloud_raw_ex]"
   />
 
   <!-- mapping based calibrator -->
