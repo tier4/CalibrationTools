@@ -16,6 +16,8 @@
 
 import logging
 
+from PySide2.QtCore import QSettings
+from PySide2.QtCore import Qt
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QGroupBox
@@ -25,6 +27,10 @@ from PySide2.QtWidgets import QWidget
 
 from sensor_calibration_manager.calibrator_registry import CalibratorRegistry
 
+PREFERENCES_GROUP = "calibrator_selector_view"
+PROJECT_PREFERENCES_KEY = PREFERENCES_GROUP + "/project"
+CALIBRATOR_PREFERENCES_KEY = PREFERENCES_GROUP + "/calibrator"
+
 
 class CalibrationSelectorView(QWidget):
     """Initial widget to let the user configure the calibrator."""
@@ -33,6 +39,8 @@ class CalibrationSelectorView(QWidget):
 
     def __init__(self):
         super().__init__()
+
+        self.settings = QSettings()
 
         self.setWindowTitle("Calibrator selection menu")
         self.setMinimumWidth(300)
@@ -49,26 +57,49 @@ class CalibrationSelectorView(QWidget):
         calibrator_layout.addWidget(self.calibrator_combobox)
         self.calibrator_group.setLayout(calibrator_layout)
 
-        def onNewProjectName(new_project_name):
-            self.calibrator_combobox.clear()
-
-            for calibrator_name in CalibratorRegistry.getProjectCalibrators(new_project_name):
-                self.calibrator_combobox.addItem(calibrator_name)
-
-                # Project
-
+        # project
         self.project_group = QGroupBox("Project:")
         self.project_group.setFlat(True)
 
         self.project_combobox = QComboBox()
-        self.project_combobox.currentTextChanged.connect(onNewProjectName)
-
         for project_name in CalibratorRegistry.getProjects():
             self.project_combobox.addItem(project_name)
 
         project_layout = QVBoxLayout()
         project_layout.addWidget(self.project_combobox)
         self.project_group.setLayout(project_layout)
+
+        # project preference and handler
+        def onNewProjectName(new_project):
+            # save project preference
+            self.settings.setValue(PROJECT_PREFERENCES_KEY, new_project)
+
+            # setup calibrator combobox
+            self.calibrator_combobox.clear()
+            for calibrator_name in CalibratorRegistry.getProjectCalibrators(new_project):
+                self.calibrator_combobox.addItem(calibrator_name)
+
+            # initialize calibrator preference
+            calibrator = self.settings.value(CALIBRATOR_PREFERENCES_KEY, "", type=str)
+            if calibrator:
+                calibrator_index = self.calibrator_combobox.findText(calibrator, Qt.MatchExactly)
+                if calibrator_index != -1:
+                    self.calibrator_combobox.setCurrentIndex(calibrator_index)
+
+        self.project_combobox.currentTextChanged.connect(onNewProjectName)
+
+        project = self.settings.value(PROJECT_PREFERENCES_KEY, "", type=str)
+        if project:
+            project_index = self.project_combobox.findText(project, Qt.MatchExactly)
+            if project_index != -1:
+                self.project_combobox.setCurrentIndex(project_index)
+
+        # calibration preference and handler
+        def onNewCalibratorName(new_calibrator: str):
+            # save calibrator preference
+            self.settings.setValue(CALIBRATOR_PREFERENCES_KEY, new_calibrator)
+
+        self.calibrator_combobox.currentTextChanged.connect(onNewCalibratorName)
 
         self.start_button = QPushButton("Continue")
         self.start_button.clicked.connect(self.on_click)

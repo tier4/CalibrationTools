@@ -21,6 +21,7 @@ Calibration tools for sensors used in autonomous driving and robotics (camera, l
       - [Calibrator interface](#calibrator-interface)
       - [Launch files](#launch-files)
       - [Launching the sensor calibration manager](#launching-the-sensor-calibration-manager)
+      - [Preferences](#preferences)
   - [Integration](#integration)
     - [Using your vehicle/robot](#using-your-vehiclerobot)
     - [Create a new project](#create-a-new-project)
@@ -314,6 +315,16 @@ Finally, to save the results, press the `save calibration` button.
 <p align="center">
   <img src="docs/images/sensor_calibration_manager/result.png" alt="result"/>
 </p>
+
+#### Preferences
+
+The last user selection of `project` and `calibrator` is automatically saved in `~/.config/tier4/sensor_calibration_manager.conf`, which is helpful in case of repeating the same calibration for different sensor configurations.
+
+To clear this preference, simply remove this file.
+
+```bash
+rm ~/.config/tier4/sensor_calibration_manager.conf
+```
 
 ## Integration
 

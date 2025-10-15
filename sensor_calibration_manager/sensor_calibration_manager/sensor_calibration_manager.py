@@ -316,6 +316,11 @@ def main(args=None):
     os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
     app = QApplication(sys.argv)
 
+    # Manage settings by QSettings, for e.g. save user preferences
+    # By default, the config file is `~/.config/tier4/sensor_calibration_manager.conf`
+    app.setOrganizationName("tier4")
+    app.setApplicationName("sensor_calibration_manager")
+
     rclpy.init(args=args)
 
     signal.signal(signal.SIGINT, sigint_handler)
