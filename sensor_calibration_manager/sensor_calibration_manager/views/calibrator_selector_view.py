@@ -79,7 +79,7 @@ class CalibrationSelectorView(QWidget):
             for calibrator_name in CalibratorRegistry.getProjectCalibrators(new_project):
                 self.calibrator_combobox.addItem(calibrator_name)
 
-            ## initialize calibrator preference
+            # initialize calibrator preference
             calibrator = self.settings.value(CALIBRATOR_PREFERENCES_KEY, "", type=str)
             if calibrator:
                 calibrator_index = self.calibrator_combobox.findText(calibrator, Qt.MatchExactly)
