@@ -318,7 +318,7 @@ Finally, to save the results, press the `save calibration` button.
 
 #### Preferences
 
-The last user selection of `project` and `calibrator` is automatically saved in `~/.config/tier4/sensor_calibration_manager.conf`, which is helpful in case of repeating the same calibration for different sensor configurations.
+The last user selections of `project`, `calibrator`, and the launcher configurations for each project/calibrator are automatically saved in `~/.config/tier4/sensor_calibration_manager.conf`, which is helpful in case of repeating the same calibration for different sensor configurations.
 
 To clear this preference, simply remove this file.
 

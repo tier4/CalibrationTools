@@ -18,6 +18,7 @@ from functools import reduce
 import logging
 from typing import Dict
 
+from PySide2.QtCore import QSettings
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QGridLayout
@@ -33,6 +34,8 @@ from launch.actions.declare_launch_argument import DeclareLaunchArgument
 from launch.frontend import Parser
 from launch.launch_description import LaunchDescription
 
+PREFERENCES_GROUP_PREFIX = "launcher_configuration_view"
+
 
 class LauncherConfigurationView(QWidget):
     """A simple widget to visualize and edit a ParameterizedClass's parameters."""
@@ -42,6 +45,9 @@ class LauncherConfigurationView(QWidget):
 
     def __init__(self, project_name, calibrator_name):
         super().__init__()
+
+        self.settings = QSettings()
+        self.preferences_group = f"{PREFERENCES_GROUP_PREFIX}/{project_name}/{calibrator_name}"
 
         self.setWindowTitle("Launcher configuration")
 
@@ -94,13 +100,13 @@ class LauncherConfigurationView(QWidget):
                 )  # KL: not sure if should the first or last default value
 
                 self.optional_arguments_dict[e.name] = {
-                    "value": default_value,
+                    "default": default_value,
                     "description": description,
                     "choices": e.choices,
                 }
             else:
                 self.required_arguments_dict[e.name] = {
-                    "value": "",
+                    "default": "",
                     "description": description,
                     "choices": e.choices,
                 }
@@ -113,19 +119,26 @@ class LauncherConfigurationView(QWidget):
             name_label = QLabel(argument_name)
             name_label.setMaximumWidth(400)
 
-            default_value = argument_data["value"].replace(" ", "")
+            initial_value = self.settings.value(
+                f"{self.preferences_group}/{argument_name}",
+                argument_data["default"].replace(" ", ""),  # fallback
+                type=str,
+            )
 
             if argument_data["choices"] is None or len(argument_data["choices"]) == 0:
-                self.arguments_widgets_dict[argument_name] = QLineEdit(default_value)
-                self.arguments_widgets_dict[argument_name].textChanged.connect(
-                    self.check_argument_status
-                )
+                line_edit = QLineEdit(initial_value)
+
+                line_edit.textChanged.connect(self.check_argument_status)
+                self.arguments_widgets_dict[argument_name] = line_edit
 
             else:
                 combo_box = QComboBox()
-
                 for choice in argument_data["choices"]:
                     combo_box.addItem(choice)
+
+                initial_index = combo_box.findText(initial_value)
+                if initial_index != -1:
+                    combo_box.setCurrentIndex(initial_index)
 
                 combo_box.currentTextChanged.connect(self.check_argument_status)
                 self.arguments_widgets_dict[argument_name] = combo_box
@@ -152,17 +165,26 @@ class LauncherConfigurationView(QWidget):
             name_label = QLabel(argument_name)
             name_label.setMaximumWidth(400)
 
+            initial_value = self.settings.value(
+                f"{self.preferences_group}/{argument_name}",
+                argument_data["default"],  # fallback
+                type=str,
+            )
+
             if argument_data["choices"] is None or len(argument_data["choices"]) == 0:
-                self.arguments_widgets_dict[argument_name] = QLineEdit(argument_data["value"])
-                self.arguments_widgets_dict[argument_name].textChanged.connect(
-                    self.check_argument_status
-                )
+                line_edit = QLineEdit(initial_value)
+
+                line_edit.textChanged.connect(self.check_argument_status)
+                self.arguments_widgets_dict[argument_name] = line_edit
 
             else:
                 combo_box = QComboBox()
-
                 for choice in argument_data["choices"]:
                     combo_box.addItem(choice)
+
+                initial_index = combo_box.findText(initial_value)
+                if initial_index != -1:
+                    combo_box.setCurrentIndex(initial_index)
 
                 combo_box.currentTextChanged.connect(self.check_argument_status)
                 self.arguments_widgets_dict[argument_name] = combo_box
@@ -228,6 +250,9 @@ class LauncherConfigurationView(QWidget):
             return len(arg) >= 2 and arg[0] == "[" and arg[-1] == "]"
 
         for key, value in args_dict.items():
+            # save preferences
+            self.settings.setValue(f"{self.preferences_group}/{key}", value)
+
             if is_list(value):
                 args_dict[key]: Dict[str, str] = [
                     item.strip() for item in value.strip("[]").split(",")
