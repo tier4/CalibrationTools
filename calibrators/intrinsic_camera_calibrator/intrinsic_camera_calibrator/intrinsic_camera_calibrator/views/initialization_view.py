@@ -18,6 +18,7 @@ from collections import defaultdict
 import logging
 import os
 
+from PySide2.QtCore import QSettings
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QFileDialog
@@ -43,6 +44,10 @@ from intrinsic_camera_calibrator.views.ros_bag_view import RosBagView
 from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
 import yaml
 
+PREFERENCES_GROUP = "initialization_view"
+DATA_SOURCE_PREFERENCES_KEY = PREFERENCES_GROUP + "/data_source"
+PARAMETER_PROFILE_PATH_PREFERENCES_KEY = PREFERENCES_GROUP + "/parameter_profile_path"
+
 
 class InitializationView(QWidget):
     """Initial widget to let the user configure the calibrator."""
@@ -52,6 +57,8 @@ class InitializationView(QWidget):
 
     def __init__(self, calibrator: "CameraIntrinsicsCalibratorUI", cfg):  # noqa F821
         super().__init__()
+
+        self.settings = QSettings()
 
         self.setWindowTitle("Initial configuration")
         self.setMinimumWidth(300)
@@ -81,6 +88,11 @@ class InitializationView(QWidget):
         for data_source in DataSourceEnum:
             self.data_source_combobox.addItem(str(data_source), data_source)
 
+        last_data_source = self.settings.value(DATA_SOURCE_PREFERENCES_KEY, "", type=str)
+        last_data_source_index = self.data_source_combobox.findText(last_data_source)
+        if last_data_source_index != -1:
+            self.data_source_combobox.setCurrentIndex(last_data_source_index)
+
         source_layout = QVBoxLayout()
         source_layout.addWidget(self.data_source_combobox)
         self.source_group.setLayout(source_layout)
@@ -96,7 +108,8 @@ class InitializationView(QWidget):
                     file.split(".")[0].replace("_", " ").title(), file_path
                 )
         # Add "Load File" option at the end
-        self.params_combobox.addItem("Load File", None)
+        load_file_index = self.params_combobox.count()
+        self.params_combobox.addItem("Load File...", None)
 
         def on_params_combo_box_changed(index):
             selected_params_file = self.params_combobox.itemData(index)
@@ -105,14 +118,19 @@ class InitializationView(QWidget):
                     self, "Open File", "", "All Files (*.*);;Text Files (*.yaml)"
                 )
                 if file_name:
-                    logging.info(f"Selected file: {file_name}")
+                    logging.info(f"Loaded File: {file_name}")
                     config_file_path = file_name
+                    self.params_combobox.setItemText(
+                        load_file_index, "Loaded File: " + file_name.split("/")[-1]
+                    )
             else:
+                self.params_combobox.setItemText(load_file_index, "Load File...")
                 config_file_path = selected_params_file
 
             logging.info(f"Selected config file={config_file_path}")
 
             if config_file_path:
+                self.settings.setValue(PARAMETER_PROFILE_PATH_PREFERENCES_KEY, config_file_path)
                 cfg = {}
                 try:
                     with open(config_file_path, "r") as stream:
@@ -124,6 +142,13 @@ class InitializationView(QWidget):
                     logging.error(f"Could not load the parameters from the YAML file ({e})")
 
         self.params_combobox.currentIndexChanged.connect(on_params_combo_box_changed)
+
+        last_config_file_path = self.settings.value(
+            PARAMETER_PROFILE_PATH_PREFERENCES_KEY, "", type=str
+        )
+        last_config_file_path_index = self.params_combobox.findData(last_config_file_path)
+        if last_config_file_path_index != -1:
+            self.params_combobox.setCurrentIndex(last_config_file_path_index)
 
         self.params_group = QGroupBox("Parameters profile")
         self.params_group.setFlat(True)
@@ -224,6 +249,7 @@ class InitializationView(QWidget):
     def on_start(self):
         """Start the calibration process after receiving the user settings."""
         source_type = self.data_source_combobox.currentData()
+        self.settings.setValue(DATA_SOURCE_PREFERENCES_KEY, str(source_type))
 
         def on_success():
             """Handle the successful initialization of the data source."""
