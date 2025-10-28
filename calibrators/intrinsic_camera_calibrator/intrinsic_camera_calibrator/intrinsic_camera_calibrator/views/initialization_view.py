@@ -46,6 +46,7 @@ import yaml
 
 PREFERENCES_GROUP = "initialization_view"
 DATA_SOURCE_PREFERENCES_KEY = PREFERENCES_GROUP + "/data_source"
+BOARD_TYPE_PREFERENCES_KEY = PREFERENCES_GROUP + "/board_type"
 PARAMETER_PROFILE_PATH_PREFERENCES_KEY = PREFERENCES_GROUP + "/parameter_profile_path"
 
 
@@ -93,6 +94,12 @@ class InitializationView(QWidget):
         if last_data_source_index != -1:
             self.data_source_combobox.setCurrentIndex(last_data_source_index)
 
+        self.data_source_combobox.currentTextChanged.connect(
+            lambda data_source_str: self.settings.setValue(
+                DATA_SOURCE_PREFERENCES_KEY, data_source_str
+            )
+        )
+
         source_layout = QVBoxLayout()
         source_layout.addWidget(self.data_source_combobox)
         self.source_group.setLayout(source_layout)
@@ -130,7 +137,6 @@ class InitializationView(QWidget):
             logging.info(f"Selected config file={config_file_path}")
 
             if config_file_path:
-                self.settings.setValue(PARAMETER_PROFILE_PATH_PREFERENCES_KEY, config_file_path)
                 cfg = {}
                 try:
                     with open(config_file_path, "r") as stream:
@@ -138,6 +144,8 @@ class InitializationView(QWidget):
                         self.cfg = defaultdict(dict, cfg)
                         self.update_board_type()
                         logging.info("Successfully opened parameters file")
+
+                    self.settings.setValue(PARAMETER_PROFILE_PATH_PREFERENCES_KEY, config_file_path)
                 except Exception as e:
                     logging.error(f"Could not load the parameters from the YAML file ({e})")
 
@@ -149,6 +157,11 @@ class InitializationView(QWidget):
         last_config_file_path_index = self.params_combobox.findData(last_config_file_path)
         if last_config_file_path_index != -1:
             self.params_combobox.setCurrentIndex(last_config_file_path_index)
+        else:
+            # TODO(someone):
+            # read the last file path
+            # and prevent open file prompt
+            pass
 
         self.params_group = QGroupBox("Parameters profile")
         self.params_group.setFlat(True)
@@ -166,12 +179,24 @@ class InitializationView(QWidget):
         for board_type in BoardEnum:
             self.board_type_combobox.addItem(board_type.value["display"], board_type)
 
+        last_board_type_str = self.settings.value(BOARD_TYPE_PREFERENCES_KEY, "", type=str)
+        last_board_type_str_index = self.board_type_combobox.findText(last_board_type_str)
+        if last_board_type_str_index != -1:
+            self.board_type_combobox.setCurrentIndex(last_board_type_str_index)
+        self.board_type_combobox.currentTextChanged.connect(
+            lambda board_type_str: self.settings.setValue(
+                BOARD_TYPE_PREFERENCES_KEY, board_type_str
+            )
+        )
+
         self.update_board_type()
 
         def board_parameters_on_closed():
             self.setEnabled(True)
 
         def board_parameters_button_callback():
+            # TODO(someone):
+            # save and load board parameters
             board_parameters_view = ParameterView(
                 self.board_parameters_dict[self.board_type_combobox.currentData()]
             )
@@ -286,6 +311,7 @@ class InitializationView(QWidget):
             self.setEnabled(False)
 
         elif source_type == DataSourceEnum.BAG2:
+            # TODO(someone): save preferences for rosbag data source
             self.data_source = make_data_source(self.data_source_combobox.currentData())
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
@@ -294,6 +320,7 @@ class InitializationView(QWidget):
             self.data_source_view.success.connect(on_success)
             self.setEnabled(False)
         elif source_type == DataSourceEnum.FILES:
+            # TODO(someone): save preferences for image files data source
             self.data_source = make_data_source(self.data_source_combobox.currentData())
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
