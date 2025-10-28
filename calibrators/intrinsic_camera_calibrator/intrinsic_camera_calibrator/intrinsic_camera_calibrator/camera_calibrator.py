@@ -1365,6 +1365,11 @@ def main(args=None):
     os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = ""
     app = QApplication(sys.argv)
 
+    # Manage settings by QSettings, for e.g. save user preferences
+    # By default, the config file is `~/.config/tier4/intrinsic_camera_calibrator.conf`
+    app.setOrganizationName("tier4")
+    app.setApplicationName("intrinsic_camera_calibrator")
+
     cfg = {}
     try:
         with open(options.config_file, "r") as stream:
