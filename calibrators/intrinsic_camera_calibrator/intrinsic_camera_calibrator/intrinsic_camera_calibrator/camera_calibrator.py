@@ -1296,16 +1296,16 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
     def process_new_data(self):
         """Attempt to request the detector to process an image. However, if it there is an image being processed, does not enqueue them indefinitely. Instead, only leave the last one."""
-        # if was not found the pattern skip some frames
-        if (
-            self.data_collector.skip_frames_when_not_detection.value
-            and self.skip_next_img > 1
-            and self.data_source_type != DataSourceEnum.FILES
-        ):
-            self.detector.restart_lost_frames_counter()  # to force next frame detection
-            self.skip_next_img -= 1
-            self.consumed_data_signal.emit()
-            return
+        # # if was not found the pattern skip some frames
+        # if (
+        #     self.data_collector.skip_frames_when_not_detection.value
+        #     and self.skip_next_img > 1
+        #     and self.data_source_type != DataSourceEnum.FILES
+        # ):
+        #     self.detector.restart_lost_frames_counter()  # to force next frame detection
+        #     self.skip_next_img -= 1
+        #     self.consumed_data_signal.emit()
+        #     return
 
         if self.data_source_type == DataSourceEnum.FILES:
             self.detector.restart_lost_frames_counter()  # to force next frame detection
