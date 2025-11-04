@@ -183,14 +183,14 @@ class InitializationView(QWidget):
             self.board_type_combobox.addItem(board_type.value["display"], board_type)
 
         # Connect board type combobox to track manual selection
-        def on_board_type_changed(index):
+        def on_board_type_changed(board_type_str):
             # Only set the flag if not during initialization
             if not self.initializing:
                 self.user_selected_board_type = True
                 # Update board parameters for the newly selected board type
                 self.update_board_parameters()
 
-        self.board_type_combobox.currentIndexChanged.connect(on_board_type_changed)
+        self.board_type_combobox.currentTextChanged.connect(on_board_type_changed)
 
         # Set up the board type before connecting the signal
         self.update_board_type()
