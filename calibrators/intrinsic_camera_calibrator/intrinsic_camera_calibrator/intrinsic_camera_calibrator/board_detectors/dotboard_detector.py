@@ -183,3 +183,12 @@ class DotBoardDetector(BoardDetector):
         )
 
         self.detection_results_signal.emit(img, detection, stamp)
+
+    def restart_lost_frames_counter(self):
+        """
+        Reset the counter for lost frames.
+
+        This is an empty implementation as the DotBoardDetector does not track lost frames.
+        The method exists to satisfy the interface requirements of the parent BoardDetector class.
+        """
+        pass
