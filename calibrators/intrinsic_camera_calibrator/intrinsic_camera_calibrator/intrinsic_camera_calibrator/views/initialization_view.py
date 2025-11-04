@@ -57,6 +57,35 @@ class InitializationView(QWidget):
     closed = Signal()
 
     def __init__(self, calibrator: "CameraIntrinsicsCalibratorUI", cfg):  # noqa F821
+        """Initialize the calibrator configuration widget.
+
+        This widget allows users to configure data sources, board types, and operation modes
+        for camera calibration.
+
+        State diagram for board type selection behavior:
+        ```
+        +----------------+     initialization     +----------------------+
+        |                |     complete           |                      |
+        | Initial Setup  +----------------------->| Auto Update Board    |
+        |                |                        | Type                 |
+        +----------------+                        |                      |
+                                                  +----------+-----------+
+                                                             |
+                                                             | User selects
+                                                             | board type from
+                                                             | combobox
+                                                             v
+                                                  +----------+-----------+
+                                                  |                      |
+                                                  | Manual Board Type    |
+                                                  | Selection            |
+                                                  |                      |
+                                                  +----------------------+
+
+        - Auto Update Board Type: Calls update_board_type() + update_board_parameters()
+        - Manual Board Type: Calls update_board_parameters() only, board type remains fixed
+        ```
+        """
         super().__init__()
 
         self.settings = QSettings()
@@ -72,6 +101,10 @@ class InitializationView(QWidget):
             board_type: make_board_parameters(board_type, cfg=self.cfg["board_parameters"])
             for board_type in BoardEnum
         }
+        # Flag to track if user manually selected a board type
+        self.user_selected_board_type = False
+        # Flag to prevent the initial setup from triggering the manual selection
+        self.initializing = True
 
         # Get the package share directory
         package_share_dir = get_package_share_directory("intrinsic_camera_calibrator")
@@ -142,7 +175,15 @@ class InitializationView(QWidget):
                     with open(config_file_path, "r") as stream:
                         cfg = yaml.safe_load(stream)
                         self.cfg = defaultdict(dict, cfg)
-                        self.update_board_type()
+                        # Only update board type if user hasn't manually selected one
+                        if not self.user_selected_board_type:
+                            self.update_board_type()
+                            # Keep the non-user selection state
+                            self.user_selected_board_type = False
+                        else:
+                            # Still update parameters but keep the user's board type selection
+                            logging.info("NOT update board type: User manually selected board type")
+                            self.update_board_parameters()
                         logging.info("Successfully opened parameters file")
 
                     self.settings.setValue(PARAMETER_PROFILE_PATH_PREFERENCES_KEY, config_file_path)
@@ -183,12 +224,20 @@ class InitializationView(QWidget):
         last_board_type_str_index = self.board_type_combobox.findText(last_board_type_str)
         if last_board_type_str_index != -1:
             self.board_type_combobox.setCurrentIndex(last_board_type_str_index)
-        self.board_type_combobox.currentTextChanged.connect(
-            lambda board_type_str: self.settings.setValue(
-                BOARD_TYPE_PREFERENCES_KEY, board_type_str
-            )
-        )
 
+        # Connect board type combobox to track manual selection
+        def on_board_type_changed(board_type_str):
+            # save preference
+            self.settings.setValue(BOARD_TYPE_PREFERENCES_KEY, board_type_str)
+            # Only set the flag if not during initialization
+            if not self.initializing:
+                self.user_selected_board_type = True
+                # Update board parameters for the newly selected board type
+                self.update_board_parameters()
+
+        self.board_type_combobox.currentTextChanged.connect(on_board_type_changed)
+
+        # Set up the board type before connecting the signal
         self.update_board_type()
 
         def board_parameters_on_closed():
@@ -256,9 +305,12 @@ class InitializationView(QWidget):
         self.layout.addWidget(self.initial_intrinsics_group)
         self.layout.addWidget(self.start_button)
 
+        # Initialization is complete
+        self.initializing = False
         self.show()
 
     def update_board_type(self):
+        """Update both the board type selection and parameters."""
         if self.cfg["board_type"] != "":
             self.board_type_combobox.setCurrentIndex(
                 BoardEnum.from_name(self.cfg["board_type"]).get_id()
@@ -266,6 +318,10 @@ class InitializationView(QWidget):
         else:
             self.board_type_combobox.setCurrentIndex(0)
 
+        self.update_board_parameters()
+
+    def update_board_parameters(self):
+        """Update only the board parameters without changing the selected board type."""
         self.board_parameters_dict = {
             board_type: make_board_parameters(board_type, cfg=self.cfg["board_parameters"])
             for board_type in BoardEnum
