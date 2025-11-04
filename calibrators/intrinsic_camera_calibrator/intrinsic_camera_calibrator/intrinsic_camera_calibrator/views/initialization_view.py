@@ -192,18 +192,6 @@ class InitializationView(QWidget):
 
         self.params_combobox.currentIndexChanged.connect(on_params_combo_box_changed)
 
-        last_config_file_path = self.settings.value(
-            PARAMETER_PROFILE_PATH_PREFERENCES_KEY, "", type=str
-        )
-        last_config_file_path_index = self.params_combobox.findData(last_config_file_path)
-        if last_config_file_path_index != -1:
-            self.params_combobox.setCurrentIndex(last_config_file_path_index)
-        else:
-            # TODO(someone):
-            # read the last file path
-            # and prevent open file prompt
-            pass
-
         self.params_group = QGroupBox("Parameters profile")
         self.params_group.setFlat(True)
         params_layout = QVBoxLayout()
@@ -220,13 +208,9 @@ class InitializationView(QWidget):
         for board_type in BoardEnum:
             self.board_type_combobox.addItem(board_type.value["display"], board_type)
 
-        last_board_type_str = self.settings.value(BOARD_TYPE_PREFERENCES_KEY, "", type=str)
-        last_board_type_str_index = self.board_type_combobox.findText(last_board_type_str)
-        if last_board_type_str_index != -1:
-            self.board_type_combobox.setCurrentIndex(last_board_type_str_index)
-
         # Connect board type combobox to track manual selection
         def on_board_type_changed(board_type_str):
+            logging.info(f"Board type changed to: {board_type_str}")
             # save preference
             self.settings.setValue(BOARD_TYPE_PREFERENCES_KEY, board_type_str)
             # Only set the flag if not during initialization
@@ -237,8 +221,23 @@ class InitializationView(QWidget):
 
         self.board_type_combobox.currentTextChanged.connect(on_board_type_changed)
 
+        # Load last config file path.
+        # Ensure that `self.board_type_combobox` is initialized,
+        # as updating the value of `params_combobox` calls `self.update_board_type()`.
+        last_config_file_path = self.settings.value(
+            PARAMETER_PROFILE_PATH_PREFERENCES_KEY, "", type=str
+        )
+        last_config_file_path_index = self.params_combobox.findData(last_config_file_path)
+        if last_config_file_path_index != -1:
+            self.params_combobox.setCurrentIndex(last_config_file_path_index)
+        else:
+            # TODO(someone):
+            # read the last file path
+            # and prevent open file prompt
+            pass
+
         # Set up the board type before connecting the signal
-        self.update_board_type()
+        self.update_board_type(use_preference=True)
 
         def board_parameters_on_closed():
             self.setEnabled(True)
@@ -309,15 +308,20 @@ class InitializationView(QWidget):
         self.initializing = False
         self.show()
 
-    def update_board_type(self):
-        """Update both the board type selection and parameters."""
-        if self.cfg["board_type"] != "":
-            self.board_type_combobox.setCurrentIndex(
-                BoardEnum.from_name(self.cfg["board_type"]).get_id()
-            )
-        else:
-            self.board_type_combobox.setCurrentIndex(0)
+    def update_board_type(self, use_preference=False):
+        """
+        Update both the board type selection and parameters.
 
+        If use_preference is True, load the last selected board type from preferences.
+        """
+        index = 0
+        if use_preference:
+            last_board_type_str = self.settings.value(BOARD_TYPE_PREFERENCES_KEY, "", type=str)
+            index = self.board_type_combobox.findText(last_board_type_str)
+        elif self.cfg["board_type"] != "":
+            index = BoardEnum.from_name(self.cfg["board_type"]).get_id()
+
+        self.board_type_combobox.setCurrentIndex(index)
         self.update_board_parameters()
 
     def update_board_parameters(self):
