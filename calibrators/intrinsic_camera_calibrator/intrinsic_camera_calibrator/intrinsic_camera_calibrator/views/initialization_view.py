@@ -51,6 +51,35 @@ class InitializationView(QWidget):
     closed = Signal()
 
     def __init__(self, calibrator: "CameraIntrinsicsCalibratorUI", cfg):  # noqa F821
+        """Initialize the calibrator configuration widget.
+
+        This widget allows users to configure data sources, board types, and operation modes
+        for camera calibration.
+
+        State diagram for board type selection behavior:
+        ```
+        +----------------+     initialization     +----------------------+
+        |                |     complete           |                      |
+        | Initial Setup  +----------------------->| Auto Update Board    |
+        |                |                        | Type                 |
+        +----------------+                        |                      |
+                                                  +----------+-----------+
+                                                             |
+                                                             | User selects
+                                                             | board type from
+                                                             | combobox
+                                                             v
+                                                  +----------+-----------+
+                                                  |                      |
+                                                  | Manual Board Type    |
+                                                  | Selection            |
+                                                  |                      |
+                                                  +----------------------+
+
+        - Auto Update Board Type: Calls update_board_type() + update_board_parameters()
+        - Manual Board Type: Calls update_board_parameters() only, board type remains fixed
+        ```
+        """
         super().__init__()
 
         self.setWindowTitle("Initial configuration")
