@@ -16,6 +16,7 @@
 
 import logging
 
+from PySide2.QtCore import QSettings
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QLabel
@@ -24,6 +25,11 @@ from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
 from intrinsic_camera_calibrator.data_sources.ros_topic_data_source import RosTopicDataSource
 import rclpy
+
+PREFERENCES_GROUP = "ros_topic_view"
+ROS_TOPICS_PREFERENCES_KEY = PREFERENCES_GROUP + "/ros_topics"
+QOS_RELIABILITY_PREFERENCES_KEY = PREFERENCES_GROUP + "/qos_reliability"
+QOS_DURABILITY_PREFERENCES_KEY = PREFERENCES_GROUP + "/qos_durability"
 
 
 class RosTopicView(QWidget):
@@ -34,6 +40,8 @@ class RosTopicView(QWidget):
 
     def __init__(self, data_source: RosTopicDataSource):
         self.data_source = data_source
+
+        self.settings = QSettings()
 
         super().__init__()
 
@@ -58,6 +66,15 @@ class RosTopicView(QWidget):
             self.qos_reliability_combo_box.addItem(
                 str(reliability_type).split(".")[-1], reliability_type
             )
+        last_reliability_str = self.settings.value(QOS_RELIABILITY_PREFERENCES_KEY, "", type=str)
+        last_reliability_index = self.qos_reliability_combo_box.findText(last_reliability_str)
+        if last_reliability_index != -1:
+            self.qos_reliability_combo_box.setCurrentIndex(last_reliability_index)
+        self.qos_reliability_combo_box.currentTextChanged.connect(
+            lambda reliability_str: self.settings.setValue(
+                QOS_RELIABILITY_PREFERENCES_KEY, reliability_str
+            )
+        )
 
         self.layout.addWidget(self.qos_reliability_combo_box)
 
@@ -69,6 +86,16 @@ class RosTopicView(QWidget):
             self.qos_durability_combo_box.addItem(
                 str(durability_type).split(".")[-1], durability_type
             )
+
+        last_durability_str = self.settings.value(QOS_DURABILITY_PREFERENCES_KEY, "", type=str)
+        last_durability_index = self.qos_durability_combo_box.findText(last_durability_str)
+        if last_durability_index != -1:
+            self.qos_durability_combo_box.setCurrentIndex(last_durability_index)
+        self.qos_durability_combo_box.currentTextChanged.connect(
+            lambda durability_str: self.settings.setValue(
+                QOS_DURABILITY_PREFERENCES_KEY, durability_str
+            )
+        )
 
         self.layout.addWidget(self.qos_durability_combo_box)
 
@@ -83,16 +110,25 @@ class RosTopicView(QWidget):
 
         self.update_list_callback()
         self.topics_combo_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.topics_combo_box.currentTextChanged.connect(
+            lambda topic_str: self.settings.setValue(ROS_TOPICS_PREFERENCES_KEY, topic_str)
+        )
         self.show()
 
     def update_list_callback(self):
         """Update the topics combobox and adjust the size of the widget based on the available topics."""
+        last_topic_str = self.settings.value(ROS_TOPICS_PREFERENCES_KEY, "", type=str)
+
         image_topics = self.data_source.get_image_topics()
 
         self.topics_combo_box.clear()
 
         for image_topic in image_topics:
             self.topics_combo_box.addItem(image_topic)
+
+        last_topic_index = self.topics_combo_box.findText(last_topic_str)
+        if last_topic_index != -1:
+            self.topics_combo_box.setCurrentIndex(last_topic_index)
 
         self.adjustSize()
 

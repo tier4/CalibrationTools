@@ -18,6 +18,7 @@ from collections import defaultdict
 import logging
 import os
 
+from PySide2.QtCore import QSettings
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QFileDialog
@@ -42,6 +43,11 @@ from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 from intrinsic_camera_calibrator.views.ros_bag_view import RosBagView
 from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
 import yaml
+
+PREFERENCES_GROUP = "initialization_view"
+DATA_SOURCE_PREFERENCES_KEY = PREFERENCES_GROUP + "/data_source"
+BOARD_TYPE_PREFERENCES_KEY = PREFERENCES_GROUP + "/board_type"
+PARAMETER_PROFILE_PATH_PREFERENCES_KEY = PREFERENCES_GROUP + "/parameter_profile_path"
 
 
 class InitializationView(QWidget):
@@ -82,6 +88,8 @@ class InitializationView(QWidget):
         """
         super().__init__()
 
+        self.settings = QSettings()
+
         self.setWindowTitle("Initial configuration")
         self.setMinimumWidth(300)
 
@@ -114,6 +122,17 @@ class InitializationView(QWidget):
         for data_source in DataSourceEnum:
             self.data_source_combobox.addItem(str(data_source), data_source)
 
+        last_data_source = self.settings.value(DATA_SOURCE_PREFERENCES_KEY, "", type=str)
+        last_data_source_index = self.data_source_combobox.findText(last_data_source)
+        if last_data_source_index != -1:
+            self.data_source_combobox.setCurrentIndex(last_data_source_index)
+
+        self.data_source_combobox.currentTextChanged.connect(
+            lambda data_source_str: self.settings.setValue(
+                DATA_SOURCE_PREFERENCES_KEY, data_source_str
+            )
+        )
+
         source_layout = QVBoxLayout()
         source_layout.addWidget(self.data_source_combobox)
         self.source_group.setLayout(source_layout)
@@ -129,7 +148,8 @@ class InitializationView(QWidget):
                     file.split(".")[0].replace("_", " ").title(), file_path
                 )
         # Add "Load File" option at the end
-        self.params_combobox.addItem("Load File", None)
+        load_file_index = self.params_combobox.count()
+        self.params_combobox.addItem("Load File...", None)
 
         def on_params_combo_box_changed(index):
             selected_params_file = self.params_combobox.itemData(index)
@@ -138,9 +158,13 @@ class InitializationView(QWidget):
                     self, "Open File", "", "All Files (*.*);;Text Files (*.yaml)"
                 )
                 if file_name:
-                    logging.info(f"Selected file: {file_name}")
+                    logging.info(f"Loaded File: {file_name}")
                     config_file_path = file_name
+                    self.params_combobox.setItemText(
+                        load_file_index, "Loaded File: " + file_name.split("/")[-1]
+                    )
             else:
+                self.params_combobox.setItemText(load_file_index, "Load File...")
                 config_file_path = selected_params_file
 
             logging.info(f"Selected config file={config_file_path}")
@@ -161,6 +185,8 @@ class InitializationView(QWidget):
                             logging.info("NOT update board type: User manually selected board type")
                             self.update_board_parameters()
                         logging.info("Successfully opened parameters file")
+
+                    self.settings.setValue(PARAMETER_PROFILE_PATH_PREFERENCES_KEY, config_file_path)
                 except Exception as e:
                     logging.error(f"Could not load the parameters from the YAML file ({e})")
 
@@ -184,6 +210,9 @@ class InitializationView(QWidget):
 
         # Connect board type combobox to track manual selection
         def on_board_type_changed(board_type_str):
+            logging.info(f"Board type changed to: {board_type_str}")
+            # save preference
+            self.settings.setValue(BOARD_TYPE_PREFERENCES_KEY, board_type_str)
             # Only set the flag if not during initialization
             if not self.initializing:
                 self.user_selected_board_type = True
@@ -192,13 +221,30 @@ class InitializationView(QWidget):
 
         self.board_type_combobox.currentTextChanged.connect(on_board_type_changed)
 
+        # Load last config file path.
+        # Ensure that `self.board_type_combobox` is initialized,
+        # as updating the value of `params_combobox` calls `self.update_board_type()`.
+        last_config_file_path = self.settings.value(
+            PARAMETER_PROFILE_PATH_PREFERENCES_KEY, "", type=str
+        )
+        last_config_file_path_index = self.params_combobox.findData(last_config_file_path)
+        if last_config_file_path_index != -1:
+            self.params_combobox.setCurrentIndex(last_config_file_path_index)
+        else:
+            # TODO(someone):
+            # read the last file path
+            # and prevent open file prompt
+            pass
+
         # Set up the board type before connecting the signal
-        self.update_board_type()
+        self.update_board_type(use_preference=True)
 
         def board_parameters_on_closed():
             self.setEnabled(True)
 
         def board_parameters_button_callback():
+            # TODO(someone):
+            # save and load board parameters
             board_parameters_view = ParameterView(
                 self.board_parameters_dict[self.board_type_combobox.currentData()]
             )
@@ -262,15 +308,20 @@ class InitializationView(QWidget):
         self.initializing = False
         self.show()
 
-    def update_board_type(self):
-        """Update both the board type selection and parameters."""
-        if self.cfg["board_type"] != "":
-            self.board_type_combobox.setCurrentIndex(
-                BoardEnum.from_name(self.cfg["board_type"]).get_id()
-            )
-        else:
-            self.board_type_combobox.setCurrentIndex(0)
+    def update_board_type(self, use_preference=False):
+        """
+        Update both the board type selection and parameters.
 
+        If use_preference is True, load the last selected board type from preferences.
+        """
+        index = 0
+        if use_preference:
+            last_board_type_str = self.settings.value(BOARD_TYPE_PREFERENCES_KEY, "", type=str)
+            index = self.board_type_combobox.findText(last_board_type_str)
+        elif self.cfg["board_type"] != "":
+            index = BoardEnum.from_name(self.cfg["board_type"]).get_id()
+
+        self.board_type_combobox.setCurrentIndex(index)
         self.update_board_parameters()
 
     def update_board_parameters(self):
@@ -283,6 +334,7 @@ class InitializationView(QWidget):
     def on_start(self):
         """Start the calibration process after receiving the user settings."""
         source_type = self.data_source_combobox.currentData()
+        self.settings.setValue(DATA_SOURCE_PREFERENCES_KEY, str(source_type))
 
         def on_success():
             """Handle the successful initialization of the data source."""
@@ -319,6 +371,7 @@ class InitializationView(QWidget):
             self.setEnabled(False)
 
         elif source_type == DataSourceEnum.BAG2:
+            # TODO(someone): save preferences for rosbag data source
             self.data_source = make_data_source(self.data_source_combobox.currentData())
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
@@ -327,6 +380,7 @@ class InitializationView(QWidget):
             self.data_source_view.success.connect(on_success)
             self.setEnabled(False)
         elif source_type == DataSourceEnum.FILES:
+            # TODO(someone): save preferences for image files data source
             self.data_source = make_data_source(self.data_source_combobox.currentData())
             self.data_source.set_data_callback(self.calibrator.data_source_external_callback)
 
