@@ -351,10 +351,9 @@ class ImageView(QGraphicsItem, QObject):
             self.data_ui.d = np.copy(d).reshape((-1,))
 
             # Calculate critical r^2, such that the distorted radial coordinate
-            # r * (1 + k1*r^2 + k2*r^4 + k3*r^6) starts decreasing.
+            # r*(1+k1*r^2+k2*r^4+k3*r^6)/(1+k4*r^2+k5*r^4+k6*r^6) starts decreasing.
             # Note that if p1, p2 (tangential distortion) are non-zero,
-            # or there is denominator in the distortion model,
-            # then the 'folding boundary' cannot be calculated analytically,
+            # then the 'folding boundary' cannot be determined by r^2 alone,
             # and this calculation is only an approximation.
             self.data_ui.critical_r2 = np.inf
 
