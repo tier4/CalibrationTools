@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- base_link -->
+
+ <node name="base_link" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node">
+    <param name="rate" value="10.0"/>
+    <param name="header_frame" value="world"/>
+    <param name="child_frame" value="base_link"/>
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/base_link.param.yaml"/>
+  </node>
+
+   <node name="rear_wheel_center" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node">
+    <param name="rate" value="10.0"/>
+    <param name="header_frame" value="base_link"/>
+    <param name="child_frame" value="rear_wheel_center"/>
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/rear_wheel_center.param.yaml"/>
+  </node>
+
+   <node name="sensor_kit_base_link" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node">
+    <param name="rate" value="10.0"/>
+    <param name="header_frame" value="rear_wheel_center"/>
+    <param name="child_frame" value="sensor_kit_base_link"/>
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/sensor_kit_base_link.param.yaml"/>
+  </node>
+
+
+ <node name="front_cab_lidar_base_link" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node">
+    <param name="rate" value="10.0"/>
+    <param name="header_frame" value="sensor_kit_base_link"/>
+    <param name="child_frame" value="front_cab_lidar_base_link"/>
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/front_cab_lidar_base_link.param.yaml"/>
+  </node>
+
+   <node name="rear_cab_lidar_base_link" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node">
+    <param name="rate" value="10.0"/>
+    <param name="header_frame" value="sensor_kit_base_link"/>
+    <param name="child_frame" value="rear_cab_lidar_base_link"/>
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/rear_cab_lidar_base_link.param.yaml"/>
+  </node>
+
+    <node name="rear_cab_lidar" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node">
+    <param name="rate" value="10.0"/>
+    <param name="header_frame" value="rear_cab_lidar_base_link"/>
+    <param name="child_frame" value="rear_cab_lidar"/>
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/rear_cab_lidar.param.yaml"/>
+  </node>
+
+  <node name="front_cab_lidar" pkg="tunable_static_tf_broadcaster" exec="tunable_static_tf_broadcaster_node">
+    <param name="rate" value="10.0"/>
+    <param name="header_frame" value="front_cab_lidar_base_link"/>
+    <param name="child_frame" value="front_cab_lidar"/>
+    <param from="$(find-pkg-share tunable_static_tf_broadcaster)/params/front_cab_lidar.param.yaml"/>
+  </node>
+  <!-- rqt_reconfigure -->
+  <node name="rqt_reconfigure" pkg="rqt_reconfigure" exec="rqt_reconfigure"/>
+</launch>

@@ -5,3 +5,6 @@ from .x2 import *  # noqa: F401, F403
 from .xx1 import *  # noqa: F401, F403
 from .xx1_15 import *  # noqa: F401, F403
 from .xx1_gen2 import *  # noqa: F401, F403
+from .x2_pix import *  # noqa: F401, F403
+from .x2_pix_gen2 import *  # noqa: F401, F403
+from .nsc import *

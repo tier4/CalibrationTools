@@ -47,7 +47,7 @@ TunableStaticTfBroadcasterNode::TunableStaticTfBroadcasterNode(
     transform_.transform.translation.x = this->declare_parameter("tf_x", 0.0);
     transform_.transform.translation.y = this->declare_parameter("tf_y", 0.0);
     transform_.transform.translation.z = this->declare_parameter("tf_z", 0.0);
-    transform_.transform.rotation = createQuaternionFromRPY(
+    transform_.transform.rotation = create_quaternion_from_rpy(
       this->declare_parameter_with_min_max("tf_roll", 0.0, -6.3, 6.3),
       this->declare_parameter_with_min_max("tf_pitch", 0.0, -6.3, 6.3),
       this->declare_parameter_with_min_max("tf_yaw", 0.0, -6.3, 6.3));
@@ -133,7 +133,7 @@ SetParametersResult TunableStaticTfBroadcasterNode::onParameter(
     update_param("tf_roll", roll);
     update_param("tf_pitch", pitch);
     update_param("tf_yaw", yaw);
-    t.transform.rotation = createQuaternionFromRPY(roll, pitch, yaw);
+    t.transform.rotation = create_quaternion_from_rpy(roll, pitch, yaw);
     RCLCPP_DEBUG(
       this->get_logger(),
       "Setting parameters by params... {x: %lf y: %lf z: %lf roll: %lf pitch: %lf yaw: %lf}",
