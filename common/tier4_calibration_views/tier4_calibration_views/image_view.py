@@ -96,6 +96,8 @@ class RenderingData:
         self.k = None
         self.d = None
 
+        self.critical_r2 = np.inf
+
 
 class CustomQGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
@@ -348,6 +350,44 @@ class ImageView(QGraphicsItem, QObject):
             self.data_ui.k = np.copy(k).reshape((3, 3))
             self.data_ui.d = np.copy(d).reshape((-1,))
 
+            # Calculate critical r^2, such that the distorted radial coordinate
+            # r*(1+k1*r^2+k2*r^4+k3*r^6)/(1+k4*r^2+k5*r^4+k6*r^6) starts decreasing.
+            # Note that if p1, p2 (tangential distortion) are non-zero,
+            # then the 'folding boundary' cannot be determined by r^2 alone,
+            # and this calculation is only an approximation.
+            self.data_ui.critical_r2 = np.inf
+
+            d = self.data_ui.d.flatten()
+            if d.shape[0] >= 2:
+                k1 = d[0]
+                k2 = d[1]
+                k3 = 0
+                if d.shape[0] >= 5:
+                    k3 = d[4]
+                k4 = 0
+                k5 = 0
+                k6 = 0
+                if d.shape[0] >= 8:
+                    k4 = d[5]
+                    k5 = d[6]
+                    k6 = d[7]
+
+                coeffs = [
+                    k3 * k6,
+                    3 * k3 * k5 - k2 * k6,
+                    5 * k3 * k4 + k2 * k5 - 3 * k1 * k6,
+                    7 * k3 + 3 * k2 * k4 - k1 * k5 - 5 * k6,
+                    5 * k2 + k1 * k4 - 3 * k5,
+                    3 * k1 - k4,
+                    1,
+                ]
+                roots = np.roots(coeffs)
+                real_roots = roots[np.isclose(roots.imag, 0.0)].real
+                positive_roots = real_roots[real_roots > 0.0]
+
+                if len(positive_roots) > 0:
+                    self.data_ui.critical_r2 = np.min(positive_roots)
+
     def set_calibration_points(self, object_points, image_points):
         with self.lock:
             self.data_ui.object_points = object_points
@@ -480,8 +520,12 @@ class ImageView(QGraphicsItem, QObject):
                 np.logical_and(pointcloud_ics[:, 1] >= 0, pointcloud_ics[:, 1] < self.image_height),
             ),
             np.logical_and(
-                pointcloud_ccs[:, 2] >= self.data_renderer.min_rendering_distance,
-                pointcloud_ccs[:, 2] < self.data_renderer.max_rendering_distance,
+                np.logical_and(
+                    pointcloud_ccs[:, 2] >= self.data_renderer.min_rendering_distance,
+                    pointcloud_ccs[:, 2] < self.data_renderer.max_rendering_distance,
+                ),
+                (pointcloud_ccs[:, 0] ** 2 + pointcloud_ccs[:, 1] ** 2)
+                < pointcloud_ccs[:, 2] ** 2 * self.data_renderer.critical_r2,
             ),
         )
 
@@ -528,13 +572,6 @@ class ImageView(QGraphicsItem, QObject):
                 raise NotImplementedError
         except Exception as e:
             logging.error(e)
-
-        line_pen = QPen()
-        line_pen.setWidth(2)
-        line_pen.setBrush(Qt.white)
-
-        painter.setPen(Qt.blue)
-        painter.setBrush(Qt.blue)
 
         draw_marker_f = (
             painter.drawEllipse if self.data_renderer.marker_type == "circles" else painter.drawRect
