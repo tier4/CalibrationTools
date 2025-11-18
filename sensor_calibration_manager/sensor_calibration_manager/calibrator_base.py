@@ -155,7 +155,7 @@ class CalibratorBase(QObject):
         return self.processed_calibration_result_tfs
 
     def start_calibration(self):
-        assert self.state == CalibratorState.READY
+        assert self.state in [CalibratorState.READY, CalibratorState.FINISHED]
 
         self.pre_process()
 

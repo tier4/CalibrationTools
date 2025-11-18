@@ -77,8 +77,12 @@ class SensorCalibrationManager(QMainWindow):
         self.lock = threading.RLock()
 
         # Control widgets
-        self.action_button = QPushButton("Calibrate")
-        self.action_button.setEnabled(False)
+        self.request_calibration_button = QPushButton("Calibrate")
+        self.request_calibration_button.clicked.connect(self.on_calibration_request)
+        self.request_calibration_button.setEnabled(False)
+        self.request_save_button = QPushButton("Save calibration")
+        self.request_save_button.clicked.connect(self.on_save_request)
+        self.request_save_button.setEnabled(False)
         self.status_label = QLabel("Not ready")
 
         # MVC
@@ -109,7 +113,8 @@ class SensorCalibrationManager(QMainWindow):
         self.control_layout = QHBoxLayout()
         self.control_layout.addWidget(self.status_label)
         self.control_layout.addStretch()
-        self.control_layout.addWidget(self.action_button)
+        self.control_layout.addWidget(self.request_calibration_button)
+        self.control_layout.addWidget(self.request_save_button)
 
         left_layout = QVBoxLayout()
         left_layout.addLayout(self.control_layout)
@@ -212,15 +217,14 @@ class SensorCalibrationManager(QMainWindow):
         self.status_label.setText(text_dict[state])
 
         if state == CalibratorState.READY:
-            self.action_button.clicked.connect(self.on_calibration_request)
-            self.action_button.setEnabled(True)
+            self.request_calibration_button.setEnabled(True)
         elif state == CalibratorState.FINISHED:
-            self.action_button.clicked.disconnect()
-            self.action_button.clicked.connect(self.on_save_request)
-            self.action_button.setEnabled(True)
-            self.action_button.setText("Save calibration")
+            self.request_calibration_button.setText("Recalibrate")
+            self.request_calibration_button.setEnabled(True)
+            self.request_save_button.setEnabled(True)
         else:
-            self.action_button.setEnabled(False)
+            self.request_calibration_button.setEnabled(False)
+            self.request_save_button.setEnabled(False)
 
     def on_calibration_request(self):
         logging.debug("on_calibration_request")
