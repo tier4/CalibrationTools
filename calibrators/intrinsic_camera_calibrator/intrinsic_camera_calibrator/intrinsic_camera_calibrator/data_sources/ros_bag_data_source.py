@@ -136,7 +136,7 @@ class RosBagDataSource(DataSource, QObject):
         # cSpell:enableCompoundWords
         # cSpell:ignore imgmsg
         if isinstance(msg, Image):
-            image_data = self.bridge.imgmsg_to_cv2(msg)
+            image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             stamp = msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec
             self.data_callback(image_data, stamp)
 

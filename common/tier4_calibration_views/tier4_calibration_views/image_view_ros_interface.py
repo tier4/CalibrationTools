@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import array
 from collections import deque
 import threading
 from typing import Callable
@@ -142,14 +143,19 @@ class ImageViewRosInterface(Node):
         self.image_frame = camera_info_msg.header.frame_id
 
         if self.use_rectified:
+
             self.camera_info.k[0] = self.camera_info.p[0]
             self.camera_info.k[2] = self.camera_info.p[2]
             self.camera_info.k[4] = self.camera_info.p[5]
             self.camera_info.k[5] = self.camera_info.p[6]
-            self.camera_info.d = 0.0 * self.camera_info.d
+            self.camera_info.d = array.array("d", 0.0 * np.array(self.camera_info.d))
 
     def check_sync(self):
-        if len(self.image_queue) == 0 or len(self.pointcloud_queue) == 0:
+        if (
+            len(self.image_queue) == 0
+            or len(self.pointcloud_queue) == 0
+            or self.camera_info is None
+        ):
             return
 
         min_delay = np.inf
@@ -191,7 +197,7 @@ class ImageViewRosInterface(Node):
                 image_data = np.frombuffer(self.image_sync.data, np.uint8)
                 self.image_sync = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
             else:
-                self.image_sync = self.bridge.imgmsg_to_cv2(self.image_sync)
+                self.image_sync = self.bridge.imgmsg_to_cv2(self.image_sync, "bgr8")
                 # image = cv2.cvtColor(self.raw_image, cv2.COLOR_BGR2RGB)
 
             self.sensor_data_callback(self.image_sync, self.camera_info_sync, points_np, min_delay)

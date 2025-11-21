@@ -1,0 +1,39 @@
+<launch>
+  <arg name="camera_optical_link_frame" description="E.g., camera0/camera_optical_link"/>
+  <!-- this is needed for the calibrator interface - transformation algebra-->
+  <arg name="lidar_frame" description="E.g., velodyne_top. this is used for the extrinsic_calibration_manager under the hood"/>
+  <arg name="image_topic" default="/sensing/camera/camera0/image_rect_color/decompressed" description="Internal topic to decompress the image"/>
+  <arg name="camera_info_topic" default="/sensing/camera/camera0/camera_info"/>
+  <arg name="pointcloud_topic" default="/sensing/lidar/top/pointcloud_raw"/>
+
+  <arg name="use_rectified_image" default="false" description="image_rect vs. raw"/>
+  <arg name="use_compressed_image" default="false" description=""/>
+  <arg name="timer_period" default="1.0" description="Calibration timer period in seconds"/>
+  <arg name="delay_tolerance" default="0.06" description="Maximum time difference allowed between sensors in seconds"/>
+
+  <let name="rviz_profile" value=""/>
+  <let name="rviz_profile" value="$(find-pkg-share interactive_camera_lidar_calibrator)/rviz/default_profile.rviz"/>
+
+  <!-- interactive calibrator -->
+  <node pkg="interactive_camera_lidar_calibrator" exec="interactive_calibrator" name="interactive_calibrator" output="screen">
+    <remap from="pointcloud" to="$(var pointcloud_topic)"/>
+    <remap from="image" to="$(var image_topic)"/>
+    <remap from="camera_info" to="$(var camera_info_topic)"/>
+    <remap from="extrinsic_calibration" to="calibrate_camera_lidar"/>
+
+    <param name="use_rectified" value="$(var use_rectified_image)"/>
+    <param name="use_compressed" value="$(var use_compressed_image)"/>
+    <param name="timer_period" value="$(var timer_period)"/>
+    <param name="delay_tolerance" value="$(var delay_tolerance)"/>
+
+    <param name="use_calibration_api" value="true"/>
+    <param name="can_publish_tf" value="false"/>
+  </node>
+
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="dummy_broadcaster" output="screen" args="0 0 0 0 0 0 $(var lidar_frame) lidar_frame"/>
+
+  <!-- remap the pointcloud topic to make the rviz profile generic -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_profile)">
+    <remap from="pointcloud_topic_placeholder" to="$(var pointcloud_topic)"/>
+  </node>
+</launch>
