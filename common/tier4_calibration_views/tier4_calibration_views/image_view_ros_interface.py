@@ -57,6 +57,12 @@ class ImageViewRosInterface(Node):
         self.declare_parameter("timer_period", 1.0)
         self.declare_parameter("delay_tolerance", 0.06)
 
+        self.declare_parameter("image_frame", "")
+        self.declare_parameter("lidar_frame", "")
+        self.declare_parameter("parent_frame", "")
+        self.declare_parameter("child_frame", "")
+        self.declare_parameter("should_reverse_transform", False)
+
         self.use_rectified = self.get_parameter("use_rectified").get_parameter_value().bool_value
         self.use_compressed = self.get_parameter("use_compressed").get_parameter_value().bool_value
         self.timer_period = self.get_parameter("timer_period").get_parameter_value().double_value
@@ -64,8 +70,13 @@ class ImageViewRosInterface(Node):
             self.get_parameter("delay_tolerance").get_parameter_value().double_value
         )
 
-        self.image_frame: Optional[str] = None
-        self.lidar_frame: Optional[str] = None
+        self.image_frame = self.get_parameter("image_frame").get_parameter_value().string_value
+        self.lidar_frame = self.get_parameter("lidar_frame").get_parameter_value().string_value
+        self.parent_frame = self.get_parameter("parent_frame").get_parameter_value().string_value
+        self.child_frame = self.get_parameter("child_frame").get_parameter_value().string_value
+        self.should_reverse_transform = (
+            self.get_parameter("should_reverse_transform").get_parameter_value().bool_value
+        )
 
         # Data
         self.pointcloud_queue: Deque[PointCloud2] = deque([], 5)
@@ -112,14 +123,62 @@ class ImageViewRosInterface(Node):
 
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
 
-    def get_transform(self, parent: str, child: str):
+    def get_parent_to_child_transform(self, image_to_lidar_transform):
+        if (
+            self.image_frame == ""
+            or self.lidar_frame == ""
+            or self.parent_frame == ""
+            or self.child_frame == ""
+        ):
+            return None
         with self.lock:
             try:
-                return tf_message_to_transform_matrix(
-                    self.tf_buffer.lookup_transform(
-                        parent, child, rclpy.time.Time(), timeout=Duration(seconds=0.0)
+                if self.should_reverse_transform:
+                    # image -> child -> parent -> lidar
+                    child_to_image_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.child_frame,
+                            self.image_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
                     )
-                )
+                    parent_to_lidar_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.parent_frame,
+                            self.lidar_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
+                    )
+                    parent_to_child_transform = parent_to_lidar_transform @ np.linalg.inv(
+                        child_to_image_transform @ image_to_lidar_transform
+                    )
+                    return parent_to_child_transform
+                else:
+                    # image -> parent -> child -> lidar
+                    parent_to_image_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.parent_frame,
+                            self.image_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
+                    )
+                    lidar_to_child_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.lidar_frame,
+                            self.child_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
+                    )
+                    parent_to_child_transform = (
+                        parent_to_image_transform
+                        @ image_to_lidar_transform
+                        @ lidar_to_child_transform
+                    )
+                    return parent_to_child_transform
             except TransformException:
                 return None
 
@@ -140,7 +199,12 @@ class ImageViewRosInterface(Node):
             self.external_calibration_points_callback = callback
 
     def pointcloud_callback(self, pointcloud_msg: PointCloud2):
-        self.lidar_frame = pointcloud_msg.header.frame_id
+        if self.lidar_frame != pointcloud_msg.header.frame_id:
+            self.get_logger().error(
+                f"Unexpected lidar frame {pointcloud_msg.header.frame_id} (should be {self.lidar_frame})"
+            )
+            return
+
         self.pointcloud_queue.append(pointcloud_msg)
         self.check_sync()
 
@@ -149,8 +213,13 @@ class ImageViewRosInterface(Node):
         self.check_sync()
 
     def camera_info_callback(self, camera_info_msg: CameraInfo):
+        if self.image_frame != camera_info_msg.header.frame_id:
+            self.get_logger().error(
+                f"Unexpected image frame {camera_info_msg.header.frame_id} (should be {self.image_frame})"
+            )
+            return
+
         self.camera_info = camera_info_msg
-        self.image_frame = camera_info_msg.header.frame_id
 
         if self.use_rectified:
             self.camera_info.k[0] = self.camera_info.p[0]
@@ -223,7 +292,7 @@ class ImageViewRosInterface(Node):
 
     def timer_callback(self):
         with self.lock:
-            if self.image_frame is None or self.lidar_frame is None:
+            if self.image_frame == "" or self.lidar_frame == "":
                 return
 
             try:

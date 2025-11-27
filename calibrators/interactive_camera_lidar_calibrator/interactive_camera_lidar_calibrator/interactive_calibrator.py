@@ -404,24 +404,12 @@ class InteractiveCalibratorUI(ImageViewUI):
             yaml.dump(calibrated_d, f, sort_keys=False)
 
         # postprocess the calibrated transform
-        parent_frame = "sensor_kit_base_link"  # TEMP
-        child_frame = self.ros_interface.image_frame.split("/")[0] + "/camera_link"  # TEMP
-        parent_to_image_transform = self.ros_interface.get_transform(
-            parent_frame,
-            self.ros_interface.image_frame,
+        postprocessed_transform = self.ros_interface.get_parent_to_child_transform(
+            self.calibrated_transform
         )
-        if parent_to_image_transform is None:
-            return
-        lidar_to_child_transform = self.ros_interface.get_transform(
-            self.ros_interface.lidar_frame,
-            child_frame,
-        )
-        if lidar_to_child_transform is None:
+        if postprocessed_transform is None:
             return
 
-        postprocessed_transform = (
-            parent_to_image_transform @ self.source_transform @ lidar_to_child_transform
-        )
         postprocessed_tf = {
             "x": postprocessed_transform[0, 3].item(),
             "y": postprocessed_transform[1, 3].item(),
@@ -439,7 +427,9 @@ class InteractiveCalibratorUI(ImageViewUI):
             postprocessed_tf["qz"] = quat[3]
             postprocessed_tf["qw"] = quat[0]
 
-        postprocessed_d = {parent_frame: {child_frame: postprocessed_tf}}
+        postprocessed_d = {
+            self.ros_interface.parent_frame: {self.ros_interface.child_frame: postprocessed_tf}
+        }
         with open(os.path.join(output_folder, "tf_postprocessed.yaml"), "w") as f:
             yaml.dump(postprocessed_d, f, sort_keys=False)
 

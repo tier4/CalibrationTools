@@ -378,31 +378,18 @@ class ImageViewUI(QMainWindow):
         self.tf_source_status_text.setPlainText(status_text)
 
         # postprocess the source transform
-        parent_frame = "sensor_kit_base_link"  # TEMP
-        child_frame = self.ros_interface.image_frame.split("/")[0] + "/camera_link"  # TEMP
-        parent_to_image_transform = self.ros_interface.get_transform(
-            parent_frame,
-            self.ros_interface.image_frame,
+        postprocessed_transform = self.ros_interface.get_parent_to_child_transform(
+            self.source_transform
         )
-        if parent_to_image_transform is None:
+        if postprocessed_transform is None:
             return
-        lidar_to_child_transform = self.ros_interface.get_transform(
-            self.ros_interface.lidar_frame,
-            child_frame,
-        )
-        if lidar_to_child_transform is None:
-            return
-
-        postprocessed_transform = (
-            parent_to_image_transform @ self.source_transform @ lidar_to_child_transform
-        )
 
         # update (append) status text
         postprocessed_xyz = postprocessed_transform[0:3, 3]
         postprocessed_rpy = transforms3d.euler.mat2euler(postprocessed_transform[0:3, 0:3])
         status_text += (
-            f"\n{parent_frame}\n"
-            f"-> {child_frame}:\n"
+            f"\n{self.ros_interface.parent_frame}\n"
+            f"-> {self.ros_interface.child_frame}:\n"
             f"x: {postprocessed_xyz[0]:.6f}\n"
             f"y: {postprocessed_xyz[1]:.6f}\n"
             f"z: {postprocessed_xyz[2]:.6f}\n"
