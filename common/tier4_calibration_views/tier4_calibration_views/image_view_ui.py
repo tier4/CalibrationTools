@@ -24,6 +24,7 @@ from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QCheckBox
 from PySide2.QtWidgets import QComboBox
 from PySide2.QtWidgets import QDoubleSpinBox
+from PySide2.QtWidgets import QFileDialog
 from PySide2.QtWidgets import QGraphicsScene
 from PySide2.QtWidgets import QGraphicsView
 from PySide2.QtWidgets import QGroupBox
@@ -39,6 +40,7 @@ from tier4_calibration_views.image_view import CustomQGraphicsView
 from tier4_calibration_views.image_view import ImageView
 from tier4_calibration_views.image_view_ros_interface import ImageViewRosInterface
 import transforms3d
+import yaml
 
 
 class ImageViewUI(QMainWindow):
@@ -331,7 +333,16 @@ class ImageViewUI(QMainWindow):
 
         tf_source_label = QLabel("TF source:")
         self.tf_source_combobox = QComboBox()
-        self.tf_source_combobox.currentTextChanged.connect(self.tf_source_callback)
+        self.tf_source_combobox.addItem("Load from File", "file")
+        self.tf_source_combobox.setCurrentIndex(-1)  # do not select "file" by default
+
+        def tf_source_index_callback(index):
+            if index != -1:
+                self.tf_source_callback(self.tf_source_combobox.itemData(index))
+
+        # `activated` is favored over `currentTextChanged`;
+        # reselecting "file" should show file dialog regardless of the current selection
+        self.tf_source_combobox.activated.connect(tf_source_index_callback)
 
         self.tf_source_status_text = QPlainTextEdit()
         self.tf_source_status_text.setReadOnly(True)
@@ -344,18 +355,74 @@ class ImageViewUI(QMainWindow):
 
         self.source_options_group.setLayout(source_options_layout)
 
-    def tf_source_callback(self, string):
-        string = string.lower()
-
-        if "current" in string:
+    def tf_source_callback(self, source):
+        if source == "current":
             assert self.current_transform is not None
             self.source_transform = self.current_transform
-        elif "initial" in string:
+        elif source == "initial":
             assert self.initial_transform is not None
             self.source_transform = self.initial_transform
-        elif "calibrator" in string:
+        elif source == "calibrator":
             assert self.calibrated_transform is not None
             self.source_transform = self.calibrated_transform
+        elif source == "file":
+            # Reads TF in yaml format, regardless of the choice:
+            # - xyz + quaternion or xyz + rpy
+            # - preprocessed or non-preprocessed entry
+            filename, _ = QFileDialog.getOpenFileName(
+                self, "Open TF File", ".", "YAML files (*.yaml)"
+            )
+            if len(filename) == 0:
+                return
+            try:
+                with open(filename, "r") as f:
+                    data = yaml.safe_load(f)
+
+                    entry = None
+                    is_preprocessed_entry = False
+
+                    try:
+                        entry = data[self.ros_interface.parent_frame][
+                            self.ros_interface.child_frame
+                        ]
+                        is_preprocessed_entry = True
+                    except KeyError:
+                        # Fallback to non-preprocessed entry.
+                        # If this fails, silently return.
+                        entry = data[self.ros_interface.image_frame][self.ros_interface.lidar_frame]
+
+                    x = float(entry.get("x"))
+                    y = float(entry.get("y"))
+                    z = float(entry.get("z"))
+
+                    if all(key in entry for key in ("roll", "pitch", "yaw")):
+                        roll = float(entry["roll"])
+                        pitch = float(entry["pitch"])
+                        yaw = float(entry["yaw"])
+                        rot = transforms3d.euler.euler2mat(roll, pitch, yaw)
+                    elif all(key in entry for key in ("qx", "qy", "qz", "qw")):
+                        qx = float(entry["qx"])
+                        qy = float(entry["qy"])
+                        qz = float(entry["qz"])
+                        qw = float(entry["qw"])
+                        rot = transforms3d.quaternions.quat2mat((qw, qx, qy, qz))
+                    else:
+                        return
+
+                    mat = np.eye(4)
+                    mat[0:3, 0:3] = rot
+                    mat[0:3, 3] = [x, y, z]
+
+                    if is_preprocessed_entry:
+                        self.source_transform = self.ros_interface.get_image_to_lidar_transform(mat)
+                    else:
+                        self.source_transform = mat
+            except Exception as ex:
+                self.ros_interface.get_logger().error(
+                    f"Could not load valid TF from {filename}. {ex}"
+                )
+                return
+
         else:
             raise NotImplementedError
 
@@ -463,17 +530,24 @@ class ImageViewUI(QMainWindow):
             if self.initial_transform is None:
                 self.initial_transform = np.copy(self.transform_tmp)
                 self.current_transform = self.initial_transform
-                self.tf_source_combobox.addItem("Initial /tf")
-                self.tf_source_combobox.addItem("Current /tf")
+
+                self.tf_source_combobox.addItem("Initial /tf", "initial")
+                self.tf_source_combobox.addItem("Current /tf", "current")
 
                 self.image_view.update()
 
             changed = (self.transform_tmp != self.current_transform).any()
             self.current_transform = np.copy(self.transform_tmp)
 
-            # the Current /tf case
-            if "current" in self.tf_source_combobox.currentText().lower() and changed:
-                self.tf_source_callback(self.tf_source_combobox.currentText())
+            # if not selected, switch to "initial" and force update
+            if self.tf_source_combobox.currentIndex() == -1:
+                self.tf_source_combobox.setCurrentIndex(self.tf_source_combobox.findData("initial"))
+                self.tf_source_callback("initial")
+
+            # Force update on the current /tf case
+            source = self.tf_source_combobox.currentData()
+            if "current" == source and changed:
+                self.tf_source_callback(source)
 
     def image_click_callback(self, x, y):
         pass

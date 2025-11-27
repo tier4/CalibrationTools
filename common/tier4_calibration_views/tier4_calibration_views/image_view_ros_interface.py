@@ -182,6 +182,66 @@ class ImageViewRosInterface(Node):
             except TransformException:
                 return None
 
+    def get_image_to_lidar_transform(self, parent_to_child_transform):
+        if (
+            self.image_frame == ""
+            or self.lidar_frame == ""
+            or self.parent_frame == ""
+            or self.child_frame == ""
+        ):
+            return None
+        with self.lock:
+            try:
+                if self.should_reverse_transform:
+                    # image -> child -> parent -> lidar
+                    child_to_image_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.child_frame,
+                            self.image_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
+                    )
+                    parent_to_lidar_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.parent_frame,
+                            self.lidar_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
+                    )
+                    image_to_lidar_transform = (
+                        np.linalg.inv(parent_to_child_transform @ child_to_image_transform)
+                        @ parent_to_lidar_transform
+                    )
+                    return image_to_lidar_transform
+                else:
+                    # image -> parent -> child -> lidar
+                    image_to_parent_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.image_frame,
+                            self.parent_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
+                    )
+                    child_to_lidar_transform = tf_message_to_transform_matrix(
+                        self.tf_buffer.lookup_transform(
+                            self.child_frame,
+                            self.lidar_frame,
+                            rclpy.time.Time(),
+                            timeout=Duration(seconds=0.0),
+                        )
+                    )
+                    image_to_lidar_transform = (
+                        image_to_parent_transform
+                        @ parent_to_child_transform
+                        @ child_to_lidar_transform
+                    )
+                    return image_to_lidar_transform
+            except TransformException:
+                return None
+
     def set_sensor_data_callback(self, callback):
         with self.lock:
             self.sensor_data_callback = callback

@@ -142,11 +142,11 @@ class InteractiveCalibratorUI(ImageViewUI):
         calibration_status_helper_label.setText("(calibration vs. tf source)")
 
         self.calibration_status_points_label = QLabel()
-        self.calibration_status_points_label.setText("#points: ")
+        self.calibration_status_points_label.setText("# pairs: ")
         self.calibration_status_points_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
         self.calibration_status_error_label = QLabel()
-        self.calibration_status_error_label.setText("r.error: ")
+        self.calibration_status_error_label.setText("R.error: ")
         self.calibration_status_error_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
         self.calibration_status_inliers_label = QLabel()
@@ -334,8 +334,8 @@ class InteractiveCalibratorUI(ImageViewUI):
         with self.lock:
             self.calibrator.set_camera_info(self.camera_info_tmp.k, self.camera_info_tmp.d)
 
-    def tf_source_callback(self, string):
-        super().tf_source_callback(string)
+    def tf_source_callback(self, source):
+        super().tf_source_callback(source)
         self.update_calibration_status()
 
     def save_calibration_callback(self):
@@ -500,11 +500,11 @@ class InteractiveCalibratorUI(ImageViewUI):
             return
 
         if self.calibrated_transform is None:
-            self.tf_source_combobox.addItem("Calibrator")
+            self.tf_source_combobox.insertItem(0, "Calibrator", "calibrator")  # prepend
 
         self.calibrated_transform = transform
 
-        self.tf_source_callback(self.tf_source_combobox.currentText())
+        self.tf_source_callback(self.tf_source_combobox.currentData())
 
         self.calibration_api_button.setEnabled(
             self.calibration_api_request_received and self.calibrated_transform is not None
@@ -548,7 +548,7 @@ class InteractiveCalibratorUI(ImageViewUI):
             source_error_string = ""
             source_inliers = np.array([])
 
-        self.calibration_status_points_label.setText(f"#points: {len(object_calibration_points)}")
+        self.calibration_status_points_label.setText(f"# pairs: {len(object_calibration_points)}")
         self.calibration_status_error_label.setText(
             f"R.error: {calibrated_error_string} / {source_error_string}"
         )
