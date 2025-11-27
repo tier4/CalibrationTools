@@ -30,6 +30,7 @@ from PySide2.QtWidgets import QGroupBox
 from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtWidgets import QLabel
 from PySide2.QtWidgets import QMainWindow
+from PySide2.QtWidgets import QPlainTextEdit
 from PySide2.QtWidgets import QSpinBox
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
@@ -37,6 +38,7 @@ import numpy as np
 from tier4_calibration_views.image_view import CustomQGraphicsView
 from tier4_calibration_views.image_view import ImageView
 from tier4_calibration_views.image_view_ros_interface import ImageViewRosInterface
+import transforms3d
 
 
 class ImageViewUI(QMainWindow):
@@ -84,7 +86,8 @@ class ImageViewUI(QMainWindow):
         # Parent widget
         self.central_widget = QWidget(self)
         self.left_menu_widget = None
-        self.right_menu_widget = None
+        self.right_menu_widget_1 = None
+        self.right_menu_widget_2 = None
 
         self.setCentralWidget(self.central_widget)
         self.layout = QHBoxLayout(self.central_widget)
@@ -94,30 +97,43 @@ class ImageViewUI(QMainWindow):
 
         # Menu Widgets
         self.make_left_menu()
-        self.make_right_menu()
+        self.make_right_menu_1()
+        self.make_right_menu_2()
 
         self.layout.addWidget(self.graphics_view)
 
         if self.left_menu_widget:
             self.layout.addWidget(self.left_menu_widget)
 
-        if self.right_menu_widget:
-            self.layout.addWidget(self.right_menu_widget)
+        if self.right_menu_widget_1:
+            self.layout.addWidget(self.right_menu_widget_1)
+        if self.right_menu_widget_2:
+            self.layout.addWidget(self.right_menu_widget_2)
 
         self.show()
 
     def make_left_menu(self):
         pass
 
-    def make_right_menu(self):
-        self.right_menu_widget = QWidget(self.central_widget)
-        self.right_menu_widget.setFixedWidth(210)
-        self.right_menu_layout = QVBoxLayout(self.right_menu_widget)
+    def make_right_menu_1(self):
+        self.right_menu_widget_1 = QWidget(self.central_widget)
+        self.right_menu_widget_1.setFixedWidth(210)
+        self.right_menu_layout_1 = QVBoxLayout(self.right_menu_widget_1)
 
         # Visualization group
         self.make_visualization_options()
 
-        self.right_menu_layout.addWidget(self.visualization_options_group)
+        self.right_menu_layout_1.addWidget(self.visualization_options_group)
+
+    def make_right_menu_2(self):
+        self.right_menu_widget_2 = QWidget(self.central_widget)
+        self.right_menu_widget_2.setFixedWidth(210)
+        self.right_menu_layout_2 = QVBoxLayout(self.right_menu_widget_2)
+
+        # Source group
+        self.make_source_options()
+
+        self.right_menu_layout_2.addWidget(self.source_options_group)
 
     def make_image_view(self):
         self.image_view = ImageView()
@@ -147,10 +163,6 @@ class ImageViewUI(QMainWindow):
     def make_visualization_options(self):
         self.visualization_options_group = QGroupBox("Visualization options")
         self.visualization_options_group.setFlat(True)
-
-        tf_source_label = QLabel("TF source:")
-        self.tf_source_combobox = QComboBox()
-        self.tf_source_combobox.currentTextChanged.connect(self.tf_source_callback)
 
         def marker_type_callback(value):
             self.image_view.set_marker_type(value)
@@ -247,7 +259,7 @@ class ImageViewUI(QMainWindow):
         rendering_min_distance_label = QLabel("Min rendering distance (m)")
         rendering_min_distance_spinbox = QDoubleSpinBox()
         rendering_min_distance_spinbox.valueChanged.connect(rendering_min_distance_callback)
-        rendering_min_distance_spinbox.setRange(0.01, 100.0)
+        rendering_min_distance_spinbox.setRange(0.01, 200.0)
         rendering_min_distance_spinbox.setSingleStep(0.1)
         rendering_min_distance_spinbox.setValue(0.1)
 
@@ -257,35 +269,33 @@ class ImageViewUI(QMainWindow):
         rendering_max_distance_label = QLabel("Max rendering distance (m)")
         rendering_max_distance_spinbox = QDoubleSpinBox()
         rendering_max_distance_spinbox.valueChanged.connect(rendering_max_distance_callback)
-        rendering_max_distance_spinbox.setRange(0.01, 100.0)
+        rendering_max_distance_spinbox.setRange(0.01, 200.0)
         rendering_max_distance_spinbox.setSingleStep(0.1)
         rendering_max_distance_spinbox.setValue(100.0)
 
         def render_pointcloud_callback(value):
             self.image_view.set_draw_pointcloud(value == Qt.Checked)
 
-        render_pointcloud_checkbox = QCheckBox("Render pointcloud")
+        render_pointcloud_checkbox = QCheckBox("Show pointcloud")
         render_pointcloud_checkbox.stateChanged.connect(render_pointcloud_callback)
         render_pointcloud_checkbox.setChecked(True)
 
         def render_calibration_points_callback(value):
             self.image_view.set_draw_calibration_points(value == Qt.Checked)
 
-        render_calibration_points_checkbox = QCheckBox("Render calibration points")
+        render_calibration_points_checkbox = QCheckBox("Show calibration pairs")
         render_calibration_points_checkbox.stateChanged.connect(render_calibration_points_callback)
         render_calibration_points_checkbox.setChecked(True)
 
         def render_inliers_callback(value):
             self.image_view.set_draw_inliers(value == Qt.Checked)
 
-        self.render_inliers_checkbox = QCheckBox("Render inliers")
+        self.render_inliers_checkbox = QCheckBox("Show inliers")
         self.render_inliers_checkbox.stateChanged.connect(render_inliers_callback)
         self.render_inliers_checkbox.setChecked(False)
         self.render_inliers_checkbox.setEnabled(False)
 
         visualization_options_layout = QVBoxLayout()
-        visualization_options_layout.addWidget(tf_source_label)
-        visualization_options_layout.addWidget(self.tf_source_combobox)
         visualization_options_layout.addWidget(marker_type_label)
         visualization_options_layout.addWidget(marker_type_combobox)
         visualization_options_layout.addWidget(marker_units_label)
@@ -315,6 +325,25 @@ class ImageViewUI(QMainWindow):
         # visualization_options_layout.addStretch(1)
         self.visualization_options_group.setLayout(visualization_options_layout)
 
+    def make_source_options(self):
+        self.source_options_group = QGroupBox("Source options")
+        self.source_options_group.setFlat(True)
+
+        tf_source_label = QLabel("TF source:")
+        self.tf_source_combobox = QComboBox()
+        self.tf_source_combobox.currentTextChanged.connect(self.tf_source_callback)
+
+        self.tf_source_status_text = QPlainTextEdit()
+        self.tf_source_status_text.setReadOnly(True)
+        self.tf_source_status_text.setPlainText("TFs not available")
+
+        source_options_layout = QVBoxLayout()
+        source_options_layout.addWidget(tf_source_label)
+        source_options_layout.addWidget(self.tf_source_combobox)
+        source_options_layout.addWidget(self.tf_source_status_text)
+
+        self.source_options_group.setLayout(source_options_layout)
+
     def tf_source_callback(self, string):
         string = string.lower()
 
@@ -325,12 +354,63 @@ class ImageViewUI(QMainWindow):
             assert self.initial_transform is not None
             self.source_transform = self.initial_transform
         elif "calibrator" in string:
+            assert self.calibrated_transform is not None
             self.source_transform = self.calibrated_transform
         else:
             raise NotImplementedError
 
         self.image_view.set_transform(self.source_transform)
         self.image_view.update()
+
+        # update status text
+        source_xyz = self.source_transform[0:3, 3]
+        source_rpy = transforms3d.euler.mat2euler(self.source_transform[0:3, 0:3])
+        status_text = (
+            f"{self.ros_interface.image_frame}\n"
+            f"-> {self.ros_interface.lidar_frame}:\n"
+            f"x: {source_xyz[0]:.6f}\n"
+            f"y: {source_xyz[1]:.6f}\n"
+            f"z: {source_xyz[2]:.6f}\n"
+            f"roll: {source_rpy[0]:.6f}\n"
+            f"pitch: {source_rpy[1]:.6f}\n"
+            f"yaw: {source_rpy[2]:.6f}\n"
+        )
+        self.tf_source_status_text.setPlainText(status_text)
+
+        # postprocess the source transform
+        parent_frame = "sensor_kit_base_link"  # TEMP
+        child_frame = self.ros_interface.image_frame.split("/")[0] + "/camera_link"  # TEMP
+        parent_to_image_transform = self.ros_interface.get_transform(
+            parent_frame,
+            self.ros_interface.image_frame,
+        )
+        if parent_to_image_transform is None:
+            return
+        lidar_to_child_transform = self.ros_interface.get_transform(
+            self.ros_interface.lidar_frame,
+            child_frame,
+        )
+        if lidar_to_child_transform is None:
+            return
+
+        postprocessed_transform = (
+            parent_to_image_transform @ self.source_transform @ lidar_to_child_transform
+        )
+
+        # update (append) status text
+        postprocessed_xyz = postprocessed_transform[0:3, 3]
+        postprocessed_rpy = transforms3d.euler.mat2euler(postprocessed_transform[0:3, 0:3])
+        status_text += (
+            f"\n{parent_frame}\n"
+            f"-> {child_frame}:\n"
+            f"x: {postprocessed_xyz[0]:.6f}\n"
+            f"y: {postprocessed_xyz[1]:.6f}\n"
+            f"z: {postprocessed_xyz[2]:.6f}\n"
+            f"roll: {postprocessed_rpy[0]:.6f}\n"
+            f"pitch: {postprocessed_rpy[1]:.6f}\n"
+            f"yaw: {postprocessed_rpy[2]:.6f}\n"
+        )
+        self.tf_source_status_text.setPlainText(status_text)
 
     def sensor_data_ros_callback(self, img, camera_info, pointcloud, delay):
         # This method is executed in the ROS spin thread

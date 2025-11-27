@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 TIER IV, Inc.
+# Copyright 2024-2025 TIER IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -111,6 +111,17 @@ class ImageViewRosInterface(Node):
         )
 
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
+
+    def get_transform(self, parent: str, child: str):
+        with self.lock:
+            try:
+                return tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        parent, child, rclpy.time.Time(), timeout=Duration(seconds=0.0)
+                    )
+                )
+            except TransformException:
+                return None
 
     def set_sensor_data_callback(self, callback):
         with self.lock:
