@@ -282,10 +282,17 @@ class ImageViewRosInterface(Node):
         self.camera_info = camera_info_msg
 
         if self.use_rectified:
-            self.camera_info.k[0] = self.camera_info.p[0]
-            self.camera_info.k[2] = self.camera_info.p[2]
-            self.camera_info.k[4] = self.camera_info.p[5]
-            self.camera_info.k[5] = self.camera_info.p[6]
+            self.camera_info.k = [
+                self.camera_info.p[0],
+                0.0,
+                self.camera_info.p[2],
+                0.0,
+                self.camera_info.p[5],
+                self.camera_info.p[6],
+                0.0,
+                0.0,
+                1.0,
+            ]
             self.camera_info.d = 0.0 * self.camera_info.d
 
     def check_sync(self):

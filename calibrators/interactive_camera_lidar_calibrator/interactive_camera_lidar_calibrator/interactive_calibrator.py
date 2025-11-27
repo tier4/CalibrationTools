@@ -46,11 +46,16 @@ import yaml
 
 
 def float_representer(dumper, value):
-    text = "{0:.6f}".format(value)  # noqa E231
+    text = f"{round(value, 6)}"  # noqa E231
     return dumper.represent_scalar("tag:yaml.org,2002:float", text)  # noqa E231
 
 
+def list_representer(dumper, value):
+    return dumper.represent_sequence("tag:yaml.org,2002:seq", value, flow_style=True)
+
+
 yaml.add_representer(float, float_representer)
+yaml.add_representer(list, list_representer)
 
 
 class InteractiveCalibratorUI(ImageViewUI):
@@ -188,12 +193,21 @@ class InteractiveCalibratorUI(ImageViewUI):
         self.calibration_button.setEnabled(False)
 
         def calibration_intrinsics_callback():
+            is_init = self.optimized_camera_info is None
             self.optimized_camera_info = camera_lidar_calibrate_intrinsics(
                 np.array(self.object_calibration_points + self.external_object_calibration_points),
                 np.array(self.image_calibration_points + self.external_image_calibration_points),
-                self.camera_info,
+                self.source_camera_info,
             )
-            self.use_optimized_intrinsics_checkbox.setEnabled(True)
+
+            if is_init:
+                self.camera_info_source_combobox.insertItem(
+                    0, "Calibrator", "calibrator"
+                )  # prepend
+
+            # Force update
+            if self.camera_info_source_combobox.currentData() == "calibrator":
+                self.camera_info_source_callback("calibrator")
 
         self.calibration2_button = QPushButton("Calibrate intrinsics\n(experimental)")
         self.calibration2_button.clicked.connect(calibration_intrinsics_callback)
@@ -205,7 +219,7 @@ class InteractiveCalibratorUI(ImageViewUI):
         self.pnp_method_combobox.addItem("SQPNP")
 
         def use_ransac_callback(value):
-            if self.camera_info is None:
+            if self.source_camera_info is None:
                 return
 
             if value == Qt.Checked:
@@ -218,25 +232,6 @@ class InteractiveCalibratorUI(ImageViewUI):
         self.use_ransac_checkbox = QCheckBox("Use RANSAC")
         self.use_ransac_checkbox.stateChanged.connect(use_ransac_callback)
         self.use_ransac_checkbox.setChecked(False)
-
-        def use_optimized_intrinsics_callback(state):
-            if state == Qt.Checked:
-                self.image_view.set_camera_info(
-                    self.optimized_camera_info.k, self.optimized_camera_info.d
-                )
-                self.calibrator.set_camera_info(
-                    self.optimized_camera_info.k, self.optimized_camera_info.d
-                )
-            else:
-                self.image_view.set_camera_info(self.camera_info.k, self.camera_info.d)
-                self.calibrator.set_camera_info(self.camera_info.k, self.camera_info.d)
-
-        self.use_optimized_intrinsics_checkbox = QCheckBox("Use optimized Intrinsics")
-        self.use_optimized_intrinsics_checkbox.stateChanged.connect(
-            use_optimized_intrinsics_callback
-        )
-        self.use_optimized_intrinsics_checkbox.setEnabled(False)
-        self.use_optimized_intrinsics_checkbox.setChecked(False)
 
         def pnp_min_points_callback():
             self.calibration_possible = (
@@ -270,7 +265,6 @@ class InteractiveCalibratorUI(ImageViewUI):
         calibration_options_layout.addWidget(pnp_method_label)
         calibration_options_layout.addWidget(self.pnp_method_combobox)
         calibration_options_layout.addWidget(self.use_ransac_checkbox)
-        calibration_options_layout.addWidget(self.use_optimized_intrinsics_checkbox)
         calibration_options_layout.addWidget(pnp_min_points_label)
         calibration_options_layout.addWidget(self.pnp_min_points_spinbox)
         calibration_options_layout.addWidget(ransac_inlier_error_label)
@@ -329,14 +323,18 @@ class InteractiveCalibratorUI(ImageViewUI):
         data_collection_options_layout.addStretch(1)
         self.data_collection_options_group.setLayout(data_collection_options_layout)
 
-    def sensor_data_callback(self):
-        super().sensor_data_callback()
-        with self.lock:
-            self.calibrator.set_camera_info(self.camera_info_tmp.k, self.camera_info_tmp.d)
-
     def tf_source_callback(self, source):
         super().tf_source_callback(source)
         self.update_calibration_status()
+
+    def camera_info_source_callback(self, source):
+        super().camera_info_source_callback(source)
+        with self.lock:
+            if self.source_camera_info is not None:
+                self.calibrator.set_camera_info(
+                    self.source_camera_info.k,
+                    self.source_camera_info.d,
+                )
 
     def save_calibration_callback(self):
         output_folder = QFileDialog.getExistingDirectory(
@@ -371,6 +369,32 @@ class InteractiveCalibratorUI(ImageViewUI):
 
         if self.optimized_camera_info is not None:
             d = message_to_ordereddict(self.optimized_camera_info)
+
+            d = {}
+            d["image_width"] = self.optimized_camera_info.width
+            d["image_height"] = self.optimized_camera_info.height
+            d["camera_name"] = self.optimized_camera_info.header.frame_id.split("/")[0]  # TEMP
+            d["camera_matrix"] = {
+                "rows": 3,
+                "cols": 3,
+                "data": np.array(self.optimized_camera_info.k).reshape(-1).tolist(),
+            }
+            d["distortion_model"] = self.optimized_camera_info.distortion_model
+            d["distortion_coefficients"] = {
+                "rows": 1,
+                "cols": len(self.optimized_camera_info.d),
+                "data": np.array(self.optimized_camera_info.d).reshape(-1).tolist(),
+            }
+            d["projection_matrix"] = {
+                "rows": 3,
+                "cols": 4,
+                "data": np.array(self.optimized_camera_info.p).reshape(-1).tolist(),
+            }
+            d["rectification_matrix"] = {
+                "rows": 3,
+                "cols": 3,
+                "data": np.array(self.optimized_camera_info.r).reshape(-1).tolist(),
+            }
 
             with open(os.path.join(output_folder, "optimized_camera_info.yaml"), "w") as f:
                 yaml.dump(d, f, sort_keys=False)
@@ -474,7 +498,7 @@ class InteractiveCalibratorUI(ImageViewUI):
         )
 
     def calibration_callback(self):
-        if self.camera_info is None:
+        if self.source_camera_info is None:
             return
 
         # Configure the calibrator
@@ -504,7 +528,10 @@ class InteractiveCalibratorUI(ImageViewUI):
 
         self.calibrated_transform = transform
 
-        self.tf_source_callback(self.tf_source_combobox.currentData())
+        # Force update
+        self.update_calibration_status()
+        if self.tf_source_combobox.currentData() == "calibrator":
+            self.tf_source_callback("calibrator")
 
         self.calibration_api_button.setEnabled(
             self.calibration_api_request_received and self.calibrated_transform is not None

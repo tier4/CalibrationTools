@@ -36,6 +36,7 @@ from PySide2.QtWidgets import QSpinBox
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
 import numpy as np
+from sensor_msgs.msg import CameraInfo
 from tier4_calibration_views.image_view import CustomQGraphicsView
 from tier4_calibration_views.image_view import ImageView
 from tier4_calibration_views.image_view_ros_interface import ImageViewRosInterface
@@ -74,12 +75,15 @@ class ImageViewUI(QMainWindow):
         self.external_object_calibration_points_tmp = None
         self.external_image_calibration_points_tmp = None
         self.pixmap_tmp = None
-        self.camera_info_tmp = None
+        self.message_camera_info_tmp = None
         self.pointcloud_tmp = None
         self.delay_tmp = None
 
         # Calibration variables
-        self.camera_info = None
+        self.message_camera_info = None
+        self.optimized_camera_info = None
+        self.source_camera_info = None
+
         self.initial_transform = None
         self.current_transform = None
         self.calibrated_transform = None
@@ -348,10 +352,29 @@ class ImageViewUI(QMainWindow):
         self.tf_source_status_text.setReadOnly(True)
         self.tf_source_status_text.setPlainText("TFs not available")
 
+        camera_info_source_label = QLabel("Camera info source:")
+        self.camera_info_source_combobox = QComboBox()
+        self.camera_info_source_combobox.addItem("ROS topic", "message")
+        self.camera_info_source_combobox.addItem("Load from File", "file")
+        self.camera_info_source_combobox.setCurrentIndex(0)
+
+        def camera_info_source_index_callback(index):
+            if index != -1:
+                self.camera_info_source_callback(self.camera_info_source_combobox.itemData(index))
+
+        self.camera_info_source_combobox.activated.connect(camera_info_source_index_callback)
+
+        self.camera_info_source_status_text = QPlainTextEdit()
+        self.camera_info_source_status_text.setReadOnly(True)
+        self.camera_info_source_status_text.setPlainText("Camera info not available")
+
         source_options_layout = QVBoxLayout()
         source_options_layout.addWidget(tf_source_label)
         source_options_layout.addWidget(self.tf_source_combobox)
         source_options_layout.addWidget(self.tf_source_status_text)
+        source_options_layout.addWidget(camera_info_source_label)
+        source_options_layout.addWidget(self.camera_info_source_combobox)
+        source_options_layout.addWidget(self.camera_info_source_status_text)
 
         self.source_options_group.setLayout(source_options_layout)
 
@@ -435,12 +458,12 @@ class ImageViewUI(QMainWindow):
         status_text = (
             f"{self.ros_interface.image_frame}\n"
             f"-> {self.ros_interface.lidar_frame}:\n"
-            f"x: {source_xyz[0]:.6f}\n"
-            f"y: {source_xyz[1]:.6f}\n"
-            f"z: {source_xyz[2]:.6f}\n"
-            f"roll: {source_rpy[0]:.6f}\n"
-            f"pitch: {source_rpy[1]:.6f}\n"
-            f"yaw: {source_rpy[2]:.6f}\n"
+            f"x: {round(source_xyz[0], 6)}\n"
+            f"y: {round(source_xyz[1], 6)}\n"
+            f"z: {round(source_xyz[2], 6)}\n"
+            f"roll: {round(source_rpy[0], 6)}\n"
+            f"pitch: {round(source_rpy[1], 6)}\n"
+            f"yaw: {round(source_rpy[2], 6)}\n"
         )
         self.tf_source_status_text.setPlainText(status_text)
 
@@ -457,14 +480,70 @@ class ImageViewUI(QMainWindow):
         status_text += (
             f"\n{self.ros_interface.parent_frame}\n"
             f"-> {self.ros_interface.child_frame}:\n"
-            f"x: {postprocessed_xyz[0]:.6f}\n"
-            f"y: {postprocessed_xyz[1]:.6f}\n"
-            f"z: {postprocessed_xyz[2]:.6f}\n"
-            f"roll: {postprocessed_rpy[0]:.6f}\n"
-            f"pitch: {postprocessed_rpy[1]:.6f}\n"
-            f"yaw: {postprocessed_rpy[2]:.6f}\n"
+            f"x: {round(postprocessed_xyz[0], 6)}\n"
+            f"y: {round(postprocessed_xyz[1], 6)}\n"
+            f"z: {round(postprocessed_xyz[2], 6)}\n"
+            f"roll: {round(postprocessed_rpy[0], 6)}\n"
+            f"pitch: {round(postprocessed_rpy[1], 6)}\n"
+            f"yaw: {round(postprocessed_rpy[2], 6)}\n"
         )
         self.tf_source_status_text.setPlainText(status_text)
+
+    def camera_info_source_callback(self, source):
+        if source == "message":
+            # # If we add item "message" only after the message arrives, then we can:
+            # assert self.message_camera_info is not None
+            if self.message_camera_info is None:
+                return
+            self.source_camera_info = self.message_camera_info
+        elif source == "calibrator":
+            assert self.optimized_camera_info is not None
+            self.source_camera_info = self.optimized_camera_info
+        elif source == "file":
+            filename, _ = QFileDialog.getOpenFileName(
+                self, "Open camera info File", ".", "YAML files (*.yaml)"
+            )
+            if len(filename) == 0:
+                return
+            try:
+                with open(filename, "r") as f:
+                    data = yaml.safe_load(f)
+
+                    camera_info = CameraInfo()
+                    camera_info.width = data["image_width"]
+                    camera_info.height = data["image_height"]
+                    camera_info.distortion_model = data["distortion_model"]
+
+                    camera_info.d = data["distortion_coefficients"]["data"]
+                    camera_info.k = data["camera_matrix"]["data"]
+                    camera_info.p = data["projection_matrix"]["data"]
+                    camera_info.r = data["rectification_matrix"]["data"]
+
+                    self.source_camera_info = camera_info
+            except Exception as ex:
+                self.ros_interface.get_logger().error(
+                    f"Could not load valid CameraInfo from {filename}. {ex}"
+                )
+                return
+        else:
+            raise NotImplementedError
+
+        self.image_view.set_camera_info(self.source_camera_info.k, self.source_camera_info.d)
+        self.image_view.update()
+        self.graphics_view.update()
+
+        # update status text
+        K = self.source_camera_info.k
+        D_str = ", ".join([f"{round(p, 6)}" for p in self.source_camera_info.d])
+        status_text = (
+            f"D: [{D_str}]\n"
+            f"K: [\n"
+            f"  {round(K[0], 6)}, {round(K[1], 6)}, {round(K[2], 6)},\n"
+            f"  {round(K[3], 6)}, {round(K[4], 6)}, {round(K[5], 6)},\n"
+            f"  {round(K[6], 6)}, {round(K[7], 6)}, {round(K[8], 6)},\n"
+            f"]\n"
+        )
+        self.camera_info_source_status_text.setPlainText(status_text)
 
     def sensor_data_ros_callback(self, img, camera_info, pointcloud, delay):
         # This method is executed in the ROS spin thread
@@ -477,7 +556,7 @@ class ImageViewUI(QMainWindow):
             self.pixmap_tmp = QPixmap(q_img)
 
             self.pointcloud_tmp = pointcloud
-            self.camera_info_tmp = camera_info
+            self.message_camera_info_tmp = camera_info
             self.delay_tmp = delay
 
         self.sensor_data_signal.emit()
@@ -508,8 +587,12 @@ class ImageViewUI(QMainWindow):
             self.image_view.set_pixmap(self.pixmap_tmp)
             self.image_view.set_pointcloud(self.pointcloud_tmp)
 
-            self.camera_info = self.camera_info_tmp
-            self.image_view.set_camera_info(self.camera_info_tmp.k, self.camera_info_tmp.d)
+            self.message_camera_info = self.message_camera_info_tmp
+
+            # Force update on the message source case
+            source = self.camera_info_source_combobox.currentData()
+            if "message" == source:
+                self.camera_info_source_callback(source)
 
             self.image_view.update()
             self.graphics_view.update()
@@ -536,7 +619,7 @@ class ImageViewUI(QMainWindow):
 
                 self.image_view.update()
 
-            changed = (self.transform_tmp != self.current_transform).any()
+            is_changed = (self.transform_tmp != self.current_transform).any()
             self.current_transform = np.copy(self.transform_tmp)
 
             # if not selected, switch to "initial" and force update
@@ -546,7 +629,7 @@ class ImageViewUI(QMainWindow):
 
             # Force update on the current /tf case
             source = self.tf_source_combobox.currentData()
-            if "current" == source and changed:
+            if "current" == source and is_changed:
                 self.tf_source_callback(source)
 
     def image_click_callback(self, x, y):
