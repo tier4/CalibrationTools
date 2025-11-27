@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 TIER IV, Inc.
+# Copyright 2024-2025 TIER IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import os
 import threading
 import time
 
@@ -25,7 +23,6 @@ import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.duration import Duration
 from rclpy.qos import qos_profile_system_default
-from rosidl_runtime_py.convert import message_to_ordereddict
 from tf2_ros import TransformException
 from tier4_calibration_views.image_view_ros_interface import ImageViewRosInterface
 from tier4_calibration_views.utils import decompose_transformation_matrix
@@ -34,7 +31,6 @@ from tier4_calibration_views.utils import transform_matrix_to_tf_message
 from tier4_calibration_views.utils import transform_points
 from tier4_sensor_calibration_msgs.msg import CalibrationResult
 from tier4_sensor_calibration_msgs.srv import ExtrinsicCalibrator
-import transforms3d
 
 
 class InteractiveCalibratorRosInterface(ImageViewRosInterface):
@@ -137,20 +133,6 @@ class InteractiveCalibratorRosInterface(ImageViewRosInterface):
             self.output_transform_msg.header.frame_id = self.image_frame
             self.output_transform_msg.child_frame_id = self.lidar_frame
             self.new_output_tf = True
-
-    def save_calibration_tfs(self, output_dir):
-        with self.lock:
-            d = message_to_ordereddict(self.output_transform_msg)
-
-            q = self.output_transform_msg.transform.rotation
-            e = transforms3d.euler.quat2euler((q.w, q.x, q.y, q.z))
-
-            d["roll"] = e[0]
-            d["pitch"] = e[1]
-            d["yaw"] = e[2]
-
-            with open(os.path.join(output_dir, "tf.json"), "w") as f:
-                f.write(json.dumps(d, indent=4, sort_keys=False))
 
     def point_callback(self, point: PointStamped):
         point_xyz = np.array([point.point.x, point.point.y, point.point.z]).reshape(1, 3)

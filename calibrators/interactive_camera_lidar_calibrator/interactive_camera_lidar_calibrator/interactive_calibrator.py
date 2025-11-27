@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 TIER IV, Inc.
+# Copyright 2024-2025 TIER IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import logging
 import os
 import signal
@@ -42,6 +41,16 @@ import numpy as np
 import rclpy
 from rosidl_runtime_py.convert import message_to_ordereddict
 from tier4_calibration_views.image_view_ui import ImageViewUI
+import transforms3d
+import yaml
+
+
+def float_representer(dumper, value):
+    text = "{0:.6f}".format(value)  # noqa E231
+    return dumper.represent_scalar("tag:yaml.org,2002:float", text)  # noqa E231
+
+
+yaml.add_representer(float, float_representer)
 
 
 class InteractiveCalibratorUI(ImageViewUI):
@@ -145,18 +154,18 @@ class InteractiveCalibratorUI(ImageViewUI):
         self.calibration_status_inliers_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
         self.state_1_message = (
-            "To add a calibration pair\nfirst click the 3d point."
-            + "\nTo delete a calibration\npoint, click it in the\nimage"
+            "To add a calibration pair,\nfirst click the 3d point."
+            + "\nTo delete a calibration\npair, click it in the image."
         )
 
         user_message_label = QLabel()
         user_message_label.setText(self.state_1_message)
         user_message_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
-        save_calibration_button = QPushButton("Save calibration")
+        save_calibration_button = QPushButton("Save pairs and result")
         save_calibration_button.clicked.connect(self.save_calibration_callback)
 
-        load_calibration_button = QPushButton("Load calibration")
+        load_calibration_button = QPushButton("Load pairs")
         load_calibration_button.clicked.connect(self.load_calibration_callback)
 
         calibration_status_layout = QVBoxLayout()
@@ -238,7 +247,7 @@ class InteractiveCalibratorUI(ImageViewUI):
             self.calibration_button.setEnabled(self.calibration_possible)
             self.calibration2_button.setEnabled(self.calibration_possible)
 
-        pnp_min_points_label = QLabel("Minimum pnp\n points")
+        pnp_min_points_label = QLabel("Minimum pnp pairs")
         self.pnp_min_points_spinbox = QSpinBox()
         self.pnp_min_points_spinbox.valueChanged.connect(pnp_min_points_callback)
         self.pnp_min_points_spinbox.setRange(4, 100)
@@ -248,7 +257,7 @@ class InteractiveCalibratorUI(ImageViewUI):
         def ransac_inlier_error_callback(value):
             self.image_view.set_inlier_distance(value)
 
-        ransac_inlier_error_label = QLabel("RANSAC inlier\nerror (px)")
+        ransac_inlier_error_label = QLabel("RANSAC inlier error (px)")
         self.ransac_inlier_error_spinbox = QDoubleSpinBox()
         self.ransac_inlier_error_spinbox.valueChanged.connect(ransac_inlier_error_callback)
         self.ransac_inlier_error_spinbox.setRange(0.0, 1000.0)
@@ -363,10 +372,76 @@ class InteractiveCalibratorUI(ImageViewUI):
         if self.optimized_camera_info is not None:
             d = message_to_ordereddict(self.optimized_camera_info)
 
-            with open(os.path.join(output_folder, "optimized_camera_info.json"), "w") as f:
-                f.write(json.dumps(d, indent=4, sort_keys=False))
+            with open(os.path.join(output_folder, "optimized_camera_info.yaml"), "w") as f:
+                yaml.dump(d, f, sort_keys=False)
 
-        self.ros_interface.save_calibration_tfs(output_folder)
+        # save calibrated extrinsics
+        assert self.calibrated_transform is not None
+
+        use_rpy = True
+
+        calibrated_tf = {
+            "x": self.calibrated_transform[0, 3].item(),
+            "y": self.calibrated_transform[1, 3].item(),
+            "z": self.calibrated_transform[2, 3].item(),
+        }
+        if use_rpy:
+            rpy = transforms3d.euler.mat2euler(self.calibrated_transform[0:3, 0:3])
+            calibrated_tf["roll"] = rpy[0]
+            calibrated_tf["pitch"] = rpy[1]
+            calibrated_tf["yaw"] = rpy[2]
+        else:
+            quat = transforms3d.quaternions.mat2quat(self.calibrated_transform[0:3, 0:3])
+            calibrated_tf["qx"] = quat[1]
+            calibrated_tf["qy"] = quat[2]
+            calibrated_tf["qz"] = quat[3]
+            calibrated_tf["qw"] = quat[0]
+
+        calibrated_d = {
+            self.ros_interface.image_frame: {self.ros_interface.lidar_frame: calibrated_tf}
+        }
+        with open(os.path.join(output_folder, "tf.yaml"), "w") as f:
+            yaml.dump(calibrated_d, f, sort_keys=False)
+
+        # postprocess the calibrated transform
+        parent_frame = "sensor_kit_base_link"  # TEMP
+        child_frame = self.ros_interface.image_frame.split("/")[0] + "/camera_link"  # TEMP
+        parent_to_image_transform = self.ros_interface.get_transform(
+            parent_frame,
+            self.ros_interface.image_frame,
+        )
+        if parent_to_image_transform is None:
+            return
+        lidar_to_child_transform = self.ros_interface.get_transform(
+            self.ros_interface.lidar_frame,
+            child_frame,
+        )
+        if lidar_to_child_transform is None:
+            return
+
+        postprocessed_transform = (
+            parent_to_image_transform @ self.source_transform @ lidar_to_child_transform
+        )
+        postprocessed_tf = {
+            "x": postprocessed_transform[0, 3].item(),
+            "y": postprocessed_transform[1, 3].item(),
+            "z": postprocessed_transform[2, 3].item(),
+        }
+        if use_rpy:
+            rpy = transforms3d.euler.mat2euler(postprocessed_transform[0:3, 0:3])
+            postprocessed_tf["roll"] = rpy[0]
+            postprocessed_tf["pitch"] = rpy[1]
+            postprocessed_tf["yaw"] = rpy[2]
+        else:
+            quat = transforms3d.quaternions.mat2quat(postprocessed_transform[0:3, 0:3])
+            postprocessed_tf["qx"] = quat[1]
+            postprocessed_tf["qy"] = quat[2]
+            postprocessed_tf["qz"] = quat[3]
+            postprocessed_tf["qw"] = quat[0]
+
+        postprocessed_d = {parent_frame: {child_frame: postprocessed_tf}}
+        with open(os.path.join(output_folder, "tf_postprocessed.yaml"), "w") as f:
+            yaml.dump(postprocessed_d, f, sort_keys=False)
 
     def load_calibration_callback(self):
         input_dir = QFileDialog.getExistingDirectory(
@@ -444,6 +519,7 @@ class InteractiveCalibratorUI(ImageViewUI):
         self.calibration_api_button.setEnabled(
             self.calibration_api_request_received and self.calibrated_transform is not None
         )
+        # pass tf so that ros interface can publish if allowed
         self.ros_interface.set_camera_lidar_transform(transform)
 
     def update_calibration_status(self):
