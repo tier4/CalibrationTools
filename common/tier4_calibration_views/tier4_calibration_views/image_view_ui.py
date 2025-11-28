@@ -345,7 +345,7 @@ class ImageViewUI(QMainWindow):
                 self.tf_source_callback(self.tf_source_combobox.itemData(index))
 
         # `activated` is favored over `currentTextChanged`;
-        # reselecting "file" should show file dialog regardless of the current selection
+        # selecting "file" again should show file dialog regardless of the current selection
         self.tf_source_combobox.activated.connect(tf_source_index_callback)
 
         self.tf_source_status_text = QPlainTextEdit()
@@ -614,8 +614,8 @@ class ImageViewUI(QMainWindow):
                 self.initial_transform = np.copy(self.transform_tmp)
                 self.current_transform = self.initial_transform
 
-                self.tf_source_combobox.addItem("Initial /tf", "initial")
-                self.tf_source_combobox.addItem("Current /tf", "current")
+                self.tf_source_combobox.addItem("ROS topic (initial)", "initial")
+                self.tf_source_combobox.addItem("ROS topic (current)", "current")
 
                 self.image_view.update()
 
