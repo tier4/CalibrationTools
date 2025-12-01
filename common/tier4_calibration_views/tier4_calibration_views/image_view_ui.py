@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import copy
+import json
 import threading
 
 from PySide2.QtCore import Qt
@@ -42,6 +43,125 @@ from tier4_calibration_views.image_view import ImageView
 from tier4_calibration_views.image_view_ros_interface import ImageViewRosInterface
 import transforms3d
 import yaml
+
+
+def load_transform_from_yaml(yaml_data, parent_frame: str, child_frame: str):
+    entry = yaml_data[parent_frame][child_frame]
+
+    x = float(entry.get("x"))
+    y = float(entry.get("y"))
+    z = float(entry.get("z"))
+
+    if all(key in entry for key in ("roll", "pitch", "yaw")):
+        roll = float(entry["roll"])
+        pitch = float(entry["pitch"])
+        yaw = float(entry["yaw"])
+        rot = transforms3d.euler.euler2mat(roll, pitch, yaw)
+    elif all(key in entry for key in ("qx", "qy", "qz", "qw")):
+        qx = float(entry["qx"])
+        qy = float(entry["qy"])
+        qz = float(entry["qz"])
+        qw = float(entry["qw"])
+        rot = transforms3d.quaternions.quat2mat((qw, qx, qy, qz))
+    else:
+        rot = np.eye(3)
+
+    mat = np.eye(4)
+    mat[0:3, 0:3] = rot
+    mat[0:3, 3] = [x, y, z]
+
+    return mat
+
+
+def load_transform_from_json(json_data, parent_frame: str, child_frame: str):
+    if (
+        json_data["header"]["frame_id"] != parent_frame
+        or json_data["child_frame_id"] != child_frame
+    ):
+        raise KeyError(
+            f"Expected transform from {parent_frame} to {child_frame}, but got from {json_data['header']['frame_id']} to {json_data['child_frame_id']}"
+        )
+
+    translation = json_data["transform"]["translation"]
+    rotation = json_data["transform"]["rotation"]
+
+    x = translation["x"]
+    y = translation["y"]
+    z = translation["z"]
+
+    qx = rotation["x"]
+    qy = rotation["y"]
+    qz = rotation["z"]
+    qw = rotation["w"]
+    rot = transforms3d.quaternions.quat2mat((qw, qx, qy, qz))
+
+    mat = np.eye(4)
+    mat[0:3, 0:3] = rot
+    mat[0:3, 3] = [x, y, z]
+
+    return mat
+
+
+def load_camera_info_from_yaml(yaml_data) -> CameraInfo:
+    camera_info = CameraInfo()
+    camera_info.width = yaml_data["image_width"]
+    camera_info.height = yaml_data["image_height"]
+    camera_info.distortion_model = yaml_data["distortion_model"]
+
+    camera_info.d = yaml_data["distortion_coefficients"]["data"]
+    camera_info.k = yaml_data["camera_matrix"]["data"]
+    camera_info.p = yaml_data["projection_matrix"]["data"]
+    camera_info.r = yaml_data["rectification_matrix"]["data"]
+
+    return camera_info
+
+
+def load_camera_info_from_json(json_data) -> CameraInfo:
+    camera_info = CameraInfo()
+
+    camera_info.header.frame_id = json_data["header"]["frame_id"]
+    camera_info.width = json_data["width"]
+    camera_info.height = json_data["height"]
+    camera_info.distortion_model = json_data["distortion_model"]
+    camera_info.d = json_data["d"]
+    camera_info.k = json_data["k"]
+    camera_info.p = json_data["p"]
+    camera_info.r = json_data["r"]
+
+    return camera_info
+
+
+def validate_camera_info(camera_info: CameraInfo) -> bool:
+    if camera_info is None:
+        return False
+
+    if len(camera_info.k) != 9:
+        return False
+    if camera_info.k[0] <= 0 or camera_info.k[4] <= 0:
+        # fx, fy should be positive
+        return False
+    if (
+        camera_info.k[1] != 0
+        or camera_info.k[3] != 0
+        or camera_info.k[6] != 0
+        or camera_info.k[7] != 0
+    ):
+        # skew and other parameters should be zero
+        return False
+    if len(camera_info.d) not in [4, 5, 8, 12, 14]:
+        return False
+    if len(camera_info.r) != 9:
+        return False
+    if len(camera_info.p) != 12:
+        return False
+    if camera_info.distortion_model not in [
+        "plumb_bob",
+        "rational_polynomial",
+    ]:
+        return False
+    if camera_info.width <= 0 or camera_info.height <= 0:
+        return False
+    return True
 
 
 class ImageViewUI(QMainWindow):
@@ -389,56 +509,36 @@ class ImageViewUI(QMainWindow):
             assert self.calibrated_transform is not None
             self.source_transform = self.calibrated_transform
         elif source == "file":
-            # Reads TF in yaml format, regardless of the choice:
+            # Reads TF regardless of the format:
+            # - yaml or json (output from previous versions)
             # - xyz + quaternion or xyz + rpy
             # - preprocessed or non-preprocessed entry
             filename, _ = QFileDialog.getOpenFileName(
-                self, "Open TF File", ".", "YAML files (*.yaml)"
+                self, "Open TF File", ".", "YAML file (*.yaml);;JSON file (*.json)"
             )
             if len(filename) == 0:
                 return
             try:
-                with open(filename, "r") as f:
-                    data = yaml.safe_load(f)
+                file_to_data, load_transform = (
+                    (json.load, load_transform_from_json)
+                    if filename.endswith(".json")
+                    else (yaml.safe_load, load_transform_from_yaml)
+                )
 
-                    entry = None
-                    is_preprocessed_entry = False
+                with open(filename, "r") as f:
+                    data = file_to_data(f)
 
                     try:
-                        entry = data[self.ros_interface.parent_frame][
-                            self.ros_interface.child_frame
-                        ]
-                        is_preprocessed_entry = True
-                    except KeyError:
-                        # Fallback to non-preprocessed entry.
-                        # If this fails, silently return.
-                        entry = data[self.ros_interface.image_frame][self.ros_interface.lidar_frame]
-
-                    x = float(entry.get("x"))
-                    y = float(entry.get("y"))
-                    z = float(entry.get("z"))
-
-                    if all(key in entry for key in ("roll", "pitch", "yaw")):
-                        roll = float(entry["roll"])
-                        pitch = float(entry["pitch"])
-                        yaw = float(entry["yaw"])
-                        rot = transforms3d.euler.euler2mat(roll, pitch, yaw)
-                    elif all(key in entry for key in ("qx", "qy", "qz", "qw")):
-                        qx = float(entry["qx"])
-                        qy = float(entry["qy"])
-                        qz = float(entry["qz"])
-                        qw = float(entry["qw"])
-                        rot = transforms3d.quaternions.quat2mat((qw, qx, qy, qz))
-                    else:
-                        return
-
-                    mat = np.eye(4)
-                    mat[0:3, 0:3] = rot
-                    mat[0:3, 3] = [x, y, z]
-
-                    if is_preprocessed_entry:
+                        mat = load_transform(
+                            data, self.ros_interface.parent_frame, self.ros_interface.child_frame
+                        )
                         self.source_transform = self.ros_interface.get_image_to_lidar_transform(mat)
-                    else:
+                    except KeyError:
+                        # Fallback to non-postprocessed entry.
+                        # If this fails, silently return.
+                        mat = load_transform(
+                            data, self.ros_interface.image_frame, self.ros_interface.lidar_frame
+                        )
                         self.source_transform = mat
             except Exception as ex:
                 self.ros_interface.get_logger().error(
@@ -491,33 +591,36 @@ class ImageViewUI(QMainWindow):
 
     def camera_info_source_callback(self, source):
         if source == "message":
-            # # If we add item "message" only after the message arrives, then we can:
-            # assert self.message_camera_info is not None
-            if self.message_camera_info is None:
+            if not validate_camera_info(self.message_camera_info):
                 return
             self.source_camera_info = self.message_camera_info
         elif source == "calibrator":
-            assert self.optimized_camera_info is not None
+            if not validate_camera_info(self.optimized_camera_info):
+                return
             self.source_camera_info = self.optimized_camera_info
         elif source == "file":
+            # Reads TF regardless of the format:
+            # - yaml or json (output from previous versions)
+            # - xyz + quaternion or xyz + rpy
+            # - preprocessed or non-preprocessed entry
             filename, _ = QFileDialog.getOpenFileName(
-                self, "Open camera info File", ".", "YAML files (*.yaml)"
+                self, "Open camera info File", ".", "YAML file (*.yaml);;JSON file (*.json)"
             )
             if len(filename) == 0:
                 return
             try:
+                file_to_data, load_camera_info = (
+                    (json.load, load_camera_info_from_json)
+                    if filename.endswith(".json")
+                    else (yaml.safe_load, load_camera_info_from_yaml)
+                )
+
                 with open(filename, "r") as f:
-                    data = yaml.safe_load(f)
+                    data = file_to_data(f)
+                    camera_info = load_camera_info(data)
 
-                    camera_info = CameraInfo()
-                    camera_info.width = data["image_width"]
-                    camera_info.height = data["image_height"]
-                    camera_info.distortion_model = data["distortion_model"]
-
-                    camera_info.d = data["distortion_coefficients"]["data"]
-                    camera_info.k = data["camera_matrix"]["data"]
-                    camera_info.p = data["projection_matrix"]["data"]
-                    camera_info.r = data["rectification_matrix"]["data"]
+                    if not validate_camera_info(camera_info):
+                        raise ValueError("Invalid CameraInfo data")
 
                     self.source_camera_info = camera_info
             except Exception as ex:
