@@ -200,6 +200,10 @@ class InteractiveCalibratorUI(ImageViewUI):
                 self.source_camera_info,
             )
 
+            self.ros_interface.get_logger().info(
+                f"Optimized camera intrinsics obtained: K = {self.optimized_camera_info.k}, D = {self.optimized_camera_info.d}"
+            )
+
             if is_init:
                 self.camera_info_source_combobox.insertItem(
                     0, "Calibrator", "calibrator"
