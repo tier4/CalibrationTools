@@ -539,7 +539,7 @@ class InteractiveCalibratorUI(ImageViewUI):
         self.calibration_api_button.setEnabled(
             self.calibration_api_request_received and self.calibrated_transform is not None
         )
-        # pass tf so that ros interface can publish if allowed
+        # Pass tf so that ROS interface can publish if allowed.
         self.ros_interface.set_camera_lidar_transform(transform)
 
     def update_calibration_status(self):
