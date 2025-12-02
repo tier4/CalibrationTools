@@ -39,7 +39,6 @@ from interactive_camera_lidar_calibrator.ros_interface import InteractiveCalibra
 from interactive_camera_lidar_calibrator.utils import camera_lidar_calibrate_intrinsics
 import numpy as np
 import rclpy
-from rosidl_runtime_py.convert import message_to_ordereddict
 from tier4_calibration_views.image_view_ui import ImageViewUI
 import transforms3d
 import yaml
