@@ -429,34 +429,36 @@ class InteractiveCalibratorUI(ImageViewUI):
             yaml.dump(calibrated_d, f, sort_keys=False)
 
         # postprocess the calibrated transform
-        postprocessed_transform = self.ros_interface.get_parent_to_child_transform(
-            self.calibrated_transform
-        )
-        if postprocessed_transform is None:
+        try:
+            postprocessed_transform = self.ros_interface.get_parent_to_child_transform(
+                self.calibrated_transform
+            )
+
+            postprocessed_tf = {
+                "x": postprocessed_transform[0, 3].item(),
+                "y": postprocessed_transform[1, 3].item(),
+                "z": postprocessed_transform[2, 3].item(),
+            }
+            if use_rpy:
+                rpy = transforms3d.euler.mat2euler(postprocessed_transform[0:3, 0:3])
+                postprocessed_tf["roll"] = rpy[0]
+                postprocessed_tf["pitch"] = rpy[1]
+                postprocessed_tf["yaw"] = rpy[2]
+            else:
+                quat = transforms3d.quaternions.mat2quat(postprocessed_transform[0:3, 0:3])
+                postprocessed_tf["qx"] = quat[1]
+                postprocessed_tf["qy"] = quat[2]
+                postprocessed_tf["qz"] = quat[3]
+                postprocessed_tf["qw"] = quat[0]
+
+            postprocessed_d = {
+                self.ros_interface.parent_frame: {self.ros_interface.child_frame: postprocessed_tf}
+            }
+            with open(os.path.join(output_folder, "tf_postprocessed.yaml"), "w") as f:
+                yaml.dump(postprocessed_d, f, sort_keys=False)
+        except Exception as ex:
+            self.ros_interface.get_logger().error(f"Could not save postprocessed TF. {ex}")
             return
-
-        postprocessed_tf = {
-            "x": postprocessed_transform[0, 3].item(),
-            "y": postprocessed_transform[1, 3].item(),
-            "z": postprocessed_transform[2, 3].item(),
-        }
-        if use_rpy:
-            rpy = transforms3d.euler.mat2euler(postprocessed_transform[0:3, 0:3])
-            postprocessed_tf["roll"] = rpy[0]
-            postprocessed_tf["pitch"] = rpy[1]
-            postprocessed_tf["yaw"] = rpy[2]
-        else:
-            quat = transforms3d.quaternions.mat2quat(postprocessed_transform[0:3, 0:3])
-            postprocessed_tf["qx"] = quat[1]
-            postprocessed_tf["qy"] = quat[2]
-            postprocessed_tf["qz"] = quat[3]
-            postprocessed_tf["qw"] = quat[0]
-
-        postprocessed_d = {
-            self.ros_interface.parent_frame: {self.ros_interface.child_frame: postprocessed_tf}
-        }
-        with open(os.path.join(output_folder, "tf_postprocessed.yaml"), "w") as f:
-            yaml.dump(postprocessed_d, f, sort_keys=False)
 
     def load_calibration_callback(self):
         input_dir = QFileDialog.getExistingDirectory(

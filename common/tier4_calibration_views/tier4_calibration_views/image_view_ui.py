@@ -537,7 +537,6 @@ class ImageViewUI(QMainWindow):
                         self.source_transform = self.ros_interface.get_image_to_lidar_transform(mat)
                     except KeyError:
                         # Fallback to non-postprocessed entry.
-                        # If this fails, silently return.
                         mat = load_transform(
                             data, self.ros_interface.image_frame, self.ros_interface.lidar_frame
                         )
@@ -569,27 +568,29 @@ class ImageViewUI(QMainWindow):
         )
         self.tf_source_status_text.setPlainText(status_text)
 
-        # postprocess the source transform
-        postprocessed_transform = self.ros_interface.get_parent_to_child_transform(
-            self.source_transform
-        )
-        if postprocessed_transform is None:
-            return
+        try:
+            # postprocess the source transform
+            postprocessed_transform = self.ros_interface.get_parent_to_child_transform(
+                self.source_transform
+            )
 
-        # update (append) status text
-        postprocessed_xyz = postprocessed_transform[0:3, 3]
-        postprocessed_rpy = transforms3d.euler.mat2euler(postprocessed_transform[0:3, 0:3])
-        status_text += (
-            f"\n{self.ros_interface.parent_frame}\n"
-            f"-> {self.ros_interface.child_frame}:\n"
-            f"x: {round(postprocessed_xyz[0], 6)}\n"
-            f"y: {round(postprocessed_xyz[1], 6)}\n"
-            f"z: {round(postprocessed_xyz[2], 6)}\n"
-            f"roll: {round(postprocessed_rpy[0], 6)}\n"
-            f"pitch: {round(postprocessed_rpy[1], 6)}\n"
-            f"yaw: {round(postprocessed_rpy[2], 6)}\n"
-        )
-        self.tf_source_status_text.setPlainText(status_text)
+            # update (append) status text
+            postprocessed_xyz = postprocessed_transform[0:3, 3]
+            postprocessed_rpy = transforms3d.euler.mat2euler(postprocessed_transform[0:3, 0:3])
+            status_text += (
+                f"\n{self.ros_interface.parent_frame}\n"
+                f"-> {self.ros_interface.child_frame}:\n"
+                f"x: {round(postprocessed_xyz[0], 6)}\n"
+                f"y: {round(postprocessed_xyz[1], 6)}\n"
+                f"z: {round(postprocessed_xyz[2], 6)}\n"
+                f"roll: {round(postprocessed_rpy[0], 6)}\n"
+                f"pitch: {round(postprocessed_rpy[1], 6)}\n"
+                f"yaw: {round(postprocessed_rpy[2], 6)}\n"
+            )
+            self.tf_source_status_text.setPlainText(status_text)
+        except Exception as ex:
+            self.ros_interface.get_logger().error(f"Could not postprocess TF from {filename}. {ex}")
+            return
 
     def camera_info_source_callback(self, source):
         if source == "message":
