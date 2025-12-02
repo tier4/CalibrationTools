@@ -643,8 +643,7 @@ class ImageViewUI(QMainWindow):
             f"K: [\n"
             f"  {round(K[0], 6)}, {round(K[1], 6)}, {round(K[2], 6)},\n"
             f"  {round(K[3], 6)}, {round(K[4], 6)}, {round(K[5], 6)},\n"
-            f"  {round(K[6], 6)}, {round(K[7], 6)}, {round(K[8], 6)},\n"
-            f"]\n"
+            f"  {round(K[6], 6)}, {round(K[7], 6)}, {round(K[8], 6)}]\n"
         )
         self.camera_info_source_status_text.setPlainText(status_text)
 
