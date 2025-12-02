@@ -64,7 +64,9 @@ def load_transform_from_yaml(yaml_data, parent_frame: str, child_frame: str):
         qw = float(entry["qw"])
         rot = transforms3d.quaternions.quat2mat((qw, qx, qy, qz))
     else:
-        rot = np.eye(3)
+        raise KeyError(
+            f"Missing rotation parameters: expected either roll/pitch/yaw or qx/qy/qz/qw."
+        )
 
     mat = np.eye(4)
     mat[0:3, 0:3] = rot
