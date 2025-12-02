@@ -73,6 +73,8 @@
       <param name="child_frame" value="$(var child_frame)"/>
       <param name="should_reverse_transform" value="$(var should_reverse_transform)"/>
 
+      <param name="camera_name" value="$(var camera_name)"/>
+
       <param name="use_calibration_api" value="false"/>
       <param name="can_publish_tf" value="false"/>
     </node>

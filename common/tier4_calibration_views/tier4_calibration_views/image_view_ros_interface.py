@@ -62,6 +62,7 @@ class ImageViewRosInterface(Node):
         self.declare_parameter("parent_frame", "")
         self.declare_parameter("child_frame", "")
         self.declare_parameter("should_reverse_transform", False)
+        self.declare_parameter("camera_name", "camera")
 
         self.use_rectified = self.get_parameter("use_rectified").get_parameter_value().bool_value
         self.use_compressed = self.get_parameter("use_compressed").get_parameter_value().bool_value
@@ -77,6 +78,7 @@ class ImageViewRosInterface(Node):
         self.should_reverse_transform = (
             self.get_parameter("should_reverse_transform").get_parameter_value().bool_value
         )
+        self.camera_name = self.get_parameter("camera_name").get_parameter_value().string_value
 
         # Data
         self.pointcloud_queue: Deque[PointCloud2] = deque([], 5)

@@ -371,11 +371,10 @@ class InteractiveCalibratorUI(ImageViewUI):
         np.savetxt(os.path.join(output_folder, "image_points.txt"), image_points)
 
         if self.optimized_camera_info is not None:
-
             d = {}
             d["image_width"] = self.optimized_camera_info.width
             d["image_height"] = self.optimized_camera_info.height
-            d["camera_name"] = self.optimized_camera_info.header.frame_id.split("/")[0]  # TEMP
+            d["camera_name"] = self.ros_interface.camera_name
             d["camera_matrix"] = {
                 "rows": 3,
                 "cols": 3,
