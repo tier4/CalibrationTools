@@ -372,7 +372,6 @@ class InteractiveCalibratorUI(ImageViewUI):
         np.savetxt(os.path.join(output_folder, "image_points.txt"), image_points)
 
         if self.optimized_camera_info is not None:
-            d = message_to_ordereddict(self.optimized_camera_info)
 
             d = {}
             d["image_width"] = self.optimized_camera_info.width
