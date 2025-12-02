@@ -11,7 +11,19 @@
 
   <let name="camera_info_topic" value="/sensing/camera/$(var camera_name)/camera_info"/>
   <let name="pointcloud_topic" value="/sensing/lidar/top/pointcloud_raw"/>
+  <!-- image and lidar frames should match to the message header. -->
+  <let name="image_frame" value="$(var camera_name)/camera_optical_link"/>
+  <let name="lidar_frame" value="velodyne_top"/>
+  <let name="parent_frame" value="sensor_kit_base_link"/>
+  <let name="child_frame" value="$(var camera_name)/camera_link"/>
+  <!-- set to true if image_frame -> lidar_frame passes child_frame first, false otherwise -->
+  <let name="should_reverse_transform" value="true"/>
 
+  <let name="rviz_profile" value="$(find-pkg-share tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
+  <let name="lidar_model" value="velodyne_vls128"/>
+  <let name="use_rectified_image" value="false"/>
+
+  <!-- group guard (is this a legacy?) -->
   <let name="calibrate_sensor" value="false"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera0' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera1' &quot;)"/>
@@ -22,12 +34,6 @@
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
   <let name="calibrate_sensor" value="true" if="$(eval &quot;'$(var camera_name)' == 'traffic_light_left_camera' &quot;)"/>
-
-  <let name="camera_frame" value="$(var camera_name)/camera_link"/>
-  <let name="rviz_profile" value="$(find-pkg-share tag_based_pnp_calibrator)/rviz/default_profile.rviz"/>
-  <let name="lidar_model" value="velodyne_vls128"/>
-  <let name="lidar_frame" value="velodyne_top"/>
-  <let name="use_rectified_image" value="false"/>
 
   <group if="$(var calibrate_sensor)">
     <!-- image decompressor -->
@@ -58,7 +64,14 @@
       <remap from="camera_info" to="$(var camera_info_topic)"/>
       <remap from="calibration_points_input" to="calibration_points"/>
 
-      <param name="camera_frame" value="$(var camera_frame)"/>
+      <param name="image_frame" value="$(var image_frame)"/>
+      <param name="lidar_frame" value="$(var lidar_frame)"/>
+      <param name="parent_frame" value="$(var parent_frame)"/>
+      <param name="child_frame" value="$(var child_frame)"/>
+      <param name="should_reverse_transform" value="$(var should_reverse_transform)"/>
+
+      <param name="camera_name" value="$(var camera_name)"/>
+
       <param name="use_calibration_api" value="false"/>
       <param name="can_publish_tf" value="false"/>
     </node>
@@ -69,6 +82,12 @@
       <remap from="image" to="$(var image_compressed_topic)"/>
       <remap from="camera_info" to="$(var camera_info_topic)"/>
       <remap from="calibration_points_input" to="calibration_points"/>
+
+      <param name="image_frame" value="$(var image_frame)"/>
+      <param name="lidar_frame" value="$(var lidar_frame)"/>
+      <param name="parent_frame" value="$(var parent_frame)"/>
+      <param name="child_frame" value="$(var child_frame)"/>
+      <param name="should_reverse_transform" value="$(var should_reverse_transform)"/>
     </node>
 
     <!-- create a placeholder lidar frame to make the rviz profile generic -->

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 TIER IV, Inc.
+# Copyright 2024-2025 TIER IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,6 +57,13 @@ class ImageViewRosInterface(Node):
         self.declare_parameter("timer_period", 1.0)
         self.declare_parameter("delay_tolerance", 0.06)
 
+        self.declare_parameter("image_frame", "")
+        self.declare_parameter("lidar_frame", "")
+        self.declare_parameter("parent_frame", "")
+        self.declare_parameter("child_frame", "")
+        self.declare_parameter("should_reverse_transform", False)
+        self.declare_parameter("camera_name", "camera")
+
         self.use_rectified = self.get_parameter("use_rectified").get_parameter_value().bool_value
         self.use_compressed = self.get_parameter("use_compressed").get_parameter_value().bool_value
         self.timer_period = self.get_parameter("timer_period").get_parameter_value().double_value
@@ -64,8 +71,23 @@ class ImageViewRosInterface(Node):
             self.get_parameter("delay_tolerance").get_parameter_value().double_value
         )
 
-        self.image_frame: Optional[str] = None
-        self.lidar_frame: Optional[str] = None
+        self.image_frame = self.get_parameter("image_frame").get_parameter_value().string_value
+        self.lidar_frame = self.get_parameter("lidar_frame").get_parameter_value().string_value
+        self.parent_frame = self.get_parameter("parent_frame").get_parameter_value().string_value
+        self.child_frame = self.get_parameter("child_frame").get_parameter_value().string_value
+        self.should_reverse_transform = (
+            self.get_parameter("should_reverse_transform").get_parameter_value().bool_value
+        )
+        self.camera_name = self.get_parameter("camera_name").get_parameter_value().string_value
+
+        for frame_key, frame_name in [
+            ("image_frame", self.image_frame),
+            ("lidar_frame", self.lidar_frame),
+            ("parent_frame", self.parent_frame),
+            ("child_frame", self.child_frame),
+        ]:
+            if frame_name == "":
+                self.get_logger().warn(f"{frame_key} is not set")
 
         # Data
         self.pointcloud_queue: Deque[PointCloud2] = deque([], 5)
@@ -112,6 +134,117 @@ class ImageViewRosInterface(Node):
 
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
 
+    def get_parent_to_child_transform(self, image_to_lidar_transform):
+        for frame_key, frame_name in [
+            ("image_frame", self.image_frame),
+            ("lidar_frame", self.lidar_frame),
+            ("parent_frame", self.parent_frame),
+            ("child_frame", self.child_frame),
+        ]:
+            if frame_name == "":
+                raise ValueError(f"{frame_key} is not set")
+        with self.lock:
+            if self.should_reverse_transform:
+                # image -> child -> parent -> lidar
+                child_to_image_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.child_frame,
+                        self.image_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                parent_to_lidar_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.parent_frame,
+                        self.lidar_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                parent_to_child_transform = parent_to_lidar_transform @ np.linalg.inv(
+                    child_to_image_transform @ image_to_lidar_transform
+                )
+                return parent_to_child_transform
+            else:
+                # image -> parent -> child -> lidar
+                parent_to_image_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.parent_frame,
+                        self.image_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                lidar_to_child_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.lidar_frame,
+                        self.child_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                parent_to_child_transform = (
+                    parent_to_image_transform @ image_to_lidar_transform @ lidar_to_child_transform
+                )
+                return parent_to_child_transform
+
+    def get_image_to_lidar_transform(self, parent_to_child_transform):
+        for frame_key, frame_name in [
+            ("image_frame", self.image_frame),
+            ("lidar_frame", self.lidar_frame),
+            ("parent_frame", self.parent_frame),
+            ("child_frame", self.child_frame),
+        ]:
+            if frame_name == "":
+                raise ValueError(f"{frame_key} is not set")
+        with self.lock:
+            if self.should_reverse_transform:
+                # image -> child -> parent -> lidar
+                child_to_image_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.child_frame,
+                        self.image_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                parent_to_lidar_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.parent_frame,
+                        self.lidar_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                image_to_lidar_transform = (
+                    np.linalg.inv(parent_to_child_transform @ child_to_image_transform)
+                    @ parent_to_lidar_transform
+                )
+                return image_to_lidar_transform
+            else:
+                # image -> parent -> child -> lidar
+                image_to_parent_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.image_frame,
+                        self.parent_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                child_to_lidar_transform = tf_message_to_transform_matrix(
+                    self.tf_buffer.lookup_transform(
+                        self.child_frame,
+                        self.lidar_frame,
+                        rclpy.time.Time(),
+                        timeout=Duration(seconds=0.0),
+                    )
+                )
+                image_to_lidar_transform = (
+                    image_to_parent_transform @ parent_to_child_transform @ child_to_lidar_transform
+                )
+                return image_to_lidar_transform
+
     def set_sensor_data_callback(self, callback):
         with self.lock:
             self.sensor_data_callback = callback
@@ -129,7 +262,12 @@ class ImageViewRosInterface(Node):
             self.external_calibration_points_callback = callback
 
     def pointcloud_callback(self, pointcloud_msg: PointCloud2):
-        self.lidar_frame = pointcloud_msg.header.frame_id
+        if self.lidar_frame != pointcloud_msg.header.frame_id:
+            self.get_logger().error(
+                f"Unexpected lidar frame {pointcloud_msg.header.frame_id} (should be {self.lidar_frame})"
+            )
+            return
+
         self.pointcloud_queue.append(pointcloud_msg)
         self.check_sync()
 
@@ -138,14 +276,26 @@ class ImageViewRosInterface(Node):
         self.check_sync()
 
     def camera_info_callback(self, camera_info_msg: CameraInfo):
+        if self.image_frame != camera_info_msg.header.frame_id:
+            self.get_logger().error(
+                f"Unexpected image frame {camera_info_msg.header.frame_id} (should be {self.image_frame})"
+            )
+            return
+
         self.camera_info = camera_info_msg
-        self.image_frame = camera_info_msg.header.frame_id
 
         if self.use_rectified:
-            self.camera_info.k[0] = self.camera_info.p[0]
-            self.camera_info.k[2] = self.camera_info.p[2]
-            self.camera_info.k[4] = self.camera_info.p[5]
-            self.camera_info.k[5] = self.camera_info.p[6]
+            self.camera_info.k = [
+                self.camera_info.p[0],
+                0.0,
+                self.camera_info.p[2],
+                0.0,
+                self.camera_info.p[5],
+                self.camera_info.p[6],
+                0.0,
+                0.0,
+                1.0,
+            ]
             self.camera_info.d = 0.0 * self.camera_info.d
 
     def check_sync(self):
@@ -212,7 +362,7 @@ class ImageViewRosInterface(Node):
 
     def timer_callback(self):
         with self.lock:
-            if self.image_frame is None or self.lidar_frame is None:
+            if self.image_frame == "" or self.lidar_frame == "":
                 return
 
             try:
