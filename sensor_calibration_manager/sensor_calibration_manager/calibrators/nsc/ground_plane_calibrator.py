@@ -36,7 +36,7 @@ class GroundPlaneCalibrator(CalibratorBase):
         self.base_frame = kwargs.get("base_frame", "base_link")
         self.sensor_kit_frame = "sensor_kit_base_link"
         self.lidar_frame = kwargs.get("lidar_frame", "front_cab_lidar")
-
+        self.pointcloud_topic = kwargs.get("pointcloud_topic", "/sensing/lidar/front/pointcloud_raw_ex")
         self.required_frames.extend([self.base_frame, self.sensor_kit_frame, self.lidar_frame])
 
         self.add_calibrator(
