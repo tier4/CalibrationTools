@@ -1,6 +1,6 @@
 <launch>
-  <let name="base_frame" value="rear_wheel_center"/>
-  <let name="lidar_frame" value="front_cab_lidar"/>
+  <arg name="base_frame" default="rear_wheel_center"/>
+  <arg name="lidar_frame" default="rear_cab_lidar"/>
   <let name="pointcloud_topic" value="/sensing/lidar/front/pointcloud_raw_ex"/>
 
   <arg name="max_inlier_distance" default="0.03" description="Maximum distance in meters to consider inliers in plane estimation"/>

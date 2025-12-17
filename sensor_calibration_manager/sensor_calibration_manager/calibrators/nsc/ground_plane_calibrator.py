@@ -33,9 +33,9 @@ class GroundPlaneCalibrator(CalibratorBase):
     def __init__(self, ros_interface: RosInterface, **kwargs):
         super().__init__(ros_interface)
 
-        self.base_frame = "base_link"
+        self.base_frame = kwargs.get("base_frame", "base_link")
         self.sensor_kit_frame = "sensor_kit_base_link"
-        self.lidar_frame = "front_cab_lidar"
+        self.lidar_frame = kwargs.get("lidar_frame", "front_cab_lidar")
 
         self.required_frames.extend([self.base_frame, self.sensor_kit_frame, self.lidar_frame])
 
