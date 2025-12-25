@@ -133,7 +133,6 @@ In the following images we can see how the projection looks using the initial ca
 ## FAQ
 
 - Why does the tool fail to add calibration pairs?
-
   - One possible reason is that the detections are too close to the previously collected data. In this case, the new detections are deemed redundant, and thus not accepted.
   - The timestamps of the lidar and camera are not synchronized. This can be checked with `ros2 topic echo [topic_name] --field header.stamp`. Setting the parameter `use_receive_time` to `True` might help to solve the issue, but is not recommended as a long-term solution.
   - The detections are not stable enough. This can happen due to the following reasons:
@@ -141,17 +140,14 @@ In the following images we can see how the projection looks using the initial ca
     - The tag is physically unstable due to wind, mounting issues, or other external factors. Even if the detector functions correctly, these conditions prevent the detection from converging. If this is the case, please eliminate all unwelcome external factors before attempting calibration. Forcefully calibrating under these conditions can compromise the results.
 
 - Why does the UI not launch?
-
   - Check with `ros2 node list` if the relevant nodes have been launched. It is possible that the provided parameters do not match any of the valid arguments among other standard ROS issues.
   - If the UI crashes (check the console for details), it is probably due to a bad PySide installation, invalid intrinsic parameters, invalid extrinsic parameters, etc.
   - The timestamps of the lidar and camera are not synchronized.
 
 - Why does the reprojection error increase when more data is collected?
-
   - When there are few samples, the model will fit the available data the best it can, even in the presence of noise (over-fitting) or wrong detections. When more data is collected, the error may increase to a certain extent, but that corresponds to the model attempting to fit all the data, this time unable to fit the noise, resulting in a higher error. However, it should reach a more-or-less table peak with about 10-15 pairs (depending on the data collection pattern/sampling).
 
 - Why does the reprojection error seem high?
-
   - The intrinsics may not be accurate, thus limiting the performance of the method.
   - The boards are not appropriate (are bent).
   - The boards moved too much while calibrating.

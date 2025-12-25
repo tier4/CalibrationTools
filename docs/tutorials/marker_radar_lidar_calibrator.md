@@ -231,19 +231,16 @@ To evaluate the calibration result, the user can check that the calibrated radar
 ## FAQ
 
 - Why does the reflector detection not appear on `RViz`?
-
   - Make sure the center of the reflector faces toward the radar sensor, and the height of the reflector matches the radar's.
   - Make sure the height of the radar reflector is not larger than the `reflector_max_height` parameter.
   - Make sure the radar reflector is not in the background voxel (visualize the topic mentioned before).
 
 - Why does the calibration error seem high?
-
   - Make sure that there are no outliers in the calibration pairs list.
   - Make sure that the initial calibration is good enough to match the lidar detection and radar detection correctly.
   - Radars like the ARS408 (the one we use in this tutorial) have a resolution of 0.2m. Given that, there is a theoretical limit to how low the calibration error can be. If the radar resolution is low, it will strongly limit the lower bound of the calibration error.
 
 - When can I stop the calibration process?
-
   - It is recommended to stop the calibration when the curve in the cross-validation error has converged.
   - With more matched pairs without outliers, the calibration result should improve if the number of pairs increases.
 
