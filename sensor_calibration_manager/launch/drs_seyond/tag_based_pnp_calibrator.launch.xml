@@ -29,10 +29,10 @@
   <let name="lidar_frame" value="lidar_left" if="$(eval &quot;'$(var camera_name)' == 'camera6' &quot;)"/>
   <let name="lidar_frame" value="lidar_left" if="$(eval &quot;'$(var camera_name)' == 'camera7' &quot;)"/>
 
-  <let name="pointcloud_topic" value="/sensing/lidar/front/nebula_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_front' &quot;)"/>
-  <let name="pointcloud_topic" value="/sensing/lidar/rear/nebula_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_rear' &quot;)"/>
-  <let name="pointcloud_topic" value="/sensing/lidar/left/nebula_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_left' &quot;)"/>
-  <let name="pointcloud_topic" value="/sensing/lidar/right/nebula_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_right' &quot;)"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/front/seyond_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_front' &quot;)"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/rear/seyond_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_rear' &quot;)"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/left/seyond_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_left' &quot;)"/>
+  <let name="pointcloud_topic" value="/sensing/lidar/right/seyond_points" if="$(eval &quot;'$(var lidar_frame)' == 'lidar_right' &quot;)"/>
 
   <let name="camera_frame" value="$(var camera_name)/camera_link"/>
   <let name="camera_optical_frame" value="$(var camera_name)/camera_optical_link"/>
