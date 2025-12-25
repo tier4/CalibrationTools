@@ -12,12 +12,12 @@
   <arg name="dense_pointcloud_num_keyframes" default="30" description="Used to compensate the different field of views"/>
   <arg name="lidar_calibration_max_frames" default="3" description="Number of pointclouds used for calibration"/>
 
-  <arg name="imu_to_front_x" default="0.3334" description="x translation value from IMU origin to front LiDAR origin"/>
-  <arg name="imu_to_front_y" default="0.0" description="y translation value from IMU origin to front LiDAR origin"/>
-  <arg name="imu_to_front_z" default="0.0702" description="z translation value from IMU origin to front LiDAR origin"/>
-  <arg name="imu_to_front_roll" default="0.000" description="roll rotation value from IMU origin to front LiDAR origin"/>
-  <arg name="imu_to_front_pitch" default="0.000" description="pitch rotation value from IMU origin to front LiDAR origin"/>
-  <arg name="imu_to_front_yaw" default="0.000" description="yaw rotation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_x" description="x translation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_y" description="y translation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_z" description="z translation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_roll" description="roll rotation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_pitch" description="pitch rotation value from IMU origin to front LiDAR origin"/>
+  <arg name="imu_to_front_yaw" description="yaw rotation value from IMU origin to front LiDAR origin"/>
 
   <let name="calibration_camera_optical_link_frames" value="['']"/>
 
