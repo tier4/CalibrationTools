@@ -304,7 +304,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
       std::bind(
         &ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rmw_qos_profile_services_default, calibration_api_srv_group_);
+      rclcpp::ServicesQoS(), calibration_api_srv_group_);
 
   // Scene related services
   add_external_camera_images_srv_ =

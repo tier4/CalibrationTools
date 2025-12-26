@@ -341,7 +341,7 @@ std::vector<CameraPoint<T>> getCameraPoints(
     auto backprojection_err = ceres::sqrt(ceres::pow(u - u_bpr, 2) + ceres::pow(v - v_bpr, 2));
     auto sign_shift_x = u <= T(0.0) ? T(-1.0) : u >= width - T(1.0) ? T(1.0) : T(0.0);
     auto sign_shift_y = v <= T(0.0) ? T(-1.0) : v >= height - T(1.0) ? T(1.0) : T(0.0);
-    if (ceres::IsNaN(backprojection_err) || backprojection_err > backprojection_err_thr) {
+    if (ceres::isnan(backprojection_err) || backprojection_err > backprojection_err_thr) {
       camera_points.push_back({x, y, depth, sign_shift_x, sign_shift_y, backprojection_err, false});
       return false;
     }

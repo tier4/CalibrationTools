@@ -26,14 +26,13 @@ Calibration tools for sensors used in autonomous driving and robotics (camera, l
     - [Using your vehicle/robot](#using-your-vehiclerobot)
     - [Create a new project](#create-a-new-project)
     - [Integrate a new calibrator](#integrate-a-new-calibrator)
-  - [Troubleshooting & known issues](TROUBLESHOOTING.md)
 
 ## Installation
 
 ### Requirements
 
-- Ubuntu 22.04
-- ROS2 Humble <!--cSpell:ignore ROS2 -->
+- Ubuntu 24.04
+- ROS2 Jazzy <!--cSpell:ignore ROS2 -->
 
 ### Installation alongside autoware
 

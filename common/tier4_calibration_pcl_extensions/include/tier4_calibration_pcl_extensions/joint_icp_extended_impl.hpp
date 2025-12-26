@@ -326,7 +326,7 @@ void pcl::JointIterativeClosestPointExtended<PointSource, PointTarget, Scalar>::
     }
 
     // Check whether we have enough correspondences
-    if (static_cast<int>(correspondences_->size()) < min_number_correspondences_) {
+    if (correspondences_->size() < static_cast<std::size_t>(min_number_correspondences_)) {
       PCL_ERROR(
         "[pcl::%s::computeTransformation] Not enough correspondences found. "
         "Relax your threshold parameters.\n",

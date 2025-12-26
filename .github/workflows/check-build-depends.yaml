@@ -13,10 +13,10 @@ jobs:
       fail-fast: false
       matrix:
         rosdistro:
-          - humble
+          - jazzy
         include:
-          - rosdistro: humble
-            container: ros:humble
+          - rosdistro: jazzy
+            container: ros:jazzy
             build-depends-repos: build_depends.repos
     steps:
       - name: Check out repository

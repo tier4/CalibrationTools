@@ -269,14 +269,14 @@ ExtrinsicReflectorBasedCalibrator::ExtrinsicReflectorBasedCalibrator(
       std::bind(
         &ExtrinsicReflectorBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rmw_qos_profile_services_default, calibration_api_srv_callback_group_);
+      rclcpp::ServicesQoS(), calibration_api_srv_callback_group_);
 
   background_model_service_server_ = this->create_service<std_srvs::srv::Empty>(
     "extract_background_model",
     std::bind(
       &ExtrinsicReflectorBasedCalibrator::backgroundModelRequestCallback, this,
       std::placeholders::_1, std::placeholders::_2),
-    rmw_qos_profile_services_default, calibration_ui_srv_callback_group_);
+    rclcpp::ServicesQoS(), calibration_ui_srv_callback_group_);
 
   timer_ = rclcpp::create_timer(
     this, get_clock(), std::chrono::seconds(1),
@@ -329,7 +329,7 @@ void ExtrinsicReflectorBasedCalibrator::timerCallback()
       std::bind(
         &ExtrinsicReflectorBasedCalibrator::trackingRequestCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rmw_qos_profile_services_default, calibration_ui_srv_callback_group_);
+      rclcpp::ServicesQoS(), calibration_ui_srv_callback_group_);
   }
 
   if (calibration_valid_ && !send_calibration_service_server_) {
@@ -338,7 +338,7 @@ void ExtrinsicReflectorBasedCalibrator::timerCallback()
       std::bind(
         &ExtrinsicReflectorBasedCalibrator::sendCalibrationCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rmw_qos_profile_services_default, calibration_ui_srv_callback_group_);
+      rclcpp::ServicesQoS(), calibration_ui_srv_callback_group_);
   }
 
   if (converged_tracks_.size() > 0 && !delete_track_service_server_) {
@@ -347,7 +347,7 @@ void ExtrinsicReflectorBasedCalibrator::timerCallback()
       std::bind(
         &ExtrinsicReflectorBasedCalibrator::deleteTrackRequestCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rmw_qos_profile_services_default, calibration_ui_srv_callback_group_);
+      rclcpp::ServicesQoS(), calibration_ui_srv_callback_group_);
   }
 }
 

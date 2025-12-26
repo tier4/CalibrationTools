@@ -115,7 +115,7 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
     std::bind(
       &LidarToLidar2DCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
-    rmw_qos_profile_services_default, srv_callback_group_);
+    rclcpp::ServicesQoS(), srv_callback_group_);
 
   // Initialize the filter
   kalman_filter_.setA(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <Eigen/Dense>  // note: this header must come before <opencv2/core/eigen.hpp>
+#include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <rclcpp/time.hpp>
@@ -22,8 +23,7 @@
 
 #include <tier4_sensor_calibration_msgs/msg/calibration_result.hpp>
 
-#include <cv_bridge/cv_bridge.h>
-#include <image_geometry/pinhole_camera_model.h>
+#include <image_geometry/pinhole_camera_model.hpp>
 #include <tf2/utils.h>
 
 #include <algorithm>
@@ -159,7 +159,7 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
     std::bind(
       &ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
-    rmw_qos_profile_services_default, srv_callback_group_);
+    rclcpp::ServicesQoS(), srv_callback_group_);
 
   visualizer_ = std::make_unique<TagCalibratorVisualizer>(filtered_projections_markers_pub_);
 

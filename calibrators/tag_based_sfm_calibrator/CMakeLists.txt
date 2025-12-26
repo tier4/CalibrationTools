@@ -2,6 +2,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(tag_based_sfm_calibrator)
 
+add_compile_options(-Wno-array-bounds)
+add_compile_options(-Wno-stringop-overflow)
+
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(apriltag REQUIRED)

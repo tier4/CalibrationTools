@@ -2,6 +2,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(lidar_to_lidar_2d_calibrator)
 
+add_compile_options(-Wno-array-bounds)
+add_compile_options(-Wno-stringop-overflow)
+
 find_package(autoware_cmake REQUIRED)
 find_package(OpenCV REQUIRED) # TODO: consider removing this one later
 

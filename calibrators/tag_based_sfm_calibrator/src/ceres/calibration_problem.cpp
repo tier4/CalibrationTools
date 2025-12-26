@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <Eigen/Core>
+#include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
@@ -29,7 +30,6 @@
 
 #include <ceres/ceres.h>
 #include <ceres/loss_function.h>
-#include <cv_bridge/cv_bridge.h>
 
 #include <algorithm>
 #include <map>

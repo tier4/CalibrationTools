@@ -22,7 +22,7 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_calibration_pcl_extensions/voxel_grid_triplets.hpp>
 
-#include <image_geometry/pinhole_camera_model.h>
+#include <image_geometry/pinhole_camera_model.hpp>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/frustum_culling.h>
 #include <pcl_conversions/pcl_conversions.h>

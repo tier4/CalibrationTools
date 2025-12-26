@@ -272,9 +272,9 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->create_publisher<visualization_msgs::msg::MarkerArray>("keyframe_markers", 10);
 
   auto rosbag2_pause_client_ = this->create_client<rosbag2_interfaces::srv::Pause>(
-    "/rosbag2_player/pause", rmw_qos_profile_services_default);
+    "/rosbag2_player/pause", rclcpp::ServicesQoS());
   auto rosbag2_resume_client_ = this->create_client<rosbag2_interfaces::srv::Resume>(
-    "/rosbag2_player/resume", rmw_qos_profile_services_default);
+    "/rosbag2_player/resume", rclcpp::ServicesQoS());
 
   // Set up mapper
   mapper_ = std::make_shared<CalibrationMapper>(
@@ -335,7 +335,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     std::bind(
       &ExtrinsicMappingBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
-    rmw_qos_profile_services_default, srv_callback_group_);
+    rclcpp::ServicesQoS(), srv_callback_group_);
 
   // Set up sensor callbacks
   assert(
@@ -404,7 +404,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       mapper_->stop();
       RCLCPP_INFO_STREAM(this->get_logger(), "Mapper stopped through service");
     },
-    rmw_qos_profile_services_default);
+    rclcpp::ServicesQoS());
 
   load_database_server_ =
     this->create_service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>(
@@ -412,7 +412,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       std::bind(
         &ExtrinsicMappingBasedCalibrator::loadDatabaseCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rmw_qos_profile_services_default);
+      rclcpp::ServicesQoS());
 
   save_database_server_ =
     this->create_service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>(
@@ -420,7 +420,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       std::bind(
         &ExtrinsicMappingBasedCalibrator::saveDatabaseCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rmw_qos_profile_services_default);
+      rclcpp::ServicesQoS());
 
   publisher_timer_ = rclcpp::create_timer(
     this, this->get_clock(), 5s, std::bind(&CalibrationMapper::publisherTimerCallback, mapper_));

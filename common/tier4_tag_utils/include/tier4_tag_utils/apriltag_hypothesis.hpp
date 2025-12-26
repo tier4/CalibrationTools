@@ -20,7 +20,7 @@
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
 
-#include <image_geometry/pinhole_camera_model.h>
+#include <image_geometry/pinhole_camera_model.hpp>
 
 #include <vector>
 

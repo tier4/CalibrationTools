@@ -103,7 +103,7 @@ ExtrinsicGroundPlaneCalibrator::ExtrinsicGroundPlaneCalibrator(const rclcpp::Nod
     std::bind(
       &ExtrinsicGroundPlaneCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
-    rmw_qos_profile_services_default, srv_callback_group_);
+    rclcpp::ServicesQoS(), srv_callback_group_);
 
   // Initialize the filter
   kalman_filter_.setA(Eigen::DiagonalMatrix<double, 6>(1.0, 1.0, 1.0, 1.0, 1.0, 1.0));
