@@ -14,6 +14,7 @@
 
 #include <Eigen/Dense>  // note: this header must come before <opencv2/core/eigen.hpp>
 #include <cv_bridge/cv_bridge.hpp>
+#include <image_geometry/pinhole_camera_model.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <rclcpp/time.hpp>
@@ -23,7 +24,6 @@
 
 #include <tier4_sensor_calibration_msgs/msg/calibration_result.hpp>
 
-#include <image_geometry/pinhole_camera_model.hpp>
 #include <tf2/utils.h>
 
 #include <algorithm>

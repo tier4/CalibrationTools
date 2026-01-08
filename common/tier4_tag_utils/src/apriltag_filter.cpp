@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <Eigen/Core>
+#include <image_geometry/pinhole_camera_model.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <rclcpp/time.hpp>
@@ -20,8 +21,6 @@
 #include <tier4_tag_utils/apriltag_filter.hpp>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-
-#include <image_geometry/pinhole_camera_model.hpp>
 
 #include <algorithm>
 #include <string>

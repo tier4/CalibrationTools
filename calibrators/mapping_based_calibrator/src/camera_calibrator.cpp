@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <image_geometry/pinhole_camera_model.hpp>
 #include <mapping_based_calibrator/camera_calibrator.hpp>
 #include <mapping_based_calibrator/filters/best_frames_filter.hpp>
 #include <mapping_based_calibrator/filters/dynamics_filter.hpp>
@@ -22,7 +23,6 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_calibration_pcl_extensions/voxel_grid_triplets.hpp>
 
-#include <image_geometry/pinhole_camera_model.hpp>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/frustum_culling.h>
 #include <pcl_conversions/pcl_conversions.h>
