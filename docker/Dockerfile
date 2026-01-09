@@ -1,5 +1,5 @@
-
-FROM osrf/ros:jazzy-desktop-noble
+ARG ROS_DISTRO=jazzy
+FROM osrf/ros:${ROS_DISTRO}-desktop
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -9,19 +9,20 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     python3-pip \
     wget
 
-RUN echo "source /opt/ros/jazzy/setup.bash" >> /etc/bash.bashrc
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc
 
 WORKDIR /workspace
 
 RUN mkdir -p /workspace/src
 
+# TODO: restore upstream
 RUN wget https://raw.githubusercontent.com/amadeuszsz/CalibrationTools/feat/jazzy-support/calibration_tools_standalone.repos --directory-prefix=/workspace
 
 RUN vcs import src < calibration_tools_standalone.repos
 
 RUN rosdep install -y --from-paths `colcon list --packages-up-to sensor_calibration_tools -p` --ignore-src
 
-RUN source /opt/ros/jazzy/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-up-to sensor_calibration_tools
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-up-to sensor_calibration_tools
 
 RUN rm -rf /var/lib/apt/lists/*
 

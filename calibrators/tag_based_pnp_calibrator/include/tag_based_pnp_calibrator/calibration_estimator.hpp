@@ -15,7 +15,6 @@
 #ifndef TAG_BASED_PNP_CALIBRATOR__CALIBRATION_ESTIMATOR_HPP_
 #define TAG_BASED_PNP_CALIBRATOR__CALIBRATION_ESTIMATOR_HPP_
 
-#include <image_geometry/pinhole_camera_model.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
@@ -27,12 +26,19 @@
 #include <lidartag_msgs/msg/lidar_tag_detection_array.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 
+#include <rclcpp/version.h>
 #include <tf2/utils.h>
 
 #include <memory>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <image_geometry/pinhole_camera_model.h>
+#else
+#include <image_geometry/pinhole_camera_model.hpp>
+#endif
 
 class CalibrationEstimator
 {

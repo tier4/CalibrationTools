@@ -16,7 +16,6 @@
 #define TAG_BASED_PNP_CALIBRATOR__TAG_CALIBRATOR_VISUALIZER_HPP_
 
 #include <Eigen/Core>
-#include <image_geometry/pinhole_camera_model.hpp>
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tag_based_pnp_calibrator/calibration_estimator.hpp>
@@ -28,10 +27,18 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
+#include <rclcpp/version.h>
+
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <image_geometry/pinhole_camera_model.h>
+#else
+#include <image_geometry/pinhole_camera_model.hpp>
+#endif
 
 class TagCalibratorVisualizer
 {

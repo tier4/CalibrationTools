@@ -15,13 +15,20 @@
 #ifndef TIER4_TAG_UTILS__APRILTAG_HYPOTHESIS_HPP_
 #define TIER4_TAG_UTILS__APRILTAG_HYPOTHESIS_HPP_
 
-#include <image_geometry/pinhole_camera_model.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <rclcpp/time.hpp>
 
+#include <rclcpp/version.h>
+
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <image_geometry/pinhole_camera_model.h>
+#else
+#include <image_geometry/pinhole_camera_model.hpp>
+#endif
 
 namespace tier4_tag_utils
 {

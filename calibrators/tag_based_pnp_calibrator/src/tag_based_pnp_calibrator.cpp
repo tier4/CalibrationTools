@@ -13,8 +13,6 @@
 // limitations under the License.
 
 #include <Eigen/Dense>  // note: this header must come before <opencv2/core/eigen.hpp>
-#include <cv_bridge/cv_bridge.hpp>
-#include <image_geometry/pinhole_camera_model.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <rclcpp/time.hpp>
@@ -25,11 +23,22 @@
 #include <tier4_sensor_calibration_msgs/msg/calibration_result.hpp>
 
 #include <tf2/utils.h>
+#include <rclcpp/version.h>
 
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <cv_bridge/cv_bridge.h>
+#include <image_geometry/pinhole_camera_model.h>
+#define SERVICE_QOS rmw_qos_profile_services_default
+#else
+#include <cv_bridge/cv_bridge.hpp>
+#include <image_geometry/pinhole_camera_model.hpp>
+#define SERVICE_QOS rclcpp::ServicesQoS()
+#endif
 
 ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::NodeOptions & options)
 : Node("tag_based_pnp_calibrator_node", options),
@@ -159,7 +168,7 @@ ExtrinsicTagBasedPNPCalibrator::ExtrinsicTagBasedPNPCalibrator(const rclcpp::Nod
     std::bind(
       &ExtrinsicTagBasedPNPCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
-    rclcpp::ServicesQoS(), srv_callback_group_);
+    SERVICE_QOS, srv_callback_group_);
 
   visualizer_ = std::make_unique<TagCalibratorVisualizer>(filtered_projections_markers_pub_);
 

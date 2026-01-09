@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include <Eigen/Core>
-#include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
@@ -30,6 +29,7 @@
 
 #include <ceres/ceres.h>
 #include <ceres/loss_function.h>
+#include <rclcpp/version.h>
 
 #include <algorithm>
 #include <map>
@@ -39,6 +39,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <cv_bridge/cv_bridge.h>
+#else
+#include <cv_bridge/cv_bridge.hpp>
+#endif
 
 namespace tag_based_sfm_calibrator
 {

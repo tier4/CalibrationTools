@@ -36,6 +36,7 @@
 #include <boost/archive/text_oarchive.hpp>
 
 #include <ceres/ceres.h>
+#include <rclcpp/version.h>
 
 #include <algorithm>
 #include <chrono>
@@ -48,6 +49,12 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#define SERVICE_QOS rmw_qos_profile_services_default
+#else
+#define SERVICE_QOS rclcpp::ServicesQoS()
+#endif
 
 namespace tag_based_sfm_calibrator
 {
@@ -304,7 +311,7 @@ ExtrinsicTagBasedBaseCalibrator::ExtrinsicTagBasedBaseCalibrator(
       std::bind(
         &ExtrinsicTagBasedBaseCalibrator::calibrationRequestCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rclcpp::ServicesQoS(), calibration_api_srv_group_);
+      SERVICE_QOS, calibration_api_srv_group_);
 
   // Scene related services
   add_external_camera_images_srv_ =

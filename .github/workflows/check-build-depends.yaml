@@ -14,9 +14,13 @@ jobs:
       matrix:
         rosdistro:
           - jazzy
+          - humble
         include:
           - rosdistro: jazzy
             container: ros:jazzy
+            build-depends-repos: build_depends.repos
+          - rosdistro: humble
+            container: ros:humble
             build-depends-repos: build_depends.repos
     steps:
       - name: Check out repository

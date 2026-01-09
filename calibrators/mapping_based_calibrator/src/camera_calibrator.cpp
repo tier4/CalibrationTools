@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <image_geometry/pinhole_camera_model.hpp>
 #include <mapping_based_calibrator/camera_calibrator.hpp>
 #include <mapping_based_calibrator/filters/best_frames_filter.hpp>
 #include <mapping_based_calibrator/filters/dynamics_filter.hpp>
@@ -26,11 +25,18 @@
 #include <pcl/common/transforms.h>
 #include <pcl/filters/frustum_culling.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <rclcpp/version.h>
 
 #include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <image_geometry/pinhole_camera_model.h>
+#else
+#include <image_geometry/pinhole_camera_model.hpp>
+#endif
 
 CameraCalibrator::CameraCalibrator(
   const std::string & calibration_camera_optical_link_frame,

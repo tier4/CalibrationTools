@@ -24,6 +24,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 
 #include <pcl/io/pcd_io.h>
+#include <rclcpp/version.h>
 
 #include <chrono>
 #include <fstream>
@@ -31,6 +32,12 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#define SERVICE_QOS rmw_qos_profile_services_default
+#else
+#define SERVICE_QOS rclcpp::ServicesQoS()
+#endif
 
 #define UPDATE_PARAM(PARAM_STRUCT, NAME) update_param(p, #NAME, PARAM_STRUCT.NAME##_)
 
@@ -272,9 +279,9 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     this->create_publisher<visualization_msgs::msg::MarkerArray>("keyframe_markers", 10);
 
   auto rosbag2_pause_client_ = this->create_client<rosbag2_interfaces::srv::Pause>(
-    "/rosbag2_player/pause", rclcpp::ServicesQoS());
+    "/rosbag2_player/pause", SERVICE_QOS);
   auto rosbag2_resume_client_ = this->create_client<rosbag2_interfaces::srv::Resume>(
-    "/rosbag2_player/resume", rclcpp::ServicesQoS());
+    "/rosbag2_player/resume", SERVICE_QOS);
 
   // Set up mapper
   mapper_ = std::make_shared<CalibrationMapper>(
@@ -335,7 +342,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
     std::bind(
       &ExtrinsicMappingBasedCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
-    rclcpp::ServicesQoS(), srv_callback_group_);
+    SERVICE_QOS, srv_callback_group_);
 
   // Set up sensor callbacks
   assert(
@@ -404,7 +411,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       mapper_->stop();
       RCLCPP_INFO_STREAM(this->get_logger(), "Mapper stopped through service");
     },
-    rclcpp::ServicesQoS());
+    SERVICE_QOS);
 
   load_database_server_ =
     this->create_service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>(
@@ -412,7 +419,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       std::bind(
         &ExtrinsicMappingBasedCalibrator::loadDatabaseCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rclcpp::ServicesQoS());
+      SERVICE_QOS);
 
   save_database_server_ =
     this->create_service<tier4_sensor_calibration_msgs::srv::CalibrationDatabase>(
@@ -420,7 +427,7 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
       std::bind(
         &ExtrinsicMappingBasedCalibrator::saveDatabaseCallback, this, std::placeholders::_1,
         std::placeholders::_2),
-      rclcpp::ServicesQoS());
+      SERVICE_QOS);
 
   publisher_timer_ = rclcpp::create_timer(
     this, this->get_clock(), 5s, std::bind(&CalibrationMapper::publisherTimerCallback, mapper_));
