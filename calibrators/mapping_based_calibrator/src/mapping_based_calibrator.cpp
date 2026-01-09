@@ -278,10 +278,10 @@ ExtrinsicMappingBasedCalibrator::ExtrinsicMappingBasedCalibrator(
   auto keyframe_markers_pub =
     this->create_publisher<visualization_msgs::msg::MarkerArray>("keyframe_markers", 10);
 
-  auto rosbag2_pause_client_ = this->create_client<rosbag2_interfaces::srv::Pause>(
-    "/rosbag2_player/pause", SERVICE_QOS);
-  auto rosbag2_resume_client_ = this->create_client<rosbag2_interfaces::srv::Resume>(
-    "/rosbag2_player/resume", SERVICE_QOS);
+  auto rosbag2_pause_client_ =
+    this->create_client<rosbag2_interfaces::srv::Pause>("/rosbag2_player/pause", SERVICE_QOS);
+  auto rosbag2_resume_client_ =
+    this->create_client<rosbag2_interfaces::srv::Resume>("/rosbag2_player/resume", SERVICE_QOS);
 
   // Set up mapper
   mapper_ = std::make_shared<CalibrationMapper>(
