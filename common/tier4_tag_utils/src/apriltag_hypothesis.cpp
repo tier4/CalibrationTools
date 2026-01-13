@@ -27,7 +27,9 @@ ApriltagHypothesis::ApriltagHypothesis(
 {
 }
 
-ApriltagHypothesis::~ApriltagHypothesis() {}
+ApriltagHypothesis::~ApriltagHypothesis()
+{
+}
 
 bool ApriltagHypothesis::update(
   const std::vector<cv::Point2d> & corners, const rclcpp::Time & stamp)
@@ -77,7 +79,10 @@ bool ApriltagHypothesis::update(const rclcpp::Time & stamp)
   return since_last_observation < max_no_observation_time_;
 }
 
-int ApriltagHypothesis::getId() const { return id_; }
+int ApriltagHypothesis::getId() const
+{
+  return id_;
+}
 
 std::vector<cv::Point2d> ApriltagHypothesis::getLatestPoints2d() const
 {
@@ -154,7 +159,10 @@ std::vector<cv::Point3d> ApriltagHypothesis::getPoints3d(
   return object_points;
 }
 
-cv::Point3d ApriltagHypothesis::getCenter3d() const { return getCenter3d(getFilteredPoints3d()); }
+cv::Point3d ApriltagHypothesis::getCenter3d() const
+{
+  return getCenter3d(getFilteredPoints3d());
+}
 
 cv::Point3d ApriltagHypothesis::getCenter3d(const std::vector<cv::Point3d> & corners) const
 {
@@ -214,7 +222,10 @@ void ApriltagHypothesis::setNewHypothesisThreshold(double max_translation)
   new_hypothesis_translation_ = max_translation;
 }
 
-void ApriltagHypothesis::setMaxNoObservationTime(double time) { max_no_observation_time_ = time; }
+void ApriltagHypothesis::setMaxNoObservationTime(double time)
+{
+  max_no_observation_time_ = time;
+}
 
 void ApriltagHypothesis::setMeasurementNoise(double translation)
 {
@@ -226,7 +237,10 @@ void ApriltagHypothesis::setProcessNoise(double translation)
   process_noise_translation_ = translation;
 }
 
-void ApriltagHypothesis::setTagSize(double size) { tag_size_ = size; }
+void ApriltagHypothesis::setTagSize(double size)
+{
+  tag_size_ = size;
+}
 
 void ApriltagHypothesis::initKalman(const std::vector<cv::Point2d> & corners)
 {

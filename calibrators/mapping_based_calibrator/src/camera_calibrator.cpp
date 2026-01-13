@@ -71,7 +71,9 @@ CameraCalibrator::CameraCalibrator(
   configureCalibrators();
 }
 
-void CameraCalibrator::configureCalibrators() {}
+void CameraCalibrator::configureCalibrators()
+{
+}
 
 std::tuple<bool, Eigen::Matrix4d, float> CameraCalibrator::calibrate()
 {

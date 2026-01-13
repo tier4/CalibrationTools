@@ -21,7 +21,10 @@
 #include <utility>
 #include <vector>
 
-void BestFramesFilter::setName(const std::string & name) { name_ = name + " (BestFramesFilter)"; }
+void BestFramesFilter::setName(const std::string & name)
+{
+  name_ = name + " (BestFramesFilter)";
+}
 
 std::vector<CalibrationFrame> BestFramesFilter::filter(
   const std::vector<CalibrationFrame> & input_calibration_frames,

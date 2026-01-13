@@ -98,7 +98,10 @@ bool LidartagHypothesis::update(const rclcpp::Time & stamp)
   return since_last_observation < max_no_observation_time_;
 }
 
-int LidartagHypothesis::getId() const { return id_; }
+int LidartagHypothesis::getId() const
+{
+  return id_;
+}
 
 std::vector<cv::Point3d> LidartagHypothesis::getLatestPoints()
 {
@@ -124,9 +127,15 @@ std::vector<cv::Point3d> LidartagHypothesis::getLatestPoints()
   return corners;
 }
 
-cv::Matx33d LidartagHypothesis::getLatestRotation() const { return latest_rotation_matrix_; }
+cv::Matx33d LidartagHypothesis::getLatestRotation() const
+{
+  return latest_rotation_matrix_;
+}
 
-cv::Matx31d LidartagHypothesis::getLatestTranslation() const { return latest_translation_vector_; }
+cv::Matx31d LidartagHypothesis::getLatestTranslation() const
+{
+  return latest_translation_vector_;
+}
 
 std::vector<cv::Point3d> LidartagHypothesis::getFilteredPoints()
 {
@@ -152,7 +161,10 @@ std::vector<cv::Point3d> LidartagHypothesis::getFilteredPoints()
   return corners;
 }
 
-cv::Matx33d LidartagHypothesis::getFilteredRotation() const { return filtered_rotation_matrix_; }
+cv::Matx33d LidartagHypothesis::getFilteredRotation() const
+{
+  return filtered_rotation_matrix_;
+}
 
 cv::Matx31d LidartagHypothesis::getFilteredTranslation() const
 {
@@ -184,7 +196,10 @@ double LidartagHypothesis::getRotCov() const
   return std::sqrt(max_rotation_cov);
 }
 
-double LidartagHypothesis::getSpeed() const { return estimated_speed_; }
+double LidartagHypothesis::getSpeed() const
+{
+  return estimated_speed_;
+}
 
 bool LidartagHypothesis::converged() const
 {
@@ -248,7 +263,10 @@ void LidartagHypothesis::setNewHypothesisThreshold(double max_translation, doubl
   new_hypothesis_rotation_ = max_rotation;
 }
 
-void LidartagHypothesis::setMaxNoObservationTime(double time) { max_no_observation_time_ = time; }
+void LidartagHypothesis::setMaxNoObservationTime(double time)
+{
+  max_no_observation_time_ = time;
+}
 
 void LidartagHypothesis::setMeasurementNoise(double translation, double rotation)
 {

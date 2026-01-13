@@ -617,7 +617,10 @@ bool CalibrationEstimator::converged() const
          getCalibrationCoveragePercentage() >= convergence_min_area_percentage_;
 }
 
-bool CalibrationEstimator::valid() const { return valid_; }
+bool CalibrationEstimator::valid() const
+{
+  return valid_;
+}
 
 std::vector<std::shared_ptr<tier4_tag_utils::LidartagHypothesis>>
 CalibrationEstimator::getActiveLidartagHypotheses() const
@@ -696,14 +699,20 @@ void CalibrationEstimator::setCalibrationConvergenceCriteria(
   convergence_min_area_percentage_ = min_area_percentage;
 }
 
-void CalibrationEstimator::setMinPnpPairs(int min_pairs) { min_pnp_pairs_ = min_pairs; }
+void CalibrationEstimator::setMinPnpPairs(int min_pairs)
+{
+  min_pnp_pairs_ = min_pairs;
+}
 
 void CalibrationEstimator::setMinConvergenceTime(double convergence_time)
 {
   min_convergence_time_ = convergence_time;
 }
 
-void CalibrationEstimator::setMaxNoObservationTime(double time) { max_no_observation_time_ = time; }
+void CalibrationEstimator::setMaxNoObservationTime(double time)
+{
+  max_no_observation_time_ = time;
+}
 
 void CalibrationEstimator::setNewHypothesisDistance(double distance)
 {
@@ -771,7 +780,10 @@ void CalibrationEstimator::setApriltagProcessNoise(double translation)
   apriltag_process_noise_translation_ = translation;
 }
 
-double CalibrationEstimator::getNewHypothesisDistance() const { return new_hypothesis_distance_; }
+double CalibrationEstimator::getNewHypothesisDistance() const
+{
+  return new_hypothesis_distance_;
+}
 
 double CalibrationEstimator::getCalibrationCoveragePercentage() const
 {
@@ -799,4 +811,7 @@ int CalibrationEstimator::getCurrentCalibrationPairsNumber() const
   return converged_lidartag_hypotheses_.size();
 }
 
-int CalibrationEstimator::getConvergencePairNumber() const { return convergence_min_pairs_; }
+int CalibrationEstimator::getConvergencePairNumber() const
+{
+  return convergence_min_pairs_;
+}

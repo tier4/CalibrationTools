@@ -134,7 +134,10 @@ void CalibrationProblem::setWheelTagUIDs(UID left_wheel_tag_uid, UID right_wheel
   right_wheel_tag_uid_ = right_wheel_tag_uid;
 }
 
-void CalibrationProblem::setData(CalibrationData::Ptr & data) { data_ = data; }
+void CalibrationProblem::setData(CalibrationData::Ptr & data)
+{
+  data_ = data;
+}
 
 void CalibrationProblem::dataToPlaceholders()
 {
