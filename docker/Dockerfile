@@ -15,8 +15,7 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc
 
 WORKDIR /workspace
 
-# TODO: restore upstream
-RUN mkdir -p /workspace/src && wget --progress=dot:giga https://raw.githubusercontent.com/amadeuszsz/CalibrationTools/feat/jazzy-support/calibration_tools_standalone.repos --directory-prefix=/workspace
+RUN mkdir -p /workspace/src && wget --progress=dot:giga https://raw.githubusercontent.com/tier4/CalibrationTools/tier4/universe/calibration_tools_standalone.repos --directory-prefix=/workspace
 
 RUN vcs import src < calibration_tools_standalone.repos
 

@@ -1,8 +1,8 @@
 repositories:
   autoware/calibration_tools:
     type: git
-    url: https://github.com/amadeuszsz/CalibrationTools.git  # TODO: restore upstream
-    version: feat/jazzy-support  # TODO: restore tier4/universe branch
+    url: https://github.com/tier4/CalibrationTools.git
+    version: tier4/universe
   vendor/lidartag:
     type: git
     url: https://github.com/tier4/LiDARTag.git
