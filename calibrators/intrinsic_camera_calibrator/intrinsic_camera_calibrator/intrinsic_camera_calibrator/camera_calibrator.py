@@ -1356,9 +1356,11 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
 def main(args=None):
     try:
-        multiprocessing.set_start_method('spawn', force=True)
+        multiprocessing.set_start_method("spawn", force=True)
     except RuntimeError:
-        logging.warning("Cannot set multiprocessing start method to 'spawn'. Pop-up windows may not work properly.")
+        logging.warning(
+            "Cannot set multiprocessing start method to 'spawn'. Pop-up windows may not work properly."
+        )
     set_logger_severity()
     parser = OptionParser()
     parser.add_option("-c", "--config-file", type="string", help="calibration file path")
