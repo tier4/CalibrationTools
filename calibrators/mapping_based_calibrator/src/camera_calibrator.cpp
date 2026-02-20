@@ -22,15 +22,21 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <tier4_calibration_pcl_extensions/voxel_grid_triplets.hpp>
 
-#include <image_geometry/pinhole_camera_model.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/frustum_culling.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <rclcpp/version.h>
 
 #include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <image_geometry/pinhole_camera_model.h>
+#else
+#include <image_geometry/pinhole_camera_model.hpp>
+#endif
 
 CameraCalibrator::CameraCalibrator(
   const std::string & calibration_camera_optical_link_frame,
@@ -65,7 +71,9 @@ CameraCalibrator::CameraCalibrator(
   configureCalibrators();
 }
 
-void CameraCalibrator::configureCalibrators() {}
+void CameraCalibrator::configureCalibrators()
+{
+}
 
 std::tuple<bool, Eigen::Matrix4d, float> CameraCalibrator::calibrate()
 {

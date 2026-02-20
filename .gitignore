@@ -9,3 +9,6 @@ log/
 
 # Python
 *.pyc
+
+# pre-commit
+node_modules/

@@ -26,14 +26,13 @@ Calibration tools for sensors used in autonomous driving and robotics (camera, l
     - [Using your vehicle/robot](#using-your-vehiclerobot)
     - [Create a new project](#create-a-new-project)
     - [Integrate a new calibrator](#integrate-a-new-calibrator)
-  - [Troubleshooting & known issues](TROUBLESHOOTING.md)
 
 ## Installation
 
 ### Requirements
 
-- Ubuntu 22.04
-- ROS2 Humble <!--cSpell:ignore ROS2 -->
+- Ubuntu 22.04 / 24.04
+- ROS 2 Humble / Jazzy
 
 ### Installation alongside autoware
 
@@ -75,10 +74,13 @@ With a similar motivation to that of the previous Section, in some cases, a nati
 
 ```bash
 # Build
-DOCKER_BUILDKIT=1 docker build --ssh default -t ghcr.io/tier4/sensor-calibration-tools:2.0 -f docker/Dockerfile ..
+export ROS_DISTRO=humble  # for ROS 2 Humble
+export ROS_DISTRO=jazzy  # for ROS 2 Jazzy
+
+DOCKER_BUILDKIT=1 docker build --ssh default -t ghcr.io/tier4/sensor-calibration-tools:$ROS_DISTRO -f docker/Dockerfile --build-arg ROS_DISTRO=$ROS_DISTRO ..
 
 # Run - Modify if needed
-docker run --gpus all --net=host -e ROS_DOMAIN_ID=$ROS_DOMAIN_ID -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --device=/dev/dri:/dev/dri -it ghcr.io/tier4/sensor-calibration-tools:2.0 /bin/bash
+docker run --gpus all --net=host -e ROS_DOMAIN_ID=$ROS_DOMAIN_ID -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --device=/dev/dri:/dev/dri -it ghcr.io/tier4/sensor-calibration-tools:${ROS_DISTRO} /bin/bash
 
 # If user encounters issues like "Authorization required", use one of the alternatives below.
 # Solution 1 (Not recommended):
@@ -97,7 +99,7 @@ docker run --gpus all --net=host \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   -v /tmp/.docker.xauth:/tmp/.docker.xauth \
   --device=/dev/dri:/dev/dri \
-  -it ghcr.io/tier4/sensor-calibration-tools:2.0 /bin/bash
+  -it ghcr.io/tier4/sensor-calibration-tools:${ROS_DISTRO} /bin/bash
 ```
 
 ## Available tools

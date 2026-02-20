@@ -18,12 +18,16 @@ repositories:
   vendor/apriltag_ros:
     type: git
     url: https://github.com/christianrauch/apriltag_ros.git
-    version: e814e9e5d5f1bfb60a4aa685d30977c632bbc540
+    version: 6a6c04a16502413f114649f9bdb166c784d4fcfb
   vendor/ros2_numpy:
     type: git
     url: https://github.com/Box-Robotics/ros2_numpy.git
-    version: humble
+    version: jazzy
   vendor/image_pipeline:
     type: git
     url: https://github.com/tier4/image_pipeline.git
     version: 47964112293eb19f9f57254b2e6b68706954cc63
+  vendor/ndt_omp:
+    type: git
+    url: https://github.com/tier4/ndt_omp.git
+    version: tier4/main

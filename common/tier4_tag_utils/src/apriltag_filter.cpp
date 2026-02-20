@@ -21,11 +21,17 @@
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-#include <image_geometry/pinhole_camera_model.h>
+#include <rclcpp/version.h>
 
 #include <algorithm>
 #include <string>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <image_geometry/pinhole_camera_model.h>
+#else
+#include <image_geometry/pinhole_camera_model.hpp>
+#endif
 
 namespace tier4_tag_utils
 {

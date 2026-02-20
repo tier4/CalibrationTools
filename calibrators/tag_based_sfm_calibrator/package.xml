@@ -41,6 +41,7 @@
   <depend>tier4_tag_utils</depend>
   <depend>visualization_msgs</depend>
 
+  <exec_depend>lidartag</exec_depend>
   <exec_depend>rclpy</exec_depend>
 
   <export>

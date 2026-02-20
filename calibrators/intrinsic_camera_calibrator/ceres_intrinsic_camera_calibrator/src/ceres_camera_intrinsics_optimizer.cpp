@@ -69,7 +69,10 @@ void CeresCameraIntrinsicsOptimizer::setSourceDimensions(int width, int height)
   height_ = height;
 }
 
-void CeresCameraIntrinsicsOptimizer::setVerbose(bool verbose) { verbose_ = verbose; }
+void CeresCameraIntrinsicsOptimizer::setVerbose(bool verbose)
+{
+  verbose_ = verbose;
+}
 
 void CeresCameraIntrinsicsOptimizer::setData(
   const cv::Mat_<double> & camera_matrix, const cv::Mat_<double> & distortion_coeffs,

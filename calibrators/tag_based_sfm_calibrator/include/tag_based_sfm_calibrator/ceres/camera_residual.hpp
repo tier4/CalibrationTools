@@ -382,7 +382,7 @@ struct CameraResidual : public SensorResidual
     std::array<double, CalibrationData::POSE_OPT_DIM> & fixed_camera_pose_inv, bool fix_camera_pose,
     bool optimize_intrinsics)
   {
-    std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> null_tag_rotation_z;
+    std::array<double, CalibrationData::SHRD_GROUND_TAG_POSE_DIM> null_tag_rotation_z = {};
 
     auto f = new CameraResidual(
       camera_uid, intrinsics, detection, fixed_camera_pose_inv, null_tag_rotation_z,

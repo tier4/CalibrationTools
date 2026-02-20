@@ -18,7 +18,10 @@
 #include <string>
 #include <vector>
 
-void DynamicsFilter::setName(const std::string & name) { name_ = name + " (DynamicsFilter)"; }
+void DynamicsFilter::setName(const std::string & name)
+{
+  name_ = name + " (DynamicsFilter)";
+}
 
 std::vector<CalibrationFrame> DynamicsFilter::filter(
   const std::vector<CalibrationFrame> & calibration_frames,

@@ -16,6 +16,7 @@
 from collections import defaultdict
 import copy
 import logging
+import multiprocessing
 from optparse import OptionParser
 import os
 import signal
@@ -1354,6 +1355,12 @@ class CameraIntrinsicsCalibratorUI(QMainWindow):
 
 
 def main(args=None):
+    try:
+        multiprocessing.set_start_method("spawn", force=True)
+    except RuntimeError:
+        logging.warning(
+            "Cannot set multiprocessing start method to 'spawn'. Pop-up windows may not work properly."
+        )
     set_logger_severity()
     parser = OptionParser()
     parser.add_option("-c", "--config-file", type="string", help="calibration file path")
@@ -1384,7 +1391,7 @@ def main(args=None):
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
         logging.info("Received sigint. Quitting...")
-        rclpy.shutdown()
+        rclpy.try_shutdown()
 
 
 def sigint_handler(*args):

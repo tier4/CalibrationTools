@@ -29,7 +29,7 @@
 
 #include <ceres/ceres.h>
 #include <ceres/loss_function.h>
-#include <cv_bridge/cv_bridge.h>
+#include <rclcpp/version.h>
 
 #include <algorithm>
 #include <map>
@@ -39,6 +39,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#include <cv_bridge/cv_bridge.h>
+#else
+#include <cv_bridge/cv_bridge.hpp>
+#endif
 
 namespace tag_based_sfm_calibrator
 {
@@ -128,7 +134,10 @@ void CalibrationProblem::setWheelTagUIDs(UID left_wheel_tag_uid, UID right_wheel
   right_wheel_tag_uid_ = right_wheel_tag_uid;
 }
 
-void CalibrationProblem::setData(CalibrationData::Ptr & data) { data_ = data; }
+void CalibrationProblem::setData(CalibrationData::Ptr & data)
+{
+  data_ = data;
+}
 
 void CalibrationProblem::dataToPlaceholders()
 {

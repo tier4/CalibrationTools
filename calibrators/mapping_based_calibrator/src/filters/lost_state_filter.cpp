@@ -19,7 +19,10 @@
 #include <unordered_set>
 #include <vector>
 
-void LostStateFilter::setName(const std::string & name) { name_ = name + " (LostStateFilter)"; }
+void LostStateFilter::setName(const std::string & name)
+{
+  name_ = name + " (LostStateFilter)";
+}
 
 std::vector<CalibrationFrame> LostStateFilter::filter(
   const std::vector<CalibrationFrame> & calibration_frames, MappingData::Ptr & data)

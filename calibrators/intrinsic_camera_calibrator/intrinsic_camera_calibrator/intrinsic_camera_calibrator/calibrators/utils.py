@@ -102,7 +102,7 @@ def plot_calibration_data_statistics(
     tilt_cells: int = int(2 * np.ceil(max_tilt_deg / tilt_resolution))
 
     fig, axes = plt.subplots(3, 5, figsize=(20, 12))
-    fig.canvas.set_window_title("Calibration data statistics")
+    fig.canvas.manager.set_window_title("Calibration data statistics")
 
     def process_detections(detections: List[BoardDetection]):
         pixel_occupancy = np.zeros((pixel_cells, pixel_cells))
@@ -200,8 +200,8 @@ def plot_calibration_results_statistics(
     fig1, axes1 = plt.subplots(3, 4, figsize=(20, 12))
     fig2, axes2 = plt.subplots(3, 1, figsize=(20, 12))
 
-    fig1.canvas.set_window_title("Calibration result statistics")
-    fig2.canvas.set_window_title("Calibration result statistics vs single shot calibration")
+    fig1.canvas.manager.set_window_title("Calibration result statistics")
+    fig2.canvas.manager.set_window_title("Calibration result statistics vs single shot calibration")
 
     def process_detections(detections: List[BoardDetection]):
         pixel_errors = [[[] for i in range(pixel_cells)] for j in range(pixel_cells)]

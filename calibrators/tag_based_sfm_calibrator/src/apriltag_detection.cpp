@@ -81,7 +81,10 @@ void LidartagDetection::computeTemplateCorners(double new_size)
     {-hsize, hsize, 0.0}, {hsize, hsize, 0.0}, {hsize, -hsize, 0.0}, {-hsize, -hsize, 0.0}};
 }
 
-void LidartagDetection::computeTemplateCorners() { computeTemplateCorners(this->size); }
+void LidartagDetection::computeTemplateCorners()
+{
+  computeTemplateCorners(this->size);
+}
 
 void LidartagDetection::computeObjectCorners()
 {

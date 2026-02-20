@@ -25,6 +25,7 @@
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <rclcpp/version.h>
 #include <tf2/utils.h>
 
 #include <algorithm>
@@ -37,6 +38,12 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#if RCLCPP_VERSION_MAJOR <= 16
+#define SERVICE_QOS rmw_qos_profile_services_default
+#else
+#define SERVICE_QOS rclcpp::ServicesQoS()
+#endif
 
 namespace lidar_to_lidar_2d_calibrator
 {
@@ -115,7 +122,7 @@ LidarToLidar2DCalibrator::LidarToLidar2DCalibrator(const rclcpp::NodeOptions & o
     std::bind(
       &LidarToLidar2DCalibrator::requestReceivedCallback, this, std::placeholders::_1,
       std::placeholders::_2),
-    rmw_qos_profile_services_default, srv_callback_group_);
+    SERVICE_QOS, srv_callback_group_);
 
   // Initialize the filter
   kalman_filter_.setA(Eigen::DiagonalMatrix<double, 3>(1.0, 1.0, 1.0));
