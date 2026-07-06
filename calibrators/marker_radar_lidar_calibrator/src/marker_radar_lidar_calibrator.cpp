@@ -1136,11 +1136,12 @@ bool ExtrinsicReflectorBasedCalibrator::trackMatches(
 
   // Update tracks
   for (const auto & [lidar_detection, radar_detection] : matches) {
-    if (std::any_of(
-          converged_tracks_.begin(), converged_tracks_.end(),
-          [&lidar_detection, &radar_detection](auto & track) {
-            return track.partialMatch(lidar_detection, radar_detection);
-          })) {
+    if (
+      std::any_of(
+        converged_tracks_.begin(), converged_tracks_.end(),
+        [&lidar_detection, &radar_detection](auto & track) {
+          return track.partialMatch(lidar_detection, radar_detection);
+        })) {
       continue;
     }
 

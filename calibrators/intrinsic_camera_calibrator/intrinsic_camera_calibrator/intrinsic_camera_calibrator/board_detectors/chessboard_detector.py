@@ -52,7 +52,7 @@ class ChessBoardDetector(BoardDetector):
             return
 
         with self.lock:
-            (cols, rows) = (self.board_parameters.cols.value, self.board_parameters.rows.value)
+            cols, rows = (self.board_parameters.cols.value, self.board_parameters.rows.value)
             cell_size = self.board_parameters.cell_size.value
 
             flags = 0
@@ -110,9 +110,7 @@ class ChessBoardDetector(BoardDetector):
         grayscale = to_grayscale(img)
         if not resized_detection or max(h, w) <= resized_max_resolution:
             if self.roi is None or self.lost_frames >= max_lost_frames:
-                (detected, corners) = cv2.findChessboardCorners(
-                    grayscale, (cols, rows), flags=flags
-                )
+                detected, corners = cv2.findChessboardCorners(grayscale, (cols, rows), flags=flags)
                 # if chessboard was found, keep track of the region to try to detect easily in the next frame
                 if detected:
                     self.roi = get_roi(corners, img.shape[:2])
@@ -123,9 +121,7 @@ class ChessBoardDetector(BoardDetector):
                     return
             else:
                 roi_frame = grayscale[self.roi[1] : self.roi[3], self.roi[0] : self.roi[2]]
-                (detected, corners) = cv2.findChessboardCorners(
-                    roi_frame, (cols, rows), flags=flags
-                )
+                detected, corners = cv2.findChessboardCorners(roi_frame, (cols, rows), flags=flags)
                 if detected:
                     corners += (self.roi[0], self.roi[1])
                     self.roi = get_roi(corners, img.shape[:2])
@@ -141,7 +137,7 @@ class ChessBoardDetector(BoardDetector):
             resized = cv2.resize(grayscale, (resized_w, resized_h), interpolation=cv2.INTER_NEAREST)
 
             # Run the detector on the resized image
-            (ok, resized_corners) = cv2.findChessboardCorners(resized, (cols, rows), flags=flags)
+            ok, resized_corners = cv2.findChessboardCorners(resized, (cols, rows), flags=flags)
 
             if not ok:
                 self.detection_results_signal.emit(img, None, stamp)
@@ -159,7 +155,7 @@ class ChessBoardDetector(BoardDetector):
             roi = grayscale[roi_min_j:roi_max_j, roi_min_i:roi_max_i]
 
             # Run the detector again
-            (ok, roi_corners) = cv2.findChessboardCorners(roi, (cols, rows), flags=flags)
+            ok, roi_corners = cv2.findChessboardCorners(roi, (cols, rows), flags=flags)
 
             if not ok:
                 self.detection_results_signal.emit(img, None, stamp)
