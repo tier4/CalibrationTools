@@ -219,7 +219,7 @@ class BoardDetection:
         if self._cached_normalized_size is not None:
             return self._cached_normalized_size
 
-        (up_left, up_right, down_right, down_left) = self._get_border_image_points()
+        up_left, up_right, down_right, down_left = self._get_border_image_points()
         a = up_right - up_left
         b = down_right - up_right
         c = down_left - down_right

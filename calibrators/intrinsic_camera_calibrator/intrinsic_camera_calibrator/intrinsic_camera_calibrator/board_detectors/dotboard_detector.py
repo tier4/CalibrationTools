@@ -50,7 +50,7 @@ class DotBoardDetector(BoardDetector):
 
         with self.lock:
             h, w = img.shape[0:2]
-            (cols, rows) = (self.board_parameters.cols.value, self.board_parameters.rows.value)
+            cols, rows = (self.board_parameters.cols.value, self.board_parameters.rows.value)
             cell_size = self.board_parameters.cell_size.value
 
             filter_by_area = self.filter_by_area.value
@@ -100,12 +100,12 @@ class DotBoardDetector(BoardDetector):
         grayscale = to_grayscale(img)
 
         def detect(detection_image, detector):
-            (ok, corners) = cv2.findCirclesGrid(
+            ok, corners = cv2.findCirclesGrid(
                 detection_image, (cols, rows), flags=flags, blobDetector=detector
             )
 
             if not ok:
-                (ok, corners) = cv2.findCirclesGrid(
+                ok, corners = cv2.findCirclesGrid(
                     detection_image, (cols, rows), flags=flags, blobDetector=detector
                 )
 
@@ -118,7 +118,7 @@ class DotBoardDetector(BoardDetector):
             return (ok, corners)
 
         if not resized_detection or max(h, w) <= resized_max_resolution:
-            (ok, corners) = detect(grayscale, full_res_detector)
+            ok, corners = detect(grayscale, full_res_detector)
 
             if not ok:
                 self.detection_results_signal.emit(img, None, stamp)
@@ -129,7 +129,7 @@ class DotBoardDetector(BoardDetector):
             resized = cv2.resize(img, (resized_w, resized_h), interpolation=cv2.INTER_NEAREST)
 
             # Run the detector on the resized image
-            (ok, resized_corners) = detect(resized, resized_detector)
+            ok, resized_corners = detect(resized, resized_detector)
 
             if not ok:
                 self.detection_results_signal.emit(img, None, stamp)
@@ -155,7 +155,7 @@ class DotBoardDetector(BoardDetector):
             roi = grayscale[roi_min_j:roi_max_j, roi_min_i:roi_max_i]
 
             # Run the detector again
-            (ok, roi_corners) = detect(roi, full_res_detector)
+            ok, roi_corners = detect(roi, full_res_detector)
 
             if not ok:
                 self.detection_results_signal.emit(img, None, stamp)

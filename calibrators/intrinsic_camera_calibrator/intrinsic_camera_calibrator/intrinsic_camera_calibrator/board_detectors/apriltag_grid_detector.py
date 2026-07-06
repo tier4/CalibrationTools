@@ -95,7 +95,7 @@ class ApriltagGridDetector(BoardDetector):
             min_margin = self.min_margin.value
             max_hamming = self.max_hamming_error.value
             min_detection_ratio = self.min_detection_ratio.value
-            (cols, rows) = (self.board_parameters.cols.value, self.board_parameters.rows.value)
+            cols, rows = (self.board_parameters.cols.value, self.board_parameters.rows.value)
             min_index = self.board_parameters.min_index.value
             tag_size = self.board_parameters.tag_size.value
             tag_spacing = self.board_parameters.tag_spacing.value

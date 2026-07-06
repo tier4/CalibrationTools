@@ -110,7 +110,7 @@ class RosBagDataSource(DataSource, QObject):
         self.reader.set_filter(storage_filter)
 
         if self.reader.has_next():
-            (topic, data, t) = self.reader.read_next()
+            topic, data, t = self.reader.read_next()
             self.send_data(topic, data)
 
     def consumed(self):
@@ -123,7 +123,7 @@ class RosBagDataSource(DataSource, QObject):
             return
 
         if self.reader.has_next():
-            (topic, data, t) = self.reader.read_next()
+            topic, data, t = self.reader.read_next()
             self.send_data(topic, data)
         else:
             logging.info("bag ended !")

@@ -267,7 +267,7 @@ class CameraModel:
                 return inner, outer
 
             size = (self.width, self.height)
-            (image_width, image_height) = size
+            image_width, image_height = size
             camera_matrix = self.k
             distortion_coefficients = self.d
             force_aspect_ratio = True
