@@ -14,7 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from typing import Dict
+from typing import List
+from typing import Optional
 
 import numpy as np
 
@@ -87,24 +90,55 @@ class TagBasedSfmBaseLidarsCamerasCalibrator(CalibratorBase):
             ],
         )
 
-    def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
-        sensor_kit_to_mapping_lidar_transform = self.get_transform_matrix(
+        self.cached_constant_transforms = False
+        self.cached_sensor_kit_to_main_sensor_transform: Optional[np.array] = None
+        self.cached_lidar_to_lidar_base_transforms: Optional[List[np.array]] = None
+        self.cached_optical_link_to_camera_link_transforms: Optional[List[np.array]] = None
+
+    def on_check_tf_timer(self):
+        super().on_check_tf_timer()
+
+        if self.tfs_ready and not self.cached_constant_transforms:
+            self.cache_constant_transforms()
+
+    def cache_constant_transforms(self):
+        """Cache the constant tfs needed by `post_process` before calibrating.
+
+        `post_process` runs after the calibration has finished, at which point the
+        calibrator node is already broadcasting the optimized sensor poses for
+        visualization purposes. Since tf2 only allows a single parent per frame, those
+        broadcasts re-parent the calibration frames, and any query whose path traverses
+        one of them returns a value containing the inverse of the optimized poses,
+        which cancels out the calibration results during `post_process`. To avoid this,
+        the constant tfs are cached here, as soon as they become available and before
+        any calibration result can be broadcast.
+        """
+        self.cached_sensor_kit_to_main_sensor_transform = self.get_transform_matrix(
             self.sensor_kit_frame, self.main_sensor_frame
         )
-
-        lidar_to_lidar_base_transforms = [
+        self.cached_lidar_to_lidar_base_transforms = [
             self.get_transform_matrix(lidar_frame, lidar_base_frame)
             for lidar_frame, lidar_base_frame in zip(
                 self.calibration_lidar_frames, self.calibration_lidar_base_frames
             )
         ]
-
-        optical_link_to_camera_link_transforms = [
+        self.cached_optical_link_to_camera_link_transforms = [
             self.get_transform_matrix(camera_optical_link_frame, camera_link_frame)
             for camera_optical_link_frame, camera_link_frame in zip(
                 self.calibration_camera_optical_link_frames, self.calibration_camera_link_frames
             )
         ]
+        self.cached_constant_transforms = True
+        logging.info("Cached the constant tfs used by post_process")
+
+    def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
+        if not self.cached_constant_transforms:
+            logging.warning("The constant tfs were not cached. Falling back to a live query")
+            self.cache_constant_transforms()
+
+        sensor_kit_to_mapping_lidar_transform = self.cached_sensor_kit_to_main_sensor_transform
+        lidar_to_lidar_base_transforms = self.cached_lidar_to_lidar_base_transforms
+        optical_link_to_camera_link_transforms = self.cached_optical_link_to_camera_link_transforms
 
         base_to_top_sensor_kit_transform = np.linalg.inv(
             sensor_kit_to_mapping_lidar_transform

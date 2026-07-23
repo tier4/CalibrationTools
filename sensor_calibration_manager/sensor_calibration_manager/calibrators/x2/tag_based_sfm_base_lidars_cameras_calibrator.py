@@ -15,7 +15,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+import logging
 from typing import Dict
+from typing import Optional
 
 import numpy as np
 
@@ -92,24 +94,40 @@ class TagBasedSfmBaseLidarsCamerasCalibrator(CalibratorBase):
             ],
         )
 
-    def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
-        main_sensor_to_base_transform = calibration_transforms[self.main_sensor_frame][
-            self.base_frame
-        ]
+        self.cached_constant_transforms = False
+        self.cached_top_kit_to_main_lidar_transform: Optional[np.array] = None
+        self.cached_front_kit_to_front_lower_lidar_transform: Optional[np.array] = None
+        self.cached_rear_kit_to_rear_lower_lidar_transform: Optional[np.array] = None
+        self.cached_optical_link_to_camera_link_transforms: Optional[Dict[str, np.array]] = None
 
-        top_kit_to_main_lidar_transform = self.get_transform_matrix(
+    def on_check_tf_timer(self):
+        super().on_check_tf_timer()
+
+        if self.tfs_ready and not self.cached_constant_transforms:
+            self.cache_constant_transforms()
+
+    def cache_constant_transforms(self):
+        """Cache the constant tfs needed by `post_process` before calibrating.
+
+        `post_process` runs after the calibration has finished, at which point the
+        calibrator node is already broadcasting the optimized sensor poses for
+        visualization purposes. Since tf2 only allows a single parent per frame, those
+        broadcasts re-parent the calibration frames, and any query whose path traverses
+        one of them returns a value containing the inverse of the optimized poses,
+        which cancels out the calibration results during `post_process`. To avoid this,
+        the constant tfs are cached here, as soon as they become available and before
+        any calibration result can be broadcast.
+        """
+        self.cached_top_kit_to_main_lidar_transform = self.get_transform_matrix(
             self.top_unit_frame, self.main_sensor_frame
         )
-
-        front_kit_to_front_lower_lidar_transform = self.get_transform_matrix(
+        self.cached_front_kit_to_front_lower_lidar_transform = self.get_transform_matrix(
             self.front_unit_frame, "pandar_40p_front"
         )
-
-        rear_kit_to_rear_lower_lidar_transform = self.get_transform_matrix(
+        self.cached_rear_kit_to_rear_lower_lidar_transform = self.get_transform_matrix(
             self.rear_unit_frame, "pandar_40p_rear"
         )
-
-        optical_link_to_camera_link_transforms = {
+        self.cached_optical_link_to_camera_link_transforms = {
             camera_optical_link_frame: self.get_transform_matrix(
                 camera_optical_link_frame, camera_link_frame
             )
@@ -117,6 +135,24 @@ class TagBasedSfmBaseLidarsCamerasCalibrator(CalibratorBase):
                 self.calibration_camera_optical_link_frames, self.calibration_camera_link_frames
             )
         }
+        self.cached_constant_transforms = True
+        logging.info("Cached the constant tfs used by post_process")
+
+    def post_process(self, calibration_transforms: Dict[str, Dict[str, np.array]]):
+        main_sensor_to_base_transform = calibration_transforms[self.main_sensor_frame][
+            self.base_frame
+        ]
+
+        if not self.cached_constant_transforms:
+            logging.warning("The constant tfs were not cached. Falling back to a live query")
+            self.cache_constant_transforms()
+
+        top_kit_to_main_lidar_transform = self.cached_top_kit_to_main_lidar_transform
+        front_kit_to_front_lower_lidar_transform = (
+            self.cached_front_kit_to_front_lower_lidar_transform
+        )
+        rear_kit_to_rear_lower_lidar_transform = self.cached_rear_kit_to_rear_lower_lidar_transform
+        optical_link_to_camera_link_transforms = self.cached_optical_link_to_camera_link_transforms
 
         base_to_top_kit_transform = np.linalg.inv(
             top_kit_to_main_lidar_transform @ main_sensor_to_base_transform
