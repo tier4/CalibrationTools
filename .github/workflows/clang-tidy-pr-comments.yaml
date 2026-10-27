@@ -48,6 +48,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.set-variables.outputs.pr-head-repo }}
+          # zizmor: ignore[untrusted-checkout]
           ref: ${{ steps.set-variables.outputs.pr-head-ref }}
           persist-credentials: false
 
