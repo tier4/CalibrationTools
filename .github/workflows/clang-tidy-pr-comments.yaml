@@ -48,8 +48,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.set-variables.outputs.pr-head-repo }}
-          # zizmor: ignore[untrusted-checkout]
-          ref: ${{ steps.set-variables.outputs.pr-head-ref }}
+          ref: ${{ steps.set-variables.outputs.pr-head-ref }} # zizmor: ignore[untrusted-checkout]
           persist-credentials: false
 
       - name: Replace paths in fixes.yaml
